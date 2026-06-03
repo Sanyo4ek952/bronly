@@ -2,7 +2,14 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/shared/lib/cn";
 
-type StatusPillVariant = "active" | "inactive" | "new" | "in_progress" | "confirmed" | "declined";
+type StatusPillVariant =
+  | "active"
+  | "inactive"
+  | "new"
+  | "accepted_by_owner"
+  | "rejected"
+  | "transferred_to_owner"
+  | "completed";
 
 type StatusPillProps = {
   children: ReactNode;
@@ -14,9 +21,10 @@ const variantClassMap: Record<StatusPillVariant, string> = {
   active: "br-status-pill--active",
   inactive: "br-status-pill--inactive",
   new: "br-status-pill--new",
-  in_progress: "br-status-pill--progress",
-  confirmed: "br-status-pill--confirmed",
-  declined: "br-status-pill--declined",
+  accepted_by_owner: "br-status-pill--confirmed",
+  rejected: "br-status-pill--declined",
+  transferred_to_owner: "br-status-pill--progress",
+  completed: "br-status-pill--confirmed",
 };
 
 export function StatusPill({ children, variant, className }: StatusPillProps) {

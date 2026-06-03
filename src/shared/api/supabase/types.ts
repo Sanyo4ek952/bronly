@@ -141,7 +141,7 @@ export type SupabaseGuestRequestRow = {
   children_count: number;
   check_in: string;
   check_out: string;
-  status: "new" | "in_progress" | "owner_confirmed" | "declined" | "completed";
+  status: "new" | "accepted_by_owner" | "rejected" | "transferred_to_owner" | "completed";
   transferred_to_owner_at: string | null;
   owner_confirmed_at: string | null;
   completed_at: string | null;

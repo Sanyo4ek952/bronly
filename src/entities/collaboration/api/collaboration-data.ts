@@ -25,7 +25,7 @@ export async function getAgentDashboardSummary(profile: AuthProfile): Promise<Ag
           .from("guest_requests")
           .select("*", { count: "exact", head: true })
           .eq("agent_id", profile.id)
-          .in("status", ["new", "in_progress", "owner_confirmed"]),
+          .in("status", ["new", "transferred_to_owner", "accepted_by_owner"]),
         supabase
           .from("guest_requests")
           .select("*", { count: "exact", head: true })

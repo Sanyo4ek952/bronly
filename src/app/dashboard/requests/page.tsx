@@ -1,12 +1,15 @@
-import { getOwnerProperties, getOwnerPropertyDetail } from "@/entities/property";
 import { getOwnerRequests } from "@/entities/request";
 import { RequestsBrowser } from "@/widgets/requests-browser";
+import {
+  acceptOwnerRequestAction,
+  completeOwnerRequestAction,
+  rejectOwnerRequestAction,
+} from "@/app/dashboard/requests/actions";
 
 export default async function RequestsPage() {
-  const [requests, properties] = await Promise.all([getOwnerRequests(), getOwnerProperties()]);
-  const property = properties[0] ? await getOwnerPropertyDetail(properties[0].id) : null;
+  const requests = await getOwnerRequests();
 
-  if (!requests[0] || !property) {
+  if (!requests[0]) {
     return (
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
@@ -21,7 +24,12 @@ export default async function RequestsPage() {
 
   return (
     <section className="br-dashboard-block br-card">
-      <RequestsBrowser requests={requests} rooms={property.rooms} />
+      <RequestsBrowser
+        requests={requests}
+        acceptAction={acceptOwnerRequestAction}
+        rejectAction={rejectOwnerRequestAction}
+        completeAction={completeOwnerRequestAction}
+      />
     </section>
   );
 }

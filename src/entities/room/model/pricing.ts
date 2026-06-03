@@ -15,6 +15,7 @@ type PricingRoom = {
   bedrooms: number;
   seasonalPrices?: OwnerSeasonalPrice[];
   busyRanges?: OwnerBusyRange[];
+  agentMarkupPercent?: number;
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -102,19 +103,23 @@ function getSeasonalPriceForDate(seasonalPrices: OwnerSeasonalPrice[] | undefine
 
 export function calculateRoomPricing(room: PricingRoom, checkIn: string, checkOut: string) {
   const nights = getNights(checkIn, checkOut);
+  const markupMultiplier = 1 + (room.agentMarkupPercent ?? 0) / 100;
   const nightlyPrices = Array.from({ length: nights }, (_, index) => {
     const date = toDateString(addDays(parseDate(checkIn) as Date, index));
     const seasonalPrice = getSeasonalPriceForDate(room.seasonalPrices, date);
+    const baseNightPrice = Number(seasonalPrice?.pricePerNight ?? room.pricePerNight);
+    const pricePerNight = Number((baseNightPrice * markupMultiplier).toFixed(2));
 
     return {
       date,
-      pricePerNight: Number(seasonalPrice?.pricePerNight ?? room.pricePerNight),
+      pricePerNight,
       source: seasonalPrice ? ("seasonal" as const) : ("base" as const),
       seasonalPriceId: seasonalPrice?.id,
     };
   });
   const totalPrice = nightlyPrices.reduce((sum, item) => sum + item.pricePerNight, 0);
-  const displayPricePerNight = nights > 0 ? Math.round(totalPrice / nights) : room.pricePerNight;
+  const displayPricePerNight =
+    nights > 0 ? Math.round(totalPrice / nights) : Number((room.pricePerNight * markupMultiplier).toFixed(2));
 
   return {
     nights,
@@ -132,7 +137,7 @@ export function buildPublicRoomQuote(room: PublicRoom, filters: PublicStayFilter
     ? calculateRoomPricing(room, filters.checkIn, filters.checkOut)
     : {
         nights: 0,
-        displayPricePerNight: room.pricePerNight,
+        displayPricePerNight: Number((room.pricePerNight * (1 + (room.agentMarkupPercent ?? 0) / 100)).toFixed(2)),
         totalPrice: undefined,
         nightlyPrices: [],
       };

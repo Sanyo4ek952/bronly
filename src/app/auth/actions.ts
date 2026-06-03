@@ -34,6 +34,13 @@ function isRegisterRole(value: string): value is RegisterRole {
 
 async function getAuthOrigin() {
   const headerStore = await headers();
+  const forwardedHost = headerStore.get("x-forwarded-host");
+  const forwardedProto = headerStore.get("x-forwarded-proto") ?? "https";
+
+  if (forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+
   return headerStore.get("origin") ?? getAppUrl() ?? "http://localhost:3000";
 }
 

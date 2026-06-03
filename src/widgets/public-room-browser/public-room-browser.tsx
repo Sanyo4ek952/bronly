@@ -9,6 +9,8 @@ type PublicRoomBrowserProps = {
   propertySlug: string;
   rooms: PublicRoom[];
   filters: PublicStayFilters;
+  requestHrefBuilder?: (roomId: string, filters: PublicStayFilters) => string;
+  resetHref?: string;
 };
 
 function formatRoomMeta(room: PublicRoom) {
@@ -27,7 +29,7 @@ function formatRoomPrice(room: PublicRoom, hasDates: boolean) {
   return `от ${formatMoney(room.displayPricePerNight ?? room.pricePerNight)} / ночь`;
 }
 
-function buildRequestHref(propertySlug: string, roomId: string, filters: PublicStayFilters) {
+function buildOwnerRequestHref(propertySlug: string, roomId: string, filters: PublicStayFilters) {
   const params = new URLSearchParams({ roomId });
 
   if (filters.hasDates) {
@@ -41,9 +43,18 @@ function buildRequestHref(propertySlug: string, roomId: string, filters: PublicS
   return `/p/${propertySlug}/request?${params.toString()}`;
 }
 
-export function PublicRoomBrowser({ propertySlug, rooms, filters }: PublicRoomBrowserProps) {
+export function PublicRoomBrowser({
+  propertySlug,
+  rooms,
+  filters,
+  requestHrefBuilder,
+  resetHref,
+}: PublicRoomBrowserProps) {
   const defaultRoom = rooms.find((room) => room.isAvailableForFilter) ?? rooms[0];
   const [selectedRoomId, setSelectedRoomId] = useState(defaultRoom?.id ?? "");
+  const resolveRequestHref =
+    requestHrefBuilder ??
+    ((roomId: string, currentFilters: PublicStayFilters) => buildOwnerRequestHref(propertySlug, roomId, currentFilters));
 
   const selectedRoom = useMemo(
     () => rooms.find((room) => room.id === selectedRoomId) ?? defaultRoom,
@@ -81,7 +92,7 @@ export function PublicRoomBrowser({ propertySlug, rooms, filters }: PublicRoomBr
           <Button type="submit" fullWidth>
             Уточнить доступность
           </Button>
-          <ButtonLink href={`/p/${propertySlug}`} variant="secondary" fullWidth>
+          <ButtonLink href={resetHref ?? `/p/${propertySlug}`} variant="secondary" fullWidth>
             Сбросить
           </ButtonLink>
         </div>
@@ -97,20 +108,20 @@ export function PublicRoomBrowser({ propertySlug, rooms, filters }: PublicRoomBr
         title={suitableRooms.length ? "Подходящие номера" : "Номера"}
         emptyText="По выбранным параметрам подходящих номеров нет. Ниже показаны остальные варианты."
         filters={filters}
-        propertySlug={propertySlug}
         rooms={suitableRooms.length ? suitableRooms : []}
         selectedRoomId={selectedRoomId}
         onSelect={setSelectedRoomId}
+        requestHrefBuilder={resolveRequestHref}
       />
 
       {unsuitableRooms.length ? (
         <RoomGrid
           title="Остальные варианты"
           filters={filters}
-          propertySlug={propertySlug}
           rooms={unsuitableRooms}
           selectedRoomId={selectedRoomId}
           onSelect={setSelectedRoomId}
+          requestHrefBuilder={resolveRequestHref}
           muted
         />
       ) : null}
@@ -138,7 +149,7 @@ export function PublicRoomBrowser({ propertySlug, rooms, filters }: PublicRoomBr
             <p className="br-public-room-warning">{selectedRoom.unavailableReason}</p>
           ) : null}
           <div className="br-public-selected-room__actions">
-            <ButtonLink href={buildRequestHref(propertySlug, selectedRoom.id, filters)}>
+            <ButtonLink href={resolveRequestHref(selectedRoom.id, filters)}>
               Оставить заявку на этот номер
             </ButtonLink>
           </div>
@@ -152,19 +163,19 @@ function RoomGrid({
   title,
   emptyText,
   filters,
-  propertySlug,
   rooms,
   selectedRoomId,
   onSelect,
+  requestHrefBuilder,
   muted = false,
 }: {
   title: string;
   emptyText?: string;
   filters: PublicStayFilters;
-  propertySlug: string;
   rooms: PublicRoom[];
   selectedRoomId: string;
   onSelect: (roomId: string) => void;
+  requestHrefBuilder: (roomId: string, filters: PublicStayFilters) => string;
   muted?: boolean;
 }) {
   return (
@@ -194,7 +205,7 @@ function RoomGrid({
                 </Button>
               </div>
               {room.isAvailableForFilter ? (
-                <ButtonLink href={buildRequestHref(propertySlug, room.id, filters)} variant="secondary" fullWidth>
+                <ButtonLink href={requestHrefBuilder(room.id, filters)} variant="secondary" fullWidth>
                   Оставить заявку
                 </ButtonLink>
               ) : null}

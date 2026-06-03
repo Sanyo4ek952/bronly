@@ -10,26 +10,30 @@ export async function getAuthUserEmailStatus(email: string): Promise<AuthUserEma
     return "not_found";
   }
 
-  const response = await fetch(`${url}/auth/v1/admin/users?email=${encodeURIComponent(email.trim())}`, {
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
-    },
-    cache: "no-store",
-  });
+  try {
+    const response = await fetch(`${url}/auth/v1/admin/users?email=${encodeURIComponent(email.trim())}`, {
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+      cache: "no-store",
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return "not_found";
+    }
+
+    const data = (await response.json()) as {
+      users?: Array<{ email_confirmed_at?: string | null }>;
+    };
+    const user = data.users?.[0];
+
+    if (!user) {
+      return "not_found";
+    }
+
+    return user.email_confirmed_at ? "confirmed" : "pending";
+  } catch {
     return "not_found";
   }
-
-  const data = (await response.json()) as {
-    users?: Array<{ email_confirmed_at?: string | null }>;
-  };
-  const user = data.users?.[0];
-
-  if (!user) {
-    return "not_found";
-  }
-
-  return user.email_confirmed_at ? "confirmed" : "pending";
 }

@@ -10,6 +10,7 @@ export type PublicRoom = {
   amenities: string[];
   seasonalPrices?: OwnerSeasonalPrice[];
   busyRanges?: OwnerBusyRange[];
+  agentMarkupPercent?: number;
   isAvailableForFilter?: boolean;
   unavailableReason?: string;
   nights?: number;

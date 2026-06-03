@@ -169,7 +169,7 @@ values
     2,
     date '2026-06-02',
     date '2026-06-07',
-    'owner_confirmed',
+    'accepted_by_owner',
     6200,
     31000,
     '{"nights": 5, "room_title": "Семейный номер"}'::jsonb

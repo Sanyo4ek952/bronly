@@ -1,3 +1,6 @@
+import type { PublicRoom } from "@/entities/room";
+import type { PublicStayFilters } from "@/entities/room";
+
 export type AgentDashboardSummary = {
   activeCollaborations: number;
   incomingRequests: number;
@@ -11,4 +14,30 @@ export type AgentCollaborationItem = {
   ownerName: string;
   status: string;
   terms: string;
+};
+
+export type PublicAgentPropertySection = {
+  property: {
+    id: string;
+    slug: string;
+    title: string;
+    shortTitle: string;
+    city: string;
+    address: string;
+  };
+  rooms: PublicRoom[];
+};
+
+export type PublicAgentPageData = {
+  agent: {
+    id: string;
+    slug: string;
+    displayName: string;
+    phone: string;
+    telegram: string;
+  } | null;
+  properties: PublicAgentPropertySection[];
+  filters: PublicStayFilters;
+  publicUnavailableReason: "subscription_expired" | null;
+  publicWarningText: string | null;
 };

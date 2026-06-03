@@ -1,7 +1,6 @@
 import { cache } from "react";
 
-import type { PublicPropertyPageData } from "@/entities/property/model/types";
-import { formatRequestStatus, guestRequests } from "@/entities/request/model/mock";
+import { guestRequests } from "@/entities/request/model/mock";
 import type { AgentRequestItem, OwnerRequestItem } from "@/entities/request/model/types";
 import {
   calculateRoomPricing,
@@ -12,13 +11,16 @@ import { getRoomById } from "@/entities/room/model/mock";
 import { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
-import { createSupabaseServerClient } from "@/shared/api/supabase/server-auth";
+import { createSupabaseServerClient, getCurrentAuthProfile } from "@/shared/api/supabase/server-auth";
 import type {
   SupabaseGuestRequestRow,
   SupabaseRoomBusyRangeRow,
   SupabaseRoomSeasonalPriceRow,
 } from "@/shared/api/supabase/types";
 import { formatDateLabel, formatDateTimeLabel } from "@/shared/lib/date";
+
+type RequestStatus = OwnerRequestItem["status"];
+type RequestSource = OwnerRequestItem["source"];
 
 function formatFullGuestLabel(adultsCount: number, childrenCount: number) {
   const parts = [`${adultsCount} взр.`];
@@ -30,15 +32,83 @@ function formatFullGuestLabel(adultsCount: number, childrenCount: number) {
   return parts.join(", ");
 }
 
-
-function mapRequestStatus(status: SupabaseGuestRequestRow["status"]): OwnerRequestItem["status"] {
+function normalizeStatus(status: SupabaseGuestRequestRow["status"] | "owner_confirmed" | "declined" | "in_progress"): RequestStatus {
   switch (status) {
     case "owner_confirmed":
-    case "completed":
-      return "confirmed";
+      return "accepted_by_owner";
+    case "declined":
+      return "rejected";
+    case "in_progress":
+      return "transferred_to_owner";
     default:
       return status;
   }
+}
+
+function normalizeSource(source: SupabaseGuestRequestRow["source"]): RequestSource {
+  return source;
+}
+
+function canOwnerReject(status: RequestStatus) {
+  return status === "new" || status === "transferred_to_owner" || status === "accepted_by_owner";
+}
+
+function canOwnerComplete(status: RequestStatus) {
+  return status === "accepted_by_owner";
+}
+
+async function getRoomAndPropertyMeta(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  requestRows: SupabaseGuestRequestRow[],
+) {
+  const roomIds = [...new Set(requestRows.map((request) => request.room_id))];
+  const propertyIds = [...new Set(requestRows.map((request) => request.property_id))];
+
+  const [{ data: roomRows }, { data: propertyRows }] = await Promise.all([
+    roomIds.length
+      ? supabase.from("rooms").select("id, title, price_per_night").in("id", roomIds)
+      : Promise.resolve({ data: [] }),
+    propertyIds.length
+      ? supabase.from("properties").select("id, title").in("id", propertyIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const roomMap = new Map(
+    (roomRows ?? []).map((room) => [
+      room.id as string,
+      {
+        title: room.title as string,
+        pricePerNight: Number(room.price_per_night ?? 0),
+      },
+    ]),
+  );
+  const propertyMap = new Map((propertyRows ?? []).map((property) => [property.id as string, property.title as string]));
+
+  return { roomMap, propertyMap };
+}
+
+function mapOwnerRequestItem(
+  request: SupabaseGuestRequestRow,
+  roomMeta: { title: string; pricePerNight: number } | undefined,
+  propertyTitle: string | undefined,
+): OwnerRequestItem {
+  return {
+    id: request.id,
+    guestName: request.guest_name,
+    phone: request.guest_phone,
+    createdAt: formatDateTimeLabel(request.created_at),
+    roomId: request.room_id,
+    propertyTitle: propertyTitle ?? "Объект",
+    roomTitle: roomMeta?.title ?? "Номер",
+    source: normalizeSource(request.source),
+    status: normalizeStatus(request.status),
+    checkIn: formatDateLabel(request.check_in),
+    checkOut: formatDateLabel(request.check_out),
+    guestsLabel: formatFullGuestLabel(request.adults_count, request.children_count),
+    comment: request.guest_comment ?? "",
+    totalPrice: Number(request.total_price ?? request.base_price_per_night ?? roomMeta?.pricePerNight ?? 0),
+    pricePerNight: roomMeta?.pricePerNight ?? Number(request.base_price_per_night ?? 0),
+  };
 }
 
 export const getOwnerRequests = cache(async (): Promise<OwnerRequestItem[]> => {
@@ -53,19 +123,14 @@ export const getOwnerRequests = cache(async (): Promise<OwnerRequestItem[]> => {
       .select("*")
       .order("created_at", { ascending: false });
 
-    return ((requestRows ?? []) as SupabaseGuestRequestRow[]).map((request) => ({
-      id: request.id,
-      guestName: request.guest_name,
-      phone: request.guest_phone,
-      createdAt: formatDateTimeLabel(request.created_at),
-      roomId: request.room_id,
-      status: mapRequestStatus(request.status),
-      checkIn: formatDateLabel(request.check_in),
-      checkOut: formatDateLabel(request.check_out),
-      guestsLabel: formatFullGuestLabel(request.adults_count, request.children_count),
-      comment: request.guest_comment ?? "",
-      totalPrice: Number(request.total_price ?? request.base_price_per_night ?? 0),
-    }));
+    const safeRows = ((requestRows ?? []) as SupabaseGuestRequestRow[]).filter(
+      (request) => !(request.source === "agent" && normalizeStatus(request.status) === "new"),
+    );
+    const { roomMap, propertyMap } = await getRoomAndPropertyMeta(supabase, safeRows);
+
+    return safeRows.map((request) =>
+      mapOwnerRequestItem(request, roomMap.get(request.room_id), propertyMap.get(request.property_id)),
+    );
   } catch {
     return guestRequests;
   }
@@ -80,11 +145,16 @@ export async function createGuestRequest(input: {
   checkOut: string;
   adultsCount: number;
   guestComment: string;
+  source?: RequestSource;
+  agentProfileId?: string | null;
+  collectionId?: string | null;
+  agentMarkupPercent?: number | null;
 }) {
   if (!canUseSupabase()) {
     return { ok: true, mode: "mock" as const };
   }
 
+  const source = input.source ?? "owner";
   const filters = normalizePublicStayFilters({
     checkIn: input.checkIn,
     checkOut: input.checkOut,
@@ -164,7 +234,8 @@ export async function createGuestRequest(input: {
   }
 
   const basePricePerNight = Number(roomRow.price_per_night);
-  const pricing = calculateRoomPricing(
+  const markupPercent = Math.max(input.agentMarkupPercent ?? 0, 0);
+  const ownerPricing = calculateRoomPricing(
     {
       id: roomRow.id,
       pricePerNight: basePricePerNight,
@@ -177,11 +248,18 @@ export async function createGuestRequest(input: {
     filters.checkOut,
   );
 
+  const totalPrice =
+    source === "agent"
+      ? ownerPricing.nightlyPrices.reduce((sum, item) => sum + item.pricePerNight * (1 + markupPercent / 100), 0)
+      : ownerPricing.totalPrice;
+
   const { error } = await supabase.from("guest_requests").insert({
-    source: "owner",
+    source,
     property_id: propertyRow.id,
     room_id: roomRow.id,
     owner_id: propertyRow.owner_id,
+    agent_id: source === "agent" ? input.agentProfileId ?? null : null,
+    collection_id: input.collectionId ?? null,
     guest_name: input.guestName,
     guest_phone: input.guestPhone,
     guest_comment: input.guestComment,
@@ -191,18 +269,30 @@ export async function createGuestRequest(input: {
     check_out: filters.checkOut,
     status: "new",
     base_price_per_night: basePricePerNight,
-    total_price: pricing.totalPrice,
+    agent_markup_percent: source === "agent" ? markupPercent : null,
+    total_price: totalPrice,
     pricing_snapshot: {
-      source: "owner",
+      source,
       room_id: roomRow.id,
+      property_id: propertyRow.id,
       check_in: filters.checkIn,
       check_out: filters.checkOut,
       adults_count: filters.adults,
-      nights: pricing.nights,
+      nights: ownerPricing.nights,
       base_price_per_night: basePricePerNight,
-      display_price_per_night: pricing.displayPricePerNight,
-      total_price: pricing.totalPrice,
-      nightly_prices: pricing.nightlyPrices,
+      display_price_per_night:
+        source === "agent"
+          ? Math.round(totalPrice / Math.max(ownerPricing.nights, 1))
+          : ownerPricing.displayPricePerNight,
+      total_price: totalPrice,
+      nightly_prices:
+        source === "agent"
+          ? ownerPricing.nightlyPrices.map((item) => ({
+              ...item,
+              pricePerNight: Number((item.pricePerNight * (1 + markupPercent / 100)).toFixed(2)),
+            }))
+          : ownerPricing.nightlyPrices,
+      agent_markup_percent: source === "agent" ? markupPercent : null,
     },
   });
 
@@ -217,8 +307,103 @@ export function getRequestRoom(roomId: string) {
   return getRoomById(roomId);
 }
 
-export function getFallbackRequestStatus(status: OwnerRequestItem["status"]) {
-  return formatRequestStatus(status);
+export async function transitionOwnerRequestStatus(input: {
+  requestId: string;
+  nextStatus: Extract<RequestStatus, "accepted_by_owner" | "rejected" | "completed">;
+}) {
+  if (!canUseSupabase()) {
+    return { ok: true as const };
+  }
+
+  const profile = await getCurrentAuthProfile();
+
+  if (!profile) {
+    return { ok: false as const, reason: "unauthorized" as const };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.from("guest_requests").select("*").eq("id", input.requestId).maybeSingle();
+  const request = data as SupabaseGuestRequestRow | null;
+
+  if (!request || request.owner_id !== profile.id) {
+    return { ok: false as const, reason: "not_found" as const };
+  }
+
+  const currentStatus = normalizeStatus(request.status);
+  const isTransferredAgentRequest = request.source === "agent" && currentStatus === "transferred_to_owner";
+  const isOwnerDirectRequest = request.source === "owner" && currentStatus === "new";
+  const allowed =
+    (input.nextStatus === "accepted_by_owner" && (isOwnerDirectRequest || isTransferredAgentRequest)) ||
+    (input.nextStatus === "rejected" &&
+      ((request.source === "owner" && canOwnerReject(currentStatus)) ||
+        (request.source === "agent" && (currentStatus === "transferred_to_owner" || currentStatus === "accepted_by_owner")))) ||
+    (input.nextStatus === "completed" && canOwnerComplete(currentStatus));
+
+  if (!allowed) {
+    return { ok: false as const, reason: "invalid_transition" as const };
+  }
+
+  const payload: Partial<SupabaseGuestRequestRow> & Record<string, string | null> = {
+    status: input.nextStatus,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.nextStatus === "accepted_by_owner") {
+    payload.owner_confirmed_at = new Date().toISOString();
+  }
+
+  if (input.nextStatus === "completed") {
+    payload.completed_at = new Date().toISOString();
+  }
+
+  const { error } = await supabase.from("guest_requests").update(payload).eq("id", input.requestId);
+
+  if (error) {
+    return { ok: false as const, reason: "save_failed" as const };
+  }
+
+  return { ok: true as const };
+}
+
+export async function transferAgentRequestToOwner(input: { requestId: string }) {
+  if (!canUseSupabase()) {
+    return { ok: true as const };
+  }
+
+  const profile = await getCurrentAuthProfile();
+
+  if (!profile) {
+    return { ok: false as const, reason: "unauthorized" as const };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.from("guest_requests").select("*").eq("id", input.requestId).maybeSingle();
+  const request = data as SupabaseGuestRequestRow | null;
+
+  if (!request || request.agent_id !== profile.id || request.source !== "agent") {
+    return { ok: false as const, reason: "not_found" as const };
+  }
+
+  const currentStatus = normalizeStatus(request.status);
+
+  if (currentStatus !== "new") {
+    return { ok: false as const, reason: "invalid_transition" as const };
+  }
+
+  const { error } = await supabase
+    .from("guest_requests")
+    .update({
+      status: "transferred_to_owner",
+      transferred_to_owner_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.requestId);
+
+  if (error) {
+    return { ok: false as const, reason: "save_failed" as const };
+  }
+
+  return { ok: true as const };
 }
 
 export async function getAgentRequests(profile: { id: string }): Promise<AgentRequestItem[]> {
@@ -228,32 +413,44 @@ export async function getAgentRequests(profile: { id: string }): Promise<AgentRe
 
   try {
     const supabase = createSupabaseAdminClient();
-    const { data } = await supabase
+    const { data: requestRows } = await supabase
       .from("guest_requests")
-      .select("id, guest_name, status, created_at, properties(title)")
+      .select("*")
       .eq("agent_id", profile.id)
+      .eq("source", "agent")
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(20);
 
-    return (data ?? []).map((item) => ({
-      id: item.id as string,
-      propertyTitle: ((item.properties as { title?: string } | null)?.title ?? "Объект"),
-      guestName: item.guest_name as string,
-      createdAt: formatDateTimeLabel(item.created_at as string),
-      status:
-        item.status === "completed"
-          ? "Завершена"
-          : item.status === "owner_confirmed"
-            ? "Принята владельцем"
-            : item.status === "in_progress"
-              ? "В работе"
-              : item.status === "declined"
-                ? "Отклонена"
-                : "Новая",
-    }));
+    const safeRows = (requestRows ?? []) as SupabaseGuestRequestRow[];
+    const roomIds = [...new Set(safeRows.map((request) => request.room_id))];
+    const propertyIds = [...new Set(safeRows.map((request) => request.property_id))];
+    const [{ data: roomRows }, { data: propertyRows }] = await Promise.all([
+      roomIds.length
+        ? supabase.from("rooms").select("id, title").in("id", roomIds)
+        : Promise.resolve({ data: [] }),
+      propertyIds.length
+        ? supabase.from("properties").select("id, title").in("id", propertyIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const roomMap = new Map((roomRows ?? []).map((room) => [room.id as string, room.title as string]));
+    const propertyMap = new Map((propertyRows ?? []).map((property) => [property.id as string, property.title as string]));
+
+    return safeRows.map((request) => {
+      const status = normalizeStatus(request.status);
+
+      return {
+        id: request.id,
+        propertyTitle: propertyMap.get(request.property_id) ?? "Объект",
+        roomTitle: roomMap.get(request.room_id) ?? "Номер",
+        guestName: request.guest_name,
+        createdAt: formatDateTimeLabel(request.created_at),
+        source: "agent",
+        status,
+        canTransferToOwner: status === "new",
+      };
+    });
   } catch {
     return [];
   }
 }
-
-export type { PublicPropertyPageData };

@@ -8,6 +8,7 @@ type GuestRequestFormProps = {
   defaultRoomId: string;
   filters: PublicStayFilters;
   action: (formData: FormData) => void | Promise<void>;
+  hiddenFields?: Array<{ name: string; value: string }>;
 };
 
 export function GuestRequestForm({
@@ -16,12 +17,16 @@ export function GuestRequestForm({
   defaultRoomId,
   filters,
   action,
+  hiddenFields = [],
 }: GuestRequestFormProps) {
   const activeRooms = rooms.filter((room) => room.status === "active");
 
   return (
     <form className="br-request-form" action={action}>
       <input type="hidden" name="propertySlug" value={propertySlug} />
+      {hiddenFields.map((field) => (
+        <input key={field.name} type="hidden" name={field.name} value={field.value} />
+      ))}
 
       <Input id="guest-name" name="guestName" label="Ваше имя" autoComplete="name" required />
       <Input id="guest-phone" name="guestPhone" label="Телефон" autoComplete="tel" required />

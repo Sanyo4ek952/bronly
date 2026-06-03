@@ -55,11 +55,12 @@ export const getOwnerDashboardSummary = cache(async (): Promise<OwnerDashboardSu
         "property_id",
         (propertyRows ?? []).map((row) => row.id),
       ),
-      supabase
-        .from("guest_requests")
-        .select("*", { count: "exact", head: true })
-        .eq("owner_id", profile.id)
-        .eq("status", "new"),
+      supabase
+        .from("guest_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("owner_id", profile.id)
+        .neq("source", "agent")
+        .eq("status", "new"),
     ]);
 
     const safeRoomRows = (roomRows ?? []) as Array<{ is_active: boolean }>;
