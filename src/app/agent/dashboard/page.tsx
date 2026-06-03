@@ -1,0 +1,88 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import { getAgentDashboardSummary } from "@/entities/collaboration";
+import { getCurrentAuthProfile } from "@/shared/api/supabase";
+
+export default async function AgentDashboardPage() {
+  const profile = await getCurrentAuthProfile();
+
+  if (!profile) {
+    redirect("/login");
+  }
+
+  const summary = await getAgentDashboardSummary(profile);
+
+  return (
+    <>
+      <section className="br-summary-grid">
+        <article className="br-summary-card br-card">
+          <div className="br-summary-card__header">
+            <strong>Агентская витрина</strong>
+            <span className="br-summary-card__badge">Агент</span>
+          </div>
+          <div className="br-summary-card__rows">
+            <div className="br-summary-card__row">
+              <span>Публичная ссылка</span>
+              <strong>{summary.publicLinkLabel}</strong>
+            </div>
+            <div className="br-summary-card__row">
+              <span>Активные связи</span>
+              <strong>{summary.activeCollaborations}</strong>
+            </div>
+            <div className="br-summary-card__row">
+              <span>Новые заявки</span>
+              <strong>{summary.incomingRequests}</strong>
+            </div>
+          </div>
+          <Link href="/agent/dashboard/settings" className="br-button br-button--primary br-button--full">
+            Заполнить профиль
+          </Link>
+        </article>
+        <article className="br-summary-card br-card">
+          <div className="br-summary-card__header">
+            <strong>Сделки</strong>
+          </div>
+          <div className="br-summary-card__rows">
+            <div className="br-summary-card__row">
+              <span>Завершенные</span>
+              <strong>{summary.completedDeals}</strong>
+            </div>
+            <div className="br-summary-card__row">
+              <span>Статус</span>
+              <strong>Вручную через владельца</strong>
+            </div>
+          </div>
+          <Link href="/agent/dashboard/deals" className="br-button br-button--secondary br-button--full">
+            Открыть сделки
+          </Link>
+        </article>
+      </section>
+
+      <section className="br-dashboard-block br-card">
+        <div className="br-dashboard-block__header">
+          <div>
+            <h2>Ближайшие шаги агента</h2>
+            <p>Рабочая схема MVP без лишнего CRM-слоя.</p>
+          </div>
+        </div>
+
+        <div className="br-onboarding-grid">
+          {[
+            "Заполните контакты, которые увидит гость по агентской ссылке.",
+            "Согласуйте сотрудничество с владельцами и дождитесь активных связей.",
+            "Принимайте заявки и вручную передавайте владельцу.",
+          ].map((step, index) => (
+            <article key={step} className="br-onboarding-card br-onboarding-card--current">
+              <div className="br-onboarding-card__top">
+                <span className="br-onboarding-card__index">{index + 1}</span>
+                <span className="br-onboarding-card__status">Следующий шаг</span>
+              </div>
+              <strong>{step}</strong>
+            </article>
+          ))}
+        </div>
+      </section>
+    </>
+  );
+}
