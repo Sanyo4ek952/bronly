@@ -11,6 +11,8 @@ type PublicRoomBrowserProps = {
   filters: PublicStayFilters;
   requestHrefBuilder?: (roomId: string, filters: PublicStayFilters) => string;
   resetHref?: string;
+  showFilter?: boolean;
+  showSelectedRoomSummary?: boolean;
 };
 
 function formatRoomMeta(room: PublicRoom) {
@@ -49,6 +51,8 @@ export function PublicRoomBrowser({
   filters,
   requestHrefBuilder,
   resetHref,
+  showFilter = true,
+  showSelectedRoomSummary = true,
 }: PublicRoomBrowserProps) {
   const defaultRoom = rooms.find((room) => room.isAvailableForFilter) ?? rooms[0];
   const [selectedRoomId, setSelectedRoomId] = useState(defaultRoom?.id ?? "");
@@ -65,38 +69,40 @@ export function PublicRoomBrowser({
 
   return (
     <>
-      <form className="br-public-filter br-card" method="get">
-        <Input id="public-check-in" name="checkIn" type="date" label="Заезд" defaultValue={filters.checkIn} />
-        <Input id="public-check-out" name="checkOut" type="date" label="Выезд" defaultValue={filters.checkOut} />
-        <Select
-          id="public-adults"
-          name="adults"
-          label="Гости"
-          defaultValue={String(filters.adults)}
-          options={Array.from({ length: 8 }, (_, index) => {
-            const value = String(index + 1);
-            return { value, label: value };
-          })}
-        />
-        <Select
-          id="public-rooms"
-          name="rooms"
-          label="Спальни"
-          defaultValue={String(filters.rooms)}
-          options={Array.from({ length: 5 }, (_, index) => {
-            const value = String(index + 1);
-            return { value, label: value };
-          })}
-        />
-        <div className="br-public-filter__actions">
-          <Button type="submit" fullWidth>
-            Уточнить доступность
-          </Button>
-          <ButtonLink href={resetHref ?? `/p/${propertySlug}`} variant="secondary" fullWidth>
-            Сбросить
-          </ButtonLink>
-        </div>
-      </form>
+      {showFilter ? (
+        <form className="br-public-filter br-card" method="get">
+          <Input id="public-check-in" name="checkIn" type="date" label="Заезд" defaultValue={filters.checkIn} />
+          <Input id="public-check-out" name="checkOut" type="date" label="Выезд" defaultValue={filters.checkOut} />
+          <Select
+            id="public-adults"
+            name="adults"
+            label="Гости"
+            defaultValue={String(filters.adults)}
+            options={Array.from({ length: 8 }, (_, index) => {
+              const value = String(index + 1);
+              return { value, label: value };
+            })}
+          />
+          <Select
+            id="public-rooms"
+            name="rooms"
+            label="Спальни"
+            defaultValue={String(filters.rooms)}
+            options={Array.from({ length: 5 }, (_, index) => {
+              const value = String(index + 1);
+              return { value, label: value };
+            })}
+          />
+          <div className="br-public-filter__actions">
+            <Button type="submit" fullWidth>
+              Уточнить доступность
+            </Button>
+            <ButtonLink href={resetHref ?? `/p/${propertySlug}`} variant="secondary" fullWidth>
+              Сбросить
+            </ButtonLink>
+          </div>
+        </form>
+      ) : null}
 
       {filters.hasDates ? (
         <div className="br-inline-notice" style={{ marginTop: 18 }}>
@@ -126,7 +132,7 @@ export function PublicRoomBrowser({
         />
       ) : null}
 
-      {selectedRoom ? (
+      {selectedRoom && showSelectedRoomSummary ? (
         <div className="br-public-selected-room">
           <div className="br-section-heading">
             <h2>Выбранный номер</h2>

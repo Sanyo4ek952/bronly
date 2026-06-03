@@ -24,7 +24,7 @@ export type AgentRequestItem = {
   roomTitle: string;
   guestName: string;
   createdAt: string;
-  source: "agent";
+  source: "agent" | "collection";
   status: "new" | "accepted_by_owner" | "rejected" | "transferred_to_owner" | "completed";
   canTransferToOwner: boolean;
 };

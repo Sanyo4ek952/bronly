@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { getUnreadNotificationCount } from "@/entities/notification";
 import { getCurrentAuthProfile, getPrimaryRole } from "@/shared/api/supabase";
 import { OwnerShell } from "@/widgets/owner-shell";
 
@@ -18,10 +19,18 @@ export default async function AgentDashboardLayout({
     redirect("/dashboard");
   }
 
+  const unreadNotificationsCount = await getUnreadNotificationCount();
+
   return (
     <main className="br-page br-page--dashboard">
       <div className="br-container br-dashboard-layout">
-        <OwnerShell userName={profile.displayName} roleLabel="Агент" roleKind="agent">
+        <OwnerShell
+          userName={profile.displayName}
+          roleLabel="Агент"
+          roleKind="agent"
+          unreadNotificationsCount={unreadNotificationsCount}
+          notificationsHref="/agent/dashboard/notifications"
+        >
           {children}
         </OwnerShell>
       </div>

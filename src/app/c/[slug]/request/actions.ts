@@ -1,0 +1,79 @@
+"use server";
+
+import { redirect } from "next/navigation";
+
+import { getCollectionRequestContext } from "@/entities/collection";
+import { createGuestRequest } from "@/entities/request";
+
+function getString(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function buildRequestPath(collectionSlug: string, state: Record<string, string>) {
+  const params = new URLSearchParams(state);
+  const query = params.toString();
+  return `/c/${collectionSlug}/request${query ? `?${query}` : ""}`;
+}
+
+export async function submitCollectionGuestRequestAction(formData: FormData) {
+  const guestName = getString(formData, "guestName");
+  const guestPhone = getString(formData, "guestPhone");
+  const checkIn = getString(formData, "checkIn");
+  const checkOut = getString(formData, "checkOut");
+  const guestComment = getString(formData, "guestComment");
+  const roomId = getString(formData, "roomId");
+  const propertySlug = getString(formData, "propertySlug");
+  const collectionSlug = getString(formData, "collectionSlug");
+  const adultsCount = Number.parseInt(getString(formData, "adultsCount"), 10) || 1;
+  const baseState = {
+    propertySlug,
+    roomId,
+    checkIn,
+    checkOut,
+    adults: String(adultsCount),
+  };
+
+  if (!guestName || !guestPhone || !checkIn || !checkOut || !roomId || !propertySlug || !collectionSlug) {
+    redirect(buildRequestPath(collectionSlug || "collection", { ...baseState, error: "validation" }));
+  }
+
+  const requestContext = await getCollectionRequestContext(collectionSlug, propertySlug, roomId);
+
+  if (!requestContext) {
+    redirect(buildRequestPath(collectionSlug, { ...baseState, error: "room" }));
+  }
+
+  const result = await createGuestRequest({
+    propertySlug,
+    roomId,
+    guestName,
+    guestPhone,
+    checkIn,
+    checkOut,
+    adultsCount,
+    guestComment,
+    source: "collection",
+    collectionId: requestContext.collectionId,
+    agentProfileId: requestContext.agentProfileId,
+    agentMarkupPercent: requestContext.agentMarkupPercent,
+  });
+
+  if (!result.ok) {
+    const error =
+      result.reason === "room_not_found"
+        ? "room"
+        : result.reason === "availability_failed"
+          ? "availability"
+          : result.reason === "room_not_suitable" || result.reason === "validation_failed"
+            ? "validation"
+            : result.reason === "property_not_found"
+              ? "property"
+              : result.reason === "subscription_expired"
+                ? "subscription"
+                : "save";
+    redirect(buildRequestPath(collectionSlug, { ...baseState, error }));
+  }
+
+  redirect(`/c/${collectionSlug}/request/success`);
+}

@@ -1,11 +1,29 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+
+import { RegisterServiceWorker } from "@/features/pwa/register-service-worker";
 
 import "./globals.css";
 
+const appDescription =
+  "Bronly — сервис персональных страниц для владельцев жилья с номерами, ценами, календарём занятости и заявками.";
+
 export const metadata: Metadata = {
   title: "Bronly",
-  description:
-    "Bronly — сервис персональных страниц для владельцев жилья с номерами, ценами, календарем занятости и заявками.",
+  description: appDescription,
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Bronly",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#079a91",
+  colorScheme: "light",
 };
 
 export default function RootLayout({
@@ -15,7 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <body>
+        <RegisterServiceWorker />
+        {children}
+      </body>
     </html>
   );
 }

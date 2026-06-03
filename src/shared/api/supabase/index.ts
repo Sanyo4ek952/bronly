@@ -20,8 +20,10 @@ export {
 export type { AuthProfile, AuthRole } from "@/shared/api/supabase/server-auth";
 export type {
   SupabaseAgentPropertyLinkRow,
+  SupabaseCollectionItemRow,
   SupabaseCollectionRow,
   SupabaseGuestRequestRow,
+  SupabaseNotificationRow,
   SupabaseProfileRow,
   SupabasePropertyFeatureRow,
   SupabasePropertyRow,

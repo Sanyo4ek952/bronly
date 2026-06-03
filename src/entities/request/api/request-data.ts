@@ -7,6 +7,7 @@ import {
   isRoomAvailableForDates,
   normalizePublicStayFilters,
 } from "@/entities/room";
+import { createInAppNotification } from "@/entities/notification";
 import { getRoomById } from "@/entities/room/model/mock";
 import { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
@@ -47,6 +48,10 @@ function normalizeStatus(status: SupabaseGuestRequestRow["status"] | "owner_conf
 
 function normalizeSource(source: SupabaseGuestRequestRow["source"]): RequestSource {
   return source;
+}
+
+function isAgentMediatedRequest(request: Pick<SupabaseGuestRequestRow, "agent_id" | "owner_id" | "source">) {
+  return Boolean(request.agent_id) && request.agent_id !== request.owner_id && (request.source === "agent" || request.source === "collection");
 }
 
 function canOwnerReject(status: RequestStatus) {
@@ -124,7 +129,7 @@ export const getOwnerRequests = cache(async (): Promise<OwnerRequestItem[]> => {
       .order("created_at", { ascending: false });
 
     const safeRows = ((requestRows ?? []) as SupabaseGuestRequestRow[]).filter(
-      (request) => !(request.source === "agent" && normalizeStatus(request.status) === "new"),
+      (request) => !(isAgentMediatedRequest(request) && normalizeStatus(request.status) === "new"),
     );
     const { roomMap, propertyMap } = await getRoomAndPropertyMeta(supabase, safeRows);
 
@@ -168,13 +173,14 @@ export async function createGuestRequest(input: {
   const supabase = createSupabaseAdminClient();
   const { data: propertyData } = await supabase
     .from("properties")
-    .select("id, owner_id, published, is_frozen")
+    .select("id, owner_id, title, published, is_frozen")
     .eq("slug", input.propertySlug)
     .maybeSingle();
 
   const propertyRow = propertyData as {
     id: string;
     owner_id: string;
+    title: string;
     published: boolean;
     is_frozen: boolean;
   } | null;
@@ -191,13 +197,14 @@ export async function createGuestRequest(input: {
 
   const { data: roomData } = await supabase
     .from("rooms")
-    .select("id, price_per_night, capacity, bedrooms, is_active")
+    .select("id, title, price_per_night, capacity, bedrooms, is_active")
     .eq("id", input.roomId)
     .eq("property_id", propertyRow.id)
     .maybeSingle();
 
   const roomRow = roomData as {
     id: string;
+    title: string;
     price_per_night: number;
     capacity: number;
     bedrooms: number;
@@ -248,17 +255,17 @@ export async function createGuestRequest(input: {
     filters.checkOut,
   );
 
-  const totalPrice =
-    source === "agent"
-      ? ownerPricing.nightlyPrices.reduce((sum, item) => sum + item.pricePerNight * (1 + markupPercent / 100), 0)
-      : ownerPricing.totalPrice;
+  const hasAgentPricing = source === "agent" || (source === "collection" && Boolean(input.agentProfileId));
+  const totalPrice = hasAgentPricing
+    ? ownerPricing.nightlyPrices.reduce((sum, item) => sum + item.pricePerNight * (1 + markupPercent / 100), 0)
+    : ownerPricing.totalPrice;
 
-  const { error } = await supabase.from("guest_requests").insert({
+  const { data: insertedRequest, error } = await supabase.from("guest_requests").insert({
     source,
     property_id: propertyRow.id,
     room_id: roomRow.id,
     owner_id: propertyRow.owner_id,
-    agent_id: source === "agent" ? input.agentProfileId ?? null : null,
+    agent_id: source === "agent" || source === "collection" ? input.agentProfileId ?? null : null,
     collection_id: input.collectionId ?? null,
     guest_name: input.guestName,
     guest_phone: input.guestPhone,
@@ -269,7 +276,7 @@ export async function createGuestRequest(input: {
     check_out: filters.checkOut,
     status: "new",
     base_price_per_night: basePricePerNight,
-    agent_markup_percent: source === "agent" ? markupPercent : null,
+    agent_markup_percent: hasAgentPricing ? markupPercent : null,
     total_price: totalPrice,
     pricing_snapshot: {
       source,
@@ -280,24 +287,39 @@ export async function createGuestRequest(input: {
       adults_count: filters.adults,
       nights: ownerPricing.nights,
       base_price_per_night: basePricePerNight,
-      display_price_per_night:
-        source === "agent"
-          ? Math.round(totalPrice / Math.max(ownerPricing.nights, 1))
-          : ownerPricing.displayPricePerNight,
+      display_price_per_night: hasAgentPricing
+        ? Math.round(totalPrice / Math.max(ownerPricing.nights, 1))
+        : ownerPricing.displayPricePerNight,
       total_price: totalPrice,
-      nightly_prices:
-        source === "agent"
-          ? ownerPricing.nightlyPrices.map((item) => ({
-              ...item,
-              pricePerNight: Number((item.pricePerNight * (1 + markupPercent / 100)).toFixed(2)),
-            }))
-          : ownerPricing.nightlyPrices,
-      agent_markup_percent: source === "agent" ? markupPercent : null,
+      nightly_prices: hasAgentPricing
+        ? ownerPricing.nightlyPrices.map((item) => ({
+            ...item,
+            pricePerNight: Number((item.pricePerNight * (1 + markupPercent / 100)).toFixed(2)),
+          }))
+        : ownerPricing.nightlyPrices,
+      agent_markup_percent: hasAgentPricing ? markupPercent : null,
     },
-  });
+  }).select("id").single();
 
   if (error) {
     return { ok: false, reason: "save_failed" as const };
+  }
+
+  const recipientId = hasAgentPricing ? input.agentProfileId ?? null : propertyRow.owner_id;
+  const linkPath = hasAgentPricing ? "/agent/dashboard/requests" : "/dashboard/requests";
+
+  if (recipientId) {
+    await createInAppNotification({
+      recipientId,
+      eventType: "new_request",
+      payload: {
+        requestId: insertedRequest?.id as string | undefined,
+        propertyId: propertyRow.id,
+        propertyTitle: propertyRow.title,
+        roomTitle: roomRow.title,
+        linkPath,
+      },
+    });
   }
 
   return { ok: true, mode: "supabase" as const };
@@ -330,13 +352,19 @@ export async function transitionOwnerRequestStatus(input: {
   }
 
   const currentStatus = normalizeStatus(request.status);
-  const isTransferredAgentRequest = request.source === "agent" && currentStatus === "transferred_to_owner";
-  const isOwnerDirectRequest = request.source === "owner" && currentStatus === "new";
+  const isTransferredAgentRequest =
+    (request.source === "agent" || (request.source === "collection" && isAgentMediatedRequest(request))) &&
+    currentStatus === "transferred_to_owner";
+  const isOwnerDirectRequest =
+    (request.source === "owner" || (request.source === "collection" && !isAgentMediatedRequest(request))) &&
+    currentStatus === "new";
   const allowed =
     (input.nextStatus === "accepted_by_owner" && (isOwnerDirectRequest || isTransferredAgentRequest)) ||
     (input.nextStatus === "rejected" &&
-      ((request.source === "owner" && canOwnerReject(currentStatus)) ||
-        (request.source === "agent" && (currentStatus === "transferred_to_owner" || currentStatus === "accepted_by_owner")))) ||
+      (((request.source === "owner" || (request.source === "collection" && !isAgentMediatedRequest(request))) &&
+        canOwnerReject(currentStatus)) ||
+        ((request.source === "agent" || (request.source === "collection" && isAgentMediatedRequest(request))) &&
+          (currentStatus === "transferred_to_owner" || currentStatus === "accepted_by_owner")))) ||
     (input.nextStatus === "completed" && canOwnerComplete(currentStatus));
 
   if (!allowed) {
@@ -380,7 +408,11 @@ export async function transferAgentRequestToOwner(input: { requestId: string }) 
   const { data } = await supabase.from("guest_requests").select("*").eq("id", input.requestId).maybeSingle();
   const request = data as SupabaseGuestRequestRow | null;
 
-  if (!request || request.agent_id !== profile.id || request.source !== "agent") {
+  if (
+    !request ||
+    request.agent_id !== profile.id ||
+    (request.source !== "agent" && request.source !== "collection")
+  ) {
     return { ok: false as const, reason: "not_found" as const };
   }
 
@@ -403,6 +435,24 @@ export async function transferAgentRequestToOwner(input: { requestId: string }) 
     return { ok: false as const, reason: "save_failed" as const };
   }
 
+  const admin = createSupabaseAdminClient();
+  const [{ data: propertyData }, { data: roomData }] = await Promise.all([
+    admin.from("properties").select("title").eq("id", request.property_id).maybeSingle(),
+    admin.from("rooms").select("title").eq("id", request.room_id).maybeSingle(),
+  ]);
+
+  await createInAppNotification({
+    recipientId: request.owner_id,
+    eventType: "request_transferred_to_owner",
+    payload: {
+      requestId: request.id,
+      propertyId: request.property_id,
+      propertyTitle: (propertyData?.title as string | null) ?? undefined,
+      roomTitle: (roomData?.title as string | null) ?? undefined,
+      linkPath: "/dashboard/requests",
+    },
+  });
+
   return { ok: true as const };
 }
 
@@ -417,11 +467,13 @@ export async function getAgentRequests(profile: { id: string }): Promise<AgentRe
       .from("guest_requests")
       .select("*")
       .eq("agent_id", profile.id)
-      .eq("source", "agent")
       .order("created_at", { ascending: false })
       .limit(20);
 
-    const safeRows = (requestRows ?? []) as SupabaseGuestRequestRow[];
+    const safeRows = ((requestRows ?? []) as SupabaseGuestRequestRow[]).filter(
+      (request): request is SupabaseGuestRequestRow & { source: "agent" | "collection" } =>
+        request.source === "agent" || request.source === "collection",
+    );
     const roomIds = [...new Set(safeRows.map((request) => request.room_id))];
     const propertyIds = [...new Set(safeRows.map((request) => request.property_id))];
     const [{ data: roomRows }, { data: propertyRows }] = await Promise.all([
@@ -445,9 +497,9 @@ export async function getAgentRequests(profile: { id: string }): Promise<AgentRe
         roomTitle: roomMap.get(request.room_id) ?? "Номер",
         guestName: request.guest_name,
         createdAt: formatDateTimeLabel(request.created_at),
-        source: "agent",
+        source: request.source,
         status,
-        canTransferToOwner: status === "new",
+        canTransferToOwner: status === "new" && request.owner_id !== profile.id,
       };
     });
   } catch {

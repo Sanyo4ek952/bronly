@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { getUnreadNotificationCount } from "@/entities/notification";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile, getPrimaryRole } from "@/shared/api/supabase";
 import { OwnerShell } from "@/widgets/owner-shell";
@@ -19,7 +20,10 @@ export default async function DashboardLayout({
     redirect("/agent/dashboard");
   }
 
-  const subscription = await getSubscriptionRuntimeState(profile.id, "owner");
+  const [subscription, unreadNotificationsCount] = await Promise.all([
+    getSubscriptionRuntimeState(profile.id, "owner"),
+    getUnreadNotificationCount(),
+  ]);
 
   const roleLabel = profile.roles.includes("agent") && !profile.roles.includes("owner")
     ? "Агент"
@@ -35,14 +39,20 @@ export default async function DashboardLayout({
     : subscription.showGraceWarning
       ? {
           title: "Подписку нужно продлить",
-          text: "Пробный период закончился. У вас есть 3 дня, чтобы оплатить подписку и сохранить доступ к публичным страницам и заявкам.",
+          text: "Пробный период закончился. У вас есть 3 дня, чтобы продлить подписку и сохранить доступ к публичным страницам и заявкам.",
         }
       : null;
 
   return (
     <main className="br-page br-page--dashboard">
       <div className="br-container br-dashboard-layout">
-        <OwnerShell userName={profile.displayName} roleLabel={roleLabel} notice={notice}>
+        <OwnerShell
+          userName={profile.displayName}
+          roleLabel={roleLabel}
+          unreadNotificationsCount={unreadNotificationsCount}
+          notificationsHref="/dashboard/notifications"
+          notice={notice}
+        >
           {children}
         </OwnerShell>
       </div>

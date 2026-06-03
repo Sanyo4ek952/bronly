@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { createInAppNotification } from "@/entities/notification";
 import { createSupabaseAdminClient, getCurrentAuthProfile, getPostLoginRedirect } from "@/shared/api/supabase";
 
 const ALLOWED_SUBSCRIPTION_STATUSES = new Set(["trial", "active", "grace", "expired", "manual"]);
@@ -65,6 +66,7 @@ export async function saveSubscriptionAction(formData: FormData) {
     .maybeSingle();
 
   const existingRow = existingData as {
+    status: "trial" | "active" | "grace" | "expired" | "manual";
     trial_ends_at: string | null;
     grace_ends_at: string | null;
     paid_until: string | null;
@@ -86,6 +88,30 @@ export async function saveSubscriptionAction(formData: FormData) {
 
   if (error) {
     redirect("/admin?error=subscription");
+  }
+
+  if (existingRow?.status !== status) {
+    await createInAppNotification({
+      recipientId: profileId,
+      eventType: "subscription_status_changed",
+      payload: {
+        subscriptionStatus: status as "trial" | "active" | "grace" | "expired" | "manual",
+        roleContext: roleContext as "owner" | "agent",
+        linkPath: roleContext === "agent" ? "/agent/dashboard" : "/dashboard",
+      },
+    });
+
+    if (status === "grace") {
+      await createInAppNotification({
+        recipientId: profileId,
+        eventType: "subscription_reminder",
+        payload: {
+          subscriptionStatus: "grace",
+          roleContext: roleContext as "owner" | "agent",
+          linkPath: roleContext === "agent" ? "/agent/dashboard" : "/dashboard",
+        },
+      });
+    }
   }
 
   revalidatePath("/admin");
@@ -112,6 +138,7 @@ export async function extendSubscriptionAction(formData: FormData) {
     .maybeSingle();
 
   const existingRow = existingData as {
+    status: "trial" | "active" | "grace" | "expired" | "manual";
     trial_ends_at: string | null;
     paid_until: string | null;
     plan_name: string;
@@ -138,6 +165,18 @@ export async function extendSubscriptionAction(formData: FormData) {
 
   if (error) {
     redirect("/admin?error=subscription");
+  }
+
+  if (existingRow?.status !== "active") {
+    await createInAppNotification({
+      recipientId: profileId,
+      eventType: "subscription_status_changed",
+      payload: {
+        subscriptionStatus: "active",
+        roleContext: roleContext as "owner" | "agent",
+        linkPath: roleContext === "agent" ? "/agent/dashboard" : "/dashboard",
+      },
+    });
   }
 
   revalidatePath("/admin");

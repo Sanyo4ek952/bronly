@@ -6,6 +6,7 @@ import type {
   AgentProposalItem,
   OwnerIncomingAgentProposalItem,
 } from "@/entities/collaboration/model/types";
+import { createInAppNotification } from "@/entities/notification";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
 import { getCurrentAuthProfile, type AuthProfile } from "@/shared/api/supabase/server-auth";
 import type { SupabaseAgentPropertyLinkRow } from "@/shared/api/supabase/types";
@@ -243,11 +244,11 @@ export async function submitAgentProposal(input: { propertyId: string; message: 
     const supabase = createSupabaseAdminClient();
     const { data: propertyData } = await supabase
       .from("properties")
-      .select("id, owner_id, allow_agent_inquiries")
+      .select("id, owner_id, title, allow_agent_inquiries")
       .eq("id", input.propertyId)
       .maybeSingle();
 
-    const property = propertyData as Pick<PropertyLookupRow, "id" | "owner_id" | "allow_agent_inquiries"> | null;
+    const property = propertyData as Pick<PropertyLookupRow, "id" | "owner_id" | "title" | "allow_agent_inquiries"> | null;
 
     if (!property || !property.allow_agent_inquiries || property.owner_id === profile.id) {
       return { ok: false as const, reason: "not_available" as const };
@@ -283,6 +284,16 @@ export async function submitAgentProposal(input: { propertyId: string; message: 
     if (error) {
       return { ok: false as const, reason: "save_failed" as const };
     }
+
+    await createInAppNotification({
+      recipientId: property.owner_id,
+      eventType: "agent_proposal_received",
+      payload: {
+        propertyId: property.id,
+        propertyTitle: property.title,
+        linkPath: "/dashboard/agent-proposals",
+      },
+    });
 
     return { ok: true as const };
   } catch {
@@ -339,6 +350,23 @@ export async function reviewAgentProposal(input: { proposalId: string; decision:
     if (error) {
       return { ok: false as const, reason: "save_failed" as const };
     }
+
+    const { data: propertyDetails } = await supabase
+      .from("properties")
+      .select("title")
+      .eq("id", proposal.property_id)
+      .maybeSingle();
+
+    await createInAppNotification({
+      recipientId: proposal.agent_id,
+      eventType: input.decision === "active" ? "agent_proposal_accepted" : "agent_proposal_rejected",
+      payload: {
+        proposalId: proposal.id,
+        propertyId: proposal.property_id,
+        propertyTitle: (propertyDetails?.title as string | null) ?? undefined,
+        linkPath: input.decision === "active" ? "/agent/dashboard/collaborations" : "/agent/dashboard/opportunities",
+      },
+    });
 
     return { ok: true as const };
   } catch {

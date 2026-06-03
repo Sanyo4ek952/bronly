@@ -130,13 +130,25 @@ export type SupabaseSubscriptionRow = {
 export type SupabaseCollectionRow = {
   id: string;
   creator_id: string;
-  role_context: "owner" | "agent";
+  creator_role: "owner" | "agent";
   slug: string;
   title: string;
-  note: string | null;
+  guest_label: string | null;
   is_archived: boolean;
+  views_count: number;
+  first_opened_at: string | null;
+  last_opened_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type SupabaseCollectionItemRow = {
+  id: string;
+  collection_id: string;
+  property_id: string | null;
+  room_id: string | null;
+  sort_order: number;
+  created_at: string;
 };
 
 export type SupabaseGuestRequestRow = {
@@ -165,4 +177,30 @@ export type SupabaseGuestRequestRow = {
   pricing_snapshot: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+};
+
+export type SupabaseNotificationRow = {
+  id: string;
+  recipient_id: string;
+  channel: string;
+  event_type:
+    | "new_request"
+    | "request_transferred_to_owner"
+    | "agent_proposal_received"
+    | "agent_proposal_accepted"
+    | "agent_proposal_rejected"
+    | "subscription_reminder"
+    | "subscription_status_changed";
+  payload: {
+    requestId?: string;
+    propertyId?: string;
+    propertyTitle?: string;
+    roomTitle?: string;
+    proposalId?: string;
+    subscriptionStatus?: "trial" | "active" | "grace" | "expired" | "manual";
+    roleContext?: "owner" | "agent";
+    linkPath?: string;
+  };
+  read_at: string | null;
+  created_at: string;
 };

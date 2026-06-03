@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { updateProfileAction } from "@/app/auth/actions";
+import { InstallAppCard } from "@/features/pwa/install-app";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 
 type SettingsPageProps = {
@@ -24,7 +25,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           </div>
         </div>
         {error ? <p className="br-card" style={{ marginBottom: 16 }}>Не удалось сохранить изменения.</p> : null}
-        {success === "saved" ? <p className="br-card" style={{ marginBottom: 16 }}>Профиль обновлен.</p> : null}
+        {success === "saved" ? <p className="br-card" style={{ marginBottom: 16 }}>Профиль обновлён.</p> : null}
         <form action={updateProfileAction}>
           <input type="hidden" name="role" value="owner" />
           <div className="br-settings-grid">
@@ -71,11 +72,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             </label>
           ))}
         </div>
-        <div className="br-pwa-card">
-          <strong>PWA и мобильный доступ</strong>
-          <p>Добавьте Bronly на главный экран телефона для быстрого доступа.</p>
-          <button className="br-button br-button--secondary br-button--full" type="button">Установить приложение</button>
-        </div>
+        <InstallAppCard />
       </aside>
     </section>
   );

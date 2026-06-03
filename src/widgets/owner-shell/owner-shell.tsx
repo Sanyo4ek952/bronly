@@ -8,7 +8,9 @@ import { BrandLogo } from "@/shared/ui";
 
 const navigationItems = [
   { href: "/dashboard", label: "Главная", icon: "⌂" },
+  { href: "/dashboard/notifications", label: "Уведомления", icon: "⎃" },
   { href: "/dashboard/properties", label: "Объекты", icon: "⌘" },
+  { href: "/dashboard/collections", label: "Коллекции", icon: "♦" },
   { href: "/dashboard/rooms", label: "Номера", icon: "◫" },
   { href: "/dashboard/calendar", label: "Календарь", icon: "◷" },
   { href: "/dashboard/agent-proposals", label: "Агенты", icon: "☲" },
@@ -18,6 +20,8 @@ const navigationItems = [
 
 const agentNavigationItems = [
   { href: "/agent/dashboard", label: "Главная", icon: "⌂" },
+  { href: "/agent/dashboard/notifications", label: "Уведомления", icon: "⎃" },
+  { href: "/agent/dashboard/collections", label: "Коллекции", icon: "♦" },
   { href: "/agent/dashboard/opportunities", label: "К сотрудничеству", icon: "☲" },
   { href: "/agent/dashboard/collaborations", label: "Связи", icon: "⌘" },
   { href: "/agent/dashboard/requests", label: "Заявки", icon: "✉" },
@@ -30,16 +34,27 @@ type OwnerShellProps = {
   userName: string;
   roleLabel: string;
   roleKind?: "owner" | "agent";
+  unreadNotificationsCount?: number;
+  notificationsHref?: string;
   notice?: {
     title: string;
     text: string;
   } | null;
 };
 
-export function OwnerShell({ children, userName, roleLabel, roleKind = "owner", notice = null }: OwnerShellProps) {
+export function OwnerShell({
+  children,
+  userName,
+  roleLabel,
+  roleKind = "owner",
+  unreadNotificationsCount = 0,
+  notificationsHref = roleKind === "agent" ? "/agent/dashboard/notifications" : "/dashboard/notifications",
+  notice = null,
+}: OwnerShellProps) {
   const pathname = usePathname();
   const userInitial = userName.charAt(0).toUpperCase() || "B";
   const items = roleKind === "agent" ? agentNavigationItems : navigationItems;
+  const badgeLabel = unreadNotificationsCount > 99 ? "99+" : String(unreadNotificationsCount);
 
   return (
     <div className="br-owner">
@@ -84,13 +99,14 @@ export function OwnerShell({ children, userName, roleLabel, roleKind = "owner", 
         <header className="br-owner-topbar br-card">
           <div>
             <h1>Добро пожаловать, {userName}</h1>
-            <p>Следите за объектами, календарём занятости и заявками в одном месте.</p>
+            <p>Следите за объектами, календарем занятости и заявками в одном месте.</p>
           </div>
           <div className="br-owner-topbar__actions">
             <span className="br-owner-topbar__chip">Bronly</span>
-            <button className="br-icon-button" type="button" aria-label="Уведомления">
-              ⌃
-            </button>
+            <Link className="br-icon-link" href={notificationsHref} aria-label="Уведомления">
+              <span aria-hidden="true">⎃</span>
+              {unreadNotificationsCount > 0 ? <span className="br-icon-link__badge">{badgeLabel}</span> : null}
+            </Link>
           </div>
         </header>
 

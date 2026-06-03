@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { updateProfileAction } from "@/app/auth/actions";
+import { InstallAppCard } from "@/features/pwa/install-app";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 
 type AgentSettingsPageProps = {
@@ -26,11 +27,11 @@ export default async function AgentSettingsPage({ searchParams }: AgentSettingsP
         <div className="br-dashboard-block__header">
           <div>
             <h2>Профиль агента</h2>
-            <p>Контакты, которые видит гость по агентской ссылке.</p>
+            <p>Контакты, которые гость видит по агентской ссылке.</p>
           </div>
         </div>
         {error ? <p className="br-card" style={{ marginBottom: 16 }}>Не удалось сохранить изменения.</p> : null}
-        {success === "saved" ? <p className="br-card" style={{ marginBottom: 16 }}>Профиль обновлен.</p> : null}
+        {success === "saved" ? <p className="br-card" style={{ marginBottom: 16 }}>Профиль обновлён.</p> : null}
         <form action={updateProfileAction}>
           <input type="hidden" name="role" value="agent" />
           <div className="br-settings-grid">
@@ -61,6 +62,16 @@ export default async function AgentSettingsPage({ searchParams }: AgentSettingsP
           </div>
         </form>
       </section>
+
+      <aside className="br-dashboard-block br-card">
+        <div className="br-dashboard-block__header">
+          <div>
+            <h2>Установка на главный экран</h2>
+            <p>Быстрый доступ к Bronly с телефона без App Store и Google Play.</p>
+          </div>
+        </div>
+        <InstallAppCard />
+      </aside>
     </section>
   );
 }
