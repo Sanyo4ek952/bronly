@@ -8,12 +8,42 @@ export type AgentDashboardSummary = {
   publicLinkLabel: string;
 };
 
+export type AgentLinkStatus = "pending" | "active" | "declined" | "revoked";
+
 export type AgentCollaborationItem = {
   id: string;
   propertyTitle: string;
   ownerName: string;
   status: string;
   terms: string;
+};
+
+export type AgentAvailablePropertyItem = {
+  propertyId: string;
+  propertyTitle: string;
+  shortTitle: string;
+  city: string;
+  address: string;
+  ownerName: string;
+  shortDescription: string;
+};
+
+export type AgentProposalItem = {
+  id: string;
+  propertyTitle: string;
+  ownerName: string;
+  message: string;
+  status: AgentLinkStatus;
+  statusLabel: string;
+  createdAt: string;
+};
+
+export type OwnerIncomingAgentProposalItem = {
+  id: string;
+  propertyTitle: string;
+  agentName: string;
+  message: string;
+  createdAt: string;
 };
 
 export type PublicAgentPropertySection = {

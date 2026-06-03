@@ -99,6 +99,20 @@ export type SupabaseRoomBusyRangeRow = {
   created_at: string;
 };
 
+export type SupabaseAgentPropertyLinkRow = {
+  id: string;
+  property_id: string;
+  owner_id: string;
+  agent_id: string;
+  status: "pending" | "active" | "declined" | "revoked";
+  proposal_message: string | null;
+  collaboration_terms: string | null;
+  owner_contact_visible: boolean;
+  proposed_at: string;
+  decided_at: string | null;
+  created_at: string;
+};
+
 export type SupabaseSubscriptionRow = {
   id: string;
   profile_id: string;

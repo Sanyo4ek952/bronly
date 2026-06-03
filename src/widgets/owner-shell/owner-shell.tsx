@@ -11,12 +11,14 @@ const navigationItems = [
   { href: "/dashboard/properties", label: "Объекты", icon: "⌘" },
   { href: "/dashboard/rooms", label: "Номера", icon: "◫" },
   { href: "/dashboard/calendar", label: "Календарь", icon: "◷" },
+  { href: "/dashboard/agent-proposals", label: "Агенты", icon: "☲" },
   { href: "/dashboard/requests", label: "Заявки", icon: "✉" },
   { href: "/dashboard/settings", label: "Настройки", icon: "⚙" },
 ];
 
 const agentNavigationItems = [
   { href: "/agent/dashboard", label: "Главная", icon: "⌂" },
+  { href: "/agent/dashboard/opportunities", label: "К сотрудничеству", icon: "☲" },
   { href: "/agent/dashboard/collaborations", label: "Связи", icon: "⌘" },
   { href: "/agent/dashboard/requests", label: "Заявки", icon: "✉" },
   { href: "/agent/dashboard/deals", label: "Сделки", icon: "◷" },
@@ -48,8 +50,7 @@ export function OwnerShell({ children, userName, roleLabel, roleKind = "owner", 
 
         <nav className="br-owner-nav" aria-label="Навигация кабинета">
           {items.map((item) => {
-            const isActive =
-              pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+            const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
 
             return (
               <Link
@@ -88,7 +89,7 @@ export function OwnerShell({ children, userName, roleLabel, roleKind = "owner", 
           <div className="br-owner-topbar__actions">
             <span className="br-owner-topbar__chip">Bronly</span>
             <button className="br-icon-button" type="button" aria-label="Уведомления">
-              ⌁
+              ⌃
             </button>
           </div>
         </header>
@@ -104,8 +105,7 @@ export function OwnerShell({ children, userName, roleLabel, roleKind = "owner", 
 
         <nav className="br-owner-bottom-nav br-card" aria-label="Мобильная навигация">
           {items.map((item) => {
-            const isActive =
-              pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+            const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
 
             return (
               <Link

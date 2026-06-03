@@ -1,15 +1,52 @@
-import type { AgentCollaborationItem, AgentDashboardSummary } from "@/entities/collaboration/model/types";
+import type {
+  AgentAvailablePropertyItem,
+  AgentCollaborationItem,
+  AgentDashboardSummary,
+  AgentLinkStatus,
+  AgentProposalItem,
+  OwnerIncomingAgentProposalItem,
+} from "@/entities/collaboration/model/types";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
-import type { AuthProfile } from "@/shared/api/supabase/server-auth";
+import { getCurrentAuthProfile, type AuthProfile } from "@/shared/api/supabase/server-auth";
+import type { SupabaseAgentPropertyLinkRow } from "@/shared/api/supabase/types";
+import { formatDateTimeLabel } from "@/shared/lib/date";
+
+type PropertyLookupRow = {
+  id: string;
+  owner_id: string;
+  title: string;
+  short_title: string;
+  city: string;
+  address: string;
+  short_description: string | null;
+  allow_agent_inquiries: boolean;
+};
+
+function getFallbackSummary(profile: AuthProfile): AgentDashboardSummary {
+  return {
+    activeCollaborations: 0,
+    incomingRequests: 0,
+    completedDeals: 0,
+    publicLinkLabel: profile.slug ? `/a/${profile.slug}` : "Заполните slug в настройках",
+  };
+}
+
+function getStatusLabel(status: AgentLinkStatus) {
+  switch (status) {
+    case "active":
+      return "Активно";
+    case "pending":
+      return "Ожидает";
+    case "declined":
+      return "Отклонено";
+    default:
+      return "Завершено";
+  }
+}
 
 export async function getAgentDashboardSummary(profile: AuthProfile): Promise<AgentDashboardSummary> {
   if (!canUseSupabase()) {
-    return {
-      activeCollaborations: 0,
-      incomingRequests: 0,
-      completedDeals: 0,
-      publicLinkLabel: "Появится после подключения объектов",
-    };
+    return getFallbackSummary(profile);
   }
 
   try {
@@ -40,12 +77,7 @@ export async function getAgentDashboardSummary(profile: AuthProfile): Promise<Ag
       publicLinkLabel: profile.slug ? `/a/${profile.slug}` : "Заполните slug в настройках",
     };
   } catch {
-    return {
-      activeCollaborations: 0,
-      incomingRequests: 0,
-      completedDeals: 0,
-      publicLinkLabel: "Появится после подключения объектов",
-    };
+    return getFallbackSummary(profile);
   }
 }
 
@@ -58,7 +90,7 @@ export async function getAgentCollaborations(profile: AuthProfile): Promise<Agen
     const supabase = createSupabaseAdminClient();
     const { data } = await supabase
       .from("agent_property_links")
-      .select("id, status, collaboration_terms, properties(title), profiles!agent_property_links_owner_id_fkey(display_name)")
+      .select("id, status, proposal_message, collaboration_terms, properties(title), profiles!agent_property_links_owner_id_fkey(display_name)")
       .eq("agent_id", profile.id)
       .order("created_at", { ascending: false });
 
@@ -66,10 +98,250 @@ export async function getAgentCollaborations(profile: AuthProfile): Promise<Agen
       id: item.id as string,
       propertyTitle: ((item.properties as { title?: string } | null)?.title ?? "Объект"),
       ownerName: ((item.profiles as { display_name?: string } | null)?.display_name ?? "Владелец"),
-      status: item.status === "active" ? "Активно" : item.status === "pending" ? "Ожидает" : "Завершено",
-      terms: (item.collaboration_terms as string | null) ?? "Условия не указаны",
+      status: getStatusLabel((item.status as AgentLinkStatus | null) ?? "pending"),
+      terms:
+        (item.collaboration_terms as string | null) ??
+        (item.proposal_message as string | null) ??
+        "Сообщение не добавлено",
     }));
   } catch {
     return [];
+  }
+}
+
+export async function getAgentAvailableProperties(profile: AuthProfile): Promise<AgentAvailablePropertyItem[]> {
+  if (!canUseSupabase()) {
+    return [];
+  }
+
+  try {
+    const supabase = createSupabaseAdminClient();
+    const { data: candidateRows } = await supabase
+      .from("properties")
+      .select("id, owner_id, title, short_title, city, address, short_description, allow_agent_inquiries")
+      .eq("allow_agent_inquiries", true)
+      .neq("owner_id", profile.id)
+      .order("created_at", { ascending: false });
+
+    const safeCandidates = (candidateRows ?? []) as PropertyLookupRow[];
+
+    if (!safeCandidates.length) {
+      return [];
+    }
+
+    const propertyIds = safeCandidates.map((property) => property.id);
+    const ownerIds = [...new Set(safeCandidates.map((property) => property.owner_id))];
+    const [{ data: linkRows }, { data: ownerRows }] = await Promise.all([
+      supabase
+        .from("agent_property_links")
+        .select("property_id, status")
+        .eq("agent_id", profile.id)
+        .in("property_id", propertyIds),
+      supabase.from("profiles").select("id, display_name").in("id", ownerIds),
+    ]);
+
+    const blockedPropertyIds = new Set(
+      ((linkRows ?? []) as Array<{ property_id: string; status: AgentLinkStatus }>).flatMap((row) =>
+        row.status === "pending" || row.status === "active" ? [row.property_id] : [],
+      ),
+    );
+    const ownerNameMap = new Map(
+      (ownerRows ?? []).map((row) => [row.id as string, (row.display_name as string | null) ?? "Владелец"]),
+    );
+
+    return safeCandidates
+      .filter((property) => !blockedPropertyIds.has(property.id))
+      .map((property) => ({
+        propertyId: property.id,
+        propertyTitle: property.title,
+        shortTitle: property.short_title,
+        city: property.city,
+        address: property.address,
+        ownerName: ownerNameMap.get(property.owner_id) ?? "Владелец",
+        shortDescription: property.short_description ?? "",
+      }));
+  } catch {
+    return [];
+  }
+}
+
+export async function getAgentOutgoingProposals(profile: AuthProfile): Promise<AgentProposalItem[]> {
+  if (!canUseSupabase()) {
+    return [];
+  }
+
+  try {
+    const supabase = createSupabaseAdminClient();
+    const { data } = await supabase
+      .from("agent_property_links")
+      .select("id, status, proposal_message, proposed_at, properties(title), profiles!agent_property_links_owner_id_fkey(display_name)")
+      .eq("agent_id", profile.id)
+      .order("created_at", { ascending: false });
+
+    return (data ?? []).map((item) => ({
+      id: item.id as string,
+      propertyTitle: ((item.properties as { title?: string } | null)?.title ?? "Объект"),
+      ownerName: ((item.profiles as { display_name?: string } | null)?.display_name ?? "Владелец"),
+      message: (item.proposal_message as string | null) ?? "",
+      status: ((item.status as AgentLinkStatus | null) ?? "pending"),
+      statusLabel: getStatusLabel((item.status as AgentLinkStatus | null) ?? "pending"),
+      createdAt: formatDateTimeLabel((item.proposed_at as string | null) ?? new Date().toISOString()),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function getOwnerIncomingAgentProposals(): Promise<OwnerIncomingAgentProposalItem[]> {
+  if (!canUseSupabase()) {
+    return [];
+  }
+
+  const profile = await getCurrentAuthProfile();
+
+  if (!profile) {
+    return [];
+  }
+
+  try {
+    const supabase = createSupabaseAdminClient();
+    const { data } = await supabase
+      .from("agent_property_links")
+      .select("id, proposal_message, proposed_at, properties(title), profiles!agent_property_links_agent_id_fkey(display_name)")
+      .eq("owner_id", profile.id)
+      .eq("status", "pending")
+      .order("proposed_at", { ascending: false });
+
+    return (data ?? []).map((item) => ({
+      id: item.id as string,
+      propertyTitle: ((item.properties as { title?: string } | null)?.title ?? "Объект"),
+      agentName: ((item.profiles as { display_name?: string } | null)?.display_name ?? "Агент"),
+      message: (item.proposal_message as string | null) ?? "",
+      createdAt: formatDateTimeLabel((item.proposed_at as string | null) ?? new Date().toISOString()),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function submitAgentProposal(input: { propertyId: string; message: string }) {
+  if (!canUseSupabase()) {
+    return { ok: true as const };
+  }
+
+  const profile = await getCurrentAuthProfile();
+
+  if (!profile) {
+    return { ok: false as const, reason: "unauthorized" as const };
+  }
+
+  if (!input.propertyId) {
+    return { ok: false as const, reason: "validation" as const };
+  }
+
+  try {
+    const supabase = createSupabaseAdminClient();
+    const { data: propertyData } = await supabase
+      .from("properties")
+      .select("id, owner_id, allow_agent_inquiries")
+      .eq("id", input.propertyId)
+      .maybeSingle();
+
+    const property = propertyData as Pick<PropertyLookupRow, "id" | "owner_id" | "allow_agent_inquiries"> | null;
+
+    if (!property || !property.allow_agent_inquiries || property.owner_id === profile.id) {
+      return { ok: false as const, reason: "not_available" as const };
+    }
+
+    const { data: existingData } = await supabase
+      .from("agent_property_links")
+      .select("*")
+      .eq("property_id", property.id)
+      .eq("agent_id", profile.id)
+      .maybeSingle();
+    const existing = existingData as SupabaseAgentPropertyLinkRow | null;
+
+    if (existing?.status === "pending" || existing?.status === "active") {
+      return { ok: false as const, reason: "duplicate" as const };
+    }
+
+    const payload = {
+      property_id: property.id,
+      owner_id: property.owner_id,
+      agent_id: profile.id,
+      status: "pending",
+      proposal_message: input.message.trim() || null,
+      proposed_at: new Date().toISOString(),
+      decided_at: null,
+      owner_contact_visible: false,
+    };
+
+    const { error } = existing
+      ? await supabase.from("agent_property_links").update(payload).eq("id", existing.id)
+      : await supabase.from("agent_property_links").insert(payload);
+
+    if (error) {
+      return { ok: false as const, reason: "save_failed" as const };
+    }
+
+    return { ok: true as const };
+  } catch {
+    return { ok: false as const, reason: "save_failed" as const };
+  }
+}
+
+export async function reviewAgentProposal(input: { proposalId: string; decision: "active" | "declined" }) {
+  if (!canUseSupabase()) {
+    return { ok: true as const };
+  }
+
+  const profile = await getCurrentAuthProfile();
+
+  if (!profile || !input.proposalId) {
+    return { ok: false as const, reason: "unauthorized" as const };
+  }
+
+  try {
+    const supabase = createSupabaseAdminClient();
+    const { data: proposalData } = await supabase
+      .from("agent_property_links")
+      .select("*")
+      .eq("id", input.proposalId)
+      .maybeSingle();
+    const proposal = proposalData as SupabaseAgentPropertyLinkRow | null;
+
+    if (!proposal || proposal.owner_id !== profile.id || proposal.status !== "pending") {
+      return { ok: false as const, reason: "not_found" as const };
+    }
+
+    let ownerContactVisible = false;
+
+    if (input.decision === "active") {
+      const { data: propertyData } = await supabase
+        .from("properties")
+        .select("allow_owner_contact_sharing")
+        .eq("id", proposal.property_id)
+        .maybeSingle();
+
+      ownerContactVisible = Boolean(propertyData?.allow_owner_contact_sharing);
+    }
+
+    const { error } = await supabase
+      .from("agent_property_links")
+      .update({
+        status: input.decision,
+        decided_at: new Date().toISOString(),
+        owner_contact_visible: ownerContactVisible,
+        collaboration_terms: proposal.collaboration_terms ?? proposal.proposal_message,
+      })
+      .eq("id", proposal.id);
+
+    if (error) {
+      return { ok: false as const, reason: "save_failed" as const };
+    }
+
+    return { ok: true as const };
+  } catch {
+    return { ok: false as const, reason: "save_failed" as const };
   }
 }

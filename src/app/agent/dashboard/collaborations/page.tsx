@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { getAgentCollaborations } from "@/entities/collaboration";
+import { getAgentOutgoingProposals } from "@/entities/collaboration";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 
 export default async function AgentCollaborationsPage() {
@@ -10,28 +10,29 @@ export default async function AgentCollaborationsPage() {
     redirect("/login");
   }
 
-  const collaborations = await getAgentCollaborations(profile);
+  const proposals = await getAgentOutgoingProposals(profile);
 
   return (
     <section className="br-dashboard-block br-card">
       <div className="br-dashboard-block__header">
         <div>
           <h2>Связи с владельцами</h2>
-          <p>Активные и ожидающие сотрудничества объекты.</p>
+          <p>Здесь видны отправленные предложения, активные сотрудничества и решения владельцев.</p>
         </div>
       </div>
       <div className="br-requests-list">
-        {collaborations.length ? collaborations.map((item) => (
+        {proposals.length ? proposals.map((item) => (
           <article key={item.id} className="br-request-item">
-            <div className="br-request-item__avatar">{item.ownerName[0]}</div>
+            <div className="br-request-item__avatar">{item.ownerName[0] ?? "В"}</div>
             <div className="br-request-item__body">
               <strong>{item.propertyTitle}</strong>
               <span>{item.ownerName}</span>
-              <span>{item.terms}</span>
+              <span>{item.createdAt}</span>
+              <span>{item.message || "Сообщение не добавлено"}</span>
             </div>
-            <span className="br-request-item__status">{item.status}</span>
+            <span className="br-request-item__status">{item.statusLabel}</span>
           </article>
-        )) : <p>Пока нет активных или ожидающих связей.</p>}
+        )) : <p>Пока нет отправленных предложений и активных связей.</p>}
       </div>
     </section>
   );

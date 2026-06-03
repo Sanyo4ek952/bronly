@@ -35,8 +35,8 @@ export default async function AgentDashboardPage() {
               <strong>{summary.incomingRequests}</strong>
             </div>
           </div>
-          <Link href="/agent/dashboard/settings" className="br-button br-button--primary br-button--full">
-            Заполнить профиль
+          <Link href="/agent/dashboard/opportunities" className="br-button br-button--primary br-button--full">
+            Найти объекты
           </Link>
         </article>
         <article className="br-summary-card br-card">
@@ -70,8 +70,8 @@ export default async function AgentDashboardPage() {
         <div className="br-onboarding-grid">
           {[
             "Заполните контакты, которые увидит гость по агентской ссылке.",
-            "Согласуйте сотрудничество с владельцами и дождитесь активных связей.",
-            "Принимайте заявки и вручную передавайте владельцу.",
+            "Откройте раздел “К сотрудничеству”, чтобы отправить предложение владельцу.",
+            "После принятия связи принимайте заявки и вручную передавайте их владельцу.",
           ].map((step, index) => (
             <article key={step} className="br-onboarding-card br-onboarding-card--current">
               <div className="br-onboarding-card__top">
