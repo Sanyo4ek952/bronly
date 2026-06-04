@@ -169,6 +169,8 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
       activeRoomCount: state.activeRoomCount,
       activeRoomLimit: subscriptionRow?.active_room_limit ?? state.roomLimit,
       validUntil: state.validUntil,
+      paidUntil: state.paidUntil,
+      graceEndsAt: state.graceEndsAt,
       hasSubscriptionRow: state.hasSubscriptionRow,
     };
   });

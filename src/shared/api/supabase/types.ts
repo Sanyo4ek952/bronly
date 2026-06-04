@@ -131,6 +131,15 @@ export type SupabaseAgentPropertyLinkRow = {
   created_at: string;
 };
 
+export type SupabaseRoomAgentMarkupRow = {
+  id: string;
+  room_id: string;
+  agent_id: string;
+  markup_percent: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type SupabaseSubscriptionRow = {
   id: string;
   profile_id: string;

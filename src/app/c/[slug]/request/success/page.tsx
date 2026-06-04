@@ -34,7 +34,7 @@ export default async function CollectionRequestSuccessPage({ params }: Collectio
   return (
     <main className="br-auth-page">
       <Panel className="br-request-success" as="section">
-        <div className="br-request-success__icon">вњ“</div>
+        <div className="br-request-success__icon">✓</div>
         <h1>Заявка отправлена</h1>
         <p>Заявка отправлена. Владелец свяжется с вами для уточнения доступности.</p>
         <div className="br-request-success__actions">

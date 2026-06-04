@@ -21,6 +21,8 @@ export type AdminSubscriptionItem = {
   activeRoomCount: number;
   activeRoomLimit: number | null;
   validUntil: string | null;
+  paidUntil: string | null;
+  graceEndsAt: string | null;
   hasSubscriptionRow: boolean;
 };
 

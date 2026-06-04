@@ -36,6 +36,7 @@ export type {
   SupabasePropertyRow,
   SupabasePushSubscriptionRow,
   SupabasePropertyRuleRow,
+  SupabaseRoomAgentMarkupRow,
   SupabaseRoomAmenityRow,
   SupabaseRoomBusyRangeRow,
   SupabaseRoomPhotoRow,

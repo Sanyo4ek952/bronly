@@ -9,7 +9,7 @@ const capabilityCards = [
   },
   {
     title: "Заявки без посредников",
-    text: "Гость оставляет запрос на конкретный номер, а владелец связывается с ним напрямую.",
+    text: "Гость оставляет запрос на проживание на конкретный номер, а владелец связывается с ним напрямую.",
   },
   {
     title: "Один кабинет",
@@ -41,7 +41,7 @@ const pricingCards = [
     name: "Базовый",
     price: "790 ₽",
     text: "Для владельцев, которые уже работают с заявками регулярно.",
-    features: ["Публичная витрина", "Календарь и заявки", "PWA и уведомления"],
+    features: ["Публичная витрина", "Календарь занятости и заявки", "PWA и уведомления"],
     cta: "Выбрать тариф",
     featured: true,
   },
@@ -79,8 +79,8 @@ export function LandingPage() {
               со своими <span className="br-hero__title-accent">номерами</span>
             </h1>
             <p className="br-hero__text">
-              Bronly помогает владельцам жилья показать объект, вести календарь занятости и получать
-              заявки по одной персональной ссылке.
+              Bronly помогает владельцам жилья показать объект, вести календарь занятости и получать заявки по одной
+              персональной ссылке.
             </p>
             <div className="br-hero__actions">
               <Link href="/register" className="br-button br-button--primary">
@@ -93,7 +93,7 @@ export function LandingPage() {
 
             <div className="br-hero__highlights">
               <div className="br-highlight">
-                <strong>Без комиссий</strong>
+                <strong>Без комиссии</strong>
                 <span>и скрытых платежей за проживание</span>
               </div>
               <div className="br-highlight">
@@ -126,9 +126,7 @@ export function LandingPage() {
                 <span>2 гостя</span>
                 <span>Вид на море</span>
               </div>
-              <button className="br-button br-button--primary br-button--full">
-                Оставить заявку
-              </button>
+              <button className="br-button br-button--primary br-button--full">Оставить заявку</button>
               <p className="br-phone-preview__caption">
                 Быстрый ответ владельца и понятный сценарий для гостя.
               </p>
@@ -251,8 +249,8 @@ export function LandingPage() {
               <article key={item} className="br-faq-item">
                 <strong>{item}</strong>
                 <p>
-                  Ответ будет уточнен в продуктовых сценариях, но терминология и границы MVP уже
-                  зафиксированы в документации проекта.
+                  Ответ будет уточнен в продуктовых сценариях, но терминология и границы MVP уже зафиксированы в
+                  документации проекта.
                 </p>
               </article>
             ))}

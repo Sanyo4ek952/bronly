@@ -81,8 +81,8 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
         ["Статус", dashboardStats.subscriptionStatusLabel],
         ["Действует до", dashboardStats.subscriptionValidUntil],
       ],
-      href: "/dashboard/settings",
-      action: "Управление подпиской",
+      href: "/dashboard/subscription",
+      action: "Открыть подписку",
     },
     {
       title: "Публичная ссылка",
@@ -122,8 +122,8 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
             </div>
           </div>
           <div className="br-owner-actions">
-            <ButtonLink href="/dashboard/settings" variant="secondary">
-              Открыть настройки
+            <ButtonLink href="/dashboard/subscription" variant="secondary">
+              Открыть подписку
             </ButtonLink>
           </div>
         </section>

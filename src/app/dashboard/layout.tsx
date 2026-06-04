@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getUnreadNotificationCount } from "@/entities/notification";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile, getPrimaryRole } from "@/shared/api/supabase";
+import { formatDateLabel } from "@/shared/lib/date";
 import { OwnerShell } from "@/widgets/owner-shell";
 
 export default async function DashboardLayout({
@@ -33,13 +34,15 @@ export default async function DashboardLayout({
 
   const notice = subscription.status === "expired"
     ? {
-        title: "Доступ к публичным страницам ограничен",
-        text: "Подписка не продлена. Публичные страницы и новые заявки временно недоступны, пока администратор не продлит доступ.",
+        title: "Публичные страницы и новые заявки ограничены",
+        text: "Подписка не продлена. Кабинет остается доступным для просмотра, но изменения данных временно остановлены, пока администратор не продлит доступ.",
       }
     : subscription.showGraceWarning
       ? {
           title: "Подписку нужно продлить",
-          text: "Пробный период закончился. У вас есть 3 дня, чтобы продлить подписку и сохранить доступ к публичным страницам и заявкам.",
+          text: subscription.graceEndsAt
+            ? `Grace period действует до ${formatDateLabel(subscription.graceEndsAt)}. До этой даты публичные страницы и новые заявки еще доступны.`
+            : "Grace period уже начался. Пока он не закончился, публичные страницы и новые заявки еще доступны.",
         }
       : null;
 

@@ -257,7 +257,11 @@ export async function createGuestRequest(input: {
 
   const hasAgentPricing = source === "agent" || (source === "collection" && Boolean(input.agentProfileId));
   const totalPrice = hasAgentPricing
-    ? ownerPricing.nightlyPrices.reduce((sum, item) => sum + item.pricePerNight * (1 + markupPercent / 100), 0)
+    ? Number(
+        ownerPricing.nightlyPrices
+          .reduce((sum, item) => sum + item.pricePerNight * (1 + markupPercent / 100), 0)
+          .toFixed(2),
+      )
     : ownerPricing.totalPrice;
 
   const { data: insertedRequest, error } = await supabase.from("guest_requests").insert({
@@ -288,7 +292,7 @@ export async function createGuestRequest(input: {
       nights: ownerPricing.nights,
       base_price_per_night: basePricePerNight,
       display_price_per_night: hasAgentPricing
-        ? Math.round(totalPrice / Math.max(ownerPricing.nights, 1))
+        ? Number((totalPrice / Math.max(ownerPricing.nights, 1)).toFixed(2))
         : ownerPricing.displayPricePerNight,
       total_price: totalPrice,
       nightly_prices: hasAgentPricing

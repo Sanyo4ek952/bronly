@@ -3,13 +3,17 @@ import type {
   AgentCollaborationItem,
   AgentDashboardSummary,
   AgentLinkStatus,
+  AgentMarkupRoomItem,
   AgentProposalItem,
   OwnerIncomingAgentProposalItem,
 } from "@/entities/collaboration/model/types";
 import { createNotificationEvent } from "@/entities/notification";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
-import { getCurrentAuthProfile, type AuthProfile } from "@/shared/api/supabase/server-auth";
-import type { SupabaseAgentPropertyLinkRow } from "@/shared/api/supabase/types";
+import { createSupabaseServerClient, getCurrentAuthProfile, type AuthProfile } from "@/shared/api/supabase/server-auth";
+import type {
+  SupabaseAgentPropertyLinkRow,
+  SupabaseRoomAgentMarkupRow,
+} from "@/shared/api/supabase/types";
 import { formatDateTimeLabel } from "@/shared/lib/date";
 
 type PropertyLookupRow = {
@@ -21,6 +25,14 @@ type PropertyLookupRow = {
   address: string;
   short_description: string | null;
   allow_agent_inquiries: boolean;
+};
+
+type CollaborationRoomRow = {
+  id: string;
+  property_id: string;
+  title: string;
+  subtitle: string | null;
+  price_per_night: number;
 };
 
 function getFallbackSummary(profile: AuthProfile): AgentDashboardSummary {
@@ -91,23 +103,190 @@ export async function getAgentCollaborations(profile: AuthProfile): Promise<Agen
     const supabase = createSupabaseAdminClient();
     const { data } = await supabase
       .from("agent_property_links")
-      .select("id, status, proposal_message, collaboration_terms, properties(title), profiles!agent_property_links_owner_id_fkey(display_name)")
+      .select(
+        "id, property_id, status, proposal_message, collaboration_terms, properties(title), profiles!agent_property_links_owner_id_fkey(display_name)",
+      )
       .eq("agent_id", profile.id)
       .order("created_at", { ascending: false });
 
-    return (data ?? []).map((item) => ({
-      id: item.id as string,
-      propertyTitle: ((item.properties as { title?: string } | null)?.title ?? "Объект"),
-      ownerName: ((item.profiles as { display_name?: string } | null)?.display_name ?? "Владелец"),
-      status: getStatusLabel((item.status as AgentLinkStatus | null) ?? "pending"),
-      terms:
-        (item.collaboration_terms as string | null) ??
-        (item.proposal_message as string | null) ??
-        "Сообщение не добавлено",
+    const safeRows = (data ?? []) as Array<{
+      id: string;
+      property_id: string;
+      status: AgentLinkStatus | null;
+      proposal_message: string | null;
+      collaboration_terms: string | null;
+      properties: { title?: string } | null;
+      profiles: { display_name?: string } | null;
+    }>;
+    const activePropertyIds = safeRows
+      .filter((item) => item.status === "active")
+      .map((item) => item.property_id);
+    const roomRows = activePropertyIds.length
+      ? (
+          await supabase
+            .from("rooms")
+            .select("id, property_id, title, subtitle, price_per_night")
+            .in("property_id", activePropertyIds)
+            .eq("is_active", true)
+            .order("title", { ascending: true })
+        ).data ?? []
+      : [];
+    const roomIds = (roomRows as CollaborationRoomRow[]).map((room) => room.id);
+    const markupRows = roomIds.length
+      ? (
+          await supabase
+            .from("room_agent_markups")
+            .select("*")
+            .eq("agent_id", profile.id)
+            .in("room_id", roomIds)
+        ).data ?? []
+      : [];
+    const markupMap = new Map<string, number>();
+
+    for (const item of markupRows as SupabaseRoomAgentMarkupRow[]) {
+      markupMap.set(item.room_id, Number(item.markup_percent ?? 0));
+    }
+
+    const roomsByProperty = new Map<string, AgentMarkupRoomItem[]>();
+
+    for (const room of roomRows as CollaborationRoomRow[]) {
+      const basePricePerNight = Number(room.price_per_night ?? 0);
+      const agentMarkupPercent = markupMap.get(room.id) ?? 0;
+      const existing = roomsByProperty.get(room.property_id) ?? [];
+      existing.push({
+        id: room.id,
+        title: room.title,
+        subtitle: room.subtitle ?? "",
+        basePricePerNight,
+        agentMarkupPercent,
+        agentPricePerNight: Number((basePricePerNight * (1 + agentMarkupPercent / 100)).toFixed(2)),
+      });
+      roomsByProperty.set(room.property_id, existing);
+    }
+
+    return safeRows.map((item) => ({
+      id: item.id,
+      propertyTitle: item.properties?.title ?? "Объект",
+      ownerName: item.profiles?.display_name ?? "Владелец",
+      status: item.status ?? "pending",
+      statusLabel: getStatusLabel(item.status ?? "pending"),
+      terms: item.collaboration_terms ?? item.proposal_message ?? "Сообщение не добавлено",
+      propertyId: item.property_id,
+      rooms: roomsByProperty.get(item.property_id) ?? [],
     }));
   } catch {
     return [];
   }
+}
+
+function normalizeMarkupPercent(value: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return 0;
+  }
+
+  return Math.round(value * 100) / 100;
+}
+
+async function getAccessibleRoomForAgent(profileId: string, roomId: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from("rooms")
+    .select("id, property_id, properties!inner(owner_id)")
+    .eq("id", roomId)
+    .maybeSingle();
+  const room = (data ?? null) as
+    | {
+        id: string;
+        property_id: string;
+        properties:
+          | {
+              owner_id: string;
+            }
+          | Array<{
+              owner_id: string;
+            }>
+          | null;
+      }
+    | null;
+
+  if (!room) {
+    return null;
+  }
+
+  const property = Array.isArray(room.properties) ? (room.properties[0] ?? null) : room.properties;
+
+  if (!property) {
+    return null;
+  }
+
+  if (property.owner_id === profileId) {
+    return room;
+  }
+
+  const { data: linkData } = await supabase
+    .from("agent_property_links")
+    .select("id")
+    .eq("agent_id", profileId)
+    .eq("property_id", room.property_id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  return linkData ? room : null;
+}
+
+export async function upsertAgentRoomMarkup(input: { roomId: string; markupPercent: number }) {
+  if (!canUseSupabase()) {
+    return { ok: true as const };
+  }
+
+  const profile = await getCurrentAuthProfile();
+
+  if (!profile || !profile.roles.includes("agent")) {
+    return { ok: false as const, reason: "unauthorized" as const };
+  }
+
+  if (!input.roomId) {
+    return { ok: false as const, reason: "validation" as const };
+  }
+
+  const accessibleRoom = await getAccessibleRoomForAgent(profile.id, input.roomId);
+
+  if (!accessibleRoom) {
+    return { ok: false as const, reason: "not_allowed" as const };
+  }
+
+  const markupPercent = normalizeMarkupPercent(input.markupPercent);
+  const supabase = await createSupabaseServerClient();
+
+  if (markupPercent === 0) {
+    const { error } = await supabase
+      .from("room_agent_markups")
+      .delete()
+      .eq("room_id", input.roomId)
+      .eq("agent_id", profile.id);
+
+    if (error) {
+      return { ok: false as const, reason: "save_failed" as const };
+    }
+
+    return { ok: true as const };
+  }
+
+  const { error } = await supabase.from("room_agent_markups").upsert(
+    {
+      room_id: input.roomId,
+      agent_id: profile.id,
+      markup_percent: markupPercent,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "room_id,agent_id" },
+  );
+
+  if (error) {
+    return { ok: false as const, reason: "save_failed" as const };
+  }
+
+  return { ok: true as const };
 }
 
 export async function getAgentAvailableProperties(profile: AuthProfile): Promise<AgentAvailablePropertyItem[]> {

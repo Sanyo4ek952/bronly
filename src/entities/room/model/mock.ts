@@ -3,8 +3,8 @@ import type { Room } from "@/entities/room/model/types";
 export const rooms: Room[] = [
   {
     id: "room-1",
-    title: "Р›СЋРєСЃ СЃ РІРёРґРѕРј РЅР° РјРѕСЂРµ",
-    subtitle: "Р›СЋРєСЃ",
+    title: "Люкс с видом на море",
+    subtitle: "Люкс",
     capacity: 2,
     bedrooms: 1,
     area: 45,
@@ -17,12 +17,12 @@ export const rooms: Room[] = [
         sortOrder: 0,
       },
     ],
-    amenities: ["Wi-Fi", "Р’РёРґ РЅР° РјРѕСЂРµ", "Р‘Р°Р»РєРѕРЅ"],
+    amenities: ["Wi-Fi", "Вид на море", "Балкон"],
   },
   {
     id: "room-2",
-    title: "РЎРµРјРµР№РЅС‹Р№ РЅРѕРјРµСЂ",
-    subtitle: "РЎРµРјРµР№РЅС‹Р№",
+    title: "Семейный номер",
+    subtitle: "Семейный",
     capacity: 4,
     bedrooms: 2,
     area: 40,
@@ -35,36 +35,36 @@ export const rooms: Room[] = [
         sortOrder: 0,
       },
     ],
-    amenities: ["Wi-Fi", "2 СЃРїР°Р»СЊРЅРё", "РљСѓС…РЅСЏ"],
+    amenities: ["Wi-Fi", "2 спальни", "Кухня"],
   },
   {
     id: "room-3",
-    title: "РЎС‚Р°РЅРґР°СЂС‚ СЃ Р±Р°Р»РєРѕРЅРѕРј",
-    subtitle: "РЎС‚Р°РЅРґР°СЂС‚",
+    title: "Стандарт с балконом",
+    subtitle: "Стандарт",
     capacity: 2,
     bedrooms: 1,
     area: 25,
     pricePerNight: 3900,
     status: "active",
     photos: [],
-    amenities: ["Wi-Fi", "Р‘Р°Р»РєРѕРЅ", "РўР’"],
+    amenities: ["Wi-Fi", "Балкон", "ТВ"],
   },
   {
     id: "room-4",
-    title: "РЎС‚Р°РЅРґР°СЂС‚",
-    subtitle: "РЎС‚Р°РЅРґР°СЂС‚",
+    title: "Стандарт",
+    subtitle: "Стандарт",
     capacity: 2,
     bedrooms: 1,
     area: 20,
     pricePerNight: 3200,
     status: "inactive",
     photos: [],
-    amenities: ["Wi-Fi", "РўР’"],
+    amenities: ["Wi-Fi", "ТВ"],
   },
   {
     id: "room-5",
-    title: "РђРїР°СЂС‚Р°РјРµРЅС‚С‹ СЃ РєСѓС…РЅРµР№",
-    subtitle: "РђРїР°СЂС‚Р°РјРµРЅС‚С‹",
+    title: "Апартаменты с кухней",
+    subtitle: "Апартаменты",
     capacity: 3,
     bedrooms: 1,
     area: 40,
@@ -77,16 +77,16 @@ export const rooms: Room[] = [
         sortOrder: 0,
       },
     ],
-    amenities: ["РљСѓС…РЅСЏ", "Wi-Fi", "Р—РѕРЅР° РѕС‚РґС‹С…Р°"],
+    amenities: ["Кухня", "Wi-Fi", "Зона отдыха"],
   },
 ];
 
 export function formatRoomMeta(room: Room) {
-  return `${room.capacity} РіРѕСЃС‚СЏ вЂў ${room.bedrooms} СЃРїР°Р»СЊРЅСЏ вЂў ${room.area} РјВІ`;
+  return `${room.capacity} гостя • ${room.bedrooms} спальня • ${room.area} м²`;
 }
 
 export function formatRoomPrice(room: Room) {
-  return `РѕС‚ ${room.pricePerNight.toLocaleString("ru-RU")} в‚Ѕ / РЅРѕС‡СЊ`;
+  return `от ${room.pricePerNight.toLocaleString("ru-RU")} ₽ / ночь`;
 }
 
 export function getRoomById(roomId: string) {

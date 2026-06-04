@@ -13,6 +13,7 @@ const navigationItems = [
   { href: "/dashboard/collections", label: "Коллекции", icon: "♦" },
   { href: "/dashboard/rooms", label: "Номера", icon: "◫" },
   { href: "/dashboard/calendar", label: "Календарь", icon: "◷" },
+  { href: "/dashboard/subscription", label: "Подписка", icon: "◈" },
   { href: "/dashboard/agent-proposals", label: "Агенты", icon: "☲" },
   { href: "/dashboard/requests", label: "Заявки", icon: "✉" },
   { href: "/dashboard/settings", label: "Настройки", icon: "⚙" },

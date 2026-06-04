@@ -14,8 +14,20 @@ export type AgentCollaborationItem = {
   id: string;
   propertyTitle: string;
   ownerName: string;
-  status: string;
+  status: AgentLinkStatus;
+  statusLabel: string;
   terms: string;
+  propertyId: string;
+  rooms: AgentMarkupRoomItem[];
+};
+
+export type AgentMarkupRoomItem = {
+  id: string;
+  title: string;
+  subtitle: string;
+  basePricePerNight: number;
+  agentMarkupPercent: number;
+  agentPricePerNight: number;
 };
 
 export type AgentAvailablePropertyItem = {

@@ -6,6 +6,7 @@ export {
   getOwnerIncomingAgentProposals,
   reviewAgentProposal,
   submitAgentProposal,
+  upsertAgentRoomMarkup,
 } from "@/entities/collaboration/api/collaboration-data";
 export {
   getAgentRequestContext,
@@ -15,6 +16,7 @@ export type {
   AgentAvailablePropertyItem,
   AgentCollaborationItem,
   AgentDashboardSummary,
+  AgentMarkupRoomItem,
   AgentProposalItem,
   OwnerIncomingAgentProposalItem,
   PublicAgentPageData,

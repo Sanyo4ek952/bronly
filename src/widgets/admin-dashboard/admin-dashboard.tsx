@@ -15,6 +15,14 @@ function formatDateLabel(value: string | null) {
   }).format(new Date(value));
 }
 
+function formatDateInputValue(value: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  return new Date(value).toISOString().slice(0, 10);
+}
+
 type AdminDashboardProps = {
   data: AdminDashboardData;
   message: string;
@@ -146,6 +154,14 @@ export function AdminDashboard({ data, message }: AdminDashboardProps) {
                   <div className="br-form-field">
                     <label className="br-label">Доступ до</label>
                     <input className="br-field" value={formatDateLabel(row.validUntil)} disabled />
+                  </div>
+                  <div className="br-form-field">
+                    <label className="br-label">Оплачено до</label>
+                    <input className="br-field" name="paidUntil" type="date" defaultValue={formatDateInputValue(row.paidUntil)} />
+                  </div>
+                  <div className="br-form-field">
+                    <label className="br-label">Grace period до</label>
+                    <input className="br-field" name="graceEndsAt" type="date" defaultValue={formatDateInputValue(row.graceEndsAt)} />
                   </div>
                   <div className="br-owner-actions">
                     <Button type="submit" variant="secondary">

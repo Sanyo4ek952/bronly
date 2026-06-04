@@ -10,12 +10,16 @@ export type SubscriptionRuntimeState = {
   profileId: string;
   roleContext: SubscriptionRoleContext;
   status: SubscriptionStatus;
+  storedStatus: SubscriptionStatus;
   statusLabel: string;
   planTier: SubscriptionPlanTier;
   planName: string;
   activeRoomCount: number;
   roomLimit: number | null;
   validUntil: string | null;
+  paidUntil: string | null;
+  graceEndsAt: string | null;
+  trialEndsAt: string | null;
   hasSubscriptionRow: boolean;
   isCabinetAllowed: boolean;
   isCabinetRestricted: boolean;

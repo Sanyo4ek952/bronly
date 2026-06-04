@@ -70,6 +70,9 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
         </header>
 
         {publicWarningText ? <div className="br-inline-notice">{publicWarningText}</div> : null}
+        <div className="br-inline-notice br-inline-notice--soft">
+          В агентской витрине показана итоговая цена агента. Базовую цену владельца агент не меняет.
+        </div>
 
         {properties.length ? (
           <div className="br-owner-stack">
