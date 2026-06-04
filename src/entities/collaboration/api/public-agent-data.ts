@@ -2,7 +2,7 @@ import { cache } from "react";
 
 import type { PublicAgentPageData, PublicAgentPropertySection } from "@/entities/collaboration/model/types";
 import { buildPropertyPhotoMap, buildRoomPhotoMap, withLegacyPropertyCover } from "@/entities/property/api/photo-utils";
-import { buildPublicRoomQuote, normalizePublicStayFilters, type PublicStayFilters } from "@/entities/room";
+import { buildPublicRoomQuote, normalizePublicStayFilters } from "@/entities/room";
 import { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
 import type { OwnerBusyRange, OwnerSeasonalPrice, PublicRoom, RoomPhoto } from "@/entities/room/model/types";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
@@ -16,6 +16,16 @@ import type {
   SupabaseRoomRow,
   SupabaseRoomSeasonalPriceRow,
 } from "@/shared/api/supabase/types";
+
+type ResolvedAgentProfile = {
+  id: string;
+  slug: string;
+  agent_public_id: string | null;
+  display_name: string;
+  phone: string | null;
+  telegram: string | null;
+  is_public_hidden_by_admin: boolean;
+};
 
 function getAgentPublicUnavailableReason(input: {
   subscriptionAllowed: boolean;
@@ -56,9 +66,63 @@ function mapRoomRow(
   };
 }
 
+async function hasAgentRole(profileId: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data } = await supabase
+    .from("user_roles")
+    .select("profile_id")
+    .eq("profile_id", profileId)
+    .eq("role", "agent")
+    .maybeSingle();
+
+  return Boolean(data);
+}
+
+async function resolvePublicAgentProfile(identifier: string): Promise<{
+  agent: ResolvedAgentProfile;
+  matchedByLegacySlug: boolean;
+} | null> {
+  const supabase = createSupabaseAdminClient();
+  const { data: publicIdData } = await supabase
+    .from("profiles")
+    .select("id, slug, agent_public_id, display_name, phone, telegram, is_public_hidden_by_admin")
+    .eq("agent_public_id", identifier)
+    .maybeSingle();
+
+  const publicIdMatch = (publicIdData ?? null) as ResolvedAgentProfile | null;
+
+  if (publicIdMatch) {
+    if (!(await hasAgentRole(publicIdMatch.id))) {
+      return null;
+    }
+
+    return {
+      agent: publicIdMatch,
+      matchedByLegacySlug: false,
+    };
+  }
+
+  const { data: legacySlugData } = await supabase
+    .from("profiles")
+    .select("id, slug, agent_public_id, display_name, phone, telegram, is_public_hidden_by_admin")
+    .eq("slug", identifier)
+    .maybeSingle();
+
+  const legacySlugMatch = (legacySlugData ?? null) as ResolvedAgentProfile | null;
+
+  if (!legacySlugMatch || !(await hasAgentRole(legacySlugMatch.id))) {
+    return null;
+  }
+
+  return {
+    agent: legacySlugMatch,
+    matchedByLegacySlug: true,
+  };
+}
+
 export const getPublicAgentPageData = cache(
   async (
-    agentSlug: string,
+    agentIdentifier: string,
     filterInput: {
       checkIn?: string;
       checkOut?: string;
@@ -73,26 +137,19 @@ export const getPublicAgentPageData = cache(
     const filters = normalizePublicStayFilters(filterInput);
 
     try {
-      const supabase = createSupabaseAdminClient();
-      const { data: agentData } = await supabase
-        .from("profiles")
-        .select("id, slug, display_name, phone, telegram, is_public_hidden_by_admin")
-        .eq("slug", agentSlug)
-        .maybeSingle();
+      const resolvedAgent = await resolvePublicAgentProfile(agentIdentifier);
 
-      const agent = agentData as {
-        id: string;
-        slug: string;
-        display_name: string;
-        phone: string | null;
-        telegram: string | null;
-        is_public_hidden_by_admin: boolean;
-      } | null;
-
-      if (!agent) {
+      if (!resolvedAgent) {
         return null;
       }
 
+      const { agent, matchedByLegacySlug } = resolvedAgent;
+
+      if (!agent.agent_public_id) {
+        return null;
+      }
+
+      const supabase = createSupabaseAdminClient();
       const agentSubscription = await getSubscriptionRuntimeState(agent.id, "agent");
       const publicUnavailableReason = getAgentPublicUnavailableReason({
         subscriptionAllowed: agentSubscription.isPublicAllowed,
@@ -106,6 +163,7 @@ export const getPublicAgentPageData = cache(
           filters,
           publicUnavailableReason,
           publicWarningText: null,
+          shouldRedirectToCanonical: false,
         };
       }
 
@@ -155,7 +213,8 @@ export const getPublicAgentPageData = cache(
         return {
           agent: {
             id: agent.id,
-            slug: agent.slug,
+            publicId: agent.agent_public_id,
+            legacySlug: agent.slug,
             displayName: agent.display_name,
             phone: agent.phone ?? "",
             telegram: agent.telegram ?? "",
@@ -164,6 +223,7 @@ export const getPublicAgentPageData = cache(
           filters,
           publicUnavailableReason: null,
           publicWarningText: agentSubscription.publicWarningText,
+          shouldRedirectToCanonical: matchedByLegacySlug,
         };
       }
 
@@ -264,7 +324,8 @@ export const getPublicAgentPageData = cache(
       return {
         agent: {
           id: agent.id,
-          slug: agent.slug,
+          publicId: agent.agent_public_id,
+          legacySlug: agent.slug,
           displayName: agent.display_name,
           phone: agent.phone ?? "",
           telegram: agent.telegram ?? "",
@@ -273,6 +334,7 @@ export const getPublicAgentPageData = cache(
         filters,
         publicUnavailableReason: null,
         publicWarningText: agentSubscription.publicWarningText,
+        shouldRedirectToCanonical: matchedByLegacySlug,
       };
     } catch {
       return null;
@@ -280,8 +342,8 @@ export const getPublicAgentPageData = cache(
   },
 );
 
-export async function getAgentRequestContext(agentSlug: string, propertySlug: string, roomId: string) {
-  const pageData = await getPublicAgentPageData(agentSlug);
+export async function getAgentRequestContext(agentIdentifier: string, propertySlug: string, roomId: string) {
+  const pageData = await getPublicAgentPageData(agentIdentifier);
 
   if (!pageData?.agent) {
     return null;
@@ -296,7 +358,7 @@ export async function getAgentRequestContext(agentSlug: string, propertySlug: st
 
   return {
     agentId: pageData.agent.id,
-    agentSlug: pageData.agent.slug,
+    agentPublicId: pageData.agent.publicId,
     propertySlug: propertySection.property.slug,
     roomId: room.id,
     agentMarkupPercent: room.agentMarkupPercent ?? 0,

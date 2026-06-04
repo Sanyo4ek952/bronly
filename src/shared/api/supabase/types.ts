@@ -37,6 +37,7 @@ export type SupabaseProfileRow = {
   id: string;
   auth_user_id: string | null;
   slug: string | null;
+  agent_public_id: string | null;
   display_name: string;
   phone: string | null;
   whatsapp: string | null;

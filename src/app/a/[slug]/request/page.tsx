@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { getPublicAgentPageData } from "@/entities/collaboration";
 import { GuestRequestForm } from "@/features/request/submit-request";
@@ -21,17 +21,17 @@ function getSearchString(params: Record<string, string | string[] | undefined>, 
 function getErrorText(error: string) {
   switch (error) {
     case "room":
-      return "Выбранный номер больше недоступен. Проверьте номер и попробуйте снова.";
+      return "Р’С‹Р±СЂР°РЅРЅС‹Р№ РЅРѕРјРµСЂ Р±РѕР»СЊС€Рµ РЅРµРґРѕСЃС‚СѓРїРµРЅ. РџСЂРѕРІРµСЂСЊС‚Рµ РЅРѕРјРµСЂ Рё РїРѕРїСЂРѕР±СѓР№С‚Рµ СЃРЅРѕРІР°.";
     case "availability":
-      return "На выбранные даты у номера есть занятые даты. Выберите другой период или номер.";
+      return "РќР° РІС‹Р±СЂР°РЅРЅС‹Рµ РґР°С‚С‹ Сѓ РЅРѕРјРµСЂР° РµСЃС‚СЊ Р·Р°РЅСЏС‚С‹Рµ РґР°С‚С‹. Р’С‹Р±РµСЂРёС‚Рµ РґСЂСѓРіРѕР№ РїРµСЂРёРѕРґ РёР»Рё РЅРѕРјРµСЂ.";
     case "property":
-      return "Объект больше недоступен по этой ссылке.";
+      return "РћР±СЉРµРєС‚ Р±РѕР»СЊС€Рµ РЅРµРґРѕСЃС‚СѓРїРµРЅ РїРѕ СЌС‚РѕР№ СЃСЃС‹Р»РєРµ.";
     case "subscription":
-      return "Доступ к агентской витрине временно ограничен. Новые заявки сейчас не принимаются.";
+      return "Р”РѕСЃС‚СѓРї Рє Р°РіРµРЅС‚СЃРєРѕР№ РІРёС‚СЂРёРЅРµ РІСЂРµРјРµРЅРЅРѕ РѕРіСЂР°РЅРёС‡РµРЅ. РќРѕРІС‹Рµ Р·Р°СЏРІРєРё СЃРµР№С‡Р°СЃ РЅРµ РїСЂРёРЅРёРјР°СЋС‚СЃСЏ.";
     case "validation":
-      return "Проверьте имя, телефон, номер и даты проживания.";
+      return "РџСЂРѕРІРµСЂСЊС‚Рµ РёРјСЏ, С‚РµР»РµС„РѕРЅ, РЅРѕРјРµСЂ Рё РґР°С‚С‹ РїСЂРѕР¶РёРІР°РЅРёСЏ.";
     default:
-      return "Не удалось отправить заявку. Проверьте поля и попробуйте еще раз.";
+      return "РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ Р·Р°СЏРІРєСѓ. РџСЂРѕРІРµСЂСЊС‚Рµ РїРѕР»СЏ Рё РїРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰Рµ СЂР°Р·.";
   }
 }
 
@@ -50,6 +50,19 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
     notFound();
   }
 
+  if (pageData.shouldRedirectToCanonical && pageData.agent?.publicId) {
+    const redirectQuery = new URLSearchParams();
+
+    for (const [key, value] of Object.entries(query)) {
+      if (typeof value === "string") {
+        redirectQuery.set(key, value);
+      }
+    }
+
+    const suffix = redirectQuery.toString();
+    redirect(`/a/${pageData.agent.publicId}/request${suffix ? `?${suffix}` : ""}`);
+  }
+
   if (pageData.publicUnavailableReason || !pageData.agent) {
     const unavailable = getPublicUnavailableContent("agent", pageData.publicUnavailableReason);
 
@@ -60,7 +73,7 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
           <p>{unavailable.description}</p>
           <div className="br-request-success__actions">
             <ButtonLink href="/" fullWidth>
-              На главную
+              РќР° РіР»Р°РІРЅСѓСЋ
             </ButtonLink>
           </div>
         </Panel>
@@ -91,11 +104,11 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
     return (
       <main className="br-auth-page">
         <Panel className="br-request-success" as="section">
-          <h1>Р—Р°СЏРІРєР° РІСЂРµРјРµРЅРЅРѕ РЅРµРґРѕСЃС‚СѓРїРЅР°</h1>
-          <p>РџРѕ СЌС‚РѕРјСѓ РѕР±СЉРµРєС‚Сѓ СЃРµР№С‡Р°СЃ РЅРµС‚ Р°РєС‚РёРІРЅС‹С… РЅРѕРјРµСЂРѕРІ РґР»СЏ Р·Р°РїСЂРѕСЃР° РЅР° РїСЂРѕР¶РёРІР°РЅРёРµ.</p>
+          <h1>Р вЂ”Р В°РЎРЏР Р†Р С”Р В° Р Р†РЎР‚Р ВµР СР ВµР Р…Р Р…Р С• Р Р…Р ВµР Т‘Р С•РЎРѓРЎвЂљРЎС“Р С—Р Р…Р В°</h1>
+          <p>Р СџР С• РЎРЊРЎвЂљР С•Р СРЎС“ Р С•Р В±РЎР‰Р ВµР С”РЎвЂљРЎС“ РЎРѓР ВµР в„–РЎвЂЎР В°РЎРѓ Р Р…Р ВµРЎвЂљ Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№РЎвЂ¦ Р Р…Р С•Р СР ВµРЎР‚Р С•Р Р† Р Т‘Р В»РЎРЏ Р В·Р В°Р С—РЎР‚Р С•РЎРѓР В° Р Р…Р В° Р С—РЎР‚Р С•Р В¶Р С‘Р Р†Р В°Р Р…Р С‘Р Вµ.</p>
           <div className="br-request-success__actions">
-            <ButtonLink href={`/a/${pageData.agent.slug}`} fullWidth>
-              Р’РµСЂРЅСѓС‚СЊСЃСЏ Рє РІРёС‚СЂРёРЅРµ
+            <ButtonLink href={`/a/${pageData.agent.publicId}`} fullWidth>
+              Р вЂ™Р ВµРЎР‚Р Р…РЎС“РЎвЂљРЎРЉРЎРѓРЎРЏ Р С” Р Р†Р С‘РЎвЂљРЎР‚Р С‘Р Р…Р Вµ
             </ButtonLink>
           </div>
         </Panel>
@@ -108,10 +121,10 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
       <Panel className="br-request-modal" as="section">
         <div className="br-request-modal__header">
           <div>
-            <h1>Оставить заявку</h1>
-            <p>Агент получит ваш запрос и вручную передаст его владельцу для уточнения доступности.</p>
+            <h1>РћСЃС‚Р°РІРёС‚СЊ Р·Р°СЏРІРєСѓ</h1>
+            <p>РђРіРµРЅС‚ РїРѕР»СѓС‡РёС‚ РІР°С€ Р·Р°РїСЂРѕСЃ Рё РІСЂСѓС‡РЅСѓСЋ РїРµСЂРµРґР°СЃС‚ РµРіРѕ РІР»Р°РґРµР»СЊС†Сѓ РґР»СЏ СѓС‚РѕС‡РЅРµРЅРёСЏ РґРѕСЃС‚СѓРїРЅРѕСЃС‚Рё.</p>
           </div>
-          <Link href={`/a/${pageData.agent.slug}`} className="br-request-modal__close" aria-label="Закрыть">
+          <Link href={`/a/${pageData.agent.publicId}`} className="br-request-modal__close" aria-label="Р—Р°РєСЂС‹С‚СЊ">
             x
           </Link>
         </div>
@@ -130,7 +143,7 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
           defaultRoomId={defaultRoomId}
           filters={pageData.filters}
           action={submitAgentGuestRequestAction}
-          hiddenFields={[{ name: "agentSlug", value: pageData.agent.slug }]}
+          hiddenFields={[{ name: "agentPublicId", value: pageData.agent.publicId }]}
         />
       </Panel>
     </main>

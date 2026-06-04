@@ -3,7 +3,7 @@ import { cache } from "react";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import type { AdminDashboardData, AdminPropertyItem, AdminSubscriptionItem, AdminUserItem } from "@/entities/admin/model/types";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase";
-import { buildOwnerPublicPath } from "@/shared/lib";
+import { buildAgentPublicPath, buildOwnerPublicPath } from "@/shared/lib";
 import type {
   SupabaseCollectionRow,
   SupabaseGuestRequestRow,
@@ -132,8 +132,8 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
       publicPageUrls.push(buildOwnerPublicPath(profile.slug) as string);
     }
 
-    if (profile.slug && roles.includes("agent")) {
-      publicPageUrls.push(`/a/${profile.slug}`);
+    if (profile.agent_public_id && roles.includes("agent")) {
+      publicPageUrls.push(buildAgentPublicPath(profile.agent_public_id) as string);
     }
 
     return {

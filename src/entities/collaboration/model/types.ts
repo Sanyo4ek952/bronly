@@ -7,6 +7,7 @@ export type AgentDashboardSummary = {
   incomingRequests: number;
   completedDeals: number;
   publicLinkLabel: string;
+  publicLinkHref: string | null;
 };
 
 export type AgentLinkStatus = "pending" | "active" | "declined" | "revoked";
@@ -96,7 +97,8 @@ export type PublicAgentPropertySection = {
 export type PublicAgentPageData = {
   agent: {
     id: string;
-    slug: string;
+    publicId: string;
+    legacySlug: string;
     displayName: string;
     phone: string;
     telegram: string;
@@ -105,4 +107,5 @@ export type PublicAgentPageData = {
   filters: PublicStayFilters;
   publicUnavailableReason: PublicUnavailableReason | null;
   publicWarningText: string | null;
+  shouldRedirectToCanonical: boolean;
 };

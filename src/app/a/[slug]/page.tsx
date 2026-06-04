@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { getPublicAgentPageData } from "@/entities/collaboration";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
@@ -15,11 +15,11 @@ function getSearchString(params: Record<string, string | string[] | undefined>, 
   return typeof value === "string" ? value : "";
 }
 
-function buildAgentRequestHref(agentSlug: string, propertySlug: string, roomId: string, query: URLSearchParams) {
+function buildAgentRequestHref(agentPublicId: string, propertySlug: string, roomId: string, query: URLSearchParams) {
   query.set("propertySlug", propertySlug);
   query.set("roomId", roomId);
 
-  return `/a/${agentSlug}/request?${query.toString()}`;
+  return `/a/${agentPublicId}/request?${query.toString()}`;
 }
 
 export default async function PublicAgentPage({ params, searchParams }: PublicAgentPageProps) {
@@ -36,6 +36,10 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
     notFound();
   }
 
+  if (pageData.shouldRedirectToCanonical && pageData.agent?.publicId) {
+    redirect(`/a/${pageData.agent.publicId}`);
+  }
+
   if (pageData.publicUnavailableReason || !pageData.agent) {
     const unavailable = getPublicUnavailableContent("agent", pageData.publicUnavailableReason);
 
@@ -47,7 +51,7 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
             <p>{unavailable.description}</p>
             <div className="br-request-success__actions">
               <ButtonLink href="/" fullWidth>
-                На главную
+                РќР° РіР»Р°РІРЅСѓСЋ
               </ButtonLink>
             </div>
           </section>
@@ -64,7 +68,7 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
         <header className="br-header br-header--public">
           <div>
             <h1>{agent.displayName}</h1>
-            <p>Агентская витрина Bronly. Агент принимает заявку и передает ее владельцу вручную.</p>
+            <p>РђРіРµРЅС‚СЃРєР°СЏ РІРёС‚СЂРёРЅР° Bronly. РђРіРµРЅС‚ РїСЂРёРЅРёРјР°РµС‚ Р·Р°СЏРІРєСѓ Рё РїРµСЂРµРґР°РµС‚ РµРµ РІР»Р°РґРµР»СЊС†Сѓ РІСЂСѓС‡РЅСѓСЋ.</p>
           </div>
           <div className="br-public-hero__actions">
             {agent.phone ? <Button variant="secondary">{agent.phone}</Button> : null}
@@ -74,7 +78,7 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
 
         {publicWarningText ? <div className="br-inline-notice">{publicWarningText}</div> : null}
         <div className="br-inline-notice br-inline-notice--soft">
-          В агентской витрине показана итоговая цена агента. Базовую цену владельца агент не меняет.
+          Р’ Р°РіРµРЅС‚СЃРєРѕР№ РІРёС‚СЂРёРЅРµ РїРѕРєР°Р·Р°РЅР° РёС‚РѕРіРѕРІР°СЏ С†РµРЅР° Р°РіРµРЅС‚Р°. Р‘Р°Р·РѕРІСѓСЋ С†РµРЅСѓ РІР»Р°РґРµР»СЊС†Р° Р°РіРµРЅС‚ РЅРµ РјРµРЅСЏРµС‚.
         </div>
 
         {properties.length ? (
@@ -91,7 +95,7 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
                 </div>
 
                 <PublicRoomBrowser
-                  publicBaseHref={`/a/${agent.slug}`}
+                  publicBaseHref={`/a/${agent.publicId}`}
                   propertySlug={section.property.slug}
                   rooms={section.rooms}
                   filters={filters}
@@ -106,7 +110,7 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
                     requestQuery.set("adults", String(currentFilters.adults));
                     requestQuery.set("rooms", String(currentFilters.rooms));
 
-                    return buildAgentRequestHref(agent.slug, section.property.slug, roomId, requestQuery);
+                    return buildAgentRequestHref(agent.publicId, section.property.slug, roomId, requestQuery);
                   }}
                 />
               </section>
@@ -116,8 +120,8 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
           <section className="br-dashboard-block br-card">
             <div className="br-dashboard-block__header">
               <div>
-                <h2>Пока нет доступных объектов</h2>
-                <p>Агентская витрина появится после активного сотрудничества с владельцем.</p>
+                <h2>РџРѕРєР° РЅРµС‚ РґРѕСЃС‚СѓРїРЅС‹С… РѕР±СЉРµРєС‚РѕРІ</h2>
+                <p>РђРіРµРЅС‚СЃРєР°СЏ РІРёС‚СЂРёРЅР° РїРѕСЏРІРёС‚СЃСЏ РїРѕСЃР»Рµ Р°РєС‚РёРІРЅРѕРіРѕ СЃРѕС‚СЂСѓРґРЅРёС‡РµСЃС‚РІР° СЃ РІР»Р°РґРµР»СЊС†РµРј.</p>
               </div>
             </div>
           </section>

@@ -27,6 +27,21 @@ async function resolveUniqueSlug(admin: ReturnType<typeof createSupabaseAdminCli
   }
 }
 
+function generateAgentPublicIdCandidate() {
+  return `ag_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+async function resolveUniqueAgentPublicId(admin: ReturnType<typeof createSupabaseAdminClient>) {
+  while (true) {
+    const candidate = generateAgentPublicIdCandidate();
+    const { data } = await admin.from("profiles").select("id").eq("agent_public_id", candidate).maybeSingle();
+
+    if (!data) {
+      return candidate;
+    }
+  }
+}
+
 export async function ensureAuthUserProfile(user: User): Promise<boolean> {
   const admin = createSupabaseAdminClient();
   const { data: existing } = await admin.from("profiles").select("id").eq("auth_user_id", user.id).maybeSingle();
@@ -53,12 +68,14 @@ export async function ensureAuthUserProfile(user: User): Promise<boolean> {
   const requestedSlug =
     (typeof metadata.slug === "string" && metadata.slug) || slugify(displayName);
   const slug = await resolveUniqueSlug(admin, slugify(requestedSlug));
+  const agentPublicId = role === "agent" ? await resolveUniqueAgentPublicId(admin) : null;
 
   const { data: profile, error: profileError } = await admin
     .from("profiles")
     .insert({
       auth_user_id: user.id,
       slug,
+      agent_public_id: agentPublicId,
       display_name: displayName,
       phone,
       whatsapp: phone,

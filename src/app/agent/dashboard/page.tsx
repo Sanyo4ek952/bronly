@@ -24,7 +24,13 @@ export default async function AgentDashboardPage() {
           <div className="br-summary-card__rows">
             <div className="br-summary-card__row">
               <span>Публичная ссылка</span>
-              <strong>{summary.publicLinkLabel}</strong>
+              {summary.publicLinkHref ? (
+                <Link href={summary.publicLinkHref}>
+                  <strong>{summary.publicLinkLabel}</strong>
+                </Link>
+              ) : (
+                <strong>{summary.publicLinkLabel}</strong>
+              )}
             </div>
             <div className="br-summary-card__row">
               <span>Активные связи</span>

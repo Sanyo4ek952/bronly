@@ -114,7 +114,7 @@ export async function signUpAction(formData: FormData) {
         display_name: displayName,
         phone,
         role,
-        slug,
+        ...(role === "owner" ? { slug } : {}),
       },
     },
   });
@@ -227,16 +227,27 @@ export async function updateProfileAction(formData: FormData) {
     redirect(`${getSettingsTargetPath(role)}?error=validation`);
   }
 
+  const payload: {
+    display_name: string;
+    phone: string;
+    whatsapp: string;
+    telegram: string;
+    slug?: string;
+  } = {
+    display_name: displayName,
+    phone,
+    whatsapp: phone,
+    telegram,
+  };
+
+  if (role !== "agent") {
+    payload.slug = slug;
+  }
+
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from("profiles")
-    .update({
-      display_name: displayName,
-      phone,
-      whatsapp: phone,
-      telegram,
-      slug,
-    })
+    .update(payload)
     .eq("id", profile.id);
 
   const targetPath = getSettingsTargetPath(role);

@@ -12,6 +12,7 @@ export type AuthProfile = {
   displayName: string;
   phone: string;
   slug: string;
+  agentPublicId: string;
   telegram: string;
   email: string;
   roles: AuthRole[];
@@ -94,7 +95,7 @@ export async function getCurrentAuthProfile(): Promise<AuthProfile | null> {
 
     let { data: profileRow } = await supabase
       .from("profiles")
-      .select("id, auth_user_id, display_name, phone, slug, telegram")
+      .select("id, auth_user_id, display_name, phone, slug, agent_public_id, telegram")
       .eq("auth_user_id", user.id)
       .maybeSingle();
 
@@ -106,7 +107,7 @@ export async function getCurrentAuthProfile(): Promise<AuthProfile | null> {
 
       const refetch = await supabase
         .from("profiles")
-        .select("id, auth_user_id, display_name, phone, slug, telegram")
+        .select("id, auth_user_id, display_name, phone, slug, agent_public_id, telegram")
         .eq("auth_user_id", user.id)
         .maybeSingle();
       profileRow = refetch.data;
@@ -127,6 +128,7 @@ export async function getCurrentAuthProfile(): Promise<AuthProfile | null> {
       displayName: (profileRow.display_name as string) ?? "",
       phone: (profileRow.phone as string | null) ?? "",
       slug: (profileRow.slug as string | null) ?? "",
+      agentPublicId: (profileRow.agent_public_id as string | null) ?? "",
       telegram: (profileRow.telegram as string | null) ?? "",
       email: user.email ?? "",
       roles: (roleRows ?? []).map((row) => row.role as AuthRole),

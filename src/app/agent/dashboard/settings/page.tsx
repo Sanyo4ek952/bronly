@@ -5,6 +5,7 @@ import { startTelegramNotificationLinkAction, updateProfileAction } from "@/app/
 import { getMyTelegramNotificationStatus } from "@/entities/notification";
 import { InstallAppCard } from "@/features/pwa/install-app";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
+import { buildAgentPublicPath } from "@/shared/lib/public-links";
 import { TelegramNotificationsCard } from "@/widgets/telegram-notifications-card";
 
 type AgentSettingsPageProps = {
@@ -38,6 +39,7 @@ export default async function AgentSettingsPage({ searchParams }: AgentSettingsP
   const params = await (searchParams ?? Promise.resolve(fallbackParams));
   const error = typeof params.error === "string" ? params.error : "";
   const success = typeof params.success === "string" ? params.success : "";
+  const publicAgentPath = buildAgentPublicPath(profile.agentPublicId);
 
   return (
     <section className="br-requests-layout">
@@ -66,12 +68,18 @@ export default async function AgentSettingsPage({ searchParams }: AgentSettingsP
               <input id="email" className="br-field" defaultValue={profile.email} disabled />
             </div>
             <div className="br-form-field">
-              <label className="br-label" htmlFor="slug">Slug агента</label>
-              <input id="slug" name="slug" className="br-field" defaultValue={profile.slug} />
-            </div>
-            <div className="br-form-field">
               <label className="br-label" htmlFor="telegram">Telegram</label>
               <input id="telegram" name="telegram" className="br-field" defaultValue={profile.telegram} />
+            </div>
+            <div className="br-form-field">
+              <span className="br-label">Публичная ссылка</span>
+              {publicAgentPath ? (
+                <Link href={publicAgentPath} className="br-field" style={{ display: "block", textDecoration: "none" }}>
+                  {publicAgentPath}
+                </Link>
+              ) : (
+                <div className="br-field">Ссылка генерируется автоматически.</div>
+              )}
             </div>
           </div>
           <div className="br-active-step__actions">

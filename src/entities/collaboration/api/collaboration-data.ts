@@ -18,6 +18,7 @@ import type {
   SupabaseRoomAgentMarkupRow,
 } from "@/shared/api/supabase/types";
 import { formatDateTimeLabel } from "@/shared/lib/date";
+import { buildAgentPublicPath } from "@/shared/lib/public-links";
 
 type PropertyLookupRow = {
   id: string;
@@ -39,11 +40,14 @@ type CollaborationRoomRow = {
 };
 
 function getFallbackSummary(profile: AuthProfile): AgentDashboardSummary {
+  const publicLinkHref = buildAgentPublicPath(profile.agentPublicId);
+
   return {
     activeCollaborations: 0,
     incomingRequests: 0,
     completedDeals: 0,
-    publicLinkLabel: profile.slug ? `/a/${profile.slug}` : "Заполните slug в настройках",
+    publicLinkLabel: publicLinkHref ?? "",
+    publicLinkHref,
   };
 }
 
@@ -90,7 +94,8 @@ export async function getAgentDashboardSummary(profile: AuthProfile): Promise<Ag
       activeCollaborations: activeCollaborations ?? 0,
       incomingRequests: incomingRequests ?? 0,
       completedDeals: completedDeals ?? 0,
-      publicLinkLabel: profile.slug ? `/a/${profile.slug}` : "Заполните slug в настройках",
+      publicLinkLabel: buildAgentPublicPath(profile.agentPublicId) ?? "",
+      publicLinkHref: buildAgentPublicPath(profile.agentPublicId),
     };
   } catch {
     return getFallbackSummary(profile);
