@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { createOwnerRoom } from "@/app/dashboard/properties/actions";
 import { getRoomCreateNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerPropertyDetail } from "@/entities/property";
+import { getSubscriptionRuntimeState } from "@/entities/subscription";
+import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { Button, ButtonLink, Input, Textarea } from "@/shared/ui";
 import { PropertySectionNav } from "@/widgets/property-section-nav";
 
@@ -11,13 +13,40 @@ type PropertyRoomCreatePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+function getActiveRoomWord(count: number) {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+
+  if (mod10 === 1 && mod100 !== 11) {
+    return "активный номер";
+  }
+
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return "активных номера";
+  }
+
+  return "активных номеров";
+}
+
 export default async function PropertyRoomCreatePage({ params, searchParams }: PropertyRoomCreatePageProps) {
   const { propertyId } = await params;
-  const property = await getOwnerPropertyDetail(propertyId);
+  const [property, profile] = await Promise.all([getOwnerPropertyDetail(propertyId), getCurrentAuthProfile()]);
 
   if (!property) {
     notFound();
   }
+
+  const subscription = profile ? await getSubscriptionRuntimeState(profile.id, "owner") : null;
+  const roomUsageLabel = subscription
+    ? subscription.roomLimit == null
+      ? `${subscription.activeRoomCount} активных номеров`
+      : `${subscription.activeRoomCount} из ${subscription.roomLimit} активных номеров`
+    : null;
+  const roomLimitHint = subscription?.isRoomLimitReached
+    ? "Лимит активных номеров уже исчерпан. Вы можете сохранить новый номер как неактивный, а затем деактивировать другой номер или продлить подписку."
+    : subscription?.roomLimit != null && subscription.remainingRoomSlots != null
+      ? `Сейчас доступно еще ${subscription.remainingRoomSlots} ${getActiveRoomWord(subscription.remainingRoomSlots)}.`
+      : null;
 
   const fallbackParams: Record<string, string | string[] | undefined> = {};
   const resolvedSearchParams = await (searchParams ?? Promise.resolve(fallbackParams));
@@ -40,6 +69,12 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
         <PropertySectionNav propertyId={property.id} active="rooms" />
 
         {notice ? <div className="br-inline-notice">{notice}</div> : null}
+        {subscription && roomUsageLabel ? (
+          <div className="br-owner-muted">
+            Подписка: {roomUsageLabel}
+            {roomLimitHint ? ` — ${roomLimitHint}` : ""}
+          </div>
+        ) : null}
       </div>
 
       <section className="br-dashboard-block br-card">

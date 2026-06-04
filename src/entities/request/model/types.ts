@@ -11,9 +11,12 @@ export type OwnerRequestItem = {
   checkIn: string;
   checkOut: string;
   guestsLabel: string;
+  roomsCount: number;
   comment: string;
   totalPrice: number;
-  pricePerNight: number;
+  quotedPricePerNight: number;
+  basePricePerNight: number;
+  completionRequestedAt: string | null;
 };
 
 export type GuestRequest = OwnerRequestItem;
@@ -26,5 +29,11 @@ export type AgentRequestItem = {
   createdAt: string;
   source: "agent" | "collection";
   status: "new" | "accepted_by_owner" | "rejected" | "transferred_to_owner" | "completed";
+  guestsLabel: string;
+  roomsCount: number;
+  totalPrice: number;
+  quotedPricePerNight: number;
   canTransferToOwner: boolean;
+  canRequestCompletion: boolean;
+  completionRequestedAt: string | null;
 };

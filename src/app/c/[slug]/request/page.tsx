@@ -68,7 +68,7 @@ export default async function PublicCollectionRequestPage({ params, searchParams
   }
 
   const propertySlug = getSearchString(query, "propertySlug");
-  const error = getSearchString(query, "error");
+  const requestedError = getSearchString(query, "error");
   const requestedRoomId = getSearchString(query, "roomId");
   const selectedSection =
     pageData.sections.find((section) => section.property.slug === propertySlug) ?? pageData.sections[0];
@@ -78,11 +78,30 @@ export default async function PublicCollectionRequestPage({ params, searchParams
   }
 
   const activeRooms = selectedSection.rooms.filter((room) => room.status === "active");
+  const hasRequestedRoom = Boolean(requestedRoomId);
+  const requestedRoomIsValid = hasRequestedRoom ? activeRooms.some((room) => room.id === requestedRoomId) : true;
   const defaultRoomId =
-    activeRooms.find((room) => room.id === requestedRoomId)?.id ??
+    (requestedRoomIsValid ? activeRooms.find((room) => room.id === requestedRoomId)?.id : undefined) ??
     activeRooms.find((room) => room.isAvailableForFilter)?.id ??
     activeRooms[0]?.id ??
     "";
+  const error = requestedError || (!requestedRoomIsValid ? "room" : "");
+
+  if (!activeRooms.length) {
+    return (
+      <main className="br-auth-page">
+        <Panel className="br-request-success" as="section">
+          <h1>Р—Р°СЏРІРєР° РІСЂРµРјРµРЅРЅРѕ РЅРµРґРѕСЃС‚СѓРїРЅР°</h1>
+          <p>РџРѕ СЌС‚РѕРјСѓ РѕР±СЉРµРєС‚Сѓ СЃРµР№С‡Р°СЃ РЅРµС‚ Р°РєС‚РёРІРЅС‹С… РЅРѕРјРµСЂРѕРІ РґР»СЏ Р·Р°РїСЂРѕСЃР° РЅР° РїСЂРѕР¶РёРІР°РЅРёРµ.</p>
+          <div className="br-request-success__actions">
+            <ButtonLink href={`/c/${pageData.collection.slug}`} fullWidth>
+              Р’РµСЂРЅСѓС‚СЊСЃСЏ Рє РєРѕР»Р»РµРєС†РёРё
+            </ButtonLink>
+          </div>
+        </Panel>
+      </main>
+    );
+  }
 
   return (
     <main className="br-auth-page">

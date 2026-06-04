@@ -16,12 +16,12 @@ type RequestsBrowserProps = {
 type RequestStatusFilter = OwnerRequestItem["status"] | "all";
 
 const requestStatuses = [
-  { label: "Все", value: "all" },
-  { label: "Новые", value: "new" },
-  { label: "Переданы владельцу", value: "transferred_to_owner" },
-  { label: "Приняты владельцем", value: "accepted_by_owner" },
-  { label: "Отклоненные", value: "rejected" },
-  { label: "Завершенные", value: "completed" },
+  { label: "Р’СЃРµ", value: "all" },
+  { label: "РќРѕРІС‹Рµ", value: "new" },
+  { label: "РџРµСЂРµРґР°РЅС‹ РІР»Р°РґРµР»СЊС†Сѓ", value: "transferred_to_owner" },
+  { label: "РџСЂРёРЅСЏС‚С‹ РІР»Р°РґРµР»СЊС†РµРј", value: "accepted_by_owner" },
+  { label: "РћС‚РєР»РѕРЅРµРЅРЅС‹Рµ", value: "rejected" },
+  { label: "Р—Р°РІРµСЂС€РµРЅРЅС‹Рµ", value: "completed" },
 ] as const;
 
 function getRequestStatusVariant(status: OwnerRequestItem["status"]) {
@@ -42,26 +42,26 @@ function getRequestStatusVariant(status: OwnerRequestItem["status"]) {
 function getRequestStatusLabel(status: OwnerRequestItem["status"]) {
   switch (status) {
     case "accepted_by_owner":
-      return "Принята владельцем";
+      return "РџСЂРёРЅСЏС‚Р° РІР»Р°РґРµР»СЊС†РµРј";
     case "rejected":
-      return "Отклонена";
+      return "РћС‚РєР»РѕРЅРµРЅР°";
     case "transferred_to_owner":
-      return "Передана владельцу";
+      return "РџРµСЂРµРґР°РЅР° РІР»Р°РґРµР»СЊС†Сѓ";
     case "completed":
-      return "Завершена";
+      return "Р—Р°РІРµСЂС€РµРЅР°";
     default:
-      return "Новая";
+      return "РќРѕРІР°СЏ";
   }
 }
 
 function getRequestSourceLabel(source: OwnerRequestItem["source"]) {
   switch (source) {
     case "agent":
-      return "Агентская ссылка";
+      return "РђРіРµРЅС‚СЃРєР°СЏ СЃСЃС‹Р»РєР°";
     case "collection":
-      return "Коллекция";
+      return "РљРѕР»Р»РµРєС†РёСЏ";
     default:
-      return "Ссылка владельца";
+      return "РЎСЃС‹Р»РєР° РІР»Р°РґРµР»СЊС†Р°";
   }
 }
 
@@ -75,9 +75,9 @@ export function RequestsBrowser({
   const [selectedRoomId, setSelectedRoomId] = useState("all");
   const [preferredActiveRequestId, setPreferredActiveRequestId] = useState(requests[0]?.id ?? "");
 
-  const roomOptions = Array.from(
-    new Map(requests.map((request) => [request.roomId, request.roomTitle])).entries(),
-  ).map(([roomId, roomTitle]) => ({ value: roomId, label: roomTitle }));
+  const roomOptions = Array.from(new Map(requests.map((request) => [request.roomId, request.roomTitle])).entries()).map(
+    ([roomId, roomTitle]) => ({ value: roomId, label: roomTitle }),
+  );
 
   const filteredRequests = requests.filter((request) => {
     if (statusFilter !== "all" && request.status !== statusFilter) {
@@ -100,24 +100,24 @@ export function RequestsBrowser({
     <>
       <div className="br-dashboard-block__header">
         <div>
-          <h2>Заявки</h2>
-          <p>Просматривайте запросы на проживание и вручную обновляйте их статус.</p>
+          <h2>Р—Р°СЏРІРєРё</h2>
+          <p>РџСЂРѕСЃРјР°С‚СЂРёРІР°Р№С‚Рµ Р·Р°РїСЂРѕСЃС‹ РЅР° РїСЂРѕР¶РёРІР°РЅРёРµ Рё РІСЂСѓС‡РЅСѓСЋ РѕР±РЅРѕРІР»СЏР№С‚Рµ РёС… СЃС‚Р°С‚СѓСЃ.</p>
         </div>
         <Select
           className="br-select-inline"
           value={selectedRoomId}
           onChange={(event) => setSelectedRoomId(event.target.value)}
-          options={[{ value: "all", label: "Все номера" }, ...roomOptions]}
+          options={[{ value: "all", label: "Р’СЃРµ РЅРѕРјРµСЂР°" }, ...roomOptions]}
         />
       </div>
 
       <Tabs
-        ariaLabel="Статусы заявок"
+        ariaLabel="РЎС‚Р°С‚СѓСЃС‹ Р·Р°СЏРІРѕРє"
         items={requestStatuses.map((item) => ({
           ...item,
           label:
             item.value === "all"
-              ? `Все (${requests.length})`
+              ? `Р’СЃРµ (${requests.length})`
               : `${item.label} (${requests.filter((request) => request.status === item.value).length})`,
         }))}
         value={statusFilter}
@@ -126,8 +126,8 @@ export function RequestsBrowser({
 
       {filteredRequests.length === 0 ? (
         <div className="br-empty-state">
-          <strong>Подходящих заявок пока нет</strong>
-          <p>Попробуйте сменить фильтр по статусу или номеру.</p>
+          <strong>РџРѕРґС…РѕРґСЏС‰РёС… Р·Р°СЏРІРѕРє РїРѕРєР° РЅРµС‚</strong>
+          <p>РџРѕРїСЂРѕР±СѓР№С‚Рµ СЃРјРµРЅРёС‚СЊ С„РёР»СЊС‚СЂ РїРѕ СЃС‚Р°С‚СѓСЃСѓ РёР»Рё РЅРѕРјРµСЂСѓ.</p>
         </div>
       ) : (
         <div className="br-requests-layout">
@@ -144,10 +144,9 @@ export function RequestsBrowser({
                   <strong>{item.guestName}</strong>
                   <span>{item.createdAt}</span>
                   <span>{item.propertyTitle}</span>
+                  <span>{item.roomTitle}</span>
                 </div>
-                <StatusPill variant={getRequestStatusVariant(item.status)}>
-                  {getRequestStatusLabel(item.status)}
-                </StatusPill>
+                <StatusPill variant={getRequestStatusVariant(item.status)}>{getRequestStatusLabel(item.status)}</StatusPill>
               </button>
             ))}
           </div>
@@ -165,60 +164,77 @@ export function RequestsBrowser({
               </div>
               <dl className="br-request-detail__grid">
                 <div>
-                  <dt>Источник</dt>
+                  <dt>РСЃС‚РѕС‡РЅРёРє</dt>
                   <dd>{getRequestSourceLabel(activeRequest.source)}</dd>
                 </div>
                 <div>
-                  <dt>Объект</dt>
+                  <dt>РћР±СЉРµРєС‚</dt>
                   <dd>{activeRequest.propertyTitle}</dd>
                 </div>
                 <div>
-                  <dt>Номер</dt>
+                  <dt>РќРѕРјРµСЂ</dt>
                   <dd>{activeRequest.roomTitle}</dd>
                 </div>
                 <div>
-                  <dt>Заезд</dt>
+                  <dt>Р—Р°РµР·Рґ</dt>
                   <dd>{activeRequest.checkIn}</dd>
                 </div>
                 <div>
-                  <dt>Выезд</dt>
+                  <dt>Р’С‹РµР·Рґ</dt>
                   <dd>{activeRequest.checkOut}</dd>
                 </div>
                 <div>
-                  <dt>Гости</dt>
+                  <dt>Р“РѕСЃС‚Рё</dt>
                   <dd>{activeRequest.guestsLabel}</dd>
                 </div>
                 <div>
-                  <dt>Комментарий</dt>
-                  <dd>{activeRequest.comment || "Без комментария"}</dd>
+                  <dt>РљРѕРјРЅР°С‚</dt>
+                  <dd>{activeRequest.roomsCount}</dd>
                 </div>
                 <div>
-                  <dt>Сумма</dt>
-                  <dd>{activeRequest.totalPrice.toLocaleString("ru-RU")} ₽</dd>
+                  <dt>РљРѕРјРјРµРЅС‚Р°СЂРёР№</dt>
+                  <dd>{activeRequest.comment || "Р‘РµР· РєРѕРјРјРµРЅС‚Р°СЂРёСЏ"}</dd>
                 </div>
                 <div>
-                  <dt>Базовая цена</dt>
-                  <dd>{`от ${activeRequest.pricePerNight.toLocaleString("ru-RU")} ₽ / ночь`}</dd>
+                  <dt>РЎСѓРјРјР°</dt>
+                  <dd>{activeRequest.totalPrice.toLocaleString("ru-RU")} в‚Ѕ</dd>
+                </div>
+                <div>
+                  <dt>Р¦РµРЅР° РІ Р·Р°СЏРІРєРµ</dt>
+                  <dd>{`${activeRequest.quotedPricePerNight.toLocaleString("ru-RU")} в‚Ѕ / РЅРѕС‡СЊ`}</dd>
+                </div>
+                <div>
+                  <dt>Р‘Р°Р·РѕРІР°СЏ С†РµРЅР° РЅРѕРјРµСЂР°</dt>
+                  <dd>{`${activeRequest.basePricePerNight.toLocaleString("ru-RU")} в‚Ѕ / РЅРѕС‡СЊ`}</dd>
                 </div>
               </dl>
+              {activeRequest.status === "accepted_by_owner" && activeRequest.completionRequestedAt ? (
+                <p className="br-inline-notice br-inline-notice--soft" style={{ marginTop: 18 }}>
+                  РђРіРµРЅС‚ РїСЂРѕСЃРёС‚ РѕС‚РјРµС‚РёС‚СЊ СЌС‚Сѓ Р·Р°СЏРІРєСѓ Р·Р°РІРµСЂС€РµРЅРЅРѕР№.
+                </p>
+              ) : null}
               <div className="br-request-detail__actions">
-                {(activeRequest.status === "new" || activeRequest.status === "transferred_to_owner") ? (
+                {activeRequest.status === "new" || activeRequest.status === "transferred_to_owner" ? (
                   <form action={acceptAction}>
                     <input type="hidden" name="requestId" value={activeRequest.id} />
-                    <Button fullWidth type="submit">Принять владельцем</Button>
+                    <Button fullWidth type="submit">
+                      РџСЂРёРЅСЏС‚СЊ РІР»Р°РґРµР»СЊС†РµРј
+                    </Button>
                   </form>
                 ) : null}
                 {activeRequest.status === "accepted_by_owner" ? (
                   <form action={completeAction}>
                     <input type="hidden" name="requestId" value={activeRequest.id} />
-                    <Button fullWidth type="submit">Отметить завершенной</Button>
+                    <Button fullWidth type="submit">
+                      РћС‚РјРµС‚РёС‚СЊ Р·Р°РІРµСЂС€РµРЅРЅРѕР№
+                    </Button>
                   </form>
                 ) : null}
                 {activeRequest.status !== "completed" && activeRequest.status !== "rejected" ? (
                   <form action={rejectAction}>
                     <input type="hidden" name="requestId" value={activeRequest.id} />
                     <Button variant="danger" fullWidth type="submit">
-                      Отклонить
+                      РћС‚РєР»РѕРЅРёС‚СЊ
                     </Button>
                   </form>
                 ) : null}

@@ -23,6 +23,57 @@ import { formatDateLabel, formatDateTimeLabel } from "@/shared/lib/date";
 type RequestStatus = OwnerRequestItem["status"];
 type RequestSource = OwnerRequestItem["source"];
 
+function getSnapshotNumber(snapshot: Record<string, unknown>, key: string) {
+  const rawValue = snapshot[key];
+
+  if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+    return rawValue;
+  }
+
+  if (typeof rawValue === "string") {
+    const parsedValue = Number.parseFloat(rawValue);
+
+    if (Number.isFinite(parsedValue)) {
+      return parsedValue;
+    }
+  }
+
+  return null;
+}
+
+function getSnapshotRoomsCount(snapshot: Record<string, unknown>) {
+  const snapshotValue = getSnapshotNumber(snapshot, "rooms_count");
+
+  if (snapshotValue != null) {
+    return Math.max(1, Math.trunc(snapshotValue));
+  }
+
+  return null;
+}
+
+function getRequestRoomsCount(request: Pick<SupabaseGuestRequestRow, "rooms_count" | "pricing_snapshot">) {
+  return request.rooms_count ?? getSnapshotRoomsCount(request.pricing_snapshot) ?? 1;
+}
+
+function getSnapshotPricePerNight(request: Pick<SupabaseGuestRequestRow, "pricing_snapshot" | "base_price_per_night">) {
+  return (
+    getSnapshotNumber(request.pricing_snapshot, "display_price_per_night") ??
+    getSnapshotNumber(request.pricing_snapshot, "base_price_per_night") ??
+    Number(request.base_price_per_night ?? 0)
+  );
+}
+
+function getSnapshotBasePricePerNight(request: Pick<SupabaseGuestRequestRow, "pricing_snapshot" | "base_price_per_night">) {
+  return getSnapshotNumber(request.pricing_snapshot, "base_price_per_night") ?? Number(request.base_price_per_night ?? 0);
+}
+
+function getSnapshotTotalPrice(request: Pick<SupabaseGuestRequestRow, "pricing_snapshot" | "total_price" | "base_price_per_night">) {
+  return (
+    getSnapshotNumber(request.pricing_snapshot, "total_price") ??
+    Number(request.total_price ?? request.base_price_per_night ?? 0)
+  );
+}
+
 function formatFullGuestLabel(adultsCount: number, childrenCount: number) {
   const parts = [`${adultsCount} взр.`];
 
@@ -60,6 +111,10 @@ function canOwnerReject(status: RequestStatus) {
 
 function canOwnerComplete(status: RequestStatus) {
   return status === "accepted_by_owner";
+}
+
+function shouldOwnerSeeRequestAsNew(request: Pick<SupabaseGuestRequestRow, "agent_id" | "owner_id" | "source" | "status">) {
+  return normalizeStatus(request.status) === "new" && !isAgentMediatedRequest(request);
 }
 
 async function getRoomAndPropertyMeta(
@@ -110,9 +165,12 @@ function mapOwnerRequestItem(
     checkIn: formatDateLabel(request.check_in),
     checkOut: formatDateLabel(request.check_out),
     guestsLabel: formatFullGuestLabel(request.adults_count, request.children_count),
+    roomsCount: getRequestRoomsCount(request),
     comment: request.guest_comment ?? "",
-    totalPrice: Number(request.total_price ?? request.base_price_per_night ?? roomMeta?.pricePerNight ?? 0),
-    pricePerNight: roomMeta?.pricePerNight ?? Number(request.base_price_per_night ?? 0),
+    totalPrice: getSnapshotTotalPrice(request),
+    quotedPricePerNight: getSnapshotPricePerNight(request),
+    basePricePerNight: getSnapshotBasePricePerNight(request),
+    completionRequestedAt: request.completion_requested_at,
   };
 }
 
@@ -149,6 +207,7 @@ export async function createGuestRequest(input: {
   checkIn: string;
   checkOut: string;
   adultsCount: number;
+  roomsCount: number;
   guestComment: string;
   source?: RequestSource;
   agentProfileId?: string | null;
@@ -164,6 +223,7 @@ export async function createGuestRequest(input: {
     checkIn: input.checkIn,
     checkOut: input.checkOut,
     adults: input.adultsCount,
+    rooms: input.roomsCount,
   });
 
   if (!filters.hasDates) {
@@ -286,6 +346,7 @@ export async function createGuestRequest(input: {
     guest_comment: input.guestComment,
     adults_count: filters.adults,
     children_count: 0,
+    rooms_count: filters.rooms,
     check_in: filters.checkIn,
     check_out: filters.checkOut,
     status: "new",
@@ -299,6 +360,7 @@ export async function createGuestRequest(input: {
       check_in: filters.checkIn,
       check_out: filters.checkOut,
       adults_count: filters.adults,
+      rooms_count: filters.rooms,
       nights: ownerPricing.nights,
       base_price_per_night: basePricePerNight,
       display_price_per_night: hasAgentPricing
@@ -470,6 +532,69 @@ export async function transferAgentRequestToOwner(input: { requestId: string }) 
   return { ok: true as const };
 }
 
+export async function requestAgentCompletion(input: { requestId: string }) {
+  if (!canUseSupabase()) {
+    return { ok: true as const };
+  }
+
+  const profile = await getCurrentAuthProfile();
+
+  if (!profile) {
+    return { ok: false as const, reason: "unauthorized" as const };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.from("guest_requests").select("*").eq("id", input.requestId).maybeSingle();
+  const request = data as SupabaseGuestRequestRow | null;
+
+  if (!request || request.agent_id !== profile.id || (request.source !== "agent" && request.source !== "collection")) {
+    return { ok: false as const, reason: "not_found" as const };
+  }
+
+  const currentStatus = normalizeStatus(request.status);
+
+  if (currentStatus !== "accepted_by_owner") {
+    return { ok: false as const, reason: "invalid_transition" as const };
+  }
+
+  if (request.completion_requested_at) {
+    return { ok: true as const };
+  }
+
+  const requestedAt = new Date().toISOString();
+  const { error } = await supabase
+    .from("guest_requests")
+    .update({
+      completion_requested_at: requestedAt,
+      updated_at: requestedAt,
+    })
+    .eq("id", input.requestId);
+
+  if (error) {
+    return { ok: false as const, reason: "save_failed" as const };
+  }
+
+  const admin = createSupabaseAdminClient();
+  const [{ data: propertyData }, { data: roomData }] = await Promise.all([
+    admin.from("properties").select("title").eq("id", request.property_id).maybeSingle(),
+    admin.from("rooms").select("title").eq("id", request.room_id).maybeSingle(),
+  ]);
+
+  await createNotificationEvent({
+    recipientId: request.owner_id,
+    eventType: "request_completion_requested",
+    payload: {
+      requestId: request.id,
+      propertyId: request.property_id,
+      propertyTitle: (propertyData?.title as string | null) ?? undefined,
+      roomTitle: (roomData?.title as string | null) ?? undefined,
+      linkPath: "/dashboard/requests",
+    },
+  });
+
+  return { ok: true as const };
+}
+
 export async function getAgentRequests(profile: { id: string }): Promise<AgentRequestItem[]> {
   if (!canUseSupabase()) {
     return [];
@@ -513,7 +638,16 @@ export async function getAgentRequests(profile: { id: string }): Promise<AgentRe
         createdAt: formatDateTimeLabel(request.created_at),
         source: request.source,
         status,
+        guestsLabel: formatFullGuestLabel(request.adults_count, request.children_count),
+        roomsCount: getRequestRoomsCount(request),
+        totalPrice: getSnapshotTotalPrice(request),
+        quotedPricePerNight: getSnapshotPricePerNight(request),
         canTransferToOwner: status === "new" && request.owner_id !== profile.id,
+        canRequestCompletion:
+          status === "accepted_by_owner" &&
+          request.owner_id !== profile.id &&
+          request.completion_requested_at == null,
+        completionRequestedAt: request.completion_requested_at,
       };
     });
   } catch {

@@ -9,26 +9,97 @@ export type PropertyPhoto = {
 };
 
 export type PublicPropertyPageData = {
-  property: {
+  owner: {
     id: string;
-    title: string;
-    shortTitle: string;
     slug: string;
-    propertyType: string;
-    city: string;
-    address: string;
-    timezone: string;
-    shortDescription: string;
-    fullDescription: string;
+    displayName: string;
     phone: string;
     whatsapp: string;
     telegram: string;
-    checkInTime: string;
-    checkOutTime: string;
-    photos: PropertyPhoto[];
-    features: string[];
-    houseRules: string[];
   } | null;
+  properties: Array<{
+    property: {
+      id: string;
+      title: string;
+      shortTitle: string;
+      slug: string;
+      propertyType: string;
+      city: string;
+      address: string;
+      timezone: string;
+      shortDescription: string;
+      fullDescription: string;
+      phone: string;
+      whatsapp: string;
+      telegram: string;
+      checkInTime: string;
+      checkOutTime: string;
+      photos: PropertyPhoto[];
+      features: string[];
+      houseRules: string[];
+    };
+    rooms: PublicRoom[];
+  }>;
+  filters: PublicStayFilters;
+  publicUnavailableReason: PublicUnavailableReason | null;
+  publicWarningText: string | null;
+};
+
+export type PublicPropertySection = PublicPropertyPageData["properties"][number];
+
+export type PublicPropertySummary = {
+  id: string;
+  title: string;
+  shortTitle: string;
+  slug: string;
+  propertyType: string;
+  city: string;
+  address: string;
+  timezone: string;
+  shortDescription: string;
+  fullDescription: string;
+  phone: string;
+  whatsapp: string;
+  telegram: string;
+  checkInTime: string;
+  checkOutTime: string;
+  photos: PropertyPhoto[];
+  features: string[];
+  houseRules: string[];
+};
+
+export type OwnerPublicProfile = {
+  id: string;
+  slug: string;
+  displayName: string;
+  phone: string;
+  whatsapp: string;
+  telegram: string;
+};
+
+export type LegacyPublicProperty = {
+  id: string;
+  title: string;
+  shortTitle: string;
+  slug: string;
+  propertyType: string;
+  city: string;
+  address: string;
+  timezone: string;
+  shortDescription: string;
+  fullDescription: string;
+  phone: string;
+  whatsapp: string;
+  telegram: string;
+  checkInTime: string;
+  checkOutTime: string;
+  photos: PropertyPhoto[];
+  features: string[];
+  houseRules: string[];
+};
+
+export type DeprecatedPublicPropertyPageData = {
+  property: LegacyPublicProperty | null;
   rooms: PublicRoom[];
   filters: PublicStayFilters;
   publicUnavailableReason: PublicUnavailableReason | null;
@@ -40,7 +111,7 @@ export type OwnerDashboardSummary = {
   rooms: number;
   activeRooms: number;
   newRequests: number;
-  publicUrl: string;
+  publicUrl: string | null;
   subscriptionStatus: string;
   subscriptionStatusLabel: string;
   subscriptionPlan: string;
@@ -52,6 +123,7 @@ export type OwnerDashboardSummary = {
 
 export type OwnerPropertyListItem = {
   id: string;
+  ownerPublicSlug: string | null;
   slug: string;
   title: string;
   shortTitle: string;
@@ -71,6 +143,7 @@ export type OwnerPropertyListItem = {
 export type OwnerPropertyDetail = {
   id: string;
   ownerId: string;
+  ownerPublicSlug: string | null;
   slug: string;
   title: string;
   shortTitle: string;

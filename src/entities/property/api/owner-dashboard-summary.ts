@@ -5,7 +5,17 @@ import type { OwnerDashboardSummary } from "@/entities/property/model/types";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { canUseSupabase } from "@/shared/api/supabase/server";
 import { createSupabaseServerClient, getCurrentAuthProfile } from "@/shared/api/supabase/server-auth";
+import { buildOwnerPublicPath } from "@/shared/lib";
 import { formatDateLabel } from "@/shared/lib/date";
+
+function shouldOwnerSeeRequestAsNew(request: {
+  owner_id: string;
+  agent_id: string | null;
+  source: "owner" | "agent" | "collection";
+  status: "new" | "accepted_by_owner" | "rejected" | "transferred_to_owner" | "completed";
+}) {
+  return !request.agent_id || request.agent_id === request.owner_id || request.source === "owner";
+}
 
 function getSubscriptionWarningText(input: { status: string; graceEndsAt: string | null }) {
   if (input.status === "grace") {
@@ -36,11 +46,10 @@ export const getOwnerDashboardSummary = cache(async (): Promise<OwnerDashboardSu
     const supabase = await createSupabaseServerClient();
     const { data: propertyRows } = await supabase
       .from("properties")
-      .select("id, slug")
+      .select("id")
       .eq("owner_id", profile.id)
       .order("created_at", { ascending: true });
 
-    const firstProperty = (propertyRows ?? [])[0] as { id: string; slug: string } | undefined;
     const subscription = await getSubscriptionRuntimeState(profile.id, "owner");
 
     if (!(propertyRows ?? []).length) {
@@ -49,7 +58,7 @@ export const getOwnerDashboardSummary = cache(async (): Promise<OwnerDashboardSu
         rooms: 0,
         activeRooms: 0,
         newRequests: 0,
-        publicUrl: dashboardStats.publicUrl,
+        publicUrl: buildOwnerPublicPath(profile.slug),
         subscriptionStatus: subscription.status,
         subscriptionStatusLabel: subscription.statusLabel,
         subscriptionPlan: subscription.planName,
@@ -62,7 +71,7 @@ export const getOwnerDashboardSummary = cache(async (): Promise<OwnerDashboardSu
       };
     }
 
-    const [{ count: objectCount }, { data: roomRows }, { count: newRequestCount }] = await Promise.all([
+    const [{ count: objectCount }, { data: roomRows }, { data: newRequestRows }] = await Promise.all([
       supabase.from("properties").select("*", { count: "exact", head: true }).eq("owner_id", profile.id),
       supabase.from("rooms").select("id, is_active").in(
         "property_id",
@@ -70,9 +79,8 @@ export const getOwnerDashboardSummary = cache(async (): Promise<OwnerDashboardSu
       ),
       supabase
         .from("guest_requests")
-        .select("*", { count: "exact", head: true })
+        .select("owner_id, agent_id, source, status")
         .eq("owner_id", profile.id)
-        .neq("source", "agent")
         .eq("status", "new"),
     ]);
 
@@ -83,8 +91,14 @@ export const getOwnerDashboardSummary = cache(async (): Promise<OwnerDashboardSu
       objects: objectCount ?? propertyRows?.length ?? dashboardStats.objects,
       rooms: safeRoomRows.length,
       activeRooms,
-      newRequests: newRequestCount ?? 0,
-      publicUrl: firstProperty?.slug ? `/p/${firstProperty.slug}` : dashboardStats.publicUrl,
+      newRequests:
+        ((newRequestRows ?? []) as Array<{
+          owner_id: string;
+          agent_id: string | null;
+          source: "owner" | "agent" | "collection";
+          status: "new" | "accepted_by_owner" | "rejected" | "transferred_to_owner" | "completed";
+        }>).filter(shouldOwnerSeeRequestAsNew).length,
+      publicUrl: buildOwnerPublicPath(profile.slug),
       subscriptionStatus: subscription.status,
       subscriptionStatusLabel: subscription.statusLabel,
       subscriptionPlan: subscription.planName,

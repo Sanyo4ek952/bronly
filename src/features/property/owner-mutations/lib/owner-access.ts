@@ -23,3 +23,18 @@ export async function requireOwnerMutationAccess(redirectPath: string) {
 
   return profile;
 }
+
+export async function requireOwnerActiveRoomSlotAccess(redirectPath: string) {
+  const profile = await requireOwnerProfile();
+  const subscription = await getSubscriptionRuntimeState(profile.id, "owner");
+
+  if (!subscription.isMutationAllowed) {
+    redirect(`${redirectPath}${redirectPath.includes("?") ? "&" : "?"}error=subscription`);
+  }
+
+  if (!subscription.canAddActiveRoom) {
+    redirect(`${redirectPath}${redirectPath.includes("?") ? "&" : "?"}error=room-limit`);
+  }
+
+  return profile;
+}

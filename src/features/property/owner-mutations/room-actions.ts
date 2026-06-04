@@ -8,7 +8,7 @@ import { getCheckbox, getInteger, getNumber, getString } from "@/shared/lib/form
 
 import { mapActionError } from "./lib/errors";
 import { replaceRoomAmenities } from "./lib/labels";
-import { requireOwnerMutationAccess } from "./lib/owner-access";
+import { requireOwnerActiveRoomSlotAccess, requireOwnerMutationAccess } from "./lib/owner-access";
 import { buildPropertyPath, buildPropertyPathWithState, buildPropertyRoomCreatePath } from "./lib/paths";
 import { generateUniqueRoomSlug } from "./lib/slugs";
 
@@ -16,6 +16,7 @@ export async function createOwnerRoom(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
   await requireOwnerMutationAccess(propertyId ? buildPropertyRoomCreatePath(propertyId) : "/dashboard/properties");
   const title = getString(formData, "title");
+  const isActive = getCheckbox(formData, "isActive");
 
   if (!propertyId || !title) {
     if (!propertyId) {
@@ -23,6 +24,10 @@ export async function createOwnerRoom(formData: FormData) {
     }
 
     redirect(`${buildPropertyRoomCreatePath(propertyId)}?error=validation`);
+  }
+
+  if (isActive) {
+    await requireOwnerActiveRoomSlotAccess(buildPropertyRoomCreatePath(propertyId));
   }
 
   const supabase = await createSupabaseServerClient();
@@ -38,7 +43,7 @@ export async function createOwnerRoom(formData: FormData) {
       bedrooms: getInteger(formData, "bedrooms", 1),
       area: getInteger(formData, "area", 0),
       price_per_night: getNumber(formData, "pricePerNight", 0),
-      is_active: getCheckbox(formData, "isActive"),
+      is_active: isActive,
     })
     .select("id")
     .maybeSingle();
@@ -60,12 +65,28 @@ export async function updateOwnerRoom(formData: FormData) {
   await requireOwnerMutationAccess(buildPropertyPath(propertyId, "rooms"));
   const roomId = getString(formData, "roomId");
   const title = getString(formData, "title");
+  const nextIsActive = getCheckbox(formData, "isActive");
 
   if (!propertyId || !roomId || !title) {
     redirect(buildPropertyPathWithState(propertyId, "rooms", { error: "validation" }));
   }
 
   const supabase = await createSupabaseServerClient();
+  const { data: existingRoom } = await supabase
+    .from("rooms")
+    .select("is_active")
+    .eq("id", roomId)
+    .eq("property_id", propertyId)
+    .maybeSingle();
+
+  if (!existingRoom) {
+    redirect(buildPropertyPathWithState(propertyId, "rooms", { error: "save" }));
+  }
+
+  if (!existingRoom.is_active && nextIsActive) {
+    await requireOwnerActiveRoomSlotAccess(buildPropertyPath(propertyId, "rooms"));
+  }
+
   const { error } = await supabase
     .from("rooms")
     .update({
@@ -75,7 +96,7 @@ export async function updateOwnerRoom(formData: FormData) {
       bedrooms: getInteger(formData, "bedrooms", 1),
       area: getInteger(formData, "area", 0),
       price_per_night: getNumber(formData, "pricePerNight", 0),
-      is_active: getCheckbox(formData, "isActive"),
+      is_active: nextIsActive,
       updated_at: new Date().toISOString(),
     })
     .eq("id", roomId)

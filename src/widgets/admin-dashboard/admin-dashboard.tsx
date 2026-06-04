@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { AdminDashboardData } from "@/entities/admin";
 import { Button, Panel } from "@/shared/ui";
 
@@ -26,6 +28,15 @@ function formatDateInputValue(value: string | null) {
   }
 
   return new Date(value).toISOString().slice(0, 10);
+}
+
+function renderPublicLinks(links: string[]) {
+  return links.map((link, index) => (
+    <span key={link}>
+      {index > 0 ? ", " : null}
+      <Link href={link}>{link}</Link>
+    </span>
+  ));
 }
 
 type AdminDashboardProps = {
@@ -111,7 +122,7 @@ export function AdminDashboard({ data, message }: AdminDashboardProps) {
                   <span>
                     {row.publicPageUrls.length ? (
                       <>
-                        {row.publicPageUrls.join(", ")}
+                        {renderPublicLinks(row.publicPageUrls)}
                         <br />
                         <small>{row.isPublicHiddenByAdmin ? "Скрыты админом" : "Доступны"}</small>
                       </>
@@ -227,9 +238,15 @@ export function AdminDashboard({ data, message }: AdminDashboardProps) {
                   <span>
                     {row.title}
                     <br />
-                    <small>/p/{row.slug}</small>
+                    <small>slug объекта: {row.slug}</small>
                   </span>
-                  <span>{row.ownerName}</span>
+                  <span>
+                    {row.ownerName}
+                    <br />
+                    <small>
+                      {row.ownerPublicSlug ? <Link href={`/p/${row.ownerPublicSlug}`}>/p/{row.ownerPublicSlug}</Link> : "slug владельца не заполнен"}
+                    </small>
+                  </span>
                   <span>{row.isFrozen ? "Заморожен" : row.published ? "Опубликован" : "Скрыт"}</span>
                   <span>
                     {row.activeRoomCount} / {row.totalRoomCount}

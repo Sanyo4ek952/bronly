@@ -32,6 +32,7 @@ export type AdminPropertyItem = {
   propertyId: string;
   ownerId: string;
   ownerName: string;
+  ownerPublicSlug: string | null;
   title: string;
   slug: string;
   published: boolean;

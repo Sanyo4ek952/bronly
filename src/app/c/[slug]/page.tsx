@@ -169,7 +169,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
               </select>
             </label>
             <label className="br-form-field">
-              <span className="br-label">Спальни</span>
+              <span className="br-label">Комнат</span>
               <select id="collection-rooms-filter" name="rooms" className="br-field" defaultValue={String(filters.rooms)}>
                 {Array.from({ length: 5 }, (_, index) => {
                   const value = String(index + 1);
@@ -214,10 +214,10 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
                   </div>
 
                   <PublicRoomBrowser
+                    publicBaseHref={`/c/${collection.slug}`}
                     propertySlug={section.property.slug}
                     rooms={section.rooms}
                     filters={filters}
-                    resetHref={`/c/${collection.slug}`}
                     showFilter={false}
                     requestHrefBuilder={(roomId, currentFilters) => {
                       const requestQuery = new URLSearchParams();

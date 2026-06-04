@@ -142,6 +142,7 @@ export async function getOwnerPropertyDetail(propertyIdOrSlug: string): Promise<
   return {
     id: propertyRow.id,
     ownerId: propertyRow.owner_id,
+    ownerPublicSlug: profile.slug || null,
     slug: propertyRow.slug,
     title: propertyRow.title,
     shortTitle: propertyRow.short_title,

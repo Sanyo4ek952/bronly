@@ -6,6 +6,7 @@ import {
   type SupabaseNotificationSettingsRow,
   type SupabasePushSubscriptionRow,
 } from "@/shared/api/supabase";
+import { ensureNotificationSettings } from "@/entities/notification/api/notification-settings";
 
 export type PushSubscriptionInput = {
   endpoint: string;
@@ -29,22 +30,6 @@ function getDefaultStatus(): PushSubscriptionStatus {
     hasSubscriptions: false,
     deliveryMode: hasConfiguredWebPush() ? "enabled" : "foundation_only",
   };
-}
-
-async function ensureNotificationSettings(profileId: string) {
-  const admin = createSupabaseAdminClient();
-  const nowIso = new Date().toISOString();
-
-  await admin.from("notification_settings").upsert(
-    {
-      profile_id: profileId,
-      push_enabled: true,
-      in_app_enabled: true,
-      telegram_enabled: true,
-      updated_at: nowIso,
-    },
-    { onConflict: "profile_id" },
-  );
 }
 
 export async function getMyPushSubscriptionStatus(): Promise<PushSubscriptionStatus> {
@@ -102,16 +87,7 @@ export async function savePushSubscription(input: PushSubscriptionInput) {
     return { ok: false as const, reason: "save_failed" as const };
   }
 
-  await admin.from("notification_settings").upsert(
-    {
-      profile_id: profile.id,
-      push_enabled: true,
-      in_app_enabled: true,
-      telegram_enabled: true,
-      updated_at: nowIso,
-    },
-    { onConflict: "profile_id" },
-  );
+  await ensureNotificationSettings(profile.id);
 
   return { ok: true as const };
 }

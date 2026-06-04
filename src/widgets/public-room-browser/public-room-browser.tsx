@@ -7,6 +7,7 @@ import type { PublicRoom, PublicStayFilters } from "@/entities/room";
 import { Button, ButtonLink, Input, Select, StatCard } from "@/shared/ui";
 
 type PublicRoomBrowserProps = {
+  publicBaseHref: string;
   propertySlug: string;
   rooms: PublicRoom[];
   filters: PublicStayFilters;
@@ -17,7 +18,7 @@ type PublicRoomBrowserProps = {
 };
 
 function formatRoomMeta(room: PublicRoom) {
-  return `${room.capacity} гостя(ей) • ${room.bedrooms} спальня(и) • ${room.area} м²`;
+  return `${room.capacity} гостя(ей) • ${room.bedrooms} спальни • ${room.area} м²`;
 }
 
 function formatMoney(value: number) {
@@ -32,8 +33,8 @@ function formatRoomPrice(room: PublicRoom, hasDates: boolean) {
   return `от ${formatMoney(room.displayPricePerNight ?? room.pricePerNight)} / ночь`;
 }
 
-function buildOwnerRequestHref(propertySlug: string, roomId: string, filters: PublicStayFilters) {
-  const params = new URLSearchParams({ roomId });
+function buildPublicRequestHref(publicBaseHref: string, propertySlug: string, roomId: string, filters: PublicStayFilters) {
+  const params = new URLSearchParams({ propertySlug, roomId });
 
   if (filters.hasDates) {
     params.set("checkIn", filters.checkIn);
@@ -43,10 +44,11 @@ function buildOwnerRequestHref(propertySlug: string, roomId: string, filters: Pu
   params.set("adults", String(filters.adults));
   params.set("rooms", String(filters.rooms));
 
-  return `/p/${propertySlug}/request?${params.toString()}`;
+  return `${publicBaseHref}/request?${params.toString()}`;
 }
 
 export function PublicRoomBrowser({
+  publicBaseHref,
   propertySlug,
   rooms,
   filters,
@@ -59,7 +61,8 @@ export function PublicRoomBrowser({
   const [selectedRoomId, setSelectedRoomId] = useState(defaultRoom?.id ?? "");
   const resolveRequestHref =
     requestHrefBuilder ??
-    ((roomId: string, currentFilters: PublicStayFilters) => buildOwnerRequestHref(propertySlug, roomId, currentFilters));
+    ((roomId: string, currentFilters: PublicStayFilters) =>
+      buildPublicRequestHref(publicBaseHref, propertySlug, roomId, currentFilters));
 
   const selectedRoom = useMemo(
     () => rooms.find((room) => room.id === selectedRoomId) ?? defaultRoom,
@@ -87,7 +90,7 @@ export function PublicRoomBrowser({
           <Select
             id="public-rooms"
             name="rooms"
-            label="Спальни"
+            label="Комнат"
             defaultValue={String(filters.rooms)}
             options={Array.from({ length: 5 }, (_, index) => {
               const value = String(index + 1);
@@ -98,7 +101,7 @@ export function PublicRoomBrowser({
             <Button type="submit" fullWidth>
               Уточнить доступность
             </Button>
-            <ButtonLink href={resetHref ?? `/p/${propertySlug}`} variant="secondary" fullWidth>
+            <ButtonLink href={resetHref ?? publicBaseHref} variant="secondary" fullWidth>
               Сбросить
             </ButtonLink>
           </div>
@@ -211,10 +214,7 @@ function RoomGrid({
               {room.unavailableReason ? <small>{room.unavailableReason}</small> : null}
               <div className="br-public-room-card__footer">
                 <strong>{formatRoomPrice(room, filters.hasDates)}</strong>
-                <Button
-                  variant={selectedRoomId === room.id ? "primary" : "secondary"}
-                  onClick={() => onSelect(room.id)}
-                >
+                <Button variant={selectedRoomId === room.id ? "primary" : "secondary"} onClick={() => onSelect(room.id)}>
                   {selectedRoomId === room.id ? "Выбрано" : "Выбрать"}
                 </Button>
               </div>

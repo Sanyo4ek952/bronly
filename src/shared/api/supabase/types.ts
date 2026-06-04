@@ -193,11 +193,13 @@ export type SupabaseGuestRequestRow = {
   guest_comment: string | null;
   adults_count: number;
   children_count: number;
+  rooms_count: number;
   check_in: string;
   check_out: string;
   status: "new" | "accepted_by_owner" | "rejected" | "transferred_to_owner" | "completed";
   transferred_to_owner_at: string | null;
   owner_confirmed_at: string | null;
+  completion_requested_at: string | null;
   completed_at: string | null;
   total_price: number | null;
   base_price_per_night: number | null;
@@ -214,6 +216,7 @@ export type SupabaseNotificationRow = {
   event_type:
     | "new_request"
     | "request_transferred_to_owner"
+    | "request_completion_requested"
     | "agent_proposal_received"
     | "agent_proposal_accepted"
     | "agent_proposal_rejected"
@@ -255,12 +258,28 @@ export type SupabaseNotificationSettingsRow = {
   updated_at: string;
 };
 
+export type SupabaseTelegramNotificationConnectionRow = {
+  profile_id: string;
+  telegram_chat_id: string | null;
+  telegram_user_id: string | null;
+  telegram_username: string | null;
+  telegram_first_name: string | null;
+  telegram_last_name: string | null;
+  link_token_hash: string | null;
+  link_token_expires_at: string | null;
+  linked_at: string | null;
+  last_seen_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type SupabaseNotificationDeliveryRow = {
   id: string;
   notification_id: string;
   recipient_id: string;
   channel: string;
   push_subscription_id: string | null;
+  telegram_chat_id: string | null;
   status: string;
   provider_message_id: string | null;
   error_code: string | null;

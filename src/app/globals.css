@@ -2091,6 +2091,15 @@ ul {
   background: #fde7e7;
 }
 
+.br-calendar-day--outside {
+  opacity: 0.48;
+}
+
+.br-calendar-day--today {
+  border-color: rgb(7 154 145 / 46%);
+  box-shadow: inset 0 0 0 1px rgb(7 154 145 / 22%);
+}
+
 .br-calendar-day--request {
   background: #fff0dd;
 }
@@ -2118,6 +2127,22 @@ ul {
 .br-calendar-modal__grid {
   display: grid;
   gap: 16px;
+}
+
+.br-agent-calendar-summary {
+  display: grid;
+  gap: 14px;
+}
+
+.br-agent-calendar-month {
+  display: grid;
+  gap: 4px;
+  margin-top: 18px;
+}
+
+.br-agent-calendar-month span {
+  color: var(--color-muted);
+  font-size: 14px;
 }
 
 .br-option-row {

@@ -16,6 +16,12 @@ function buildRequestPath(agentSlug: string, state: Record<string, string>) {
   return `/a/${agentSlug}/request${query ? `?${query}` : ""}`;
 }
 
+function buildSuccessPath(agentSlug: string, state: Record<string, string>) {
+  const params = new URLSearchParams(state);
+  const query = params.toString();
+  return `/a/${agentSlug}/request/success${query ? `?${query}` : ""}`;
+}
+
 export async function submitAgentGuestRequestAction(formData: FormData) {
   const guestName = getString(formData, "guestName");
   const guestPhone = getString(formData, "guestPhone");
@@ -26,12 +32,14 @@ export async function submitAgentGuestRequestAction(formData: FormData) {
   const propertySlug = getString(formData, "propertySlug");
   const agentSlug = getString(formData, "agentSlug");
   const adultsCount = Number.parseInt(getString(formData, "adultsCount"), 10) || 1;
+  const roomsCount = Number.parseInt(getString(formData, "roomsCount"), 10) || 1;
   const baseState = {
     propertySlug,
     roomId,
     checkIn,
     checkOut,
     adults: String(adultsCount),
+    rooms: String(roomsCount),
   };
 
   if (!guestName || !guestPhone || !checkIn || !checkOut || !roomId || !propertySlug || !agentSlug) {
@@ -52,6 +60,7 @@ export async function submitAgentGuestRequestAction(formData: FormData) {
     checkIn,
     checkOut,
     adultsCount,
+    roomsCount,
     guestComment,
     source: "agent",
     agentProfileId: requestContext.agentId,
@@ -74,5 +83,5 @@ export async function submitAgentGuestRequestAction(formData: FormData) {
     redirect(buildRequestPath(agentSlug, { ...baseState, error }));
   }
 
-  redirect(`/a/${agentSlug}/request/success?propertySlug=${encodeURIComponent(propertySlug)}`);
+  redirect(buildSuccessPath(agentSlug, baseState));
 }

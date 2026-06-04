@@ -9,18 +9,18 @@ import {
   type SupabasePushSubscriptionRow,
 } from "@/shared/api/supabase";
 
+export type NotificationCopy = {
+  title: string;
+  description: string;
+  linkLabel: string;
+};
+
 export type PushDeliveryStatus =
   | "sent"
   | "pending_configuration"
   | "skipped_disabled"
   | "skipped_no_subscriptions"
   | "failed";
-
-type NotificationCopy = {
-  title: string;
-  description: string;
-  linkLabel: string;
-};
 
 type PushPayload = {
   title: string;
@@ -60,10 +60,11 @@ function buildPushPayload(notification: Pick<SupabaseNotificationRow, "id" | "ev
   };
 }
 
-async function saveDeliveryRecord(input: {
+export async function savePushDeliveryRecord(input: {
   notificationId: string;
   recipientId: string;
   pushSubscriptionId: string | null;
+  telegramChatId?: string | null;
   status: PushDeliveryStatus;
   providerMessageId?: string | null;
   errorCode?: string | null;
@@ -77,6 +78,7 @@ async function saveDeliveryRecord(input: {
     recipient_id: input.recipientId,
     channel: "push",
     push_subscription_id: input.pushSubscriptionId,
+    telegram_chat_id: input.telegramChatId ?? null,
     status: input.status,
     provider_message_id: input.providerMessageId ?? null,
     error_code: input.errorCode ?? null,
@@ -119,7 +121,7 @@ async function sendViaWebPush(subscription: SupabasePushSubscriptionRow, payload
   );
 }
 
-export async function fanOutPushNotification(input: {
+export async function deliverPushNotification(input: {
   notification: Pick<SupabaseNotificationRow, "id" | "recipient_id" | "event_type" | "payload">;
   copy: NotificationCopy;
 }) {
@@ -137,7 +139,7 @@ export async function fanOutPushNotification(input: {
   const subscriptions = (subscriptionRows as SupabasePushSubscriptionRow[] | null) ?? [];
 
   if (settings?.push_enabled === false) {
-    await saveDeliveryRecord({
+    await savePushDeliveryRecord({
       notificationId: input.notification.id,
       recipientId: input.notification.recipient_id,
       pushSubscriptionId: null,
@@ -147,7 +149,7 @@ export async function fanOutPushNotification(input: {
   }
 
   if (!subscriptions.length) {
-    await saveDeliveryRecord({
+    await savePushDeliveryRecord({
       notificationId: input.notification.id,
       recipientId: input.notification.recipient_id,
       pushSubscriptionId: null,
@@ -161,7 +163,7 @@ export async function fanOutPushNotification(input: {
   if (!hasConfiguredWebPush()) {
     await Promise.all(
       subscriptions.map((subscription) =>
-        saveDeliveryRecord({
+        savePushDeliveryRecord({
           notificationId: input.notification.id,
           recipientId: input.notification.recipient_id,
           pushSubscriptionId: subscription.id,
@@ -180,7 +182,7 @@ export async function fanOutPushNotification(input: {
         const providerMessageId =
           result.headers?.["x-request-id"] ?? result.headers?.["request-id"] ?? null;
 
-        await saveDeliveryRecord({
+        await savePushDeliveryRecord({
           notificationId: input.notification.id,
           recipientId: input.notification.recipient_id,
           pushSubscriptionId: subscription.id,
@@ -195,7 +197,7 @@ export async function fanOutPushNotification(input: {
             ? String(error.statusCode)
             : null;
 
-        await saveDeliveryRecord({
+        await savePushDeliveryRecord({
           notificationId: input.notification.id,
           recipientId: input.notification.recipient_id,
           pushSubscriptionId: subscription.id,

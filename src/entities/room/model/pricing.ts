@@ -71,12 +71,7 @@ export function getNights(checkIn: string, checkOut: string) {
   return Math.round((checkOutDate.getTime() - checkInDate.getTime()) / DAY_MS);
 }
 
-export function doesDateRangeOverlap(
-  checkIn: string,
-  checkOut: string,
-  rangeStart: string,
-  rangeEnd: string,
-) {
+export function doesDateRangeOverlap(checkIn: string, checkOut: string, rangeStart: string, rangeEnd: string) {
   const requestStart = parseDate(checkIn);
   const requestEnd = parseDate(checkOut);
   const busyStart = parseDate(rangeStart);
@@ -90,15 +85,11 @@ export function doesDateRangeOverlap(
 }
 
 export function isRoomAvailableForDates(room: Pick<PricingRoom, "busyRanges">, checkIn: string, checkOut: string) {
-  return !(room.busyRanges ?? []).some((range) =>
-    doesDateRangeOverlap(checkIn, checkOut, range.startsOn, range.endsOn),
-  );
+  return !(room.busyRanges ?? []).some((range) => doesDateRangeOverlap(checkIn, checkOut, range.startsOn, range.endsOn));
 }
 
 function getSeasonalPriceForDate(seasonalPrices: OwnerSeasonalPrice[] | undefined, date: string) {
-  return (seasonalPrices ?? []).find(
-    (price) => price.isActive && price.startsOn <= date && price.endsOn >= date,
-  );
+  return (seasonalPrices ?? []).find((price) => price.isActive && price.startsOn <= date && price.endsOn >= date);
 }
 
 export function calculateRoomPricing(room: PricingRoom, checkIn: string, checkOut: string) {
@@ -131,7 +122,6 @@ export function calculateRoomPricing(room: PricingRoom, checkIn: string, checkOu
 
 export function buildPublicRoomQuote(room: PublicRoom, filters: PublicStayFilters): PublicRoom {
   const capacityMismatch = room.capacity < filters.adults;
-  const roomsMismatch = room.bedrooms < filters.rooms;
   const datesMismatch = filters.hasDates && !isRoomAvailableForDates(room, filters.checkIn, filters.checkOut);
   const pricing = filters.hasDates
     ? calculateRoomPricing(room, filters.checkIn, filters.checkOut)
@@ -146,15 +136,13 @@ export function buildPublicRoomQuote(room: PublicRoom, filters: PublicStayFilter
 
   if (capacityMismatch) {
     unavailableReason = `Подходит до ${room.capacity} гостя(ей)`;
-  } else if (roomsMismatch) {
-    unavailableReason = `В номере ${room.bedrooms} спальня(и)`;
   } else if (datesMismatch) {
     unavailableReason = "На выбранные даты есть занятые даты";
   }
 
   return {
     ...room,
-    isAvailableForFilter: !capacityMismatch && !roomsMismatch && !datesMismatch,
+    isAvailableForFilter: !capacityMismatch && !datesMismatch,
     unavailableReason,
     nights: pricing.nights,
     displayPricePerNight: pricing.displayPricePerNight,

@@ -12,6 +12,7 @@ import {
   getPostLoginRedirect,
   getPostSignupRedirect,
 } from "@/shared/api/supabase";
+import { createTelegramLinkSession } from "@/entities/notification";
 
 type RegisterRole = "owner" | "agent";
 
@@ -30,6 +31,10 @@ function slugify(value: string) {
 
 function isRegisterRole(value: string): value is RegisterRole {
   return value === "owner" || value === "agent";
+}
+
+function getSettingsTargetPath(role: string) {
+  return role === "agent" ? "/agent/dashboard/settings" : "/dashboard/settings";
 }
 
 async function getAuthOrigin() {
@@ -219,7 +224,7 @@ export async function updateProfileAction(formData: FormData) {
   const profile = await getCurrentAuthProfile();
 
   if (!profile || !displayName) {
-    redirect(`/${role === "agent" ? "agent/dashboard/settings" : "dashboard/settings"}?error=validation`);
+    redirect(`${getSettingsTargetPath(role)}?error=validation`);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -234,11 +239,24 @@ export async function updateProfileAction(formData: FormData) {
     })
     .eq("id", profile.id);
 
-  const targetPath = role === "agent" ? "/agent/dashboard/settings" : "/dashboard/settings";
+  const targetPath = getSettingsTargetPath(role);
 
   if (error) {
     redirect(`${targetPath}?error=save`);
   }
 
   redirect(`${targetPath}?success=saved`);
+}
+
+export async function startTelegramNotificationLinkAction(formData: FormData) {
+  const role = getString(formData, "role");
+  const targetPath = getSettingsTargetPath(role);
+  const result = await createTelegramLinkSession();
+
+  if (!result.ok || !result.url) {
+    const errorCode = result.reason === "not_configured" ? "telegram-not-configured" : "telegram-link";
+    redirect(`${targetPath}?error=${errorCode}`);
+  }
+
+  redirect(result.url);
 }

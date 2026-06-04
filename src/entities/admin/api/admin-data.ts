@@ -3,6 +3,7 @@ import { cache } from "react";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import type { AdminDashboardData, AdminPropertyItem, AdminSubscriptionItem, AdminUserItem } from "@/entities/admin/model/types";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase";
+import { buildOwnerPublicPath } from "@/shared/lib";
 import type {
   SupabaseCollectionRow,
   SupabaseGuestRequestRow,
@@ -128,7 +129,7 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
     const publicPageUrls: string[] = [];
 
     if (profile.slug && roles.includes("owner")) {
-      publicPageUrls.push(`/p/${profile.slug}`);
+      publicPageUrls.push(buildOwnerPublicPath(profile.slug) as string);
     }
 
     if (profile.slug && roles.includes("agent")) {
@@ -191,6 +192,7 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
   });
 
   const profileNameById = new Map(safeProfiles.map((profile) => [profile.id, profile.display_name]));
+  const profileSlugById = new Map(safeProfiles.map((profile) => [profile.id, profile.slug ?? null]));
   const properties: AdminPropertyItem[] = safeProperties.map((property) => {
     const roomStats = roomStatsByProperty.get(property.id) ?? { totalRoomCount: 0, activeRoomCount: 0 };
 
@@ -198,6 +200,7 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
       propertyId: property.id,
       ownerId: property.owner_id,
       ownerName: profileNameById.get(property.owner_id) ?? "Владелец",
+      ownerPublicSlug: profileSlugById.get(property.owner_id) ?? null,
       title: property.title,
       slug: property.slug,
       published: property.published,

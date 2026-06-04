@@ -1,6 +1,7 @@
 export {
   getPublicPropertyWarningText,
   getSubscriptionRuntimeState,
+  isRoomLimitReached,
 } from "@/entities/subscription/api/subscription-data";
 export type {
   PublicRestrictionMode,

@@ -123,8 +123,8 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                 <ButtonLink href={`/dashboard/properties/${property.id}/rooms`} variant="secondary">
                   Открыть номера
                 </ButtonLink>
-                <Link href={`/p/${property.slug}`} className="br-link-button">
-                  Открыть публичную ссылку
+                <Link href={property.ownerPublicSlug ? `/p/${property.ownerPublicSlug}` : "/dashboard/settings"} className="br-link-button">
+                  {property.ownerPublicSlug ? "Открыть публичную ссылку" : "Заполнить slug владельца"}
                 </Link>
               </div>
             </article>

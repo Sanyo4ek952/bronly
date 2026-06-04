@@ -1,6 +1,7 @@
 export type NotificationEventType =
   | "new_request"
   | "request_transferred_to_owner"
+  | "request_completion_requested"
   | "agent_proposal_received"
   | "agent_proposal_accepted"
   | "agent_proposal_rejected"

@@ -16,6 +16,12 @@ function buildRequestPath(collectionSlug: string, state: Record<string, string>)
   return `/c/${collectionSlug}/request${query ? `?${query}` : ""}`;
 }
 
+function buildSuccessPath(collectionSlug: string, state: Record<string, string>) {
+  const params = new URLSearchParams(state);
+  const query = params.toString();
+  return `/c/${collectionSlug}/request/success${query ? `?${query}` : ""}`;
+}
+
 export async function submitCollectionGuestRequestAction(formData: FormData) {
   const guestName = getString(formData, "guestName");
   const guestPhone = getString(formData, "guestPhone");
@@ -26,12 +32,14 @@ export async function submitCollectionGuestRequestAction(formData: FormData) {
   const propertySlug = getString(formData, "propertySlug");
   const collectionSlug = getString(formData, "collectionSlug");
   const adultsCount = Number.parseInt(getString(formData, "adultsCount"), 10) || 1;
+  const roomsCount = Number.parseInt(getString(formData, "roomsCount"), 10) || 1;
   const baseState = {
     propertySlug,
     roomId,
     checkIn,
     checkOut,
     adults: String(adultsCount),
+    rooms: String(roomsCount),
   };
 
   if (!guestName || !guestPhone || !checkIn || !checkOut || !roomId || !propertySlug || !collectionSlug) {
@@ -52,6 +60,7 @@ export async function submitCollectionGuestRequestAction(formData: FormData) {
     checkIn,
     checkOut,
     adultsCount,
+    roomsCount,
     guestComment,
     source: "collection",
     collectionId: requestContext.collectionId,
@@ -75,5 +84,5 @@ export async function submitCollectionGuestRequestAction(formData: FormData) {
     redirect(buildRequestPath(collectionSlug, { ...baseState, error }));
   }
 
-  redirect(`/c/${collectionSlug}/request/success`);
+  redirect(buildSuccessPath(collectionSlug, baseState));
 }

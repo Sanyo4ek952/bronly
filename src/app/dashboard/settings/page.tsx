@@ -1,15 +1,35 @@
 import Link from "next/link";
 
-import { updateProfileAction } from "@/app/auth/actions";
+import { startTelegramNotificationLinkAction, updateProfileAction } from "@/app/auth/actions";
+import { getMyTelegramNotificationStatus } from "@/entities/notification";
 import { InstallAppCard } from "@/features/pwa/install-app";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
+import { buildOwnerPublicPath } from "@/shared/lib";
+import { TelegramNotificationsCard } from "@/widgets/telegram-notifications-card";
 
 type SettingsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+function getErrorMessage(error: string) {
+  if (error === "telegram-not-configured") {
+    return "Telegram-бот еще не настроен.";
+  }
+
+  if (error === "telegram-link") {
+    return "Не удалось создать ссылку для привязки Telegram.";
+  }
+
+  if (error) {
+    return "Не удалось сохранить изменения.";
+  }
+
+  return "";
+}
+
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
-  const profile = await getCurrentAuthProfile();
+  const [profile, telegramStatus] = await Promise.all([getCurrentAuthProfile(), getMyTelegramNotificationStatus()]);
+  const publicOwnerPath = buildOwnerPublicPath(profile?.slug);
   const fallbackParams: Record<string, string | string[] | undefined> = {};
   const params = await (searchParams ?? Promise.resolve(fallbackParams));
   const error = typeof params.error === "string" ? params.error : "";
@@ -24,8 +44,17 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             <p>Контакты и базовые настройки кабинета.</p>
           </div>
         </div>
-        {error ? <p className="br-card" style={{ marginBottom: 16 }}>Не удалось сохранить изменения.</p> : null}
-        {success === "saved" ? <p className="br-card" style={{ marginBottom: 16 }}>Профиль обновлён.</p> : null}
+        {getErrorMessage(error) ? <p className="br-card" style={{ marginBottom: 16 }}>{getErrorMessage(error)}</p> : null}
+        {success === "saved" ? <p className="br-card" style={{ marginBottom: 16 }}>Профиль обновлен.</p> : null}
+        <div className="br-card" style={{ marginBottom: 16, padding: 16 }}>
+          <strong>Публичная страница владельца</strong>
+          <p style={{ marginTop: 8 }}>{publicOwnerPath ?? "Заполните slug, чтобы получить ссылку /p/[profile.slug]."}</p>
+          <div className="br-active-step__actions" style={{ marginTop: 12 }}>
+            <Link href={publicOwnerPath ?? "/dashboard/settings"} className="br-button br-button--secondary">
+              {publicOwnerPath ? "Открыть публичную страницу" : "Заполнить slug"}
+            </Link>
+          </div>
+        </div>
         <form action={updateProfileAction}>
           <input type="hidden" name="role" value="owner" />
           <div className="br-settings-grid">
@@ -57,22 +86,18 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         </form>
       </section>
 
-      <aside className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Уведомления</h2>
-            <p>Сигналы по заявкам и событиям MVP.</p>
+      <aside>
+        <TelegramNotificationsCard role="owner" status={telegramStatus} action={startTelegramNotificationLinkAction} />
+        <div style={{ height: 16 }} />
+        <section className="br-dashboard-block br-card">
+          <div className="br-dashboard-block__header">
+            <div>
+              <h2>Установка на главный экран</h2>
+              <p>Быстрый доступ к Bronly с телефона без App Store и Google Play.</p>
+            </div>
           </div>
-        </div>
-        <div className="br-toggle-list">
-          {["Новые заявки", "Изменения календаря", "Напоминания и события"].map((label) => (
-            <label key={label} className="br-toggle">
-              <span>{label}</span>
-              <input type="checkbox" defaultChecked />
-            </label>
-          ))}
-        </div>
-        <InstallAppCard />
+          <InstallAppCard />
+        </section>
       </aside>
     </section>
   );

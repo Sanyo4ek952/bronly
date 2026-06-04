@@ -1,4 +1,8 @@
 export { getOwnerDashboardSummary } from "@/entities/property/api/owner-dashboard-summary";
 export { getOwnerProperties } from "@/entities/property/api/owner-properties";
 export { getOwnerPropertyDetail } from "@/entities/property/api/owner-property-detail";
-export { getPublicPropertyPageData } from "@/entities/property/api/public-property-data";
+export {
+  getOwnerPropertySectionBySlug,
+  getPublicPropertyPageData,
+  resolveOwnerPublicSlug,
+} from "@/entities/property/api/public-property-data";

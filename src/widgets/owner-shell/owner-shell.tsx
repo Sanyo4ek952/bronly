@@ -25,6 +25,7 @@ const agentNavigationItems = [
   { href: "/agent/dashboard/collections", label: "Коллекции", icon: "♦" },
   { href: "/agent/dashboard/opportunities", label: "К сотрудничеству", icon: "☲" },
   { href: "/agent/dashboard/collaborations", label: "Связи", icon: "⌘" },
+  { href: "/agent/dashboard/calendar", label: "Календарь", icon: "◷" },
   { href: "/agent/dashboard/requests", label: "Заявки", icon: "✉" },
   { href: "/agent/dashboard/deals", label: "Сделки", icon: "◷" },
   { href: "/agent/dashboard/settings", label: "Настройки", icon: "⚙" },

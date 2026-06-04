@@ -41,7 +41,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
           <div>
             <h2>{property.title}</h2>
             <p>
-              {property.city} • {property.propertyType} • /p/{property.slug}
+              {property.city} • {property.propertyType} • slug объекта: {property.slug}
             </p>
           </div>
           <div className="br-owner-actions">
@@ -73,8 +73,11 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
 
           <div className="br-active-step__actions">
             <Button type="submit">Сохранить объект</Button>
-            <Link href={`/p/${property.slug}`} className="br-button br-button--secondary">
-              Открыть публичную страницу
+            <Link
+              href={property.ownerPublicSlug ? `/p/${property.ownerPublicSlug}` : "/dashboard/settings"}
+              className="br-button br-button--secondary"
+            >
+              {property.ownerPublicSlug ? "Открыть публичную страницу" : "Заполнить slug владельца"}
             </Link>
           </div>
         </form>

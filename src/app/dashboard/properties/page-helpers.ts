@@ -81,6 +81,8 @@ export function getRoomsNotice(error: string, success: string) {
       return "Не удалось сохранить номер. Попробуйте изменить название.";
     case "subscription":
       return "Подписка не продлена. Изменение номеров временно недоступно.";
+    case "room-limit":
+      return "Лимит активных номеров исчерпан. Деактивируйте один из текущих активных номеров или продлите подписку с большим лимитом.";
     case "overlap":
       return "Сезонные цены не должны пересекаться по датам.";
     case "delete-confirmation":
@@ -114,6 +116,8 @@ export function getRoomCreateNotice(error: string) {
       return "Не удалось создать номер. Попробуйте изменить название.";
     case "subscription":
       return "Подписка не продлена. Добавление номера временно недоступно.";
+    case "room-limit":
+      return "Лимит активных номеров исчерпан. Можно сохранить номер как неактивный или сначала освободить место в лимите.";
     case "save":
       return "Не удалось создать номер.";
     default:

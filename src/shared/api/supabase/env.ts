@@ -32,8 +32,24 @@ export function getVapidSubject() {
   return process.env.VAPID_SUBJECT;
 }
 
+export function getTelegramBotToken() {
+  return process.env.TELEGRAM_BOT_TOKEN;
+}
+
+export function getTelegramBotUsername() {
+  return process.env.TELEGRAM_BOT_USERNAME;
+}
+
+export function getTelegramWebhookSecret() {
+  return process.env.TELEGRAM_WEBHOOK_SECRET;
+}
+
 export function hasConfiguredWebPush() {
   return Boolean(getVapidPublicKey() && getVapidPrivateKey() && getVapidSubject());
+}
+
+export function hasConfiguredTelegramBot() {
+  return Boolean(getTelegramBotToken() && getTelegramBotUsername() && getTelegramWebhookSecret());
 }
 
 export function hasSupabaseServerEnv() {

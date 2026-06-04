@@ -73,6 +73,8 @@ type OwnerDashboardOverviewProps = {
 };
 
 export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOverviewProps) {
+  const hasPublicUrl = Boolean(dashboardStats.publicUrl);
+
   const summaryCards = [
     {
       title: "Подписка",
@@ -87,11 +89,11 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
     {
       title: "Публичная ссылка",
       rows: [
-        ["Адрес", dashboardStats.publicUrl],
+        ["Адрес", dashboardStats.publicUrl ?? "Заполните slug в настройках"],
         ["Доступ", dashboardStats.isCabinetRestricted ? "Временно ограничен" : "Открыта для гостей"],
       ],
-      href: "/dashboard/properties",
-      action: "Открыть объекты",
+      href: hasPublicUrl ? (dashboardStats.publicUrl as string) : "/dashboard/settings",
+      action: hasPublicUrl ? "Открыть публичную страницу" : "Заполнить slug",
     },
     {
       title: "Общая статистика",

@@ -3,6 +3,7 @@ export {
   getAgentRequests,
   getOwnerRequests,
   getRequestRoom,
+  requestAgentCompletion,
   transferAgentRequestToOwner,
   transitionOwnerRequestStatus,
 } from "@/entities/request/api/request-data";

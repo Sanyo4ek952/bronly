@@ -63,11 +63,11 @@ function validateImageFile(file: File) {
 
 async function loadOwnedProperty(propertyId: string) {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.from("properties").select("id, slug").eq("id", propertyId).maybeSingle();
+  const { data } = await supabase.from("properties").select("id, slug, owner_id").eq("id", propertyId).maybeSingle();
 
   return {
     supabase,
-    property: (data ?? null) as { id: string; slug: string } | null,
+    property: (data ?? null) as { id: string; slug: string; owner_id: string } | null,
   };
 }
 
@@ -114,14 +114,35 @@ async function setRoomPhotoOrder(supabase: Awaited<ReturnType<typeof createSupab
   return null;
 }
 
-function revalidatePropertyMedia(propertyId: string, propertySlug?: string) {
+async function getOwnerPublicSlug(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  propertyId: string,
+  ownerId?: string,
+) {
+  let resolvedOwnerId = ownerId;
+
+  if (!resolvedOwnerId) {
+    const { data: propertyData } = await supabase.from("properties").select("owner_id").eq("id", propertyId).maybeSingle();
+    resolvedOwnerId = (propertyData?.owner_id as string | undefined) ?? "";
+  }
+
+  if (!resolvedOwnerId) {
+    return "";
+  }
+
+  const { data: profileData } = await supabase.from("profiles").select("slug").eq("id", resolvedOwnerId).maybeSingle();
+  return (profileData?.slug as string | undefined) ?? "";
+}
+
+function revalidatePropertyMedia(propertyId: string, ownerPublicSlug?: string) {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/properties");
   revalidatePath(buildPropertyPath(propertyId));
   revalidatePath(buildPropertyPath(propertyId, "rooms"));
 
-  if (propertySlug) {
-    revalidatePath(`/p/${propertySlug}`);
+  if (ownerPublicSlug) {
+    revalidatePath(`/p/${ownerPublicSlug}`);
+    revalidatePath(`/p/${ownerPublicSlug}/request`);
   }
 }
 
@@ -178,7 +199,8 @@ export async function uploadPropertyPhoto(formData: FormData) {
     redirect(buildPropertyPathWithState(propertyId, "property", { error: "photo-upload" }));
   }
 
-  revalidatePropertyMedia(propertyId, property.slug);
+  const ownerPublicSlug = await getOwnerPublicSlug(supabase, propertyId, property.owner_id);
+  revalidatePropertyMedia(propertyId, ownerPublicSlug);
   redirect(buildPropertyPathWithState(propertyId, "property", { success: "photo-uploaded" }));
 }
 
@@ -225,7 +247,8 @@ export async function deletePropertyPhoto(formData: FormData) {
     redirect(buildPropertyPathWithState(propertyId, "property", { error: "photo-delete" }));
   }
 
-  revalidatePropertyMedia(propertyId, property.slug);
+  const ownerPublicSlug = await getOwnerPublicSlug(supabase, propertyId, property.owner_id);
+  revalidatePropertyMedia(propertyId, ownerPublicSlug);
   redirect(buildPropertyPathWithState(propertyId, "property", { success: "photo-deleted" }));
 }
 
@@ -263,7 +286,8 @@ export async function setPropertyPhotoPrimary(formData: FormData) {
     redirect(buildPropertyPathWithState(propertyId, "property", { error: "photo-order" }));
   }
 
-  revalidatePropertyMedia(propertyId, property.slug);
+  const ownerPublicSlug = await getOwnerPublicSlug(supabase, propertyId, property.owner_id);
+  revalidatePropertyMedia(propertyId, ownerPublicSlug);
   redirect(buildPropertyPathWithState(propertyId, "property", { success: "photo-primary" }));
 }
 
@@ -293,8 +317,7 @@ export async function uploadRoomPhoto(formData: FormData) {
     redirect(buildPropertyPathWithState(propertyId, "rooms", { error: "room-photo-upload" }));
   }
 
-  const { data: propertyData } = await supabase.from("properties").select("slug").eq("id", propertyId).maybeSingle();
-  const propertySlug = (propertyData?.slug as string | undefined) ?? "";
+  const ownerPublicSlug = await getOwnerPublicSlug(supabase, propertyId);
   const { data: photoRows } = await supabase
     .from("room_photos")
     .select("sort_order")
@@ -327,7 +350,7 @@ export async function uploadRoomPhoto(formData: FormData) {
     redirect(buildPropertyPathWithState(propertyId, "rooms", { error: "room-photo-upload" }));
   }
 
-  revalidatePropertyMedia(propertyId, propertySlug);
+  revalidatePropertyMedia(propertyId, ownerPublicSlug);
   redirect(buildPropertyPathWithState(propertyId, "rooms", { success: "room-photo-uploaded" }));
 }
 
@@ -347,8 +370,7 @@ export async function deleteRoomPhoto(formData: FormData) {
     redirect(buildPropertyPathWithState(propertyId, "rooms", { error: "room-photo-delete" }));
   }
 
-  const { data: propertyData } = await supabase.from("properties").select("slug").eq("id", propertyId).maybeSingle();
-  const propertySlug = (propertyData?.slug as string | undefined) ?? "";
+  const ownerPublicSlug = await getOwnerPublicSlug(supabase, propertyId);
   const { data: photoRowData } = await supabase
     .from("room_photos")
     .select("id, room_id, storage_path")
@@ -374,7 +396,7 @@ export async function deleteRoomPhoto(formData: FormData) {
     redirect(buildPropertyPathWithState(propertyId, "rooms", { error: "room-photo-delete" }));
   }
 
-  revalidatePropertyMedia(propertyId, propertySlug);
+  revalidatePropertyMedia(propertyId, ownerPublicSlug);
   redirect(buildPropertyPathWithState(propertyId, "rooms", { success: "room-photo-deleted" }));
 }
 
@@ -394,8 +416,7 @@ export async function setRoomPhotoPrimary(formData: FormData) {
     redirect(buildPropertyPathWithState(propertyId, "rooms", { error: "room-photo-order" }));
   }
 
-  const { data: propertyData } = await supabase.from("properties").select("slug").eq("id", propertyId).maybeSingle();
-  const propertySlug = (propertyData?.slug as string | undefined) ?? "";
+  const ownerPublicSlug = await getOwnerPublicSlug(supabase, propertyId);
   const { data: photoRowsData } = await supabase
     .from("room_photos")
     .select("id, room_id, storage_path, sort_order, created_at")
@@ -415,6 +436,6 @@ export async function setRoomPhotoPrimary(formData: FormData) {
     redirect(buildPropertyPathWithState(propertyId, "rooms", { error: "room-photo-order" }));
   }
 
-  revalidatePropertyMedia(propertyId, propertySlug);
+  revalidatePropertyMedia(propertyId, ownerPublicSlug);
   redirect(buildPropertyPathWithState(propertyId, "rooms", { success: "room-photo-primary" }));
 }

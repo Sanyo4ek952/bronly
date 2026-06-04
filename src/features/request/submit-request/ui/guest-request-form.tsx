@@ -1,10 +1,11 @@
-import type { PublicPropertyPageData } from "@/entities/property";
 import type { PublicStayFilters } from "@/entities/room";
+import type { PublicRoom } from "@/entities/room/model/types";
 import { Button, Input, Select, Textarea } from "@/shared/ui";
 
 type GuestRequestFormProps = {
+  publicSlug?: string;
   propertySlug: string;
-  rooms: PublicPropertyPageData["rooms"];
+  rooms: PublicRoom[];
   defaultRoomId: string;
   filters: PublicStayFilters;
   action: (formData: FormData) => void | Promise<void>;
@@ -12,6 +13,7 @@ type GuestRequestFormProps = {
 };
 
 export function GuestRequestForm({
+  publicSlug,
   propertySlug,
   rooms,
   defaultRoomId,
@@ -23,6 +25,7 @@ export function GuestRequestForm({
 
   return (
     <form className="br-request-form" action={action}>
+      {publicSlug ? <input type="hidden" name="publicSlug" value={publicSlug} /> : null}
       <input type="hidden" name="propertySlug" value={propertySlug} />
       {hiddenFields.map((field) => (
         <input key={field.name} type="hidden" name={field.name} value={field.value} />
@@ -43,22 +46,8 @@ export function GuestRequestForm({
       />
 
       <div className="br-inline-fields">
-        <Input
-          id="checkin"
-          name="checkIn"
-          label="Дата заезда"
-          type="date"
-          defaultValue={filters.checkIn}
-          required
-        />
-        <Input
-          id="checkout"
-          name="checkOut"
-          label="Дата выезда"
-          type="date"
-          defaultValue={filters.checkOut}
-          required
-        />
+        <Input id="checkin" name="checkIn" label="Дата заезда" type="date" defaultValue={filters.checkIn} required />
+        <Input id="checkout" name="checkOut" label="Дата выезда" type="date" defaultValue={filters.checkOut} required />
       </div>
 
       <Select
@@ -67,6 +56,17 @@ export function GuestRequestForm({
         label="Количество гостей"
         defaultValue={String(filters.adults)}
         options={Array.from({ length: 8 }, (_, index) => {
+          const value = String(index + 1);
+          return { value, label: value };
+        })}
+      />
+
+      <Select
+        id="rooms-count"
+        name="roomsCount"
+        label="Комнат"
+        defaultValue={String(filters.rooms)}
+        options={Array.from({ length: 5 }, (_, index) => {
           const value = String(index + 1);
           return { value, label: value };
         })}
@@ -82,8 +82,8 @@ export function GuestRequestForm({
       <label className="br-check">
         <input type="checkbox" required />
         <span>
-          Я согласен на обработку персональных данных и понимаю, что заявка передается владельцу для
-          уточнения доступности.
+          Я согласен на обработку персональных данных и понимаю, что заявка передается владельцу для уточнения
+          доступности.
         </span>
       </label>
 

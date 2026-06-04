@@ -65,6 +65,14 @@ function addDays(base: Date, days: number) {
   return nextDate;
 }
 
+function getRemainingRoomSlots(activeRoomCount: number, roomLimit: number | null) {
+  if (roomLimit == null) {
+    return null;
+  }
+
+  return Math.max(roomLimit - activeRoomCount, 0);
+}
+
 function toValidUntil(row: Pick<SupabaseSubscriptionRow, "paid_until" | "grace_ends_at" | "trial_ends_at"> | null) {
   if (!row) {
     return null;
@@ -300,6 +308,14 @@ export function getDefaultGraceEndsAt(baseDate: Date) {
   return addDays(baseDate, GRACE_PERIOD_DAYS).toISOString();
 }
 
+export function isRoomLimitReached(activeRoomCount: number, roomLimit: number | null) {
+  if (roomLimit == null) {
+    return false;
+  }
+
+  return activeRoomCount >= roomLimit;
+}
+
 export const getSubscriptionRuntimeState = cache(
   async (profileId: string, roleContext: SubscriptionRoleContext): Promise<SubscriptionRuntimeState> => {
     const now = new Date();
@@ -322,6 +338,8 @@ export const getSubscriptionRuntimeState = cache(
         : null,
     );
     const roomLimit = subscriptionRow?.active_room_limit ?? derivedPlan.roomLimit;
+    const remainingRoomSlots = getRemainingRoomSlots(activeRoomCount, roomLimit);
+    const roomLimitReached = isRoomLimitReached(activeRoomCount, roomLimit);
     const planTier = subscriptionRow?.active_room_limit != null ? "custom" : derivedPlan.planTier;
     const planName =
       subscriptionRow?.plan_name && subscriptionRow.plan_name !== "MVP"
@@ -339,6 +357,9 @@ export const getSubscriptionRuntimeState = cache(
       planName,
       activeRoomCount,
       roomLimit,
+      remainingRoomSlots,
+      isRoomLimitReached: roomLimitReached,
+      canAddActiveRoom: !roomLimitReached,
       validUntil,
       paidUntil: subscriptionRow?.paid_until ?? null,
       graceEndsAt: resolved.graceEndsAt,

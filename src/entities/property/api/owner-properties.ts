@@ -58,6 +58,7 @@ export async function getOwnerProperties(): Promise<OwnerPropertyListItem[]> {
 
     return {
       id: row.id,
+      ownerPublicSlug: profile.slug || null,
       slug: row.slug,
       title: row.title,
       shortTitle: row.short_title,

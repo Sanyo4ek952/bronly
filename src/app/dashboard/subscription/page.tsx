@@ -15,6 +15,38 @@ function getRoomUsageLabel(activeRoomCount: number, roomLimit: number | null) {
   return `${activeRoomCount} из ${roomLimit}`;
 }
 
+function getActiveRoomWord(count: number) {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+
+  if (mod10 === 1 && mod100 !== 11) {
+    return "активный номер";
+  }
+
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return "активных номера";
+  }
+
+  return "активных номеров";
+}
+
+function getRoomLimitNote(subscription: Awaited<ReturnType<typeof getSubscriptionRuntimeState>>) {
+  if (subscription.roomLimit == null) {
+    return "Текущий лимит не ограничен отдельной настройкой.";
+  }
+
+  if (subscription.isRoomLimitReached) {
+    return "Лимит активных номеров исчерпан. Деактивация и редактирование текущих номеров доступны, но создание нового активного номера и повторная активация неактивного номера будут заблокированы.";
+  }
+
+  if (subscription.remainingRoomSlots === 1) {
+    return "Доступен еще 1 активный номер в рамках текущего лимита.";
+  }
+
+  const remainingRoomSlots = subscription.remainingRoomSlots ?? 0;
+  return `Доступно еще ${remainingRoomSlots} ${getActiveRoomWord(remainingRoomSlots)} в рамках текущего лимита.`;
+}
+
 function getValidityLabel(validUntil: string | null) {
   return validUntil ? formatDateLabel(validUntil) : "Без даты";
 }
@@ -43,6 +75,7 @@ export default async function OwnerSubscriptionPage() {
   const subscription = await getSubscriptionRuntimeState(profile.id, "owner");
   const warning = getWarning(subscription);
   const usageLabel = getRoomUsageLabel(subscription.activeRoomCount, subscription.roomLimit);
+  const roomLimitNote = getRoomLimitNote(subscription);
   const validUntilLabel = getValidityLabel(subscription.validUntil);
   const paidUntilLabel = subscription.paidUntil ? formatDateLabel(subscription.paidUntil) : null;
   const graceUntilLabel = subscription.graceEndsAt ? formatDateLabel(subscription.graceEndsAt) : null;
@@ -69,7 +102,9 @@ export default async function OwnerSubscriptionPage() {
             subtitle={
               subscription.roomLimit == null
                 ? "Лимит не ограничен текущей настройкой"
-                : "Занято из доступного лимита"
+                : subscription.isRoomLimitReached
+                  ? "Лимит активных номеров уже исчерпан"
+                  : "Занято из доступного лимита"
             }
           />
           <StatCard title="Действует до" value={validUntilLabel} subtitle="Дата окончания текущего доступа" />
@@ -121,6 +156,10 @@ export default async function OwnerSubscriptionPage() {
 
           <div className="br-toggle-list">
             <div className="br-summary-card__row">
+              <span>Лимит активных номеров</span>
+              <strong>{subscription.isRoomLimitReached ? "Исчерпан" : "Доступен"}</strong>
+            </div>
+            <div className="br-summary-card__row">
               <span>Публичные страницы</span>
               <strong>{subscription.isPublicAllowed ? "Доступны" : "Могут быть скрыты"}</strong>
             </div>
@@ -133,6 +172,8 @@ export default async function OwnerSubscriptionPage() {
               <strong>{subscription.isMutationAllowed ? "Доступны" : "Временно остановлены"}</strong>
             </div>
           </div>
+
+          <p className="br-owner-muted">{roomLimitNote}</p>
 
           <ButtonLink href="/dashboard" variant="secondary" fullWidth>
             Вернуться на главную

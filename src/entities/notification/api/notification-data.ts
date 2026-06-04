@@ -4,7 +4,7 @@ import type { SupabaseNotificationRow } from "@/shared/api/supabase/types";
 import { formatDateTimeLabel } from "@/shared/lib/date";
 
 import type { NotificationEventType, NotificationListItem, NotificationPayload } from "@/entities/notification/model/types";
-import { fanOutPushNotification } from "@/entities/notification/api/push-delivery";
+import { fanOutNotificationDeliveries } from "@/entities/notification/api/notification-delivery";
 
 function formatSubscriptionStatusLabel(status?: NotificationPayload["subscriptionStatus"]) {
   switch (status) {
@@ -48,6 +48,12 @@ export function getNotificationCopy(eventType: NotificationEventType, payload: N
     case "request_transferred_to_owner":
       return {
         title: "Заявка передана владельцу",
+        description: buildPropertyRoomLabel(payload),
+        linkLabel: "Открыть заявки",
+      };
+    case "request_completion_requested":
+      return {
+        title: "Агент просит отметить заявку завершенной",
         description: buildPropertyRoomLabel(payload),
         linkLabel: "Открыть заявки",
       };
@@ -148,7 +154,7 @@ export async function createNotificationEvent(input: {
   const copy = getNotificationCopy(notification.event_type, notification.payload ?? {});
 
   try {
-    await fanOutPushNotification({
+    await fanOutNotificationDeliveries({
       notification: {
         id: notification.id,
         recipient_id: notification.recipient_id,

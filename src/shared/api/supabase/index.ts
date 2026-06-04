@@ -4,9 +4,13 @@ export {
   getSupabaseAnonKey,
   getSupabaseServiceRoleKey,
   getSupabaseUrl,
+  getTelegramBotToken,
+  getTelegramBotUsername,
+  getTelegramWebhookSecret,
   getVapidPrivateKey,
   getVapidPublicKey,
   getVapidSubject,
+  hasConfiguredTelegramBot,
   hasConfiguredWebPush,
   hasSupabaseServerEnv,
 } from "@/shared/api/supabase/env";
@@ -43,5 +47,6 @@ export type {
   SupabaseRoomRow,
   SupabaseRoomSeasonalPriceRow,
   SupabaseSubscriptionRow,
+  SupabaseTelegramNotificationConnectionRow,
   SupabaseUserRoleRow,
 } from "@/shared/api/supabase/types";

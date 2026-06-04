@@ -12,6 +12,11 @@ export {
   listMyPushSubscriptions,
   savePushSubscription,
 } from "@/entities/notification/api/push-subscription-data";
+export {
+  bindTelegramChatFromStartMessage,
+  createTelegramLinkSession,
+  getMyTelegramNotificationStatus,
+} from "@/entities/notification/api/telegram-link";
 export type {
   NotificationEventType,
   NotificationListItem,

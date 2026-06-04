@@ -16,6 +16,9 @@ export type SubscriptionRuntimeState = {
   planName: string;
   activeRoomCount: number;
   roomLimit: number | null;
+  remainingRoomSlots: number | null;
+  isRoomLimitReached: boolean;
+  canAddActiveRoom: boolean;
   validUntil: string | null;
   paidUntil: string | null;
   graceEndsAt: string | null;

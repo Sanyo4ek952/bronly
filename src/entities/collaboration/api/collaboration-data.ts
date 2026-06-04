@@ -1,5 +1,8 @@
 import type {
   AgentAvailablePropertyItem,
+  AgentCalendarBusyRange,
+  AgentCalendarPropertyItem,
+  AgentCalendarRoomItem,
   AgentCollaborationItem,
   AgentDashboardSummary,
   AgentLinkStatus,
@@ -174,6 +177,106 @@ export async function getAgentCollaborations(profile: AuthProfile): Promise<Agen
       propertyId: item.property_id,
       rooms: roomsByProperty.get(item.property_id) ?? [],
     }));
+  } catch {
+    return [];
+  }
+}
+
+export async function getAgentCalendarData(profile: AuthProfile): Promise<AgentCalendarPropertyItem[]> {
+  if (!canUseSupabase()) {
+    return [];
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: linkRows } = await supabase
+      .from("agent_property_links")
+      .select("property_id")
+      .eq("agent_id", profile.id)
+      .eq("status", "active");
+
+    const propertyIds = Array.from(new Set((linkRows ?? []).map((row) => row.property_id as string)));
+
+    if (!propertyIds.length) {
+      return [];
+    }
+
+    const { data: propertyRows } = await supabase
+      .from("properties")
+      .select("id, title")
+      .in("id", propertyIds)
+      .order("title", { ascending: true });
+
+    const safePropertyRows = (propertyRows ?? []) as Array<{
+      id: string;
+      title: string;
+    }>;
+
+    if (!safePropertyRows.length) {
+      return [];
+    }
+
+    const { data: roomRows } = await supabase
+      .from("rooms")
+      .select("id, property_id, title, subtitle")
+      .in(
+        "property_id",
+        safePropertyRows.map((property) => property.id),
+      )
+      .eq("is_active", true)
+      .order("title", { ascending: true });
+
+    const safeRoomRows = (roomRows ?? []) as Array<{
+      id: string;
+      property_id: string;
+      title: string;
+      subtitle: string | null;
+    }>;
+    const roomIds = safeRoomRows.map((room) => room.id);
+    const { data: busyRows } = roomIds.length
+      ? await supabase.from("room_busy_ranges").select("id, room_id, starts_on, ends_on, label, note").in("room_id", roomIds)
+      : { data: [] };
+    const busyMap = new Map<string, AgentCalendarBusyRange[]>();
+
+    for (const item of (busyRows ?? []) as Array<{
+      id: string;
+      room_id: string;
+      starts_on: string;
+      ends_on: string;
+      label: string | null;
+      note: string | null;
+    }>) {
+      const existing = busyMap.get(item.room_id) ?? [];
+      existing.push({
+        id: item.id,
+        startsOn: item.starts_on,
+        endsOn: item.ends_on,
+        label: item.label ?? "",
+        note: item.note ?? "",
+      });
+      busyMap.set(item.room_id, existing);
+    }
+
+    const roomsByProperty = new Map<string, AgentCalendarRoomItem[]>();
+
+    for (const room of safeRoomRows) {
+      const existing = roomsByProperty.get(room.property_id) ?? [];
+      existing.push({
+        id: room.id,
+        title: room.title,
+        subtitle: room.subtitle ?? "",
+        busyRanges: (busyMap.get(room.id) ?? []).sort((a, b) => a.startsOn.localeCompare(b.startsOn)),
+      });
+      roomsByProperty.set(room.property_id, existing);
+    }
+
+    return safePropertyRows
+      .map((property) => ({
+        id: property.id,
+        title: property.title,
+        rooms: roomsByProperty.get(property.id) ?? [],
+      }))
+      .filter((property) => property.rooms.length > 0);
   } catch {
     return [];
   }

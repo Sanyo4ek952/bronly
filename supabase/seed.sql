@@ -130,6 +130,7 @@ insert into public.guest_requests (
   guest_comment,
   adults_count,
   children_count,
+  rooms_count,
   check_in,
   check_out,
   status,
@@ -149,12 +150,13 @@ values
     'Хотим ранний заезд, если возможно.',
     2,
     1,
+    1,
     date '2026-06-15',
     date '2026-06-20',
     'new',
     8900,
     44500,
-    '{"nights": 5, "room_title": "Люкс с видом на море"}'::jsonb
+    '{"nights": 5, "rooms_count": 1, "room_title": "Люкс с видом на море"}'::jsonb
   ),
   (
     '55555555-5555-5555-5555-555555555552',
@@ -167,12 +169,13 @@ values
     'Будем на машине.',
     2,
     2,
+    2,
     date '2026-06-02',
     date '2026-06-07',
     'accepted_by_owner',
     6200,
     31000,
-    '{"nights": 5, "room_title": "Семейный номер"}'::jsonb
+    '{"nights": 5, "rooms_count": 2, "room_title": "Семейный номер"}'::jsonb
   )
 on conflict (id) do nothing;
 

@@ -31,6 +31,27 @@ export type AgentMarkupRoomItem = {
   agentPricePerNight: number;
 };
 
+export type AgentCalendarBusyRange = {
+  id: string;
+  startsOn: string;
+  endsOn: string;
+  label: string;
+  note: string;
+};
+
+export type AgentCalendarRoomItem = {
+  id: string;
+  title: string;
+  subtitle: string;
+  busyRanges: AgentCalendarBusyRange[];
+};
+
+export type AgentCalendarPropertyItem = {
+  id: string;
+  title: string;
+  rooms: AgentCalendarRoomItem[];
+};
+
 export type AgentAvailablePropertyItem = {
   propertyId: string;
   propertyTitle: string;

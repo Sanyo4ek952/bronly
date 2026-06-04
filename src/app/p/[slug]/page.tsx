@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
-import { getPublicPropertyPageData } from "@/entities/property";
+import { getPublicPropertyPageData, resolveOwnerPublicSlug } from "@/entities/property";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { Button, ButtonLink } from "@/shared/ui";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
@@ -17,22 +17,60 @@ function getSearchString(params: Record<string, string | string[] | undefined>, 
   return typeof value === "string" ? value : "";
 }
 
+function buildOwnerRequestHref(ownerSlug: string, propertySlug: string, roomId: string, query: URLSearchParams) {
+  query.set("propertySlug", propertySlug);
+  query.set("roomId", roomId);
+
+  return `/p/${ownerSlug}/request?${query.toString()}`;
+}
+
+function buildOwnerRedirectHref(
+  ownerSlug: string,
+  query: Record<string, string | string[] | undefined>,
+  matchedPropertySlug: string | null,
+) {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(query)) {
+    if (typeof value === "string") {
+      params.set(key, value);
+    }
+  }
+
+  if (matchedPropertySlug && !params.get("propertySlug")) {
+    params.set("propertySlug", matchedPropertySlug);
+  }
+
+  const search = params.toString();
+  return `/p/${ownerSlug}${search ? `?${search}` : ""}`;
+}
+
 export default async function PublicPropertyPage({ params, searchParams }: PublicPropertyPageProps) {
   const fallbackParams: Record<string, string | string[] | undefined> = {};
   const [{ slug }, query] = await Promise.all([params, searchParams ?? Promise.resolve(fallbackParams)]);
-  const propertyData = await getPublicPropertyPageData(slug, {
+  const resolvedSlug = await resolveOwnerPublicSlug(slug);
+
+  if (!resolvedSlug) {
+    notFound();
+  }
+
+  if (resolvedSlug.shouldRedirect) {
+    redirect(buildOwnerRedirectHref(resolvedSlug.ownerSlug, query, resolvedSlug.matchedPropertySlug));
+  }
+
+  const pageData = await getPublicPropertyPageData(resolvedSlug.ownerSlug, {
     checkIn: getSearchString(query, "checkIn"),
     checkOut: getSearchString(query, "checkOut"),
     adults: getSearchString(query, "adults"),
     rooms: getSearchString(query, "rooms"),
   });
 
-  if (!propertyData) {
+  if (!pageData) {
     notFound();
   }
 
-  if (propertyData.publicUnavailableReason || !propertyData.property) {
-    const unavailable = getPublicUnavailableContent("ownerPage", propertyData.publicUnavailableReason);
+  if (pageData.publicUnavailableReason || !pageData.owner) {
+    const unavailable = getPublicUnavailableContent("ownerPage", pageData.publicUnavailableReason);
 
     return (
       <main className="br-page">
@@ -56,28 +94,31 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
     );
   }
 
-  const { property, rooms, filters, publicWarningText } = propertyData;
-  const propertyCover = property.photos[0];
+  const { owner, properties, filters, publicWarningText } = pageData;
+  const heroPhoto = properties[0]?.property.photos[0];
+  const firstSectionWithRooms = properties.find((section) => section.rooms.length > 0);
+  const firstRequestHref = firstSectionWithRooms
+    ? `/p/${owner.slug}/request?propertySlug=${encodeURIComponent(firstSectionWithRooms.property.slug)}`
+    : null;
 
   return (
     <main className="br-page">
       <div className="br-container">
         <header className="br-header br-header--public">
           <BrandSlot />
-          <nav className="br-nav" aria-label="Навигация публичной страницы">
-            <a href="#rooms">Номера и цены</a>
-            <a href="#features">Удобства</a>
-            <a href="#details">Описание</a>
+          <nav className="br-nav" aria-label="Навигация публичной страницы владельца">
+            <a href="#owner-rooms">Номера и цены</a>
+            <a href="#owner-contact">Контакты</a>
           </nav>
-          <ButtonLink href={`/p/${property.slug}/request`}>Оставить заявку</ButtonLink>
+          {firstRequestHref ? <ButtonLink href={firstRequestHref}>Оставить заявку</ButtonLink> : null}
         </header>
 
         <section className="br-public-hero br-card">
           <div className="br-public-hero__media">
-            {propertyCover ? (
+            {heroPhoto ? (
               <Image
-                src={propertyCover.url}
-                alt={property.shortTitle}
+                src={heroPhoto.url}
+                alt={owner.displayName}
                 width={1600}
                 height={1000}
                 unoptimized
@@ -87,15 +128,14 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
           </div>
           <div className="br-public-hero__body">
             <div>
-              <h1>{property.shortTitle}</h1>
-              <p>
-                Россия, г. {property.city}, {property.address}
-              </p>
+              <h1>{owner.displayName}</h1>
+              <p>Персональная страница владельца Bronly. Выберите объект, конкретный номер и оставьте запрос на проживание.</p>
             </div>
-            <div className="br-public-hero__actions">
-              {property.phone ? <Button variant="secondary">{property.phone}</Button> : null}
-              {property.whatsapp ? <Button variant="secondary">Написать в WhatsApp</Button> : null}
-              <ButtonLink href={`/p/${property.slug}/request`}>Оставить заявку</ButtonLink>
+            <div id="owner-contact" className="br-public-hero__actions">
+              {owner.phone ? <Button variant="secondary">{owner.phone}</Button> : null}
+              {owner.whatsapp ? <Button variant="secondary">Написать в WhatsApp</Button> : null}
+              {owner.telegram ? <Button variant="secondary">{owner.telegram}</Button> : null}
+              {firstRequestHref ? <ButtonLink href={firstRequestHref}>Оставить заявку</ButtonLink> : null}
             </div>
           </div>
         </section>
@@ -106,35 +146,64 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
           </div>
         ) : null}
 
-        <section id="rooms" className="br-section br-section--public">
+        <section id="owner-rooms" className="br-section br-section--public">
           <div className="br-section-heading">
             <h2>Номера и цены</h2>
-            <p>
-              Выберите даты, количество гостей и конкретный номер. Владелец свяжется с вами и уточнит доступность.
-            </p>
+            <p>Гость видит только объекты этого владельца по конкретной ссылке. Заявка всегда создается на конкретный номер.</p>
           </div>
-          <PublicRoomBrowser propertySlug={property.slug} rooms={rooms} filters={filters} />
-        </section>
 
-        <section className="br-public-info">
-          <div className="br-public-info__features" id="features">
-            {property.features.map((feature) => (
-              <span key={feature} className="br-feature-pill">
-                {feature}
-              </span>
-            ))}
-          </div>
-          <div id="details" className="br-public-info__description br-card">
-            <h2>Описание</h2>
-            <p>{property.fullDescription}</p>
-            <small>
-              Bronly передает заявку владельцу и не подтверждает проживание от имени сервиса. Условия проживания,
-              доступность дат и цены уточняются напрямую у владельца.
-            </small>
-            <div className="br-public-info__cta">
-              <ButtonLink href={`/p/${property.slug}/request`}>Оставить заявку</ButtonLink>
+          {properties.length ? (
+            <div className="br-owner-stack">
+              {properties.map((section) => (
+                <article key={section.property.id} className="br-card br-collection-public-section">
+                  <div className="br-dashboard-block__header">
+                    <div>
+                      <h3>{section.property.shortTitle}</h3>
+                      <p>
+                        {section.property.city}, {section.property.address}
+                      </p>
+                    </div>
+                  </div>
+
+                  {section.rooms.length ? (
+                    <PublicRoomBrowser
+                      publicBaseHref={`/p/${owner.slug}`}
+                      propertySlug={section.property.slug}
+                      rooms={section.rooms}
+                      filters={filters}
+                      showFilter={false}
+                      requestHrefBuilder={(roomId, currentFilters) => {
+                        const requestQuery = new URLSearchParams();
+
+                        if (currentFilters.hasDates) {
+                          requestQuery.set("checkIn", currentFilters.checkIn);
+                          requestQuery.set("checkOut", currentFilters.checkOut);
+                        }
+
+                        requestQuery.set("adults", String(currentFilters.adults));
+                        requestQuery.set("rooms", String(currentFilters.rooms));
+
+                        return buildOwnerRequestHref(owner.slug, section.property.slug, roomId, requestQuery);
+                      }}
+                    />
+                  ) : (
+                    <div className="br-card" style={{ marginTop: 16, padding: 16 }}>
+                      По этому объекту пока нет активных номеров для заявки.
+                    </div>
+                  )}
+                </article>
+              ))}
             </div>
-          </div>
+          ) : (
+            <section className="br-dashboard-block br-card">
+              <div className="br-dashboard-block__header">
+                <div>
+                  <h3>Пока нет доступных объектов</h3>
+                  <p>Владелец еще не опубликовал объекты или номера для этой ссылки.</p>
+                </div>
+              </div>
+            </section>
+          )}
         </section>
       </div>
     </main>

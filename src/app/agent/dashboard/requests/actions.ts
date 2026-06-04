@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { transferAgentRequestToOwner } from "@/entities/request";
+import { requestAgentCompletion, transferAgentRequestToOwner } from "@/entities/request";
 
 function getRequestId(formData: FormData) {
   const value = formData.get("requestId");
@@ -16,5 +16,16 @@ export async function transferAgentRequestAction(formData: FormData) {
     revalidatePath("/agent/dashboard/requests");
     revalidatePath("/agent/dashboard");
     revalidatePath("/dashboard/requests");
+  }
+}
+
+export async function requestAgentCompletionAction(formData: FormData) {
+  const result = await requestAgentCompletion({ requestId: getRequestId(formData) });
+
+  if (result.ok) {
+    revalidatePath("/agent/dashboard/requests");
+    revalidatePath("/agent/dashboard");
+    revalidatePath("/dashboard/requests");
+    revalidatePath("/dashboard/notifications");
   }
 }

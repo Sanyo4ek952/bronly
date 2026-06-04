@@ -2,7 +2,12 @@ import { cache } from "react";
 
 import { buildPropertyPhotoMap, buildRoomPhotoMap, withLegacyPropertyCover } from "@/entities/property/api/photo-utils";
 import { property as mockProperty } from "@/entities/property/model/mock";
-import type { PublicPropertyPageData } from "@/entities/property/model/types";
+import type {
+  OwnerPublicProfile,
+  PublicPropertyPageData,
+  PublicPropertySection,
+  PublicPropertySummary,
+} from "@/entities/property/model/types";
 import { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
 import { buildPublicRoomQuote, normalizePublicStayFilters, type PublicStayFilters } from "@/entities/room";
 import { rooms as mockRooms } from "@/entities/room/model/mock";
@@ -20,60 +25,54 @@ import type {
   SupabaseRoomSeasonalPriceRow,
 } from "@/shared/api/supabase/types";
 
-async function getProfilePublicUnavailableReason(profileId: string): Promise<Extract<PublicUnavailableReason, "admin_hidden"> | null> {
-  const supabase = createSupabaseAdminClient();
-  const { data } = await supabase.from("profiles").select("is_public_hidden_by_admin").eq("id", profileId).maybeSingle();
+type PublicOwnerRow = {
+  id: string;
+  slug: string;
+  display_name: string;
+  phone: string | null;
+  whatsapp: string | null;
+  telegram: string | null;
+  is_public_hidden_by_admin: boolean;
+};
 
-  return data?.is_public_hidden_by_admin ? "admin_hidden" : null;
+type OwnerPublicSlugResolution = {
+  ownerSlug: string;
+  matchedPropertySlug: string | null;
+  shouldRedirect: boolean;
+};
+
+function mapPublicOwner(row: PublicOwnerRow): OwnerPublicProfile {
+  return {
+    id: row.id,
+    slug: row.slug,
+    displayName: row.display_name,
+    phone: row.phone ?? "",
+    whatsapp: row.whatsapp ?? "",
+    telegram: row.telegram ?? "",
+  };
 }
 
-function toPublicFallbackData(filters: PublicStayFilters): PublicPropertyPageData {
+function mapPublicProperty(row: SupabasePropertyRow, photos: PublicPropertySummary["photos"], features: string[], houseRules: string[]) {
   return {
-    property: {
-      id: mockProperty.id,
-      title: mockProperty.title,
-      shortTitle: mockProperty.shortTitle,
-      slug: mockProperty.slug,
-      propertyType: mockProperty.propertyType,
-      city: mockProperty.city,
-      address: mockProperty.address,
-      timezone: mockProperty.timezone,
-      shortDescription: mockProperty.shortDescription,
-      fullDescription: mockProperty.fullDescription,
-      phone: mockProperty.phone,
-      whatsapp: mockProperty.whatsapp,
-      telegram: mockProperty.telegram,
-      checkInTime: mockProperty.checkInTime,
-      checkOutTime: mockProperty.checkOutTime,
-      photos: mockProperty.photos,
-      features: mockProperty.features,
-      houseRules: mockProperty.houseRules,
-    },
-    rooms: mockRooms
-      .map((room) =>
-        buildPublicRoomQuote(
-          {
-            id: room.id,
-            title: room.title,
-            subtitle: room.subtitle,
-            capacity: room.capacity,
-            bedrooms: room.bedrooms,
-            area: room.area,
-            pricePerNight: room.pricePerNight,
-            status: room.status,
-            photos: room.photos,
-            amenities: room.amenities,
-            seasonalPrices: [],
-            busyRanges: [],
-          },
-          filters,
-        ),
-      )
-      .sort((a, b) => Number(Boolean(b.isAvailableForFilter)) - Number(Boolean(a.isAvailableForFilter))),
-    filters,
-    publicUnavailableReason: null,
-    publicWarningText: null,
-  };
+    id: row.id,
+    title: row.title,
+    shortTitle: row.short_title,
+    slug: row.slug,
+    propertyType: row.property_type,
+    city: row.city,
+    address: row.address,
+    timezone: row.timezone,
+    shortDescription: row.short_description ?? "",
+    fullDescription: row.full_description ?? "",
+    phone: row.phone ?? "",
+    whatsapp: row.whatsapp ?? "",
+    telegram: row.telegram ?? "",
+    checkInTime: row.check_in_time ?? "",
+    checkOutTime: row.check_out_time ?? "",
+    photos,
+    features,
+    houseRules,
+  } satisfies PublicPropertySummary;
 }
 
 function mapRoomRow(
@@ -99,6 +98,131 @@ function mapRoomRow(
   };
 }
 
+function toPublicFallbackData(filters: PublicStayFilters): PublicPropertyPageData {
+  return {
+    owner: {
+      id: mockProperty.id,
+      slug: mockProperty.slug,
+      displayName: mockProperty.title,
+      phone: mockProperty.phone,
+      whatsapp: mockProperty.whatsapp,
+      telegram: mockProperty.telegram,
+    },
+    properties: [
+      {
+        property: {
+          id: mockProperty.id,
+          title: mockProperty.title,
+          shortTitle: mockProperty.shortTitle,
+          slug: mockProperty.slug,
+          propertyType: mockProperty.propertyType,
+          city: mockProperty.city,
+          address: mockProperty.address,
+          timezone: mockProperty.timezone,
+          shortDescription: mockProperty.shortDescription,
+          fullDescription: mockProperty.fullDescription,
+          phone: mockProperty.phone,
+          whatsapp: mockProperty.whatsapp,
+          telegram: mockProperty.telegram,
+          checkInTime: mockProperty.checkInTime,
+          checkOutTime: mockProperty.checkOutTime,
+          photos: mockProperty.photos,
+          features: mockProperty.features,
+          houseRules: mockProperty.houseRules,
+        },
+        rooms: mockRooms
+          .map((room) =>
+            buildPublicRoomQuote(
+              {
+                id: room.id,
+                title: room.title,
+                subtitle: room.subtitle,
+                capacity: room.capacity,
+                bedrooms: room.bedrooms,
+                area: room.area,
+                pricePerNight: room.pricePerNight,
+                status: room.status,
+                photos: room.photos,
+                amenities: room.amenities,
+                seasonalPrices: [],
+                busyRanges: [],
+              },
+              filters,
+            ),
+          )
+          .sort((a, b) => Number(Boolean(b.isAvailableForFilter)) - Number(Boolean(a.isAvailableForFilter))),
+      },
+    ],
+    filters,
+    publicUnavailableReason: null,
+    publicWarningText: null,
+  };
+}
+
+function buildUnavailablePageData(
+  filters: PublicStayFilters,
+  reason: PublicUnavailableReason,
+): PublicPropertyPageData {
+  return {
+    owner: null,
+    properties: [],
+    filters,
+    publicUnavailableReason: reason,
+    publicWarningText: null,
+  };
+}
+
+export function getOwnerPropertySectionBySlug(pageData: PublicPropertyPageData, propertySlug: string) {
+  return pageData.properties.find((section) => section.property.slug === propertySlug) ?? null;
+}
+
+export const resolveOwnerPublicSlug = cache(async (slug: string): Promise<OwnerPublicSlugResolution | null> => {
+  if (!canUseSupabase()) {
+    return slug === getDemoPropertySlug()
+      ? {
+          ownerSlug: slug,
+          matchedPropertySlug: null,
+          shouldRedirect: false,
+        }
+      : null;
+  }
+
+  try {
+    const supabase = createSupabaseAdminClient();
+    const { data: ownerData } = await supabase.from("profiles").select("slug").eq("slug", slug).maybeSingle();
+
+    if (ownerData?.slug) {
+      return {
+        ownerSlug: ownerData.slug as string,
+        matchedPropertySlug: null,
+        shouldRedirect: false,
+      };
+    }
+
+    const { data: propertyData } = await supabase.from("properties").select("slug, owner_id").eq("slug", slug).maybeSingle();
+    const propertyRow = (propertyData ?? null) as Pick<SupabasePropertyRow, "slug" | "owner_id"> | null;
+
+    if (!propertyRow) {
+      return null;
+    }
+
+    const { data: profileData } = await supabase.from("profiles").select("slug").eq("id", propertyRow.owner_id).maybeSingle();
+    const ownerSlug = (profileData?.slug as string | undefined) ?? "";
+
+    if (!ownerSlug) {
+      return null;
+    }
+
+    return {
+      ownerSlug,
+      matchedPropertySlug: propertyRow.slug,
+      shouldRedirect: ownerSlug !== slug,
+    };
+  } catch {
+    return null;
+  }
+});
+
 export const getPublicPropertyPageData = cache(
   async (
     slug: string,
@@ -117,65 +241,70 @@ export const getPublicPropertyPageData = cache(
 
     try {
       const supabase = createSupabaseAdminClient();
-      const { data } = await supabase
-        .from("properties")
-        .select("*")
+      const { data: ownerData } = await supabase
+        .from("profiles")
+        .select("id, slug, display_name, phone, whatsapp, telegram, is_public_hidden_by_admin")
         .eq("slug", slug)
-        .eq("published", true)
         .maybeSingle();
 
-      const propertyRow = data as SupabasePropertyRow | null;
+      const ownerRow = (ownerData ?? null) as PublicOwnerRow | null;
 
-      if (!propertyRow || propertyRow.is_frozen) {
+      if (!ownerRow) {
         return null;
       }
 
-      const [subscription, profileUnavailableReason] = await Promise.all([
-        getSubscriptionRuntimeState(propertyRow.owner_id, "owner"),
-        getProfilePublicUnavailableReason(propertyRow.owner_id),
-      ]);
+      const subscription = await getSubscriptionRuntimeState(ownerRow.id, "owner");
 
       if (!subscription.isPublicAllowed) {
+        return buildUnavailablePageData(filters, "subscription_expired");
+      }
+
+      if (ownerRow.is_public_hidden_by_admin) {
+        return buildUnavailablePageData(filters, "admin_hidden");
+      }
+
+      const { data: propertyRows } = await supabase
+        .from("properties")
+        .select("*")
+        .eq("owner_id", ownerRow.id)
+        .eq("published", true)
+        .eq("is_frozen", false)
+        .order("created_at", { ascending: true });
+
+      const safePropertyRows = (propertyRows ?? []) as SupabasePropertyRow[];
+
+      if (!safePropertyRows.length) {
         return {
-          property: null,
-          rooms: [],
+          owner: mapPublicOwner(ownerRow),
+          properties: [],
           filters,
-          publicUnavailableReason: "subscription_expired",
-          publicWarningText: null,
+          publicUnavailableReason: null,
+          publicWarningText: subscription.publicWarningText,
         };
       }
 
-      if (profileUnavailableReason) {
-        return {
-          property: null,
-          rooms: [],
-          filters,
-          publicUnavailableReason: profileUnavailableReason,
-          publicWarningText: null,
-        };
-      }
-
+      const propertyIds = safePropertyRows.map((property) => property.id);
       const [{ data: roomRows }, { data: featureRows }, { data: ruleRows }, { data: propertyPhotoRows }] = await Promise.all([
         supabase
           .from("rooms")
           .select("*")
-          .eq("property_id", propertyRow.id)
+          .in("property_id", propertyIds)
           .eq("is_active", true)
           .order("title", { ascending: true }),
         supabase
           .from("property_features")
-          .select("label, sort_order")
-          .eq("property_id", propertyRow.id)
+          .select("property_id, label, sort_order")
+          .in("property_id", propertyIds)
           .order("sort_order", { ascending: true }),
         supabase
           .from("property_rules")
-          .select("label, sort_order")
-          .eq("property_id", propertyRow.id)
+          .select("property_id, label, sort_order")
+          .in("property_id", propertyIds)
           .order("sort_order", { ascending: true }),
         supabase
           .from("property_photos")
           .select("*")
-          .eq("property_id", propertyRow.id)
+          .in("property_id", propertyIds)
           .order("sort_order", { ascending: true })
           .order("created_at", { ascending: true }),
       ]);
@@ -209,71 +338,81 @@ export const getPublicPropertyPageData = cache(
           ])
         : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
 
+      const featureMap = new Map<string, string[]>();
+      const ruleMap = new Map<string, string[]>();
       const amenityMap = new Map<string, string[]>();
       const seasonalMap = new Map<string, OwnerSeasonalPrice[]>();
       const busyMap = new Map<string, OwnerBusyRange[]>();
 
+      for (const item of featureRows ?? []) {
+        const current = featureMap.get(item.property_id as string) ?? [];
+        current.push(item.label as string);
+        featureMap.set(item.property_id as string, current);
+      }
+
+      for (const item of ruleRows ?? []) {
+        const current = ruleMap.get(item.property_id as string) ?? [];
+        current.push(item.label as string);
+        ruleMap.set(item.property_id as string, current);
+      }
+
       for (const item of amenitiesResult.data ?? []) {
-        const existing = amenityMap.get(item.room_id) ?? [];
-        existing.push(item.label);
-        amenityMap.set(item.room_id, existing);
+        const current = amenityMap.get(item.room_id as string) ?? [];
+        current.push(item.label as string);
+        amenityMap.set(item.room_id as string, current);
       }
 
       for (const item of (seasonalResult.data ?? []) as SupabaseRoomSeasonalPriceRow[]) {
-        const existing = seasonalMap.get(item.room_id) ?? [];
-        existing.push(mapSeasonalPrice(item));
-        seasonalMap.set(item.room_id, existing);
+        const current = seasonalMap.get(item.room_id) ?? [];
+        current.push(mapSeasonalPrice(item));
+        seasonalMap.set(item.room_id, current);
       }
 
       for (const item of (busyResult.data ?? []) as SupabaseRoomBusyRangeRow[]) {
-        const existing = busyMap.get(item.room_id) ?? [];
-        existing.push(mapBusyRange(item));
-        busyMap.set(item.room_id, existing);
+        const current = busyMap.get(item.room_id) ?? [];
+        current.push(mapBusyRange(item));
+        busyMap.set(item.room_id, current);
       }
 
-      const propertyPhotos = withLegacyPropertyCover(
-        buildPropertyPhotoMap((propertyPhotoRows ?? []) as SupabasePropertyPhotoRow[]).get(propertyRow.id) ?? [],
-        propertyRow.cover_image_url,
-      );
+      const propertyPhotoMap = buildPropertyPhotoMap((propertyPhotoRows ?? []) as SupabasePropertyPhotoRow[]);
       const roomPhotoMap = buildRoomPhotoMap((roomPhotosResult.data ?? []) as SupabaseRoomPhotoRow[]);
+      const roomsByProperty = new Map<string, PublicRoom[]>();
 
-      const rooms = safeRoomRows
-        .map((room) =>
-          buildPublicRoomQuote(
-            mapRoomRow(
-              room,
-              roomPhotoMap.get(room.id) ?? [],
-              amenityMap.get(room.id) ?? [],
-              seasonalMap.get(room.id) ?? [],
-              busyMap.get(room.id) ?? [],
-            ),
-            filters,
+      for (const room of safeRoomRows) {
+        const publicRoom = buildPublicRoomQuote(
+          mapRoomRow(
+            room,
+            roomPhotoMap.get(room.id) ?? [],
+            amenityMap.get(room.id) ?? [],
+            seasonalMap.get(room.id) ?? [],
+            busyMap.get(room.id) ?? [],
           ),
-        )
-        .sort((a, b) => Number(Boolean(b.isAvailableForFilter)) - Number(Boolean(a.isAvailableForFilter)));
+          filters,
+        );
+        const current = roomsByProperty.get(room.property_id) ?? [];
+        current.push(publicRoom);
+        roomsByProperty.set(room.property_id, current);
+      }
+
+      const properties: PublicPropertySection[] = safePropertyRows.map((property) => {
+        const photos = withLegacyPropertyCover(propertyPhotoMap.get(property.id) ?? [], property.cover_image_url);
+
+        return {
+          property: mapPublicProperty(
+            property,
+            photos,
+            featureMap.get(property.id) ?? [],
+            ruleMap.get(property.id) ?? [],
+          ),
+          rooms: (roomsByProperty.get(property.id) ?? []).sort(
+            (a, b) => Number(Boolean(b.isAvailableForFilter)) - Number(Boolean(a.isAvailableForFilter)),
+          ),
+        };
+      });
 
       return {
-        property: {
-          id: propertyRow.id,
-          title: propertyRow.title,
-          shortTitle: propertyRow.short_title,
-          slug: propertyRow.slug,
-          propertyType: propertyRow.property_type,
-          city: propertyRow.city,
-          address: propertyRow.address,
-          timezone: propertyRow.timezone,
-          shortDescription: propertyRow.short_description ?? "",
-          fullDescription: propertyRow.full_description ?? "",
-          phone: propertyRow.phone ?? "",
-          whatsapp: propertyRow.whatsapp ?? "",
-          telegram: propertyRow.telegram ?? "",
-          checkInTime: propertyRow.check_in_time ?? "",
-          checkOutTime: propertyRow.check_out_time ?? "",
-          photos: propertyPhotos,
-          features: (featureRows ?? []).map((item) => item.label as string),
-          houseRules: (ruleRows ?? []).map((item) => item.label as string),
-        },
-        rooms,
+        owner: mapPublicOwner(ownerRow),
+        properties,
         filters,
         publicUnavailableReason: null,
         publicWarningText: subscription.publicWarningText,

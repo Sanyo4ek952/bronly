@@ -19,6 +19,7 @@ export default async function AgentRequestSuccessPage({ params, searchParams }: 
   const fallbackParams: Record<string, string | string[] | undefined> = {};
   const [{ slug }, query] = await Promise.all([params, searchParams ?? Promise.resolve(fallbackParams)]);
   const propertySlug = getSearchString(query, "propertySlug");
+  const roomId = getSearchString(query, "roomId");
   const pageData = await getPublicAgentPageData(slug);
 
   if (!pageData) {
@@ -35,7 +36,7 @@ export default async function AgentRequestSuccessPage({ params, searchParams }: 
           <p>{unavailable.description}</p>
           <div className="br-request-success__actions">
             <ButtonLink href="/" fullWidth>
-              На главную
+              РќР° РіР»Р°РІРЅСѓСЋ
             </ButtonLink>
           </div>
         </Panel>
@@ -43,25 +44,26 @@ export default async function AgentRequestSuccessPage({ params, searchParams }: 
     );
   }
 
-  const propertyTitle =
-    pageData.properties.find((property) => property.property.slug === propertySlug)?.property.shortTitle ?? "объект";
+  const selectedSection = pageData.properties.find((property) => property.property.slug === propertySlug) ?? pageData.properties[0];
+  const selectedRoom = selectedSection?.rooms.find((room) => room.id === roomId) ?? null;
+  const roomSummary = selectedSection && selectedRoom ? `${selectedSection.property.shortTitle} - ${selectedRoom.title}` : "выбранный номер";
 
   return (
     <main className="br-auth-page">
       <Panel className="br-request-success" as="section">
-        <div className="br-request-success__icon">✓</div>
-        <h1>Заявка отправлена</h1>
+        <div className="br-request-success__icon">вњ“</div>
+        <h1>Р—Р°СЏРІРєР° РѕС‚РїСЂР°РІР»РµРЅР°</h1>
         <p>
-          Агент {pageData.agent.displayName} получил ваш запрос на проживание по объекту {propertyTitle} и вручную
-          передаст его владельцу для уточнения доступности.
-          {pageData.agent.phone ? ` Сохраните номер ${pageData.agent.phone}.` : ""}
+          Р—Р°СЏРІРєР° РЅР° {roomSummary} РѕС‚РїСЂР°РІР»РµРЅР°. РђРіРµРЅС‚ {pageData.agent.displayName} РїРѕР»СѓС‡РёР» РІР°С€ Р·Р°РїСЂРѕСЃ РЅР° РїСЂРѕР¶РёРІР°РЅРёРµ Рё РІСЂСѓС‡РЅСѓСЋ РїРµСЂРµРґР°СЃС‚
+          РµРіРѕ РІР»Р°РґРµР»СЊС†Сѓ, С‡С‚РѕР±С‹ СѓС‚РѕС‡РЅРёС‚СЊ РґРѕСЃС‚СѓРїРЅРѕСЃС‚СЊ.
+          {pageData.agent.phone ? ` РЎРѕС…СЂР°РЅРёС‚Рµ РЅРѕРјРµСЂ ${pageData.agent.phone}.` : ""}
         </p>
         <div className="br-request-success__actions">
           <ButtonLink href={`/a/${pageData.agent.slug}`} fullWidth>
-            Вернуться к витрине
+            Р’РµСЂРЅСѓС‚СЊСЃСЏ Рє РІРёС‚СЂРёРЅРµ
           </ButtonLink>
           <Link href="/" className="br-button br-button--secondary br-button--full">
-            На главную
+            РќР° РіР»Р°РІРЅСѓСЋ
           </Link>
         </div>
       </Panel>

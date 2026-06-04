@@ -91,10 +91,10 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
                 </div>
 
                 <PublicRoomBrowser
+                  publicBaseHref={`/a/${agent.slug}`}
                   propertySlug={section.property.slug}
                   rooms={section.rooms}
                   filters={filters}
-                  resetHref={`/a/${agent.slug}`}
                   requestHrefBuilder={(roomId, currentFilters) => {
                     const requestQuery = new URLSearchParams();
 

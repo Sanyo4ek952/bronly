@@ -9,10 +9,16 @@ function getString(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function buildRequestPath(propertySlug: string, state: Record<string, string>) {
+function buildRequestPath(publicSlug: string, state: Record<string, string>) {
   const params = new URLSearchParams(state);
   const query = params.toString();
-  return `/p/${propertySlug}/request${query ? `?${query}` : ""}`;
+  return `/p/${publicSlug}/request${query ? `?${query}` : ""}`;
+}
+
+function buildSuccessPath(publicSlug: string, state: Record<string, string>) {
+  const params = new URLSearchParams(state);
+  const query = params.toString();
+  return `/p/${publicSlug}/request/success${query ? `?${query}` : ""}`;
 }
 
 export async function submitGuestRequestAction(formData: FormData) {
@@ -22,17 +28,21 @@ export async function submitGuestRequestAction(formData: FormData) {
   const checkOut = getString(formData, "checkOut");
   const guestComment = getString(formData, "guestComment");
   const roomId = getString(formData, "roomId");
+  const publicSlug = getString(formData, "publicSlug");
   const propertySlug = getString(formData, "propertySlug");
   const adultsCount = Number.parseInt(getString(formData, "adultsCount"), 10) || 1;
+  const roomsCount = Number.parseInt(getString(formData, "roomsCount"), 10) || 1;
   const baseState = {
+    propertySlug,
     roomId,
     checkIn,
     checkOut,
     adults: String(adultsCount),
+    rooms: String(roomsCount),
   };
 
-  if (!guestName || !guestPhone || !checkIn || !checkOut || !roomId || !propertySlug) {
-    redirect(buildRequestPath(propertySlug || "dom-u-morya", { ...baseState, error: "validation" }));
+  if (!guestName || !guestPhone || !checkIn || !checkOut || !roomId || !propertySlug || !publicSlug) {
+    redirect(buildRequestPath(publicSlug || "owner", { ...baseState, error: "validation" }));
   }
 
   const result = await createGuestRequest({
@@ -43,6 +53,7 @@ export async function submitGuestRequestAction(formData: FormData) {
     checkIn,
     checkOut,
     adultsCount,
+    roomsCount,
     guestComment,
   });
 
@@ -54,13 +65,13 @@ export async function submitGuestRequestAction(formData: FormData) {
           ? "availability"
           : result.reason === "room_not_suitable" || result.reason === "validation_failed"
             ? "validation"
-        : result.reason === "property_not_found"
-          ? "property"
-          : result.reason === "subscription_expired"
-            ? "subscription"
-          : "save";
-    redirect(buildRequestPath(propertySlug, { ...baseState, error }));
+            : result.reason === "property_not_found"
+              ? "property"
+              : result.reason === "subscription_expired"
+                ? "subscription"
+                : "save";
+    redirect(buildRequestPath(publicSlug, { ...baseState, error }));
   }
 
-  redirect(`/p/${propertySlug}/request/success`);
+  redirect(buildSuccessPath(publicSlug, baseState));
 }

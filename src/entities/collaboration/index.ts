@@ -1,5 +1,6 @@
 export {
   getAgentAvailableProperties,
+  getAgentCalendarData,
   getAgentCollaborations,
   getAgentDashboardSummary,
   getAgentOutgoingProposals,
@@ -14,6 +15,9 @@ export {
 } from "@/entities/collaboration/api/public-agent-data";
 export type {
   AgentAvailablePropertyItem,
+  AgentCalendarBusyRange,
+  AgentCalendarPropertyItem,
+  AgentCalendarRoomItem,
   AgentCollaborationItem,
   AgentDashboardSummary,
   AgentMarkupRoomItem,

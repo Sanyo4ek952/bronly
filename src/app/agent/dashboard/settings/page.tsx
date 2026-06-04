@@ -1,16 +1,34 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { updateProfileAction } from "@/app/auth/actions";
+import { startTelegramNotificationLinkAction, updateProfileAction } from "@/app/auth/actions";
+import { getMyTelegramNotificationStatus } from "@/entities/notification";
 import { InstallAppCard } from "@/features/pwa/install-app";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
+import { TelegramNotificationsCard } from "@/widgets/telegram-notifications-card";
 
 type AgentSettingsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+function getErrorMessage(error: string) {
+  if (error === "telegram-not-configured") {
+    return "Telegram-бот еще не настроен.";
+  }
+
+  if (error === "telegram-link") {
+    return "Не удалось создать ссылку для привязки Telegram.";
+  }
+
+  if (error) {
+    return "Не удалось сохранить изменения.";
+  }
+
+  return "";
+}
+
 export default async function AgentSettingsPage({ searchParams }: AgentSettingsPageProps) {
-  const profile = await getCurrentAuthProfile();
+  const [profile, telegramStatus] = await Promise.all([getCurrentAuthProfile(), getMyTelegramNotificationStatus()]);
 
   if (!profile) {
     redirect("/login");
@@ -30,8 +48,8 @@ export default async function AgentSettingsPage({ searchParams }: AgentSettingsP
             <p>Контакты, которые гость видит по агентской ссылке.</p>
           </div>
         </div>
-        {error ? <p className="br-card" style={{ marginBottom: 16 }}>Не удалось сохранить изменения.</p> : null}
-        {success === "saved" ? <p className="br-card" style={{ marginBottom: 16 }}>Профиль обновлён.</p> : null}
+        {getErrorMessage(error) ? <p className="br-card" style={{ marginBottom: 16 }}>{getErrorMessage(error)}</p> : null}
+        {success === "saved" ? <p className="br-card" style={{ marginBottom: 16 }}>Профиль обновлен.</p> : null}
         <form action={updateProfileAction}>
           <input type="hidden" name="role" value="agent" />
           <div className="br-settings-grid">
@@ -63,14 +81,18 @@ export default async function AgentSettingsPage({ searchParams }: AgentSettingsP
         </form>
       </section>
 
-      <aside className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Установка на главный экран</h2>
-            <p>Быстрый доступ к Bronly с телефона без App Store и Google Play.</p>
+      <aside>
+        <TelegramNotificationsCard role="agent" status={telegramStatus} action={startTelegramNotificationLinkAction} />
+        <div style={{ height: 16 }} />
+        <section className="br-dashboard-block br-card">
+          <div className="br-dashboard-block__header">
+            <div>
+              <h2>Установка на главный экран</h2>
+              <p>Быстрый доступ к Bronly с телефона без App Store и Google Play.</p>
+            </div>
           </div>
-        </div>
-        <InstallAppCard />
+          <InstallAppCard />
+        </section>
       </aside>
     </section>
   );

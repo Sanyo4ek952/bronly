@@ -250,6 +250,7 @@ create table if not exists public.guest_requests (
   status public.request_status not null default 'new',
   transferred_to_owner_at timestamptz,
   owner_confirmed_at timestamptz,
+  completion_requested_at timestamptz,
   completed_at timestamptz,
   base_price_per_night numeric(12, 2),
   agent_markup_percent numeric(5, 2),
