@@ -1,8 +1,9 @@
+import { CircleCheckBig } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 import { getPublicPropertyPageData, resolveOwnerPublicSlug } from "@/entities/property";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
-import { ButtonLink, Panel } from "@/shared/ui";
+import { AppIcon, ButtonLink, Panel } from "@/shared/ui";
 
 type PublicRequestSuccessPageProps = {
   params: Promise<{ slug: string }>;
@@ -52,11 +53,11 @@ export default async function PublicRequestSuccessPage({ params, searchParams }:
           <div className="br-request-success__actions">
             {unavailable.showLogin ? (
               <ButtonLink href="/login" fullWidth>
-                Р’РѕР№С‚Рё РІ РєР°Р±РёРЅРµС‚
+                Войти в кабинет
               </ButtonLink>
             ) : null}
             <ButtonLink href="/" variant="secondary" fullWidth>
-              РќР° РіР»Р°РІРЅСѓСЋ
+              На главную
             </ButtonLink>
           </div>
         </Panel>
@@ -73,19 +74,21 @@ export default async function PublicRequestSuccessPage({ params, searchParams }:
   return (
     <main className="br-auth-page">
       <Panel className="br-request-success" as="section">
-        <div className="br-request-success__icon">вњ“</div>
-        <h1>Р—Р°СЏРІРєР° РѕС‚РїСЂР°РІР»РµРЅР°</h1>
+        <div className="br-request-success__icon" aria-hidden="true">
+          <AppIcon icon={CircleCheckBig} />
+        </div>
+        <h1>Заявка отправлена</h1>
         <p>
-          Р—Р°СЏРІРєР° РЅР° {roomSummary} РѕС‚РїСЂР°РІР»РµРЅР°. Р’Р»Р°РґРµР»РµС† РїРѕР»СѓС‡РёР» РІР°С€ Р·Р°РїСЂРѕСЃ РЅР° РїСЂРѕР¶РёРІР°РЅРёРµ Рё СЃРІСЏР¶РµС‚СЃСЏ СЃ РІР°РјРё, С‡С‚РѕР±С‹ СѓС‚РѕС‡РЅРёС‚СЊ
-          РґРѕСЃС‚СѓРїРЅРѕСЃС‚СЊ.
-          {pageData.owner.phone ? ` Р РµРєРѕРјРµРЅРґСѓРµРј СЃРѕС…СЂР°РЅРёС‚СЊ РЅРѕРјРµСЂ ${pageData.owner.phone}.` : ""}
+          Заявка на {roomSummary} отправлена. Владелец получил ваш запрос на проживание и свяжется с вами, чтобы уточнить
+          доступность.
+          {pageData.owner.phone ? ` Рекомендуем сохранить номер ${pageData.owner.phone}.` : ""}
         </p>
         <div className="br-request-success__actions">
-          <ButtonLink href="/" fullWidth>
-            РџРµСЂРµР№С‚Рё РЅР° РіР»Р°РІРЅСѓСЋ
+          <ButtonLink href={`/p/${pageData.owner.slug}`} fullWidth>
+            Вернуться к странице
           </ButtonLink>
-          <ButtonLink href={`/p/${pageData.owner.slug}`} variant="secondary" fullWidth>
-            РџРѕСЃРјРѕС‚СЂРµС‚СЊ СЃС‚СЂР°РЅРёС†Сѓ РІР»Р°РґРµР»СЊС†Р°
+          <ButtonLink href="/" variant="secondary" fullWidth>
+            На главную
           </ButtonLink>
         </div>
       </Panel>

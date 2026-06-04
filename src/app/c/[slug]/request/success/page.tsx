@@ -1,8 +1,9 @@
+import { CircleCheckBig } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { getPublicCollectionPageData } from "@/entities/collection";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
-import { ButtonLink, Panel } from "@/shared/ui";
+import { AppIcon, ButtonLink, Panel } from "@/shared/ui";
 
 type CollectionRequestSuccessPageProps = {
   params: Promise<{ slug: string }>;
@@ -35,7 +36,7 @@ export default async function CollectionRequestSuccessPage({ params, searchParam
           <p>{unavailable.description}</p>
           <div className="br-request-success__actions">
             <ButtonLink href="/" fullWidth>
-              РќР° РіР»Р°РІРЅСѓСЋ
+              На главную
             </ButtonLink>
           </div>
         </Panel>
@@ -51,21 +52,23 @@ export default async function CollectionRequestSuccessPage({ params, searchParam
   return (
     <main className="br-auth-page">
       <Panel className="br-request-success" as="section">
-        <div className="br-request-success__icon">вњ“</div>
-        <h1>Р—Р°СЏРІРєР° РѕС‚РїСЂР°РІР»РµРЅР°</h1>
+        <div className="br-request-success__icon" aria-hidden="true">
+          <AppIcon icon={CircleCheckBig} />
+        </div>
+        <h1>Заявка отправлена</h1>
         <p>
-          Р—Р°СЏРІРєР° РЅР° {roomSummary} РѕС‚РїСЂР°РІР»РµРЅР°.
+          Заявка на {roomSummary} отправлена.
           {isAgentCollection
-            ? ` РђРіРµРЅС‚ ${pageData.contact.displayName} РїРѕР»СѓС‡РёР» РІР°С€ Р·Р°РїСЂРѕСЃ РЅР° РїСЂРѕР¶РёРІР°РЅРёРµ Рё РІСЂСѓС‡РЅСѓСЋ РїРµСЂРµРґР°СЃС‚ РµРіРѕ РІР»Р°РґРµР»СЊС†Сѓ, С‡С‚РѕР±С‹ СѓС‚РѕС‡РЅРёС‚СЊ РґРѕСЃС‚СѓРїРЅРѕСЃС‚СЊ.`
-            : " Р’Р»Р°РґРµР»РµС† РїРѕР»СѓС‡РёР» РІР°С€ Р·Р°РїСЂРѕСЃ РЅР° РїСЂРѕР¶РёРІР°РЅРёРµ Рё СЃРІСЏР¶РµС‚СЃСЏ СЃ РІР°РјРё, С‡С‚РѕР±С‹ СѓС‚РѕС‡РЅРёС‚СЊ РґРѕСЃС‚СѓРїРЅРѕСЃС‚СЊ."}
-          {pageData.contact.phone ? ` РЎРѕС…СЂР°РЅРёС‚Рµ РЅРѕРјРµСЂ ${pageData.contact.phone}.` : ""}
+            ? ` ${pageData.contact.displayName} получил ваш запрос на проживание и при необходимости передаст его владельцу, чтобы уточнить доступность.`
+            : " Владелец получил ваш запрос на проживание и свяжется с вами, чтобы уточнить доступность."}
+          {pageData.contact.phone ? ` Рекомендуем сохранить номер ${pageData.contact.phone}.` : ""}
         </p>
         <div className="br-request-success__actions">
           <ButtonLink href={`/c/${pageData.collection.slug}`} fullWidth>
-            Р’РµСЂРЅСѓС‚СЊСЃСЏ Рє РєРѕР»Р»РµРєС†РёРё
+            Вернуться к коллекции
           </ButtonLink>
           <ButtonLink href="/" variant="secondary" fullWidth>
-            РќР° РіР»Р°РІРЅСѓСЋ
+            На главную
           </ButtonLink>
         </div>
       </Panel>

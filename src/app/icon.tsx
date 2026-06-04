@@ -17,8 +17,7 @@ export default function Icon() {
           height: "100%",
           alignItems: "center",
           justifyContent: "center",
-          background:
-            "linear-gradient(160deg, #079a91 0%, #087d77 54%, #111d1b 100%)",
+          background: "linear-gradient(160deg, #079a91 0%, #0a7d76 52%, #11211f 100%)",
         }}
       >
         <div
@@ -26,19 +25,32 @@ export default function Icon() {
             display: "flex",
             width: 360,
             height: 360,
-            borderRadius: 112,
+            borderRadius: 108,
             alignItems: "center",
             justifyContent: "center",
-            background: "rgba(255, 255, 255, 0.18)",
-            border: "18px solid rgba(255, 255, 255, 0.28)",
-            color: "#ffffff",
-            fontSize: 220,
-            fontWeight: 800,
-            letterSpacing: "-0.06em",
-            textTransform: "lowercase",
+            background: "linear-gradient(180deg, rgba(255,255,255,0.24), rgba(255,255,255,0.12))",
+            border: "18px solid rgba(255, 255, 255, 0.22)",
+            boxShadow: "0 24px 64px rgba(6, 24, 22, 0.28)",
           }}
         >
-          b
+          <div
+            style={{
+              display: "flex",
+              width: 232,
+              height: 232,
+              borderRadius: 72,
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(8, 27, 25, 0.18)",
+              color: "#ffffff",
+              fontSize: 176,
+              fontWeight: 800,
+              letterSpacing: "-0.08em",
+              textTransform: "lowercase",
+            }}
+          >
+            b
+          </div>
         </div>
       </div>
     ),

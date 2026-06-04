@@ -1,26 +1,31 @@
+import { CalendarDays, ExternalLink, HousePlus, Inbox, Plus } from "lucide-react";
 import Link from "next/link";
 
 import type { OwnerDashboardSummary } from "@/entities/property";
-import { ButtonLink } from "@/shared/ui";
+import { AppIcon, ButtonLink, type AppIconComponent } from "@/shared/ui";
 
 const quickActions = [
   {
+    icon: Plus,
     title: "Добавить номер",
     text: "Создайте новый номер или объект для новых заявок.",
   },
   {
+    icon: CalendarDays,
     title: "Календарь занятости",
     text: "Отмечайте занятые даты и периоды недоступности вручную.",
   },
   {
+    icon: Inbox,
     title: "Заявки",
     text: "Просматривайте новые запросы на проживание и связывайтесь с гостями.",
   },
   {
+    icon: ExternalLink,
     title: "Открыть страницу",
     text: "Проверьте, как гость видит ваш объект по публичной ссылке.",
   },
-];
+] satisfies Array<{ icon: AppIconComponent; title: string; text: string }>;
 
 const onboardingSteps = [
   {
@@ -53,20 +58,22 @@ const onboardingSteps = [
     status: "Ожидает",
     state: "pending",
   },
-];
+] as const;
 
 const emptyStates = [
   {
+    icon: HousePlus,
     title: "Нет объектов",
     text: "Добавьте первый объект, чтобы начать принимать заявки по персональной ссылке.",
     action: "Добавить объект",
   },
   {
+    icon: Plus,
     title: "Нет номеров",
     text: "В объекте пока нет номеров. Добавьте первый номер, чтобы гости могли оставить заявку.",
     action: "Добавить номер",
   },
-];
+] satisfies Array<{ icon: AppIconComponent; title: string; text: string; action: string }>;
 
 type OwnerDashboardOverviewProps = {
   dashboardStats: OwnerDashboardSummary;
@@ -131,9 +138,7 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
         </section>
       ) : null}
 
-      {dashboardStats.subscriptionWarningText ? (
-        <div className="br-inline-notice">{dashboardStats.subscriptionWarningText}</div>
-      ) : null}
+      {dashboardStats.subscriptionWarningText ? <div className="br-inline-notice">{dashboardStats.subscriptionWarningText}</div> : null}
 
       <section className="br-summary-grid">
         {summaryCards.map((card) => (
@@ -168,7 +173,7 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
           {quickActions.map((action) => (
             <article key={action.title} className="br-quick-card">
               <div className="br-quick-card__icon" aria-hidden="true">
-                +
+                <AppIcon icon={action.icon} />
               </div>
               <strong>{action.title}</strong>
               <p>{action.text}</p>
@@ -264,7 +269,9 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
         <aside className="br-dashboard-aside">
           {emptyStates.map((state) => (
             <article key={state.title} className="br-empty-card br-card">
-              <div className="br-empty-card__art" aria-hidden="true" />
+              <div className="br-empty-card__art" aria-hidden="true">
+                <AppIcon icon={state.icon} />
+              </div>
               <strong>{state.title}</strong>
               <p>{state.text}</p>
               <Link href="/dashboard/properties" className="br-button br-button--primary br-button--full">

@@ -1,30 +1,36 @@
+import { Inbox, LayoutDashboard, MonitorSmartphone, Smartphone } from "lucide-react";
 import Link from "next/link";
 
+import { AppIcon, type AppIconComponent } from "@/shared/ui";
 import { SiteHeader } from "@/widgets/site-header";
 
 const capabilityCards = [
   {
+    icon: MonitorSmartphone,
     title: "Персональная страница",
     text: "Покажите объект, номера, цены и удобства в одной чистой витрине без конкурентов.",
   },
   {
+    icon: Inbox,
     title: "Заявки без посредников",
     text: "Гость оставляет запрос на проживание на конкретный номер, а владелец связывается с ним напрямую.",
   },
   {
+    icon: LayoutDashboard,
     title: "Один кабинет",
     text: "Календарь занятости, заявки, подписка и управление объектами собраны в одном месте.",
   },
   {
+    icon: Smartphone,
     title: "PWA на телефоне",
     text: "Сервис работает как мобильное приложение с быстрым доступом и push-уведомлениями.",
   },
-];
+] satisfies Array<{ icon: AppIconComponent; title: string; text: string }>;
 
 const workflowSteps = [
   "Создайте объект и добавьте номера.",
   "Заполните цены, фото и правила проживания.",
-  "Получите публичную ссылку и отправьте ее гостю.",
+  "Получите публичную ссылку и отправьте её гостю.",
   "Получайте заявки и ведите календарь занятости.",
 ];
 
@@ -127,9 +133,7 @@ export function LandingPage() {
                 <span>Вид на море</span>
               </div>
               <button className="br-button br-button--primary br-button--full">Оставить заявку</button>
-              <p className="br-phone-preview__caption">
-                Быстрый ответ владельца и понятный сценарий для гостя.
-              </p>
+              <p className="br-phone-preview__caption">Быстрый ответ владельца и понятный сценарий для гостя.</p>
             </div>
           </div>
         </div>
@@ -144,7 +148,9 @@ export function LandingPage() {
           <div className="br-features">
             {capabilityCards.map((card) => (
               <article key={card.title} className="br-feature-card">
-                <div className="br-feature-card__icon" aria-hidden="true" />
+                <div className="br-feature-card__icon" aria-hidden="true">
+                  <AppIcon icon={card.icon} />
+                </div>
                 <h3 className="br-feature-card__title">{card.title}</h3>
                 <p className="br-feature-card__text">{card.text}</p>
               </article>
@@ -248,10 +254,7 @@ export function LandingPage() {
             {faqItems.map((item) => (
               <article key={item} className="br-faq-item">
                 <strong>{item}</strong>
-                <p>
-                  Ответ будет уточнен в продуктовых сценариях, но терминология и границы MVP уже зафиксированы в
-                  документации проекта.
-                </p>
+                <p>Ответ будет уточнен в продуктовых сценариях, но терминология и границы MVP уже зафиксированы в документации проекта.</p>
               </article>
             ))}
           </div>

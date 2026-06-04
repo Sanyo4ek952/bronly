@@ -1,34 +1,54 @@
 "use client";
 
+import {
+  BadgeCheck,
+  Bell,
+  Building2,
+  CalendarDays,
+  CreditCard,
+  Handshake,
+  Home,
+  Inbox,
+  Layers3,
+  Link2,
+  Search,
+  Settings,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { signOutAction } from "@/app/auth/actions";
-import { BrandLogo } from "@/shared/ui";
+import { AppIcon, type AppIconComponent, BrandLogo } from "@/shared/ui";
 
-const navigationItems = [
-  { href: "/dashboard", label: "Главная", icon: "⌂" },
-  { href: "/dashboard/notifications", label: "Уведомления", icon: "⎃" },
-  { href: "/dashboard/properties", label: "Объекты", icon: "⌘" },
-  { href: "/dashboard/collections", label: "Коллекции", icon: "♦" },
-  { href: "/dashboard/rooms", label: "Номера", icon: "◫" },
-  { href: "/dashboard/calendar", label: "Календарь", icon: "◷" },
-  { href: "/dashboard/subscription", label: "Подписка", icon: "◈" },
-  { href: "/dashboard/agent-proposals", label: "Агенты", icon: "☲" },
-  { href: "/dashboard/requests", label: "Заявки", icon: "✉" },
-  { href: "/dashboard/settings", label: "Настройки", icon: "⚙" },
+type NavigationItem = {
+  href: string;
+  label: string;
+  icon: AppIconComponent;
+};
+
+const navigationItems: NavigationItem[] = [
+  { href: "/dashboard", label: "Главная", icon: Home },
+  { href: "/dashboard/notifications", label: "Уведомления", icon: Bell },
+  { href: "/dashboard/properties", label: "Объекты", icon: Building2 },
+  { href: "/dashboard/collections", label: "Коллекции", icon: Layers3 },
+  { href: "/dashboard/rooms", label: "Номера", icon: Link2 },
+  { href: "/dashboard/calendar", label: "Календарь", icon: CalendarDays },
+  { href: "/dashboard/subscription", label: "Подписка", icon: CreditCard },
+  { href: "/dashboard/agent-proposals", label: "Агенты", icon: Handshake },
+  { href: "/dashboard/requests", label: "Заявки", icon: Inbox },
+  { href: "/dashboard/settings", label: "Настройки", icon: Settings },
 ];
 
-const agentNavigationItems = [
-  { href: "/agent/dashboard", label: "Главная", icon: "⌂" },
-  { href: "/agent/dashboard/notifications", label: "Уведомления", icon: "⎃" },
-  { href: "/agent/dashboard/collections", label: "Коллекции", icon: "♦" },
-  { href: "/agent/dashboard/opportunities", label: "К сотрудничеству", icon: "☲" },
-  { href: "/agent/dashboard/collaborations", label: "Связи", icon: "⌘" },
-  { href: "/agent/dashboard/calendar", label: "Календарь", icon: "◷" },
-  { href: "/agent/dashboard/requests", label: "Заявки", icon: "✉" },
-  { href: "/agent/dashboard/deals", label: "Сделки", icon: "◷" },
-  { href: "/agent/dashboard/settings", label: "Настройки", icon: "⚙" },
+const agentNavigationItems: NavigationItem[] = [
+  { href: "/agent/dashboard", label: "Главная", icon: Home },
+  { href: "/agent/dashboard/notifications", label: "Уведомления", icon: Bell },
+  { href: "/agent/dashboard/collections", label: "Коллекции", icon: Layers3 },
+  { href: "/agent/dashboard/opportunities", label: "К сотрудничеству", icon: Search },
+  { href: "/agent/dashboard/collaborations", label: "Связи", icon: Link2 },
+  { href: "/agent/dashboard/calendar", label: "Календарь", icon: CalendarDays },
+  { href: "/agent/dashboard/requests", label: "Заявки", icon: Inbox },
+  { href: "/agent/dashboard/deals", label: "Сделки", icon: BadgeCheck },
+  { href: "/agent/dashboard/settings", label: "Настройки", icon: Settings },
 ];
 
 type OwnerShellProps = {
@@ -75,7 +95,7 @@ export function OwnerShell({
                 href={item.href}
                 className={`br-owner-nav__item${isActive ? " br-owner-nav__item--active" : ""}`}
               >
-                <span aria-hidden="true">{item.icon}</span>
+                <AppIcon icon={item.icon} aria-hidden="true" />
                 <span>{item.label}</span>
               </Link>
             );
@@ -101,12 +121,12 @@ export function OwnerShell({
         <header className="br-owner-topbar br-card">
           <div>
             <h1>Добро пожаловать, {userName}</h1>
-            <p>Следите за объектами, календарем занятости и заявками в одном месте.</p>
+            <p>Следите за объектами, календарём занятости и заявками в одном месте.</p>
           </div>
           <div className="br-owner-topbar__actions">
             <span className="br-owner-topbar__chip">Bronly</span>
             <Link className="br-icon-link" href={notificationsHref} aria-label="Уведомления">
-              <span aria-hidden="true">⎃</span>
+              <AppIcon icon={Bell} aria-hidden="true" />
               {unreadNotificationsCount > 0 ? <span className="br-icon-link__badge">{badgeLabel}</span> : null}
             </Link>
           </div>
@@ -131,7 +151,7 @@ export function OwnerShell({
                 href={item.href}
                 className={`br-owner-bottom-nav__item${isActive ? " br-owner-bottom-nav__item--active" : ""}`}
               >
-                <span aria-hidden="true">{item.icon}</span>
+                <AppIcon icon={item.icon} aria-hidden="true" />
                 <span>{item.label}</span>
               </Link>
             );

@@ -1,8 +1,9 @@
+import { BedDouble, Layers3 } from "lucide-react";
 import Link from "next/link";
 
 import { buildCollectionSubtitle, getCollectionManagementData } from "@/entities/collection";
 import { formatDateTimeLabel } from "@/shared/lib";
-import { Button, Input, Select, StatusPill } from "@/shared/ui";
+import { AppIcon, Button, Input, Select, StatusPill } from "@/shared/ui";
 
 import {
   addAgentPropertyToCollectionAction,
@@ -102,7 +103,9 @@ export default async function AgentCollectionsPage({ searchParams }: Collections
             })
           ) : (
             <article className="br-empty-card br-card">
-              <div className="br-empty-card__art" aria-hidden="true" />
+              <div className="br-empty-card__art" aria-hidden="true">
+                <AppIcon icon={Layers3} />
+              </div>
               <strong>Пока нет коллекций</strong>
               <p>Создайте первую подборку, чтобы быстро собирать варианты для гостя.</p>
             </article>
@@ -249,7 +252,9 @@ export default async function AgentCollectionsPage({ searchParams }: Collections
             </>
           ) : (
             <article className="br-empty-card br-card">
-              <div className="br-empty-card__art" aria-hidden="true" />
+              <div className="br-empty-card__art" aria-hidden="true">
+                <AppIcon icon={BedDouble} />
+              </div>
               <strong>Выберите коллекцию</strong>
               <p>После создания или выбора коллекции здесь появится ее состав и действия управления.</p>
             </article>

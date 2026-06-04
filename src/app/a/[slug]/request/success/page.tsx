@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { CircleCheckBig } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { getPublicAgentPageData } from "@/entities/collaboration";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
-import { ButtonLink, Panel } from "@/shared/ui";
+import { AppIcon, ButtonLink, Panel } from "@/shared/ui";
 
 type AgentRequestSuccessPageProps = {
   params: Promise<{ slug: string }>;
@@ -36,7 +37,7 @@ export default async function AgentRequestSuccessPage({ params, searchParams }: 
           <p>{unavailable.description}</p>
           <div className="br-request-success__actions">
             <ButtonLink href="/" fullWidth>
-              РќР° РіР»Р°РІРЅСѓСЋ
+              На главную
             </ButtonLink>
           </div>
         </Panel>
@@ -51,19 +52,21 @@ export default async function AgentRequestSuccessPage({ params, searchParams }: 
   return (
     <main className="br-auth-page">
       <Panel className="br-request-success" as="section">
-        <div className="br-request-success__icon">вњ“</div>
-        <h1>Р—Р°СЏРІРєР° РѕС‚РїСЂР°РІР»РµРЅР°</h1>
+        <div className="br-request-success__icon" aria-hidden="true">
+          <AppIcon icon={CircleCheckBig} />
+        </div>
+        <h1>Заявка отправлена</h1>
         <p>
-          Р—Р°СЏРІРєР° РЅР° {roomSummary} РѕС‚РїСЂР°РІР»РµРЅР°. РђРіРµРЅС‚ {pageData.agent.displayName} РїРѕР»СѓС‡РёР» РІР°С€ Р·Р°РїСЂРѕСЃ РЅР° РїСЂРѕР¶РёРІР°РЅРёРµ Рё РІСЂСѓС‡РЅСѓСЋ РїРµСЂРµРґР°СЃС‚
-          РµРіРѕ РІР»Р°РґРµР»СЊС†Сѓ, С‡С‚РѕР±С‹ СѓС‚РѕС‡РЅРёС‚СЊ РґРѕСЃС‚СѓРїРЅРѕСЃС‚СЊ.
-          {pageData.agent.phone ? ` РЎРѕС…СЂР°РЅРёС‚Рµ РЅРѕРјРµСЂ ${pageData.agent.phone}.` : ""}
+          Заявка на {roomSummary} отправлена. Агент {pageData.agent.displayName} получил ваш запрос на проживание и при
+          необходимости передаст его владельцу, чтобы уточнить доступность.
+          {pageData.agent.phone ? ` Рекомендуем сохранить номер ${pageData.agent.phone}.` : ""}
         </p>
         <div className="br-request-success__actions">
           <ButtonLink href={`/a/${pageData.agent.slug}`} fullWidth>
-            Р’РµСЂРЅСѓС‚СЊСЃСЏ Рє РІРёС‚СЂРёРЅРµ
+            Вернуться к витрине
           </ButtonLink>
           <Link href="/" className="br-button br-button--secondary br-button--full">
-            РќР° РіР»Р°РІРЅСѓСЋ
+            На главную
           </Link>
         </div>
       </Panel>

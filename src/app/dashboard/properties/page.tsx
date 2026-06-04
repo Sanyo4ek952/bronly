@@ -1,8 +1,9 @@
 import Image from "next/image";
+import { HousePlus, Settings } from "lucide-react";
 import Link from "next/link";
 
 import { getOwnerProperties } from "@/entities/property";
-import { ButtonLink, StatusPill } from "@/shared/ui";
+import { AppIcon, ButtonLink, StatusPill } from "@/shared/ui";
 
 type PropertiesPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -95,7 +96,7 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                     className="br-owner-property-card__settings"
                     aria-label={`Открыть настройки объекта ${property.title}`}
                   >
-                    ⚙
+                    <AppIcon icon={Settings} aria-hidden="true" />
                   </Link>
                 </div>
               </div>
@@ -132,7 +133,9 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
         </div>
       ) : (
         <article className="br-empty-card br-card">
-          <div className="br-empty-card__art" aria-hidden="true" />
+          <div className="br-empty-card__art" aria-hidden="true">
+            <AppIcon icon={HousePlus} />
+          </div>
           <strong>Пока нет объектов</strong>
           <p>Добавьте первый объект, чтобы перейти к номерам, ценам и календарю занятости.</p>
           <ButtonLink href="/dashboard/properties/new" fullWidth>
