@@ -4,6 +4,7 @@ import type { SupabaseNotificationRow } from "@/shared/api/supabase/types";
 import { formatDateTimeLabel } from "@/shared/lib/date";
 
 import type { NotificationEventType, NotificationListItem, NotificationPayload } from "@/entities/notification/model/types";
+import { fanOutPushNotification } from "@/entities/notification/api/push-delivery";
 
 function formatSubscriptionStatusLabel(status?: NotificationPayload["subscriptionStatus"]) {
   switch (status) {
@@ -36,7 +37,7 @@ function buildPropertyRoomLabel(payload: NotificationPayload) {
   return `${parts[0]} · ${parts[1]}.`;
 }
 
-function getNotificationCopy(eventType: NotificationEventType, payload: NotificationPayload) {
+export function getNotificationCopy(eventType: NotificationEventType, payload: NotificationPayload) {
   switch (eventType) {
     case "new_request":
       return {
@@ -118,16 +119,46 @@ export async function createInAppNotification(input: {
   eventType: NotificationEventType;
   payload?: NotificationPayload;
 }) {
+  return createNotificationEvent(input);
+}
+
+export async function createNotificationEvent(input: {
+  recipientId: string;
+  eventType: NotificationEventType;
+  payload?: NotificationPayload;
+}) {
   const admin = createSupabaseAdminClient();
-  const { error } = await admin.from("notifications").insert({
-    recipient_id: input.recipientId,
-    channel: "in_app",
-    event_type: input.eventType,
-    payload: input.payload ?? {},
-  });
+  const payload = input.payload ?? {};
+  const { data, error } = await admin
+    .from("notifications")
+    .insert({
+      recipient_id: input.recipientId,
+      channel: "in_app",
+      event_type: input.eventType,
+      payload,
+    })
+    .select("*")
+    .single();
 
   if (error) {
     return { ok: false as const, reason: "save_failed" as const };
+  }
+
+  const notification = data as SupabaseNotificationRow;
+  const copy = getNotificationCopy(notification.event_type, notification.payload ?? {});
+
+  try {
+    await fanOutPushNotification({
+      notification: {
+        id: notification.id,
+        recipient_id: notification.recipient_id,
+        event_type: notification.event_type,
+        payload: notification.payload ?? {},
+      },
+      copy,
+    });
+  } catch {
+    // In-app notification remains the source of truth even if push delivery is not ready.
   }
 
   return { ok: true as const };

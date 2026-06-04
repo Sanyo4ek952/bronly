@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -35,10 +36,7 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
         <div className="br-container">
           <section className="br-request-success br-card" style={{ margin: "48px auto" }}>
             <h1>Страница временно недоступна</h1>
-            <p>
-              Доступ к сервису еще не продлен. Если это ваша страница, войдите в кабинет и продлите
-              подписку.
-            </p>
+            <p>Доступ к сервису еще не продлен. Если это ваша страница, войдите в кабинет и продлите подписку.</p>
             <div className="br-request-success__actions">
               <ButtonLink href="/login" fullWidth>
                 Войти в кабинет
@@ -54,6 +52,7 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
   }
 
   const { property, rooms, filters, publicWarningText } = propertyData;
+  const propertyCover = property.photos[0];
 
   return (
     <main className="br-page">
@@ -69,7 +68,18 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
         </header>
 
         <section className="br-public-hero br-card">
-          <div className="br-public-hero__media" />
+          <div className="br-public-hero__media">
+            {propertyCover ? (
+              <Image
+                src={propertyCover.url}
+                alt={property.shortTitle}
+                width={1600}
+                height={1000}
+                unoptimized
+                className="br-public-hero__image"
+              />
+            ) : null}
+          </div>
           <div className="br-public-hero__body">
             <div>
               <h1>{property.shortTitle}</h1>
@@ -85,14 +95,17 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
           </div>
         </section>
 
-        {publicWarningText ? <div className="br-inline-notice" style={{ marginTop: 18 }}>{publicWarningText}</div> : null}
+        {publicWarningText ? (
+          <div className="br-inline-notice" style={{ marginTop: 18 }}>
+            {publicWarningText}
+          </div>
+        ) : null}
 
         <section id="rooms" className="br-section br-section--public">
           <div className="br-section-heading">
             <h2>Номера и цены</h2>
             <p>
-              Выберите даты, количество гостей и конкретный номер. Владелец свяжется с вами и уточнит
-              доступность.
+              Выберите даты, количество гостей и конкретный номер. Владелец свяжется с вами и уточнит доступность.
             </p>
           </div>
           <PublicRoomBrowser propertySlug={property.slug} rooms={rooms} filters={filters} />
@@ -110,8 +123,8 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
             <h2>Описание</h2>
             <p>{property.fullDescription}</p>
             <small>
-              Bronly передает заявку владельцу и не подтверждает проживание от имени сервиса. Условия
-              проживания, доступность дат и цены уточняются напрямую у владельца.
+              Bronly передает заявку владельцу и не подтверждает проживание от имени сервиса. Условия проживания,
+              доступность дат и цены уточняются напрямую у владельца.
             </small>
             <div className="br-public-info__cta">
               <ButtonLink href={`/p/${property.slug}/request`}>Оставить заявку</ButtonLink>

@@ -13,24 +13,14 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
   return (
     <>
       <div className="br-property-form__grid">
-        <Input
-          id="property-title"
-          name="title"
-          label="Название объекта"
-          defaultValue={property?.title ?? ""}
-        />
+        <Input id="property-title" name="title" label="Название объекта" defaultValue={property?.title ?? ""} />
         <Input
           id="property-short-title"
           name="shortTitle"
           label="Короткое название"
           defaultValue={property?.shortTitle ?? ""}
         />
-        <Input
-          id="property-type"
-          name="propertyType"
-          label="Тип объекта"
-          defaultValue={property?.propertyType ?? ""}
-        />
+        <Input id="property-type" name="propertyType" label="Тип объекта" defaultValue={property?.propertyType ?? ""} />
         <Input id="property-city" name="city" label="Город" defaultValue={property?.city ?? ""} />
         <Input
           id="property-timezone"
@@ -71,12 +61,6 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
       <div className="br-inline-fields">
         <Input id="property-check-in" name="checkInTime" label="Заезд" defaultValue={property?.checkInTime ?? ""} />
         <Input id="property-check-out" name="checkOutTime" label="Выезд" defaultValue={property?.checkOutTime ?? ""} />
-        <Input
-          id="property-cover-image"
-          name="coverImageUrl"
-          label="Ссылка на обложку"
-          defaultValue={property?.coverImageUrl ?? ""}
-        />
       </div>
 
       <div className="br-owner-grid-2">
@@ -105,11 +89,7 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
         </label>
         <label className="br-toggle">
           <span>Готов сотрудничать с агентами</span>
-          <input
-            type="checkbox"
-            name="allowAgentInquiries"
-            {...renderChecked(property?.allowAgentInquiries)}
-          />
+          <input type="checkbox" name="allowAgentInquiries" {...renderChecked(property?.allowAgentInquiries)} />
         </label>
         <label className="br-toggle">
           <span>Показывать контакты владельца агенту</span>

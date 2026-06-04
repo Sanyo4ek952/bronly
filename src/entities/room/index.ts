@@ -15,5 +15,6 @@ export type {
   OwnerRoomListItem,
   OwnerSeasonalPrice,
   PublicRoom,
+  RoomPhoto,
   Room,
 } from "@/entities/room/model/types";

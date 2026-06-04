@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { createInAppNotification } from "@/entities/notification";
+import { createNotificationEvent } from "@/entities/notification";
 import { createSupabaseAdminClient, getCurrentAuthProfile, getPostLoginRedirect } from "@/shared/api/supabase";
 
 const ALLOWED_SUBSCRIPTION_STATUSES = new Set(["trial", "active", "grace", "expired", "manual"]);
@@ -91,7 +91,7 @@ export async function saveSubscriptionAction(formData: FormData) {
   }
 
   if (existingRow?.status !== status) {
-    await createInAppNotification({
+    await createNotificationEvent({
       recipientId: profileId,
       eventType: "subscription_status_changed",
       payload: {
@@ -102,7 +102,7 @@ export async function saveSubscriptionAction(formData: FormData) {
     });
 
     if (status === "grace") {
-      await createInAppNotification({
+      await createNotificationEvent({
         recipientId: profileId,
         eventType: "subscription_reminder",
         payload: {
@@ -168,7 +168,7 @@ export async function extendSubscriptionAction(formData: FormData) {
   }
 
   if (existingRow?.status !== "active") {
-    await createInAppNotification({
+    await createNotificationEvent({
       recipientId: profileId,
       eventType: "subscription_status_changed",
       payload: {

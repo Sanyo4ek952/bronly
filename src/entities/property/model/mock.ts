@@ -16,6 +16,13 @@ export const property = {
   telegram: "@bronly_villa",
   checkInTime: "15:00",
   checkOutTime: "12:00",
+  photos: [
+    {
+      id: "property-photo-1",
+      url: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
+      sortOrder: 0,
+    },
+  ],
   rating: "4.9 (128)",
   features: ["Бассейн", "Парковка", "Wi-Fi", "Трансфер", "Кухня", "Мангал"],
   houseRules: ["Курение запрещено", "Нельзя с животными", "Тихие часы с 23:00 до 08:00"],

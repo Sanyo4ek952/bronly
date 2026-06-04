@@ -20,6 +20,22 @@ export function getAppUrl() {
   return process.env.NEXT_PUBLIC_APP_URL;
 }
 
+export function getVapidPublicKey() {
+  return process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+}
+
+export function getVapidPrivateKey() {
+  return process.env.VAPID_PRIVATE_KEY;
+}
+
+export function getVapidSubject() {
+  return process.env.VAPID_SUBJECT;
+}
+
+export function hasConfiguredWebPush() {
+  return Boolean(getVapidPublicKey() && getVapidPrivateKey() && getVapidSubject());
+}
+
 export function hasSupabaseServerEnv() {
   return Boolean(getSupabaseUrl() && getSupabaseServiceRoleKey());
 }

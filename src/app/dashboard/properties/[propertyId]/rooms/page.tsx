@@ -1,11 +1,15 @@
+import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import {
   createRoomSeasonalPrice,
   deleteOwnerRoom,
+  deleteRoomPhoto,
   deleteRoomSeasonalPrice,
+  setRoomPhotoPrimary,
   updateOwnerRoom,
   updateRoomSeasonalPrice,
+  uploadRoomPhoto,
 } from "@/app/dashboard/properties/actions";
 import { getRoomsNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerPropertyDetail } from "@/entities/property";
@@ -37,7 +41,7 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
         <div className="br-dashboard-block__header">
           <div>
             <h2>{property.title}</h2>
-            <p>Список существующих номеров объекта и управление их ценами.</p>
+            <p>Список существующих номеров объекта и управление их ценами и фото.</p>
           </div>
         </div>
 
@@ -50,7 +54,7 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
         <div className="br-dashboard-block__header">
           <div>
             <h2>Номера и цены</h2>
-            <p>Откройте нужный номер, обновите его данные или добавьте новый номер через отдельную форму.</p>
+            <p>Откройте нужный номер, обновите его данные, сезонные цены и фото.</p>
           </div>
           <ButtonLink href={`/dashboard/properties/${property.id}/rooms/new`}>Добавить номер</ButtonLink>
         </div>
@@ -71,12 +75,40 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
                   </StatusPill>
                 </div>
 
+                <div className="br-room-photo-preview">
+                  {room.photos[0] ? (
+                    <Image
+                      src={room.photos[0].url}
+                      alt={`${room.title} — главное фото`}
+                      width={1200}
+                      height={700}
+                      unoptimized
+                      className="br-room-photo-preview__image"
+                    />
+                  ) : (
+                    <div className="br-room-photo-preview__placeholder" aria-hidden="true" />
+                  )}
+                  <div className="br-room-photo-preview__copy">
+                    <strong>{room.photos[0] ? "Главное фото номера" : "Фото номера пока нет"}</strong>
+                    <span>
+                      {room.photos[0]
+                        ? `Всего фото: ${room.photos.length}. Первое фото показывается в публичных карточках.`
+                        : "Добавьте первое фото, чтобы оно появилось в карточке номера и на публичных страницах."}
+                    </span>
+                  </div>
+                </div>
+
                 <form action={updateOwnerRoom} className="br-owner-stack">
                   <input type="hidden" name="propertyId" value={property.id} />
                   <input type="hidden" name="roomId" value={room.id} />
                   <div className="br-property-form__grid">
                     <Input id={`room-title-${room.id}`} name="title" label="Название" defaultValue={room.title} />
-                    <Input id={`room-subtitle-${room.id}`} name="subtitle" label="Подзаголовок" defaultValue={room.subtitle} />
+                    <Input
+                      id={`room-subtitle-${room.id}`}
+                      name="subtitle"
+                      label="Подзаголовок"
+                      defaultValue={room.subtitle}
+                    />
                     <Input
                       id={`room-capacity-${room.id}`}
                       name="capacity"
@@ -128,6 +160,72 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
                     <Button type="submit">Сохранить номер</Button>
                   </div>
                 </form>
+
+                <section className="br-owner-photo-section">
+                  <div className="br-section-heading">
+                    <h3>Фото номера</h3>
+                    <p>Первое фото показывается гостю в карточках номера и в заявке.</p>
+                  </div>
+
+                  <form action={uploadRoomPhoto} className="br-owner-photo-upload" encType="multipart/form-data">
+                    <input type="hidden" name="propertyId" value={property.id} />
+                    <input type="hidden" name="roomId" value={room.id} />
+                    <Input
+                      id={`room-photo-upload-${room.id}`}
+                      name="photo"
+                      type="file"
+                      accept="image/*"
+                      label="Добавить фото номера"
+                      wrapperClassName="br-owner-photo-upload__field"
+                    />
+                    <Button type="submit">Загрузить фото</Button>
+                  </form>
+
+                  {room.photos.length ? (
+                    <div className="br-photo-grid br-photo-grid--compact">
+                      {room.photos.map((photo, index) => (
+                        <article key={photo.id} className="br-photo-card br-photo-card--compact">
+                          <div className="br-photo-card__media">
+                            <Image
+                              src={photo.url}
+                              alt={`${room.title} — фото ${index + 1}`}
+                              width={900}
+                              height={700}
+                              unoptimized
+                              className="br-photo-card__image"
+                            />
+                          </div>
+                          <div className="br-photo-card__body">
+                            <div className="br-photo-card__meta">
+                              <strong>{index === 0 ? "Главное фото" : `Фото ${index + 1}`}</strong>
+                              <span>{index === 0 ? "Показывается первым" : "Можно сделать главным"}</span>
+                            </div>
+                            <div className="br-photo-card__actions">
+                              <form action={setRoomPhotoPrimary}>
+                                <input type="hidden" name="propertyId" value={property.id} />
+                                <input type="hidden" name="roomId" value={room.id} />
+                                <input type="hidden" name="photoId" value={photo.id} />
+                                <Button type="submit" variant="secondary" disabled={index === 0}>
+                                  {index === 0 ? "Главное" : "Сделать первым"}
+                                </Button>
+                              </form>
+                              <form action={deleteRoomPhoto}>
+                                <input type="hidden" name="propertyId" value={property.id} />
+                                <input type="hidden" name="roomId" value={room.id} />
+                                <input type="hidden" name="photoId" value={photo.id} />
+                                <Button type="submit" variant="danger">
+                                  Удалить
+                                </Button>
+                              </form>
+                            </div>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="br-owner-muted">У этого номера пока нет фото.</p>
+                  )}
+                </section>
 
                 <div className="br-owner-stack">
                   <strong>Сезонные цены</strong>

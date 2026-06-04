@@ -22,8 +22,9 @@ self.addEventListener("push", (event) => {
   const title = payload.title || "Bronly";
   const options = {
     body: payload.body || "У вас есть новое событие в Bronly.",
-    icon: "/icon",
-    badge: "/icon",
+    icon: payload.icon || "/icon",
+    badge: payload.badge || "/icon",
+    tag: payload.tag || undefined,
     data: {
       url: payload.url || "/dashboard/notifications",
     },

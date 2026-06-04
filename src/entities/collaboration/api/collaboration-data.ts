@@ -6,7 +6,7 @@ import type {
   AgentProposalItem,
   OwnerIncomingAgentProposalItem,
 } from "@/entities/collaboration/model/types";
-import { createInAppNotification } from "@/entities/notification";
+import { createNotificationEvent } from "@/entities/notification";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
 import { getCurrentAuthProfile, type AuthProfile } from "@/shared/api/supabase/server-auth";
 import type { SupabaseAgentPropertyLinkRow } from "@/shared/api/supabase/types";
@@ -285,7 +285,7 @@ export async function submitAgentProposal(input: { propertyId: string; message: 
       return { ok: false as const, reason: "save_failed" as const };
     }
 
-    await createInAppNotification({
+    await createNotificationEvent({
       recipientId: property.owner_id,
       eventType: "agent_proposal_received",
       payload: {
@@ -357,7 +357,7 @@ export async function reviewAgentProposal(input: { proposalId: string; decision:
       .eq("id", proposal.property_id)
       .maybeSingle();
 
-    await createInAppNotification({
+    await createNotificationEvent({
       recipientId: proposal.agent_id,
       eventType: input.decision === "active" ? "agent_proposal_accepted" : "agent_proposal_rejected",
       payload: {

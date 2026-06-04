@@ -54,6 +54,7 @@ export type PublicAgentPropertySection = {
     shortTitle: string;
     city: string;
     address: string;
+    photos: import("@/entities/property").PropertyPhoto[];
   };
   rooms: PublicRoom[];
 };

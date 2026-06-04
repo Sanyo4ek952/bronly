@@ -47,7 +47,6 @@ export async function createOwnerProperty(formData: FormData) {
     is_frozen: getCheckbox(formData, "isFrozen"),
     allow_agent_inquiries: getCheckbox(formData, "allowAgentInquiries"),
     allow_owner_contact_sharing: getCheckbox(formData, "allowOwnerContactSharing"),
-    cover_image_url: getString(formData, "coverImageUrl") || null,
   };
 
   const { data, error } = await supabase.from("properties").insert(payload).select("id").maybeSingle();
@@ -98,7 +97,6 @@ export async function updateOwnerProperty(formData: FormData) {
       is_frozen: getCheckbox(formData, "isFrozen"),
       allow_agent_inquiries: getCheckbox(formData, "allowAgentInquiries"),
       allow_owner_contact_sharing: getCheckbox(formData, "allowOwnerContactSharing"),
-      cover_image_url: getString(formData, "coverImageUrl") || null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", propertyId);

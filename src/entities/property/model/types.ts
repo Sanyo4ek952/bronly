@@ -1,6 +1,12 @@
 import type { OwnerRoomDetail, PublicRoom } from "@/entities/room/model/types";
 import type { PublicStayFilters } from "@/entities/room/model/pricing";
 
+export type PropertyPhoto = {
+  id: string;
+  url: string;
+  sortOrder: number;
+};
+
 export type PublicPropertyPageData = {
   property: {
     id: string;
@@ -18,6 +24,7 @@ export type PublicPropertyPageData = {
     telegram: string;
     checkInTime: string;
     checkOutTime: string;
+    photos: PropertyPhoto[];
     features: string[];
     houseRules: string[];
   } | null;
@@ -52,6 +59,7 @@ export type OwnerPropertyListItem = {
   address: string;
   published: boolean;
   isFrozen: boolean;
+  photos: PropertyPhoto[];
   coverImageUrl: string;
   roomCount: number;
   activeRoomCount: number;
@@ -80,6 +88,7 @@ export type OwnerPropertyDetail = {
   isFrozen: boolean;
   allowAgentInquiries: boolean;
   allowOwnerContactSharing: boolean;
+  photos: PropertyPhoto[];
   coverImageUrl: string;
   features: string[];
   houseRules: string[];

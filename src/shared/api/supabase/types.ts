@@ -24,6 +24,15 @@ export type SupabasePropertyRow = {
   updated_at: string;
 };
 
+export type SupabasePropertyPhotoRow = {
+  id: string;
+  property_id: string;
+  storage_path: string;
+  public_url: string;
+  sort_order: number;
+  created_at: string;
+};
+
 export type SupabaseProfileRow = {
   id: string;
   auth_user_id: string | null;
@@ -55,6 +64,15 @@ export type SupabaseRoomRow = {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+};
+
+export type SupabaseRoomPhotoRow = {
+  id: string;
+  room_id: string;
+  storage_path: string;
+  public_url: string;
+  sort_order: number;
+  created_at: string;
 };
 
 export type SupabasePropertyFeatureRow = {
@@ -202,5 +220,41 @@ export type SupabaseNotificationRow = {
     linkPath?: string;
   };
   read_at: string | null;
+  created_at: string;
+};
+
+export type SupabasePushSubscriptionRow = {
+  id: string;
+  profile_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_agent: string | null;
+  device_label: string | null;
+  last_seen_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SupabaseNotificationSettingsRow = {
+  profile_id: string;
+  push_enabled: boolean;
+  in_app_enabled: boolean;
+  telegram_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SupabaseNotificationDeliveryRow = {
+  id: string;
+  notification_id: string;
+  recipient_id: string;
+  channel: string;
+  push_subscription_id: string | null;
+  status: string;
+  provider_message_id: string | null;
+  error_code: string | null;
+  error_message: string | null;
+  sent_at: string | null;
   created_at: string;
 };

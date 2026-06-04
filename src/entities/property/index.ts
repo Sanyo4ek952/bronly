@@ -10,5 +10,6 @@ export type {
   OwnerDashboardSummary,
   OwnerPropertyDetail,
   OwnerPropertyListItem,
+  PropertyPhoto,
   PublicPropertyPageData,
 } from "@/entities/property/model/types";

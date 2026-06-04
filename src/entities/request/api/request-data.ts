@@ -7,7 +7,7 @@ import {
   isRoomAvailableForDates,
   normalizePublicStayFilters,
 } from "@/entities/room";
-import { createInAppNotification } from "@/entities/notification";
+import { createNotificationEvent } from "@/entities/notification";
 import { getRoomById } from "@/entities/room/model/mock";
 import { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
@@ -309,7 +309,7 @@ export async function createGuestRequest(input: {
   const linkPath = hasAgentPricing ? "/agent/dashboard/requests" : "/dashboard/requests";
 
   if (recipientId) {
-    await createInAppNotification({
+    await createNotificationEvent({
       recipientId,
       eventType: "new_request",
       payload: {
@@ -441,7 +441,7 @@ export async function transferAgentRequestToOwner(input: { requestId: string }) 
     admin.from("rooms").select("title").eq("id", request.room_id).maybeSingle(),
   ]);
 
-  await createInAppNotification({
+  await createNotificationEvent({
     recipientId: request.owner_id,
     eventType: "request_transferred_to_owner",
     payload: {

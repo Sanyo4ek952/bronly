@@ -7,8 +7,14 @@ import {
   createRoomSeasonalPrice as createRoomSeasonalPriceAction,
   deleteOwnerProperty as deleteOwnerPropertyAction,
   deleteOwnerRoom as deleteOwnerRoomAction,
+  deletePropertyPhoto as deletePropertyPhotoAction,
+  deleteRoomPhoto as deleteRoomPhotoAction,
   deleteRoomBusyRange as deleteRoomBusyRangeAction,
   deleteRoomSeasonalPrice as deleteRoomSeasonalPriceAction,
+  setPropertyPhotoPrimary as setPropertyPhotoPrimaryAction,
+  setRoomPhotoPrimary as setRoomPhotoPrimaryAction,
+  uploadPropertyPhoto as uploadPropertyPhotoAction,
+  uploadRoomPhoto as uploadRoomPhotoAction,
   updateOwnerProperty as updateOwnerPropertyAction,
   updateOwnerRoom as updateOwnerRoomAction,
   updateRoomBusyRange as updateRoomBusyRangeAction,
@@ -37,6 +43,30 @@ export async function updateOwnerRoom(formData: FormData) {
 
 export async function deleteOwnerRoom(formData: FormData) {
   return deleteOwnerRoomAction(formData);
+}
+
+export async function uploadPropertyPhoto(formData: FormData) {
+  return uploadPropertyPhotoAction(formData);
+}
+
+export async function deletePropertyPhoto(formData: FormData) {
+  return deletePropertyPhotoAction(formData);
+}
+
+export async function setPropertyPhotoPrimary(formData: FormData) {
+  return setPropertyPhotoPrimaryAction(formData);
+}
+
+export async function uploadRoomPhoto(formData: FormData) {
+  return uploadRoomPhotoAction(formData);
+}
+
+export async function deleteRoomPhoto(formData: FormData) {
+  return deleteRoomPhotoAction(formData);
+}
+
+export async function setRoomPhotoPrimary(formData: FormData) {
+  return setRoomPhotoPrimaryAction(formData);
 }
 
 export async function createRoomSeasonalPrice(formData: FormData) {

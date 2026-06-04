@@ -1,7 +1,14 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { deleteOwnerProperty, updateOwnerProperty } from "@/app/dashboard/properties/actions";
+import {
+  deleteOwnerProperty,
+  deletePropertyPhoto,
+  setPropertyPhotoPrimary,
+  updateOwnerProperty,
+  uploadPropertyPhoto,
+} from "@/app/dashboard/properties/actions";
 import { getPropertyNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerPropertyDetail } from "@/entities/property";
 import { OwnerPropertyFormFields } from "@/features/property/edit-property";
@@ -71,6 +78,74 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
             </Link>
           </div>
         </form>
+      </section>
+
+      <section className="br-dashboard-block br-card">
+        <div className="br-dashboard-block__header">
+          <div>
+            <h2>Фото объекта</h2>
+            <p>Добавьте несколько фото. Первое фото используется как обложка в кабинете и на публичной странице.</p>
+          </div>
+        </div>
+
+        <form action={uploadPropertyPhoto} className="br-owner-photo-upload" encType="multipart/form-data">
+          <input type="hidden" name="propertyId" value={property.id} />
+          <Input
+            id="property-photo-upload"
+            name="photo"
+            type="file"
+            accept="image/*"
+            label="Добавить фото объекта"
+            wrapperClassName="br-owner-photo-upload__field"
+          />
+          <p className="br-owner-muted">Поддерживаются JPG, PNG, WebP и GIF до 5 МБ.</p>
+          <Button type="submit">Загрузить фото</Button>
+        </form>
+
+        {property.photos.length ? (
+          <div className="br-photo-grid">
+            {property.photos.map((photo, index) => (
+              <article key={photo.id} className="br-photo-card">
+                <div className="br-photo-card__media">
+                  <Image
+                    src={photo.url}
+                    alt={`${property.title} — фото ${index + 1}`}
+                    width={1200}
+                    height={900}
+                    unoptimized
+                    className="br-photo-card__image"
+                  />
+                </div>
+                <div className="br-photo-card__body">
+                  <div className="br-photo-card__meta">
+                    <strong>{index === 0 ? "Обложка объекта" : `Фото ${index + 1}`}</strong>
+                    <span>{index === 0 ? "Показывается первой" : "Можно сделать обложкой"}</span>
+                  </div>
+                  <div className="br-photo-card__actions">
+                    <form action={setPropertyPhotoPrimary}>
+                      <input type="hidden" name="propertyId" value={property.id} />
+                      <input type="hidden" name="photoId" value={photo.id} />
+                      <Button type="submit" variant="secondary" disabled={index === 0}>
+                        {index === 0 ? "Обложка" : "Сделать обложкой"}
+                      </Button>
+                    </form>
+                    <form action={deletePropertyPhoto}>
+                      <input type="hidden" name="propertyId" value={property.id} />
+                      <input type="hidden" name="photoId" value={photo.id} />
+                      <Button type="submit" variant="danger">
+                        Удалить
+                      </Button>
+                    </form>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="br-owner-muted">
+            Фото объекта пока нет. После загрузки первое фото станет обложкой в кабинете и на публичной странице.
+          </p>
+        )}
       </section>
 
       <section className="br-dashboard-block br-card">

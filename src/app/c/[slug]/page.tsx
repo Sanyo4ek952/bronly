@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -62,6 +63,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
   await recordPublicCollectionOpen(slug);
 
   const { collection, contact, sections, filters, publicWarningText } = pageData;
+  const heroPhoto = sections[0]?.property.photos[0];
 
   return (
     <main className="br-page">
@@ -84,7 +86,18 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
         </header>
 
         <section className="br-public-hero br-card">
-          <div className="br-public-hero__media" />
+          <div className="br-public-hero__media">
+            {heroPhoto ? (
+              <Image
+                src={heroPhoto.url}
+                alt={collection.title}
+                width={1600}
+                height={1000}
+                unoptimized
+                className="br-public-hero__image"
+              />
+            ) : null}
+          </div>
           <div className="br-public-hero__body">
             <div>
               <h1>{collection.title}</h1>
@@ -116,7 +129,11 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
           </div>
         </section>
 
-        {publicWarningText ? <div className="br-inline-notice" style={{ marginTop: 18 }}>{publicWarningText}</div> : null}
+        {publicWarningText ? (
+          <div className="br-inline-notice" style={{ marginTop: 18 }}>
+            {publicWarningText}
+          </div>
+        ) : null}
 
         <section id="collection-rooms" className="br-section br-section--public">
           <div className="br-section-heading">

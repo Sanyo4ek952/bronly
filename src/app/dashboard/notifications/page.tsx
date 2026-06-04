@@ -1,4 +1,5 @@
-import { getMyNotifications } from "@/entities/notification";
+import { getMyNotifications, getMyPushSubscriptionStatus } from "@/entities/notification";
+import { PushNotificationsCard } from "@/features/pwa/push-notifications";
 import { NotificationsCenter } from "@/widgets/notifications-center";
 
 import {
@@ -7,15 +8,22 @@ import {
 } from "@/app/dashboard/notifications/actions";
 
 export default async function OwnerNotificationsPage() {
-  const notifications = await getMyNotifications();
+  const [notifications, pushStatus] = await Promise.all([getMyNotifications(), getMyPushSubscriptionStatus()]);
 
   return (
-    <NotificationsCenter
-      items={notifications}
-      title="Уведомления"
-      description="Все in-app события по заявкам, предложениям агентов и подписке."
-      onMarkReadAction={markOwnerNotificationReadAction}
-      onMarkAllReadAction={markAllOwnerNotificationsReadAction}
-    />
+    <>
+      <PushNotificationsCard
+        deliveryMode={pushStatus.deliveryMode}
+        hasServerSubscriptions={pushStatus.hasSubscriptions}
+        initialPushEnabled={pushStatus.pushEnabled}
+      />
+      <NotificationsCenter
+        items={notifications}
+        title="Уведомления"
+        description="Все in-app события по заявкам, предложениям агентов и подписке."
+        onMarkReadAction={markOwnerNotificationReadAction}
+        onMarkAllReadAction={markAllOwnerNotificationsReadAction}
+      />
+    </>
   );
 }

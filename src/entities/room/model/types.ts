@@ -16,6 +16,7 @@ export type PublicRoom = {
   nights?: number;
   displayPricePerNight?: number;
   totalPrice?: number;
+  photos: RoomPhoto[];
   nightlyPrices?: Array<{
     date: string;
     pricePerNight: number;
@@ -25,6 +26,12 @@ export type PublicRoom = {
 };
 
 export type Room = PublicRoom;
+
+export type RoomPhoto = {
+  id: string;
+  url: string;
+  sortOrder: number;
+};
 
 export type OwnerSeasonalPrice = {
   id: string;
@@ -56,6 +63,7 @@ export type OwnerRoomListItem = {
   area: number;
   pricePerNight: number;
   isActive: boolean;
+  photos: RoomPhoto[];
   amenities: string[];
   seasonalPrices: OwnerSeasonalPrice[];
   busyRanges: OwnerBusyRange[];

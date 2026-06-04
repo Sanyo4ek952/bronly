@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import type { PublicRoom, PublicStayFilters } from "@/entities/room";
@@ -16,7 +17,7 @@ type PublicRoomBrowserProps = {
 };
 
 function formatRoomMeta(room: PublicRoom) {
-  return `${room.capacity} гостя(ей) · ${room.bedrooms} спальня(и) · ${room.area} м²`;
+  return `${room.capacity} гостя(ей) • ${room.bedrooms} спальня(и) • ${room.area} м²`;
 }
 
 function formatMoney(value: number) {
@@ -151,13 +152,9 @@ export function PublicRoomBrowser({
             />
             <StatCard title="Вместимость" value={`${selectedRoom.capacity} гостя(ей)`} />
           </div>
-          {selectedRoom.unavailableReason ? (
-            <p className="br-public-room-warning">{selectedRoom.unavailableReason}</p>
-          ) : null}
+          {selectedRoom.unavailableReason ? <p className="br-public-room-warning">{selectedRoom.unavailableReason}</p> : null}
           <div className="br-public-selected-room__actions">
-            <ButtonLink href={resolveRequestHref(selectedRoom.id, filters)}>
-              Оставить заявку на этот номер
-            </ButtonLink>
+            <ButtonLink href={resolveRequestHref(selectedRoom.id, filters)}>Оставить заявку на этот номер</ButtonLink>
           </div>
         </div>
       ) : null}
@@ -196,7 +193,18 @@ function RoomGrid({
             key={room.id}
             className={`br-public-room-card br-card${selectedRoomId === room.id ? " br-public-room-card--selected" : ""}`}
           >
-            <div className="br-public-room-card__image" />
+            <div className="br-public-room-card__image">
+              {room.photos[0] ? (
+                <Image
+                  src={room.photos[0].url}
+                  alt={room.title}
+                  width={1200}
+                  height={800}
+                  unoptimized
+                  className="br-public-room-card__image-content"
+                />
+              ) : null}
+            </div>
             <div className="br-public-room-card__body">
               <strong>{room.title}</strong>
               <span>{formatRoomMeta(room)}</span>

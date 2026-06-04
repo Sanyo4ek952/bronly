@@ -1,20 +1,24 @@
 import { cache } from "react";
 
 import type { PublicAgentPageData, PublicAgentPropertySection } from "@/entities/collaboration/model/types";
+import { buildPropertyPhotoMap, buildRoomPhotoMap, withLegacyPropertyCover } from "@/entities/property/api/photo-utils";
 import { buildPublicRoomQuote, normalizePublicStayFilters, type PublicStayFilters } from "@/entities/room";
 import { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
-import type { OwnerBusyRange, OwnerSeasonalPrice, PublicRoom } from "@/entities/room/model/types";
+import type { OwnerBusyRange, OwnerSeasonalPrice, PublicRoom, RoomPhoto } from "@/entities/room/model/types";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
 import type {
+  SupabasePropertyPhotoRow,
   SupabasePropertyRow,
   SupabaseRoomBusyRangeRow,
+  SupabaseRoomPhotoRow,
   SupabaseRoomRow,
   SupabaseRoomSeasonalPriceRow,
 } from "@/shared/api/supabase/types";
 
 function mapRoomRow(
   room: SupabaseRoomRow,
+  photos: RoomPhoto[],
   seasonalPrices: OwnerSeasonalPrice[],
   busyRanges: OwnerBusyRange[],
   agentMarkupPercent: number,
@@ -28,6 +32,7 @@ function mapRoomRow(
     area: room.area,
     pricePerNight: Number(room.price_per_night),
     status: room.is_active ? "active" : "inactive",
+    photos,
     amenities: [],
     seasonalPrices,
     busyRanges,
@@ -142,16 +147,24 @@ export const getPublicAgentPageData = cache(
       }
 
       const propertyIds = safeProperties.map((property) => property.id);
-      const { data: roomRows } = await supabase
-        .from("rooms")
-        .select("*")
-        .in("property_id", propertyIds)
-        .eq("is_active", true)
-        .order("title", { ascending: true });
+      const [{ data: roomRows }, { data: propertyPhotoRows }] = await Promise.all([
+        supabase
+          .from("rooms")
+          .select("*")
+          .in("property_id", propertyIds)
+          .eq("is_active", true)
+          .order("title", { ascending: true }),
+        supabase
+          .from("property_photos")
+          .select("*")
+          .in("property_id", propertyIds)
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true }),
+      ]);
       const safeRoomRows = (roomRows ?? []) as SupabaseRoomRow[];
       const roomIds = safeRoomRows.map((room) => room.id);
 
-      const [seasonalResult, busyResult, markupResult] = roomIds.length
+      const [seasonalResult, busyResult, markupResult, roomPhotosResult] = roomIds.length
         ? await Promise.all([
             supabase
               .from("room_seasonal_prices")
@@ -161,8 +174,14 @@ export const getPublicAgentPageData = cache(
               .order("starts_on", { ascending: true }),
             supabase.from("room_busy_ranges").select("*").in("room_id", roomIds).order("starts_on", { ascending: true }),
             supabase.from("room_agent_markups").select("room_id, markup_percent").eq("agent_id", agent.id).in("room_id", roomIds),
+            supabase
+              .from("room_photos")
+              .select("*")
+              .in("room_id", roomIds)
+              .order("sort_order", { ascending: true })
+              .order("created_at", { ascending: true }),
           ])
-        : [{ data: [] }, { data: [] }, { data: [] }];
+        : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
 
       const seasonalMap = new Map<string, OwnerSeasonalPrice[]>();
       const busyMap = new Map<string, OwnerBusyRange[]>();
@@ -184,11 +203,15 @@ export const getPublicAgentPageData = cache(
         markupMap.set(item.room_id as string, Number(item.markup_percent ?? 0));
       }
 
+      const propertyPhotoMap = buildPropertyPhotoMap((propertyPhotoRows ?? []) as SupabasePropertyPhotoRow[]);
+      const roomPhotoMap = buildRoomPhotoMap((roomPhotosResult.data ?? []) as SupabaseRoomPhotoRow[]);
       const roomsByProperty = new Map<string, PublicRoom[]>();
+
       for (const room of safeRoomRows) {
         const publicRoom = buildPublicRoomQuote(
           mapRoomRow(
             room,
+            roomPhotoMap.get(room.id) ?? [],
             seasonalMap.get(room.id) ?? [],
             busyMap.get(room.id) ?? [],
             markupMap.get(room.id) ?? 0,
@@ -209,6 +232,7 @@ export const getPublicAgentPageData = cache(
             shortTitle: property.short_title,
             city: property.city,
             address: property.address,
+            photos: withLegacyPropertyCover(propertyPhotoMap.get(property.id) ?? [], property.cover_image_url),
           },
           rooms: (roomsByProperty.get(property.id) ?? []).sort(
             (a, b) => Number(Boolean(b.isAvailableForFilter)) - Number(Boolean(a.isAvailableForFilter)),

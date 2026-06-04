@@ -5,6 +5,15 @@ export function getPropertyNotice(error: string, success: string) {
   if (success === "saved") {
     return "Изменения по объекту сохранены.";
   }
+  if (success === "photo-uploaded") {
+    return "Фото объекта добавлено.";
+  }
+  if (success === "photo-deleted") {
+    return "Фото объекта удалено.";
+  }
+  if (success === "photo-primary") {
+    return "Обложка объекта обновлена.";
+  }
 
   switch (error) {
     case "validation":
@@ -19,6 +28,18 @@ export function getPropertyNotice(error: string, success: string) {
       return "Удаление не удалось.";
     case "save":
       return "Не удалось сохранить изменения.";
+    case "photo-validation":
+      return "Выберите изображение для загрузки.";
+    case "photo-type":
+      return "Поддерживаются только JPG, PNG, WebP и GIF.";
+    case "photo-size":
+      return "Размер файла должен быть не больше 5 МБ.";
+    case "photo-upload":
+      return "Не удалось загрузить фото объекта.";
+    case "photo-delete":
+      return "Не удалось удалить фото объекта.";
+    case "photo-order":
+      return "Не удалось обновить порядок фото объекта.";
     default:
       return "";
   }
@@ -43,6 +64,15 @@ export function getRoomsNotice(error: string, success: string) {
   if (success === "season-deleted") {
     return "Сезонная цена удалена.";
   }
+  if (success === "room-photo-uploaded") {
+    return "Фото номера добавлено.";
+  }
+  if (success === "room-photo-deleted") {
+    return "Фото номера удалено.";
+  }
+  if (success === "room-photo-primary") {
+    return "Главное фото номера обновлено.";
+  }
 
   switch (error) {
     case "validation":
@@ -59,6 +89,18 @@ export function getRoomsNotice(error: string, success: string) {
       return "Удаление не удалось.";
     case "save":
       return "Не удалось сохранить изменения.";
+    case "room-photo-validation":
+      return "Выберите изображение для номера.";
+    case "room-photo-type":
+      return "Для номера поддерживаются только JPG, PNG, WebP и GIF.";
+    case "room-photo-size":
+      return "Размер фото номера должен быть не больше 5 МБ.";
+    case "room-photo-upload":
+      return "Не удалось загрузить фото номера.";
+    case "room-photo-delete":
+      return "Не удалось удалить фото номера.";
+    case "room-photo-order":
+      return "Не удалось обновить порядок фото номера.";
     default:
       return "";
   }

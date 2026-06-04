@@ -135,6 +135,100 @@
   min-height: 180px;
 }
 
+.br-owner-photo-upload,
+.br-owner-photo-section,
+.br-photo-card,
+.br-room-photo-preview {
+  display: grid;
+  gap: 16px;
+}
+
+.br-owner-photo-upload {
+  align-items: end;
+}
+
+.br-owner-photo-upload__field {
+  max-width: 420px;
+}
+
+.br-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.br-photo-grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.br-photo-card {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.br-photo-card__media {
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 10%), rgb(17 29 27 / 8%)),
+    linear-gradient(135deg, #b8dbe2 0%, #88bdd0 45%, #d6e3d5 78%, #cab69d 100%);
+}
+
+.br-photo-card__image,
+.br-room-photo-preview__image,
+.br-public-hero__image,
+.br-public-room-card__image-content {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.br-photo-card__body,
+.br-room-photo-preview__copy {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.br-photo-card__meta {
+  display: grid;
+  gap: 4px;
+}
+
+.br-photo-card__meta span {
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.br-photo-card__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.br-room-photo-preview {
+  grid-template-columns: minmax(220px, 320px) 1fr;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.br-room-photo-preview__image,
+.br-room-photo-preview__placeholder {
+  min-height: 190px;
+}
+
+.br-room-photo-preview__placeholder {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 10%), rgb(17 29 27 / 8%)),
+    linear-gradient(135deg, #b8dbe2 0%, #88bdd0 45%, #d6e3d5 78%, #cab69d 100%);
+}
+
 .br-owner-property-card__topbar {
   display: flex;
   align-items: center;
@@ -209,6 +303,10 @@
 @media (max-width: 900px) {
   .br-owner-grid-2,
   .br-owner-inline-form {
+    grid-template-columns: 1fr;
+  }
+
+  .br-room-photo-preview {
     grid-template-columns: 1fr;
   }
 }
@@ -1821,6 +1919,7 @@ ul {
 }
 
 .br-room-card__thumb {
+  overflow: hidden;
   min-height: 96px;
   border-radius: 16px;
   background:
@@ -2182,6 +2281,7 @@ ul {
 }
 
 .br-public-hero__media {
+  overflow: hidden;
   min-height: 320px;
   background:
     linear-gradient(180deg, rgb(255 255 255 / 10%), rgb(17 29 27 / 8%)),
@@ -2282,6 +2382,7 @@ ul {
 }
 
 .br-public-room-card__image {
+  overflow: hidden;
   min-height: 180px;
   background:
     linear-gradient(180deg, rgb(255 255 255 / 10%), rgb(17 29 27 / 8%)),

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import { formatRoomMeta, formatRoomPrice, type Room } from "@/entities/room";
@@ -49,7 +50,7 @@ export function RoomsBrowser({ rooms }: RoomsBrowserProps) {
     <>
       <div className="br-rooms-toolbar">
         <div className="br-rooms-toolbar__actions">
-          <Button variant={showLargeRooms ? "primary" : "secondary"} onClick={() => setShowLargeRooms((v) => !v)}>
+          <Button variant={showLargeRooms ? "primary" : "secondary"} onClick={() => setShowLargeRooms((value) => !value)}>
             {showLargeRooms ? "Показаны от 3 гостей" : "Показать от 3 гостей"}
           </Button>
           <Select
@@ -70,7 +71,18 @@ export function RoomsBrowser({ rooms }: RoomsBrowserProps) {
       <div className="br-room-list">
         {filteredRooms.map((room) => (
           <article key={room.id} className="br-room-card">
-            <div className="br-room-card__thumb" />
+            <div className="br-room-card__thumb">
+              {room.photos[0] ? (
+                <Image
+                  src={room.photos[0].url}
+                  alt={room.title}
+                  width={900}
+                  height={700}
+                  unoptimized
+                  className="br-public-room-card__image-content"
+                />
+              ) : null}
+            </div>
             <div className="br-room-card__content">
               <div className="br-room-card__header">
                 <div>
