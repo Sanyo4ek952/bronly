@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getPublicPropertyPageData } from "@/entities/property";
+import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { Button, ButtonLink } from "@/shared/ui";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
 
@@ -30,17 +31,21 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
     notFound();
   }
 
-  if (propertyData.publicUnavailableReason === "subscription_expired" || !propertyData.property) {
+  if (propertyData.publicUnavailableReason || !propertyData.property) {
+    const unavailable = getPublicUnavailableContent("ownerPage", propertyData.publicUnavailableReason);
+
     return (
       <main className="br-page">
         <div className="br-container">
           <section className="br-request-success br-card" style={{ margin: "48px auto" }}>
-            <h1>Страница временно недоступна</h1>
-            <p>Доступ к сервису еще не продлен. Если это ваша страница, войдите в кабинет и продлите подписку.</p>
+            <h1>{unavailable.title}</h1>
+            <p>{unavailable.description}</p>
             <div className="br-request-success__actions">
-              <ButtonLink href="/login" fullWidth>
-                Войти в кабинет
-              </ButtonLink>
+              {unavailable.showLogin ? (
+                <ButtonLink href="/login" fullWidth>
+                  Войти в кабинет
+                </ButtonLink>
+              ) : null}
               <ButtonLink href="/" variant="secondary" fullWidth>
                 На главную
               </ButtonLink>

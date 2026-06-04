@@ -41,6 +41,7 @@ export type SupabaseProfileRow = {
   phone: string | null;
   whatsapp: string | null;
   telegram: string | null;
+  is_public_hidden_by_admin: boolean;
   created_at: string;
   updated_at: string;
 };

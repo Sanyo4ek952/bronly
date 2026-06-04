@@ -251,3 +251,30 @@ export async function togglePropertyFreezeAction(formData: FormData) {
   revalidatePath("/admin");
   redirect(`/admin?success=${nextFrozen ? "property-frozen" : "property-unfrozen"}`);
 }
+
+export async function toggleProfilePublicVisibilityAction(formData: FormData) {
+  await requireAdmin();
+
+  const profileId = getString(formData, "profileId");
+  const nextHidden = getString(formData, "nextHidden") === "true";
+
+  if (!profileId) {
+    redirect("/admin?error=profile");
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin
+    .from("profiles")
+    .update({
+      is_public_hidden_by_admin: nextHidden,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", profileId);
+
+  if (error) {
+    redirect("/admin?error=profile");
+  }
+
+  revalidatePath("/admin");
+  redirect(`/admin?success=${nextHidden ? "profile-hidden" : "profile-unhidden"}`);
+}

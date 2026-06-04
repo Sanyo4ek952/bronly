@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getPublicCollectionPageData, recordPublicCollectionOpen } from "@/entities/collection";
+import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { ButtonLink } from "@/shared/ui";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
 
@@ -42,13 +43,15 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
     notFound();
   }
 
-  if (pageData.publicUnavailableReason === "subscription_expired" || !pageData.collection || !pageData.contact) {
+  if (pageData.publicUnavailableReason || !pageData.collection || !pageData.contact) {
+    const unavailable = getPublicUnavailableContent("collection", pageData.publicUnavailableReason);
+
     return (
       <main className="br-page">
         <div className="br-container">
           <section className="br-request-success br-card" style={{ margin: "48px auto" }}>
-            <h1>Страница временно недоступна</h1>
-            <p>Новые заявки по этой ссылке сейчас не принимаются.</p>
+            <h1>{unavailable.title}</h1>
+            <p>{unavailable.description}</p>
             <div className="br-request-success__actions">
               <ButtonLink href="/" fullWidth>
                 На главную

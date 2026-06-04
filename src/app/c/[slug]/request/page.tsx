@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { getPublicCollectionPageData } from "@/entities/collection";
 import { GuestRequestForm } from "@/features/request/submit-request";
+import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { ButtonLink, Panel } from "@/shared/ui";
 
 import { submitCollectionGuestRequestAction } from "./actions";
@@ -48,12 +49,14 @@ export default async function PublicCollectionRequestPage({ params, searchParams
     notFound();
   }
 
-  if (pageData.publicUnavailableReason === "subscription_expired" || !pageData.collection || !pageData.contact) {
+  if (pageData.publicUnavailableReason || !pageData.collection || !pageData.contact) {
+    const unavailable = getPublicUnavailableContent("collection", pageData.publicUnavailableReason);
+
     return (
       <main className="br-auth-page">
         <Panel className="br-request-success" as="section">
-          <h1>Страница временно недоступна</h1>
-          <p>Новые заявки по этой ссылке сейчас не принимаются.</p>
+          <h1>{unavailable.title}</h1>
+          <p>{unavailable.description}</p>
           <div className="br-request-success__actions">
             <ButtonLink href="/" fullWidth>
               На главную

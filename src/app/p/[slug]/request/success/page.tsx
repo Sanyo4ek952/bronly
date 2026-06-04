@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { getPublicPropertyPageData } from "@/entities/property";
+import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { ButtonLink, Panel } from "@/shared/ui";
 
 type PublicRequestSuccessPageProps = {
@@ -15,16 +16,20 @@ export default async function PublicRequestSuccessPage({ params }: PublicRequest
     notFound();
   }
 
-  if (propertyData.publicUnavailableReason === "subscription_expired" || !propertyData.property) {
+  if (propertyData.publicUnavailableReason || !propertyData.property) {
+    const unavailable = getPublicUnavailableContent("ownerRequest", propertyData.publicUnavailableReason);
+
     return (
       <main className="br-auth-page">
         <Panel className="br-request-success" as="section">
-          <h1>Страница временно недоступна</h1>
-          <p>Доступ к сервису еще не продлен. Новые заявки по этой ссылке сейчас не принимаются.</p>
+          <h1>{unavailable.title}</h1>
+          <p>{unavailable.description}</p>
           <div className="br-request-success__actions">
-            <ButtonLink href="/login" fullWidth>
-              Войти в кабинет
-            </ButtonLink>
+            {unavailable.showLogin ? (
+              <ButtonLink href="/login" fullWidth>
+                Войти в кабинет
+              </ButtonLink>
+            ) : null}
             <ButtonLink href="/" variant="secondary" fullWidth>
               На главную
             </ButtonLink>

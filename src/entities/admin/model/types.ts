@@ -6,6 +6,8 @@ export type AdminUserItem = {
   slug: string;
   phone: string;
   roles: string[];
+  isPublicHiddenByAdmin: boolean;
+  publicPageUrls: string[];
   propertyCount: number;
   activeRoomCount: number;
   requestCount: number;

@@ -195,6 +195,16 @@ export async function createGuestRequest(input: {
     return { ok: false, reason: "subscription_expired" as const };
   }
 
+  const { data: ownerProfileData } = await supabase
+    .from("profiles")
+    .select("is_public_hidden_by_admin")
+    .eq("id", propertyRow.owner_id)
+    .maybeSingle();
+
+  if (ownerProfileData?.is_public_hidden_by_admin) {
+    return { ok: false, reason: "property_not_found" as const };
+  }
+
   const { data: roomData } = await supabase
     .from("rooms")
     .select("id, title, price_per_night, capacity, bedrooms, is_active")

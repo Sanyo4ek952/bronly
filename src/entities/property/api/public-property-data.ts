@@ -10,6 +10,7 @@ import type { OwnerBusyRange, OwnerSeasonalPrice, PublicRoom, RoomPhoto } from "
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getDemoPropertySlug } from "@/shared/api/supabase/env";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
+import type { PublicUnavailableReason } from "@/shared/lib/public-page-visibility";
 import type {
   SupabasePropertyPhotoRow,
   SupabasePropertyRow,
@@ -18,6 +19,13 @@ import type {
   SupabaseRoomRow,
   SupabaseRoomSeasonalPriceRow,
 } from "@/shared/api/supabase/types";
+
+async function getProfilePublicUnavailableReason(profileId: string): Promise<Extract<PublicUnavailableReason, "admin_hidden"> | null> {
+  const supabase = createSupabaseAdminClient();
+  const { data } = await supabase.from("profiles").select("is_public_hidden_by_admin").eq("id", profileId).maybeSingle();
+
+  return data?.is_public_hidden_by_admin ? "admin_hidden" : null;
+}
 
 function toPublicFallbackData(filters: PublicStayFilters): PublicPropertyPageData {
   return {
@@ -122,7 +130,10 @@ export const getPublicPropertyPageData = cache(
         return null;
       }
 
-      const subscription = await getSubscriptionRuntimeState(propertyRow.owner_id, "owner");
+      const [subscription, profileUnavailableReason] = await Promise.all([
+        getSubscriptionRuntimeState(propertyRow.owner_id, "owner"),
+        getProfilePublicUnavailableReason(propertyRow.owner_id),
+      ]);
 
       if (!subscription.isPublicAllowed) {
         return {
@@ -130,6 +141,16 @@ export const getPublicPropertyPageData = cache(
           rooms: [],
           filters,
           publicUnavailableReason: "subscription_expired",
+          publicWarningText: null,
+        };
+      }
+
+      if (profileUnavailableReason) {
+        return {
+          property: null,
+          rooms: [],
+          filters,
+          publicUnavailableReason: profileUnavailableReason,
           publicWarningText: null,
         };
       }

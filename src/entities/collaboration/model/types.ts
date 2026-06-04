@@ -1,5 +1,6 @@
 import type { PublicRoom } from "@/entities/room";
 import type { PublicStayFilters } from "@/entities/room";
+import type { PublicUnavailableReason } from "@/shared/lib/public-page-visibility";
 
 export type AgentDashboardSummary = {
   activeCollaborations: number;
@@ -81,6 +82,6 @@ export type PublicAgentPageData = {
   } | null;
   properties: PublicAgentPropertySection[];
   filters: PublicStayFilters;
-  publicUnavailableReason: "subscription_expired" | null;
+  publicUnavailableReason: PublicUnavailableReason | null;
   publicWarningText: string | null;
 };

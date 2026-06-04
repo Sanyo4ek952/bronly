@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { getPublicPropertyPageData } from "@/entities/property";
 import { GuestRequestForm } from "@/features/request/submit-request";
+import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { ButtonLink, Panel } from "@/shared/ui";
 
 import { submitGuestRequestAction } from "./actions";
@@ -48,19 +49,23 @@ export default async function PublicRequestPage({ params, searchParams }: Public
     notFound();
   }
 
-  if (propertyData.publicUnavailableReason === "subscription_expired" || !propertyData.property) {
+  if (propertyData.publicUnavailableReason || !propertyData.property) {
+    const unavailable = getPublicUnavailableContent("ownerRequest", propertyData.publicUnavailableReason);
+
     return (
       <main className="br-auth-page">
         <Panel className="br-request-success" as="section">
-          <h1>Страница временно недоступна</h1>
-          <p>Доступ к сервису еще не продлен. Новые заявки по этой ссылке сейчас не принимаются.</p>
+          <h1>{unavailable.title}</h1>
+          <p>{unavailable.description}</p>
           <div className="br-request-success__actions">
             <ButtonLink href="/" fullWidth>
               На главную
             </ButtonLink>
-            <ButtonLink href="/login" variant="secondary" fullWidth>
-              Войти в кабинет
-            </ButtonLink>
+            {unavailable.showLogin ? (
+              <ButtonLink href="/login" variant="secondary" fullWidth>
+                Войти в кабинет
+              </ButtonLink>
+            ) : null}
           </div>
         </Panel>
       </main>

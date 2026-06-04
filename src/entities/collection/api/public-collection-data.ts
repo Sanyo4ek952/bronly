@@ -6,6 +6,7 @@ import { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
 import type { OwnerBusyRange, OwnerSeasonalPrice, RoomPhoto } from "@/entities/room/model/types";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
+import type { PublicUnavailableReason } from "@/shared/lib/public-page-visibility";
 import type {
   SupabaseCollectionRow,
   SupabasePropertyPhotoRow,
@@ -53,7 +54,7 @@ type CollectionContext = {
   contact: PublicCollectionContact | null;
   sections: PublicCollectionSection[];
   publicWarningText: string | null;
-  publicUnavailableReason: "subscription_expired" | null;
+  publicUnavailableReason: PublicUnavailableReason | null;
 } | null;
 
 function getSingleRow<T>(value: T | T[] | null): T | null {
@@ -104,7 +105,14 @@ async function loadPublicCollectionContext(
     return null;
   }
 
-  const creatorSubscription = await getSubscriptionRuntimeState(collectionRow.creator_id, collectionRow.creator_role);
+  const [{ data: creatorVisibilityData }, creatorSubscription] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("is_public_hidden_by_admin")
+      .eq("id", collectionRow.creator_id)
+      .maybeSingle(),
+    getSubscriptionRuntimeState(collectionRow.creator_id, collectionRow.creator_role),
+  ]);
 
   if (!creatorSubscription.isPublicAllowed) {
     return {
@@ -113,6 +121,16 @@ async function loadPublicCollectionContext(
       sections: [],
       publicWarningText: null,
       publicUnavailableReason: "subscription_expired",
+    };
+  }
+
+  if (creatorVisibilityData?.is_public_hidden_by_admin) {
+    return {
+      collection: null,
+      contact: null,
+      sections: [],
+      publicWarningText: null,
+      publicUnavailableReason: "admin_hidden",
     };
   }
 
@@ -462,9 +480,16 @@ export async function recordPublicCollectionOpen(collectionSlug: string) {
       return false;
     }
 
-    const creatorSubscription = await getSubscriptionRuntimeState(collection.creator_id, collection.creator_role);
+    const [{ data: creatorVisibilityData }, creatorSubscription] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("is_public_hidden_by_admin")
+        .eq("id", collection.creator_id)
+        .maybeSingle(),
+      getSubscriptionRuntimeState(collection.creator_id, collection.creator_role),
+    ]);
 
-    if (!creatorSubscription.isPublicAllowed) {
+    if (!creatorSubscription.isPublicAllowed || creatorVisibilityData?.is_public_hidden_by_admin) {
       return false;
     }
 

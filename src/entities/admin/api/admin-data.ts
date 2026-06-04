@@ -123,16 +123,31 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
   const ownerRuntimeStates = await Promise.all(ownerProfiles.map((profile) => getSubscriptionRuntimeState(profile.id, "owner")));
   const ownerStateByProfile = new Map(ownerRuntimeStates.map((item) => [item.profileId, item]));
 
-  const users: AdminUserItem[] = safeProfiles.map((profile) => ({
-    profileId: profile.id,
-    displayName: profile.display_name,
-    slug: profile.slug ?? "",
-    phone: profile.phone ?? profile.telegram ?? profile.whatsapp ?? "",
-    roles: rolesByProfile.get(profile.id) ?? [],
-    propertyCount: (propertiesByOwner.get(profile.id) ?? []).length,
-    activeRoomCount: ownerStateByProfile.get(profile.id)?.activeRoomCount ?? 0,
-    requestCount: requestIdsByProfile.get(profile.id)?.size ?? 0,
-  }));
+  const users: AdminUserItem[] = safeProfiles.map((profile) => {
+    const roles = rolesByProfile.get(profile.id) ?? [];
+    const publicPageUrls: string[] = [];
+
+    if (profile.slug && roles.includes("owner")) {
+      publicPageUrls.push(`/p/${profile.slug}`);
+    }
+
+    if (profile.slug && roles.includes("agent")) {
+      publicPageUrls.push(`/a/${profile.slug}`);
+    }
+
+    return {
+      profileId: profile.id,
+      displayName: profile.display_name,
+      slug: profile.slug ?? "",
+      phone: profile.phone ?? profile.telegram ?? profile.whatsapp ?? "",
+      roles,
+      isPublicHiddenByAdmin: profile.is_public_hidden_by_admin,
+      publicPageUrls,
+      propertyCount: (propertiesByOwner.get(profile.id) ?? []).length,
+      activeRoomCount: ownerStateByProfile.get(profile.id)?.activeRoomCount ?? 0,
+      requestCount: requestIdsByProfile.get(profile.id)?.size ?? 0,
+    };
+  });
 
   const subscriptionTargets: Array<{ profileId: string; displayName: string; roleContext: "owner" | "agent" }> = [];
   for (const profile of safeProfiles) {

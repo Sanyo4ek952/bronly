@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { getPublicAgentPageData } from "@/entities/collaboration";
+import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { Button, ButtonLink } from "@/shared/ui";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
 
@@ -35,13 +36,15 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
     notFound();
   }
 
-  if (pageData.publicUnavailableReason === "subscription_expired" || !pageData.agent) {
+  if (pageData.publicUnavailableReason || !pageData.agent) {
+    const unavailable = getPublicUnavailableContent("agent", pageData.publicUnavailableReason);
+
     return (
       <main className="br-page">
         <div className="br-container">
           <section className="br-request-success br-card" style={{ margin: "48px auto" }}>
-            <h1>Страница временно недоступна</h1>
-            <p>Доступ к агентской витрине временно ограничен. Попробуйте открыть ссылку позже.</p>
+            <h1>{unavailable.title}</h1>
+            <p>{unavailable.description}</p>
             <div className="br-request-success__actions">
               <ButtonLink href="/" fullWidth>
                 На главную

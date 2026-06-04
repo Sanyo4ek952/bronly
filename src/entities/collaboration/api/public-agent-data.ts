@@ -7,6 +7,7 @@ import { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
 import type { OwnerBusyRange, OwnerSeasonalPrice, PublicRoom, RoomPhoto } from "@/entities/room/model/types";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
+import type { PublicUnavailableReason } from "@/shared/lib/public-page-visibility";
 import type {
   SupabasePropertyPhotoRow,
   SupabasePropertyRow,
@@ -15,6 +16,21 @@ import type {
   SupabaseRoomRow,
   SupabaseRoomSeasonalPriceRow,
 } from "@/shared/api/supabase/types";
+
+function getAgentPublicUnavailableReason(input: {
+  subscriptionAllowed: boolean;
+  isHiddenByAdmin: boolean;
+}): PublicUnavailableReason | null {
+  if (!input.subscriptionAllowed) {
+    return "subscription_expired";
+  }
+
+  if (input.isHiddenByAdmin) {
+    return "admin_hidden";
+  }
+
+  return null;
+}
 
 function mapRoomRow(
   room: SupabaseRoomRow,
@@ -60,7 +76,7 @@ export const getPublicAgentPageData = cache(
       const supabase = createSupabaseAdminClient();
       const { data: agentData } = await supabase
         .from("profiles")
-        .select("id, slug, display_name, phone, telegram")
+        .select("id, slug, display_name, phone, telegram, is_public_hidden_by_admin")
         .eq("slug", agentSlug)
         .maybeSingle();
 
@@ -70,6 +86,7 @@ export const getPublicAgentPageData = cache(
         display_name: string;
         phone: string | null;
         telegram: string | null;
+        is_public_hidden_by_admin: boolean;
       } | null;
 
       if (!agent) {
@@ -77,13 +94,17 @@ export const getPublicAgentPageData = cache(
       }
 
       const agentSubscription = await getSubscriptionRuntimeState(agent.id, "agent");
+      const publicUnavailableReason = getAgentPublicUnavailableReason({
+        subscriptionAllowed: agentSubscription.isPublicAllowed,
+        isHiddenByAdmin: agent.is_public_hidden_by_admin,
+      });
 
-      if (!agentSubscription.isPublicAllowed) {
+      if (publicUnavailableReason) {
         return {
           agent: null,
           properties: [],
           filters,
-          publicUnavailableReason: "subscription_expired",
+          publicUnavailableReason,
           publicWarningText: null,
         };
       }

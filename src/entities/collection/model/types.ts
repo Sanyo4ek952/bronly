@@ -1,3 +1,5 @@
+import type { PublicUnavailableReason } from "@/shared/lib/public-page-visibility";
+
 export type CollectionRole = "owner" | "agent";
 
 export type CollectionSummary = {
@@ -74,6 +76,6 @@ export type PublicCollectionPageData = {
   contact: PublicCollectionContact | null;
   sections: PublicCollectionSection[];
   filters: import("@/entities/room").PublicStayFilters;
-  publicUnavailableReason: "subscription_expired" | null;
+  publicUnavailableReason: PublicUnavailableReason | null;
   publicWarningText: string | null;
 };

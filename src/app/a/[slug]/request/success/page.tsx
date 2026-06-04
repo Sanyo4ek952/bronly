@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getPublicAgentPageData } from "@/entities/collaboration";
+import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { ButtonLink, Panel } from "@/shared/ui";
 
 type AgentRequestSuccessPageProps = {
@@ -24,12 +25,14 @@ export default async function AgentRequestSuccessPage({ params, searchParams }: 
     notFound();
   }
 
-  if (pageData.publicUnavailableReason === "subscription_expired" || !pageData.agent) {
+  if (pageData.publicUnavailableReason || !pageData.agent) {
+    const unavailable = getPublicUnavailableContent("agent", pageData.publicUnavailableReason);
+
     return (
       <main className="br-auth-page">
         <Panel className="br-request-success" as="section">
-          <h1>Страница временно недоступна</h1>
-          <p>Доступ к агентской витрине сейчас ограничен. Новые заявки по этой ссылке не принимаются.</p>
+          <h1>{unavailable.title}</h1>
+          <p>{unavailable.description}</p>
           <div className="br-request-success__actions">
             <ButtonLink href="/" fullWidth>
               На главную

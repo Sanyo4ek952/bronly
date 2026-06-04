@@ -30,17 +30,23 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const error = getSearchString(params, "error");
   const data = await getAdminDashboardData();
 
-  const message = success
-    ? success === "subscription-extended"
-      ? "Подписка продлена на 30 дней."
-      : success === "subscription-saved"
-        ? "Подписка обновлена."
-        : success === "property-frozen"
-          ? "Объект заморожен."
-          : "Объект разморожен."
-    : error
-      ? "Не удалось выполнить действие. Проверьте данные и попробуйте еще раз."
-      : "";
+  let message = "";
+
+  if (success === "subscription-extended") {
+    message = "Подписка продлена на 30 дней.";
+  } else if (success === "subscription-saved") {
+    message = "Подписка обновлена.";
+  } else if (success === "profile-hidden") {
+    message = "Публичные страницы профиля скрыты администратором.";
+  } else if (success === "profile-unhidden") {
+    message = "Публичные страницы профиля снова доступны.";
+  } else if (success === "property-frozen") {
+    message = "Объект заморожен.";
+  } else if (success === "property-unfrozen") {
+    message = "Объект разморожен.";
+  } else if (error) {
+    message = "Не удалось выполнить действие. Проверьте данные и попробуйте еще раз.";
+  }
 
   return <AdminDashboard data={data} message={message} />;
 }

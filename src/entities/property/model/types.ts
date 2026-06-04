@@ -1,5 +1,6 @@
 import type { OwnerRoomDetail, PublicRoom } from "@/entities/room/model/types";
 import type { PublicStayFilters } from "@/entities/room/model/pricing";
+import type { PublicUnavailableReason } from "@/shared/lib/public-page-visibility";
 
 export type PropertyPhoto = {
   id: string;
@@ -30,7 +31,7 @@ export type PublicPropertyPageData = {
   } | null;
   rooms: PublicRoom[];
   filters: PublicStayFilters;
-  publicUnavailableReason: "subscription_expired" | null;
+  publicUnavailableReason: PublicUnavailableReason | null;
   publicWarningText: string | null;
 };
 

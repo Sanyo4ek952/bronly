@@ -1,7 +1,12 @@
 import type { AdminDashboardData } from "@/entities/admin";
 import { Button, Panel } from "@/shared/ui";
 
-import { extendSubscriptionAction, saveSubscriptionAction, togglePropertyFreezeAction } from "@/app/admin/actions";
+import {
+  extendSubscriptionAction,
+  saveSubscriptionAction,
+  toggleProfilePublicVisibilityAction,
+  togglePropertyFreezeAction,
+} from "@/app/admin/actions";
 
 function formatDateLabel(value: string | null) {
   if (!value) {
@@ -86,24 +91,50 @@ export function AdminDashboard({ data, message }: AdminDashboardProps) {
             <div className="br-dashboard-block__header">
               <div>
                 <h2>Пользователи</h2>
-                <p>Роли, контакты, количество объектов и связанных заявок.</p>
+                <p>Роли, контакты, публичные ссылки и админское скрытие owner/agent страниц.</p>
               </div>
             </div>
             <div className="br-table">
               <div className="br-table__head">
                 <span>Пользователь</span>
                 <span>Контакт</span>
+                <span>Публичные ссылки</span>
                 <span>Объекты</span>
                 <span>Роли</span>
                 <span>Заявки</span>
+                <span>Действие</span>
               </div>
               {data.users.map((row) => (
                 <div key={row.profileId} className="br-table__row">
                   <span>{row.displayName}</span>
                   <span>{row.phone || row.slug || "Не указан"}</span>
+                  <span>
+                    {row.publicPageUrls.length ? (
+                      <>
+                        {row.publicPageUrls.join(", ")}
+                        <br />
+                        <small>{row.isPublicHiddenByAdmin ? "Скрыты админом" : "Доступны"}</small>
+                      </>
+                    ) : (
+                      "Нет публичных ссылок"
+                    )}
+                  </span>
                   <span>{row.propertyCount}</span>
                   <span>{row.roles.join(", ")}</span>
                   <span>{row.requestCount}</span>
+                  <span>
+                    {row.publicPageUrls.length ? (
+                      <form action={toggleProfilePublicVisibilityAction}>
+                        <input type="hidden" name="profileId" value={row.profileId} />
+                        <input type="hidden" name="nextHidden" value={row.isPublicHiddenByAdmin ? "false" : "true"} />
+                        <button className="br-button br-button--secondary" type="submit">
+                          {row.isPublicHiddenByAdmin ? "Вернуть страницы" : "Скрыть страницы"}
+                        </button>
+                      </form>
+                    ) : (
+                      "—"
+                    )}
+                  </span>
                 </div>
               ))}
             </div>
@@ -180,7 +211,7 @@ export function AdminDashboard({ data, message }: AdminDashboardProps) {
             <div className="br-dashboard-block__header">
               <div>
                 <h2>Объекты</h2>
-                <p>Заморозка и разморозка публичного доступа.</p>
+                <p>Заморозка и разморозка конкретного объекта без изменения его публикации.</p>
               </div>
             </div>
             <div className="br-table">

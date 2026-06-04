@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { getPublicCollectionPageData } from "@/entities/collection";
+import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { ButtonLink, Panel } from "@/shared/ui";
 
 type CollectionRequestSuccessPageProps = {
@@ -15,12 +16,14 @@ export default async function CollectionRequestSuccessPage({ params }: Collectio
     notFound();
   }
 
-  if (pageData.publicUnavailableReason === "subscription_expired" || !pageData.collection) {
+  if (pageData.publicUnavailableReason || !pageData.collection) {
+    const unavailable = getPublicUnavailableContent("collection", pageData.publicUnavailableReason);
+
     return (
       <main className="br-auth-page">
         <Panel className="br-request-success" as="section">
-          <h1>Страница временно недоступна</h1>
-          <p>Новые заявки по этой ссылке сейчас не принимаются.</p>
+          <h1>{unavailable.title}</h1>
+          <p>{unavailable.description}</p>
           <div className="br-request-success__actions">
             <ButtonLink href="/" fullWidth>
               На главную
