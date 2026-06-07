@@ -23,6 +23,7 @@ export default async function StandaloneRoomCalendarPage({ params, searchParams 
   const error = typeof resolvedSearchParams.error === "string" ? resolvedSearchParams.error : "";
   const success = typeof resolvedSearchParams.success === "string" ? resolvedSearchParams.success : "";
   const notice = getCalendarNotice(error, success);
+  const roomViewHref = `/dashboard/properties?roomId=${encodeURIComponent(room.id)}#standalone-room-detail`;
 
   return (
     <section className="br-owner-stack">
@@ -33,7 +34,7 @@ export default async function StandaloneRoomCalendarPage({ params, searchParams 
             <p>Ручное управление занятыми датами для отдельного номера.</p>
           </div>
           <div className="br-room-page__actions">
-            <ButtonLink href={`/dashboard/rooms/${room.id}`} variant="secondary">К карточке номера</ButtonLink>
+            <ButtonLink href={roomViewHref} variant="secondary">К карточке номера</ButtonLink>
             <ButtonLink href={`/dashboard/rooms/${room.id}/settings`} variant="secondary">Настройки</ButtonLink>
           </div>
         </div>

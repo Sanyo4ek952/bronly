@@ -13,7 +13,7 @@ export default async function LegacyPropertyPage() {
     const standaloneRoom = inventory.find((item) => item.kind === "standalone_room");
 
     if (standaloneRoom?.kind === "standalone_room") {
-      redirect(`/dashboard/rooms/${standaloneRoom.id}`);
+      redirect(`/dashboard/properties?roomId=${encodeURIComponent(standaloneRoom.id)}`);
     }
   }
 

@@ -48,6 +48,10 @@
   overflow: hidden;
 }
 
+.br-owner-property-card--selected {
+  box-shadow: 0 0 0 1px rgb(7 154 145 / 24%), 0 18px 34px rgb(7 154 145 / 10%);
+}
+
 .br-collection-card {
   display: grid;
   gap: 8px;

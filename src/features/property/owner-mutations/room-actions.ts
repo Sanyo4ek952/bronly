@@ -23,10 +23,18 @@ import { generateUniqueRoomSlug } from "./lib/slugs";
 
 function buildRoomRedirectTarget(formData: FormData, fallbackPath: string, state: Record<string, string>) {
   const redirectTo = getString(formData, "redirectTo");
-  const basePath = redirectTo.startsWith("/dashboard/properties/") ? redirectTo : fallbackPath;
+  const basePath =
+    redirectTo.startsWith("/dashboard/properties/") || redirectTo.startsWith("/dashboard/properties?")
+      ? redirectTo
+      : fallbackPath;
   const params = new URLSearchParams(state);
   const query = params.toString();
-  return query ? `${basePath}?${query}` : basePath;
+
+  if (!query) {
+    return basePath;
+  }
+
+  return `${basePath}${basePath.includes("?") ? "&" : "?"}${query}`;
 }
 
 function getStandaloneRoomPayload(formData: FormData) {
@@ -107,7 +115,7 @@ export async function createOwnerRoom(formData: FormData) {
   revalidatePath("/dashboard/rooms");
 
   if (!propertyId) {
-    redirect(`${buildStandaloneRoomPath(data.id as string)}?success=room-created`);
+    redirect(`${buildStandaloneRoomPath(data.id as string)}&success=room-created`);
   }
 
   revalidatePath(buildPropertyPath(propertyId));

@@ -167,12 +167,19 @@ function buildRoomRedirectTarget(formData: FormData, propertyId: string, roomId:
   const fallbackPath = propertyId ? buildPropertyRoomSettingsPath(propertyId, roomId) : buildStandaloneRoomSettingsPath(roomId);
   const redirectTo = getString(formData, "redirectTo");
   const basePath =
-    redirectTo.startsWith("/dashboard/properties/") || redirectTo.startsWith("/dashboard/rooms/")
+    redirectTo.startsWith("/dashboard/properties/") ||
+    redirectTo.startsWith("/dashboard/properties?") ||
+    redirectTo.startsWith("/dashboard/rooms/")
       ? redirectTo
       : fallbackPath;
   const params = new URLSearchParams(state);
   const query = params.toString();
-  return query ? `${basePath}?${query}` : basePath;
+
+  if (!query) {
+    return basePath;
+  }
+
+  return `${basePath}${basePath.includes("?") ? "&" : "?"}${query}`;
 }
 
 export async function uploadPropertyPhoto(formData: FormData) {
