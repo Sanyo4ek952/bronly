@@ -13,6 +13,18 @@ export type AgentDashboardSummary = {
 export type AgentLinkStatus = "pending" | "active" | "declined" | "revoked";
 export type AgentCollaborationTargetType = "property" | "standalone_room";
 
+export type CollaborationTargetSummary = {
+  id: string;
+  targetType: AgentCollaborationTargetType;
+  targetTitle: string;
+};
+
+export type CollaborationContact = {
+  phone: string;
+  whatsapp: string;
+  telegram: string;
+};
+
 export type AgentCollaborationItem = {
   id: string;
   targetType: AgentCollaborationTargetType;
@@ -20,9 +32,12 @@ export type AgentCollaborationItem = {
   title: string;
   subtitle: string;
   ownerName: string;
+  ownerContact: CollaborationContact;
+  ownerContactVisible: boolean;
   status: AgentLinkStatus;
   statusLabel: string;
   terms: string;
+  targets: CollaborationTargetSummary[];
   rooms: AgentMarkupRoomItem[];
 };
 
@@ -88,6 +103,14 @@ export type OwnerIncomingAgentProposalItem = {
   agentName: string;
   message: string;
   createdAt: string;
+};
+
+export type OwnerActiveCollaborationItem = {
+  agentId: string;
+  agentName: string;
+  agentContact: CollaborationContact;
+  terms: string;
+  targets: CollaborationTargetSummary[];
 };
 
 export type PublicAgentPropertySection = {
