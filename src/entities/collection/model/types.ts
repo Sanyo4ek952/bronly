@@ -32,6 +32,10 @@ export type CollectionAccessCandidate = {
   scope: "own" | "collaboration";
 };
 
+export type CollectionChoice = CollectionAccessCandidate & {
+  isSelected: boolean;
+};
+
 export type CollectionManagementData = {
   role: CollectionRole;
   collections: CollectionSummary[];
@@ -39,6 +43,21 @@ export type CollectionManagementData = {
   items: CollectionItem[];
   availableProperties: CollectionAccessCandidate[];
   availableRooms: CollectionAccessCandidate[];
+};
+
+export type CollectionListData = {
+  role: CollectionRole;
+  collections: CollectionSummary[];
+};
+
+export type CollectionDetailData = {
+  role: CollectionRole;
+  collection: CollectionSummary | null;
+  items: CollectionItem[];
+  availableProperties: CollectionAccessCandidate[];
+  availableRooms: CollectionAccessCandidate[];
+  propertyChoices: CollectionChoice[];
+  roomChoices: CollectionChoice[];
 };
 
 export type PublicCollectionContact = {

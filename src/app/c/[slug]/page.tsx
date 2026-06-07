@@ -17,18 +17,6 @@ function getSearchString(params: Record<string, string | string[] | undefined>, 
   return typeof value === "string" ? value : "";
 }
 
-function buildCollectionRequestHref(
-  collectionSlug: string,
-  propertySlug: string,
-  roomId: string,
-  query: URLSearchParams,
-) {
-  query.set("propertySlug", propertySlug);
-  query.set("roomId", roomId);
-
-  return `/c/${collectionSlug}/request?${query.toString()}`;
-}
-
 export default async function PublicCollectionPage({ params, searchParams }: PublicCollectionPageProps) {
   const fallbackParams: Record<string, string | string[] | undefined> = {};
   const [{ slug }, query] = await Promise.all([params, searchParams ?? Promise.resolve(fallbackParams)]);
@@ -219,19 +207,6 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
                     rooms={section.rooms}
                     filters={filters}
                     showFilter={false}
-                    requestHrefBuilder={(roomId, currentFilters) => {
-                      const requestQuery = new URLSearchParams();
-
-                      if (currentFilters.hasDates) {
-                        requestQuery.set("checkIn", currentFilters.checkIn);
-                        requestQuery.set("checkOut", currentFilters.checkOut);
-                      }
-
-                      requestQuery.set("adults", String(currentFilters.adults));
-                      requestQuery.set("rooms", String(currentFilters.rooms));
-
-                      return buildCollectionRequestHref(collection.slug, section.property.slug, roomId, requestQuery);
-                    }}
                   />
                 </article>
               ))}

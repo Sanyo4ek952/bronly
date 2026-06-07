@@ -13,12 +13,8 @@ import {
 } from "@/entities/collection";
 import { getString } from "@/shared/lib/form-data";
 
-function buildCollectionsPath(collectionId?: string, state?: Record<string, string>) {
+function appendState(basePath: string, state?: Record<string, string>) {
   const params = new URLSearchParams();
-
-  if (collectionId) {
-    params.set("collection", collectionId);
-  }
 
   if (state) {
     for (const [key, value] of Object.entries(state)) {
@@ -30,12 +26,28 @@ function buildCollectionsPath(collectionId?: string, state?: Record<string, stri
 
   const query = params.toString();
 
-  return query ? `/dashboard/collections?${query}` : "/dashboard/collections";
+  return query ? `${basePath}?${query}` : basePath;
 }
 
-function revalidateOwnerCollectionPaths() {
+function buildCollectionsListPath(state?: Record<string, string>) {
+  return appendState("/dashboard/collections", state);
+}
+
+function buildCollectionCreatePath(state?: Record<string, string>) {
+  return appendState("/dashboard/collections/new", state);
+}
+
+function buildCollectionDetailPath(collectionId: string, state?: Record<string, string>) {
+  return appendState(`/dashboard/collections/${collectionId}`, state);
+}
+
+function revalidateOwnerCollectionPaths(collectionId?: string) {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/collections");
+
+  if (collectionId) {
+    revalidatePath(`/dashboard/collections/${collectionId}`);
+  }
 }
 
 export async function createOwnerCollectionAction(formData: FormData) {
@@ -45,11 +57,13 @@ export async function createOwnerCollectionAction(formData: FormData) {
   });
 
   if (!result.ok) {
-    redirect(buildCollectionsPath(undefined, { error: result.reason ?? "save_failed" }));
+    redirect(buildCollectionCreatePath({ error: result.reason ?? "save_failed" }));
   }
 
-  revalidateOwnerCollectionPaths();
-  redirect(buildCollectionsPath(result.collectionId, { success: "created" }));
+  const collectionId = result.collectionId ?? "";
+
+  revalidateOwnerCollectionPaths(collectionId);
+  redirect(buildCollectionDetailPath(collectionId, { success: "created" }));
 }
 
 export async function renameOwnerCollectionAction(formData: FormData) {
@@ -61,11 +75,11 @@ export async function renameOwnerCollectionAction(formData: FormData) {
   });
 
   if (!result.ok) {
-    redirect(buildCollectionsPath(collectionId, { error: result.reason ?? "save_failed" }));
+    redirect(collectionId ? buildCollectionDetailPath(collectionId, { error: result.reason ?? "save_failed" }) : buildCollectionsListPath({ error: result.reason ?? "save_failed" }));
   }
 
-  revalidateOwnerCollectionPaths();
-  redirect(buildCollectionsPath(collectionId, { success: "saved" }));
+  revalidateOwnerCollectionPaths(collectionId);
+  redirect(buildCollectionDetailPath(collectionId, { success: "saved" }));
 }
 
 export async function archiveOwnerCollectionAction(formData: FormData) {
@@ -76,11 +90,11 @@ export async function archiveOwnerCollectionAction(formData: FormData) {
   });
 
   if (!result.ok) {
-    redirect(buildCollectionsPath(collectionId, { error: result.reason ?? "save_failed" }));
+    redirect(collectionId ? buildCollectionDetailPath(collectionId, { error: result.reason ?? "save_failed" }) : buildCollectionsListPath({ error: result.reason ?? "save_failed" }));
   }
 
-  revalidateOwnerCollectionPaths();
-  redirect(buildCollectionsPath(collectionId, { success: "archived" }));
+  revalidateOwnerCollectionPaths(collectionId);
+  redirect(buildCollectionDetailPath(collectionId, { success: "archived" }));
 }
 
 export async function addOwnerPropertyToCollectionAction(formData: FormData) {
@@ -92,11 +106,11 @@ export async function addOwnerPropertyToCollectionAction(formData: FormData) {
   });
 
   if (!result.ok) {
-    redirect(buildCollectionsPath(collectionId, { error: result.reason ?? "save_failed" }));
+    redirect(collectionId ? buildCollectionDetailPath(collectionId, { error: result.reason ?? "save_failed" }) : buildCollectionsListPath({ error: result.reason ?? "save_failed" }));
   }
 
-  revalidateOwnerCollectionPaths();
-  redirect(buildCollectionsPath(collectionId, { success: "item-added" }));
+  revalidateOwnerCollectionPaths(collectionId);
+  redirect(buildCollectionDetailPath(collectionId, { success: "item-added" }));
 }
 
 export async function addOwnerRoomToCollectionAction(formData: FormData) {
@@ -108,11 +122,11 @@ export async function addOwnerRoomToCollectionAction(formData: FormData) {
   });
 
   if (!result.ok) {
-    redirect(buildCollectionsPath(collectionId, { error: result.reason ?? "save_failed" }));
+    redirect(collectionId ? buildCollectionDetailPath(collectionId, { error: result.reason ?? "save_failed" }) : buildCollectionsListPath({ error: result.reason ?? "save_failed" }));
   }
 
-  revalidateOwnerCollectionPaths();
-  redirect(buildCollectionsPath(collectionId, { success: "item-added" }));
+  revalidateOwnerCollectionPaths(collectionId);
+  redirect(buildCollectionDetailPath(collectionId, { success: "item-added" }));
 }
 
 export async function removeOwnerCollectionItemAction(formData: FormData) {
@@ -124,9 +138,9 @@ export async function removeOwnerCollectionItemAction(formData: FormData) {
   });
 
   if (!result.ok) {
-    redirect(buildCollectionsPath(collectionId, { error: result.reason ?? "save_failed" }));
+    redirect(collectionId ? buildCollectionDetailPath(collectionId, { error: result.reason ?? "save_failed" }) : buildCollectionsListPath({ error: result.reason ?? "save_failed" }));
   }
 
-  revalidateOwnerCollectionPaths();
-  redirect(buildCollectionsPath(collectionId, { success: "item-removed" }));
+  revalidateOwnerCollectionPaths(collectionId);
+  redirect(buildCollectionDetailPath(collectionId, { success: "item-removed" }));
 }

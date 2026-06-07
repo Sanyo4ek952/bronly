@@ -5,7 +5,8 @@ export {
   buildCollectionSubtitle,
   createCollection,
   getAgentCollections,
-  getCollectionManagementData,
+  getCollectionDetailData,
+  getCollectionListData,
   getOwnerCollections,
   removeCollectionItem,
   renameCollection,
@@ -17,7 +18,10 @@ export {
 } from "@/entities/collection/api/public-collection-data";
 export type {
   CollectionAccessCandidate,
+  CollectionChoice,
+  CollectionDetailData,
   CollectionItem,
+  CollectionListData,
   CollectionManagementData,
   CollectionRole,
   CollectionSummary,

@@ -17,13 +17,6 @@ function getSearchString(params: Record<string, string | string[] | undefined>, 
   return typeof value === "string" ? value : "";
 }
 
-function buildOwnerRequestHref(ownerSlug: string, propertySlug: string, roomId: string, query: URLSearchParams) {
-  query.set("propertySlug", propertySlug);
-  query.set("roomId", roomId);
-
-  return `/p/${ownerSlug}/request?${query.toString()}`;
-}
-
 function buildOwnerRedirectHref(
   ownerSlug: string,
   query: Record<string, string | string[] | undefined>,
@@ -172,19 +165,6 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
                       rooms={section.rooms}
                       filters={filters}
                       showFilter={false}
-                      requestHrefBuilder={(roomId, currentFilters) => {
-                        const requestQuery = new URLSearchParams();
-
-                        if (currentFilters.hasDates) {
-                          requestQuery.set("checkIn", currentFilters.checkIn);
-                          requestQuery.set("checkOut", currentFilters.checkOut);
-                        }
-
-                        requestQuery.set("adults", String(currentFilters.adults));
-                        requestQuery.set("rooms", String(currentFilters.rooms));
-
-                        return buildOwnerRequestHref(owner.slug, section.property.slug, roomId, requestQuery);
-                      }}
                     />
                   ) : (
                     <div className="br-card" style={{ marginTop: 16, padding: 16 }}>

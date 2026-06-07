@@ -71,8 +71,8 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                   <Image
                     src={property.coverImageUrl}
                     alt={property.title}
-                    width={1200}
-                    height={675}
+                    fill
+                    sizes="(min-width: 1180px) 25vw, (min-width: 700px) 40vw, 100vw"
                     unoptimized
                     className="br-owner-property-card__image"
                   />

@@ -9,8 +9,22 @@ import { getCheckbox, getInteger, getNumber, getString } from "@/shared/lib/form
 import { mapActionError } from "./lib/errors";
 import { replaceRoomAmenities } from "./lib/labels";
 import { requireOwnerActiveRoomSlotAccess, requireOwnerMutationAccess } from "./lib/owner-access";
-import { buildPropertyPath, buildPropertyPathWithState, buildPropertyRoomCreatePath } from "./lib/paths";
+import {
+  buildPropertyPath,
+  buildPropertyPathWithState,
+  buildPropertyRoomCreatePath,
+  buildPropertyRoomPath,
+  buildPropertyRoomSettingsPath,
+} from "./lib/paths";
 import { generateUniqueRoomSlug } from "./lib/slugs";
+
+function buildRoomRedirectTarget(formData: FormData, fallbackPath: string, state: Record<string, string>) {
+  const redirectTo = getString(formData, "redirectTo");
+  const basePath = redirectTo.startsWith("/dashboard/properties/") ? redirectTo : fallbackPath;
+  const params = new URLSearchParams(state);
+  const query = params.toString();
+  return query ? `${basePath}?${query}` : basePath;
+}
 
 export async function createOwnerRoom(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
@@ -66,9 +80,10 @@ export async function updateOwnerRoom(formData: FormData) {
   const roomId = getString(formData, "roomId");
   const title = getString(formData, "title");
   const nextIsActive = getCheckbox(formData, "isActive");
+  const fallbackPath = buildPropertyRoomSettingsPath(propertyId, roomId);
 
   if (!propertyId || !roomId || !title) {
-    redirect(buildPropertyPathWithState(propertyId, "rooms", { error: "validation" }));
+    redirect(buildRoomRedirectTarget(formData, fallbackPath, { error: "validation" }));
   }
 
   const supabase = await createSupabaseServerClient();
@@ -80,7 +95,7 @@ export async function updateOwnerRoom(formData: FormData) {
     .maybeSingle();
 
   if (!existingRoom) {
-    redirect(buildPropertyPathWithState(propertyId, "rooms", { error: "save" }));
+    redirect(buildRoomRedirectTarget(formData, fallbackPath, { error: "save" }));
   }
 
   if (!existingRoom.is_active && nextIsActive) {
@@ -103,7 +118,7 @@ export async function updateOwnerRoom(formData: FormData) {
     .eq("property_id", propertyId);
 
   if (error) {
-    redirect(buildPropertyPathWithState(propertyId, "rooms", { error: mapActionError(error) }));
+    redirect(buildRoomRedirectTarget(formData, fallbackPath, { error: mapActionError(error) }));
   }
 
   await replaceRoomAmenities(roomId, getString(formData, "amenities"));
@@ -111,7 +126,9 @@ export async function updateOwnerRoom(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/properties");
   revalidatePath(buildPropertyPath(propertyId));
-  redirect(buildPropertyPathWithState(propertyId, "rooms", { success: "room-saved" }));
+  revalidatePath(buildPropertyRoomPath(propertyId, roomId));
+  revalidatePath(buildPropertyRoomSettingsPath(propertyId, roomId));
+  redirect(buildRoomRedirectTarget(formData, fallbackPath, { success: "room-saved" }));
 }
 
 export async function deleteOwnerRoom(formData: FormData) {

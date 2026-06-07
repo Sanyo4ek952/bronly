@@ -4,8 +4,10 @@ import { withFallbackSlug } from "@/shared/lib/slug";
 
 import type {
   CollectionAccessCandidate,
+  CollectionChoice,
+  CollectionDetailData,
   CollectionItem,
-  CollectionManagementData,
+  CollectionListData,
   CollectionRole,
   CollectionSummary,
 } from "../model/types";
@@ -160,6 +162,16 @@ function mapRoomCandidate(row: RoomCandidateRow, currentProfileId: string): Coll
     title: row.title,
     subtitle: subtitleParts.join(" · "),
     scope: property.owner_id === currentProfileId ? "own" : "collaboration",
+  };
+}
+
+function mapCollectionChoice(
+  item: CollectionAccessCandidate,
+  selectedIds: Set<string | null>,
+): CollectionChoice {
+  return {
+    ...item,
+    isSelected: selectedIds.has(item.id),
   };
 }
 
@@ -459,31 +471,59 @@ export async function getAgentCollections() {
   return getCollectionsForRole("agent");
 }
 
-export async function getCollectionManagementData(
-  role: CollectionRole,
-  collectionId?: string,
-): Promise<CollectionManagementData> {
+export async function getCollectionListData(role: CollectionRole): Promise<CollectionListData> {
   const profile = await requireProfileWithRole(role);
 
   if (!profile) {
     return {
       role,
       collections: [],
-      selectedCollection: null,
+    };
+  }
+
+  return {
+    role,
+    collections: await getCollectionsForRole(role),
+  };
+}
+
+export async function getCollectionDetailData(
+  role: CollectionRole,
+  collectionId: string,
+): Promise<CollectionDetailData> {
+  const profile = await requireProfileWithRole(role);
+
+  if (!profile || !collectionId) {
+    return {
+      role,
+      collection: null,
       items: [],
       availableProperties: [],
       availableRooms: [],
+      propertyChoices: [],
+      roomChoices: [],
     };
   }
 
   const collections = await getCollectionsForRole(role);
-  const selectedCollection =
-    (collectionId ? collections.find((item) => item.id === collectionId) : null) ?? collections[0] ?? null;
+  const collection = collections.find((item) => item.id === collectionId) ?? null;
+
+  if (!collection) {
+    return {
+      role,
+      collection: null,
+      items: [],
+      availableProperties: [],
+      availableRooms: [],
+      propertyChoices: [],
+      roomChoices: [],
+    };
+  }
 
   const [allProperties, allRooms, items] = await Promise.all([
     getAvailableProperties(profile, role),
     getAvailableRooms(profile, role),
-    selectedCollection ? getCollectionItems(selectedCollection.id) : Promise.resolve([]),
+    getCollectionItems(collection.id),
   ]);
 
   const selectedPropertyIds = new Set(items.filter((item) => item.kind === "property").map((item) => item.propertyId));
@@ -491,11 +531,12 @@ export async function getCollectionManagementData(
 
   return {
     role,
-    collections,
-    selectedCollection,
+    collection,
     items,
     availableProperties: allProperties.filter((item) => !selectedPropertyIds.has(item.id)),
     availableRooms: allRooms.filter((item) => !selectedRoomIds.has(item.id)),
+    propertyChoices: allProperties.map((item) => mapCollectionChoice(item, selectedPropertyIds)),
+    roomChoices: allRooms.map((item) => mapCollectionChoice(item, selectedRoomIds)),
   };
 }
 

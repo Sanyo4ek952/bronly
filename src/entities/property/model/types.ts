@@ -119,6 +119,18 @@ export type OwnerDashboardSummary = {
   subscriptionWarningText: string | null;
   isCabinetRestricted: boolean;
   isMutationAllowed: boolean;
+  onboarding: {
+    activeStepLabel: string;
+    steps: Array<{
+      id: "profile" | "property" | "room" | "photos" | "public";
+      title: string;
+      text: string;
+      status: string;
+      state: "done" | "current" | "pending";
+      href: string;
+      ctaLabel: string;
+    }>;
+  };
 };
 
 export type OwnerPropertyListItem = {

@@ -5,3 +5,7 @@ export function buildOwnerPublicPath(slug?: string | null) {
 export function buildAgentPublicPath(agentPublicId?: string | null) {
   return agentPublicId ? `/a/${agentPublicId}` : null;
 }
+
+export function buildCollectionPublicPath(slug?: string | null) {
+  return slug ? `/c/${slug}` : null;
+}

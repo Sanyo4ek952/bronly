@@ -8,107 +8,110 @@ const quickActions = [
   {
     icon: Plus,
     title: "Добавить номер",
-    text: "Создайте новый номер или объект для новых заявок.",
+    text: "Создайте новый номер или перейдите к объекту, чтобы подготовить витрину к новым заявкам.",
   },
   {
     icon: CalendarDays,
     title: "Календарь занятости",
-    text: "Отмечайте занятые даты и периоды недоступности вручную.",
+    text: "Отмечайте занятые даты и периоды недоступности вручную по каждому номеру.",
   },
   {
     icon: Inbox,
     title: "Заявки",
-    text: "Просматривайте новые запросы на проживание и связывайтесь с гостями.",
+    text: "Просматривайте новые запросы на проживание и связывайтесь с гостями напрямую.",
   },
   {
     icon: ExternalLink,
-    title: "Открыть страницу",
-    text: "Проверьте, как гость видит ваш объект по публичной ссылке.",
+    title: "Публичная страница",
+    text: "Проверьте, как гость видит вашу витрину по персональной ссылке владельца.",
   },
 ] satisfies Array<{ icon: AppIconComponent; title: string; text: string }>;
 
-const onboardingSteps = [
-  {
-    title: "Данные владельца",
-    text: "Укажите информацию для управления аккаунтом и объектами.",
-    status: "Завершено",
-    state: "done",
-  },
-  {
-    title: "Создание объекта",
-    text: "Добавьте объект размещения: дом, виллу, апартаменты или гостевой дом.",
-    status: "Текущий шаг",
-    state: "current",
-  },
-  {
-    title: "Первый номер",
-    text: "Создайте номер и задайте основную информацию.",
-    status: "Ожидает",
-    state: "pending",
-  },
-  {
-    title: "Фотографии",
-    text: "Загрузите фото объекта и номера, чтобы показать их гостю.",
-    status: "Ожидает",
-    state: "pending",
-  },
-  {
-    title: "Публичная ссылка",
-    text: "Получите персональную ссылку и начните принимать заявки.",
-    status: "Ожидает",
-    state: "pending",
-  },
-] as const;
-
 const emptyStates = [
   {
+    id: "no-properties",
     icon: HousePlus,
     title: "Нет объектов",
-    text: "Добавьте первый объект, чтобы начать принимать заявки по персональной ссылке.",
+    text: "Добавьте первый объект, чтобы перейти к номерам, ценам и календарю занятости.",
     action: "Добавить объект",
+    href: "/dashboard/properties/new",
   },
   {
+    id: "no-rooms",
     icon: Plus,
     title: "Нет номеров",
-    text: "В объекте пока нет номеров. Добавьте первый номер, чтобы гости могли оставить заявку.",
-    action: "Добавить номер",
+    text: "В объектах пока нет номеров. Добавьте первый номер, чтобы гости могли оставить заявку.",
+    action: "Открыть объекты",
+    href: "/dashboard/properties",
   },
-] satisfies Array<{ icon: AppIconComponent; title: string; text: string; action: string }>;
+] satisfies Array<{ id: "no-properties" | "no-rooms"; icon: AppIconComponent; title: string; text: string; action: string; href: string }>;
 
 type OwnerDashboardOverviewProps = {
   dashboardStats: OwnerDashboardSummary;
 };
 
+type SummaryCardRow = {
+  label: string;
+  value: string;
+  href?: string;
+};
+
+type SummaryCard = {
+  title: string;
+  badge?: string;
+  rows: SummaryCardRow[];
+  href: string;
+  action: string;
+};
+
 export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOverviewProps) {
   const hasPublicUrl = Boolean(dashboardStats.publicUrl);
+  const emptyStatesToShow = emptyStates.filter((state) => {
+    if (state.id === "no-properties") {
+      return dashboardStats.objects === 0;
+    }
 
-  const summaryCards = [
+    if (state.id === "no-rooms") {
+      return dashboardStats.objects > 0 && dashboardStats.rooms === 0;
+    }
+
+    return false;
+  });
+
+  const summaryCards: SummaryCard[] = [
     {
       title: "Подписка",
       badge: dashboardStats.subscriptionPlan,
       rows: [
-        ["Статус", dashboardStats.subscriptionStatusLabel],
-        ["Действует до", dashboardStats.subscriptionValidUntil],
-      ],
+        { label: "Статус", value: dashboardStats.subscriptionStatusLabel },
+        { label: "Действует до", value: dashboardStats.subscriptionValidUntil },
+      ] satisfies SummaryCardRow[],
       href: "/dashboard/subscription",
       action: "Открыть подписку",
     },
     {
       title: "Публичная ссылка",
       rows: [
-        ["Адрес", dashboardStats.publicUrl ?? "Заполните slug в настройках"],
-        ["Доступ", dashboardStats.isCabinetRestricted ? "Временно ограничен" : "Открыта для гостей"],
-      ],
+        {
+          label: "Адрес",
+          value: dashboardStats.publicUrl ?? "Заполните slug владельца в настройках",
+          href: dashboardStats.publicUrl ?? undefined,
+        },
+        {
+          label: "Доступ",
+          value: dashboardStats.isCabinetRestricted ? "Временно ограничен" : "Открыта для гостей",
+        },
+      ] satisfies SummaryCardRow[],
       href: hasPublicUrl ? (dashboardStats.publicUrl as string) : "/dashboard/settings",
       action: hasPublicUrl ? "Открыть публичную страницу" : "Заполнить slug",
     },
     {
       title: "Общая статистика",
       rows: [
-        ["Объекты", String(dashboardStats.objects)],
-        ["Номера", String(dashboardStats.rooms)],
-        ["Новые заявки", String(dashboardStats.newRequests)],
-      ],
+        { label: "Объекты", value: String(dashboardStats.objects) },
+        { label: "Номера", value: String(dashboardStats.rooms) },
+        { label: "Новые заявки", value: String(dashboardStats.newRequests) },
+      ] satisfies SummaryCardRow[],
       href: "/dashboard/requests",
       action: "Посмотреть заявки",
     },
@@ -148,10 +151,16 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
               {card.badge ? <span className="br-summary-card__badge">{card.badge}</span> : null}
             </div>
             <div className="br-summary-card__rows">
-              {card.rows.map(([label, value]) => (
-                <div key={label} className="br-summary-card__row">
-                  <span>{label}</span>
-                  <strong>{value}</strong>
+              {card.rows.map((row) => (
+                <div key={row.label} className="br-summary-card__row">
+                  <span>{row.label}</span>
+                  {row.href ? (
+                    <Link href={row.href}>
+                      <strong>{row.value}</strong>
+                    </Link>
+                  ) : (
+                    <strong>{row.value}</strong>
+                  )}
                 </div>
               ))}
             </div>
@@ -166,7 +175,7 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
         <div className="br-dashboard-block__header">
           <div>
             <h2>Быстрые действия</h2>
-            <p>Собрали частые сценарии владельца в одной зоне.</p>
+            <p>Собрали частые сценарии владельца в одном месте, чтобы быстрее переходить к работе.</p>
           </div>
         </div>
         <div className="br-quick-grid">
@@ -189,97 +198,55 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
               <h2>Онбординг владельца</h2>
               <p>Пять шагов до первой рабочей витрины и приёма заявок.</p>
             </div>
-            <span className="br-stepper-chip">Активный шаг: создание объекта</span>
+            <span className="br-stepper-chip">{dashboardStats.onboarding.activeStepLabel}</span>
           </div>
 
           <div className="br-stepper-line" aria-hidden="true">
-            {onboardingSteps.map((step, index) => (
-              <div key={step.title} className={`br-stepper-line__item br-stepper-line__item--${step.state}`}>
+            {dashboardStats.onboarding.steps.map((step, index) => (
+              <div key={step.id} className={`br-stepper-line__item br-stepper-line__item--${step.state}`}>
                 <span>{index + 1}</span>
               </div>
             ))}
           </div>
 
           <div className="br-onboarding-grid">
-            {onboardingSteps.map((step, index) => (
-              <article key={step.title} className={`br-onboarding-card br-onboarding-card--${step.state}`}>
+            {dashboardStats.onboarding.steps.map((step, index) => (
+              <Link
+                key={step.id}
+                href={step.href}
+                className={`br-onboarding-card br-onboarding-card--${step.state}`}
+                aria-label={`${step.title}. ${step.status}. Открыть страницу шага.`}
+              >
                 <div className="br-onboarding-card__top">
                   <span className="br-onboarding-card__index">{index + 1}</span>
                   <span className="br-onboarding-card__status">{step.status}</span>
                 </div>
-                <strong>{step.title}</strong>
-                <p>{step.text}</p>
-              </article>
+                <div className="br-onboarding-card__body">
+                  <strong>{step.title}</strong>
+                  <p>{step.text}</p>
+                </div>
+                <span className="br-onboarding-card__cta">{step.ctaLabel}</span>
+              </Link>
             ))}
-          </div>
-
-          <div className="br-active-step br-card">
-            <div className="br-active-step__copy">
-              <h3>Создайте объект размещения</h3>
-              <p>Укажите основную информацию о вашем объекте. Это текущий активный шаг.</p>
-            </div>
-            <form className="br-form-grid">
-              <div className="br-form-field">
-                <label className="br-label" htmlFor="property-name">
-                  Название объекта
-                </label>
-                <input id="property-name" className="br-field" placeholder="Например, апартаменты у моря" />
-              </div>
-              <div className="br-form-field">
-                <label className="br-label" htmlFor="property-type">
-                  Тип объекта
-                </label>
-                <select id="property-type" className="br-field" defaultValue="default">
-                  <option value="default">Выберите тип объекта</option>
-                  <option>Вилла / Дом</option>
-                  <option>Апартаменты</option>
-                  <option>Гостевой дом</option>
-                </select>
-              </div>
-              <div className="br-form-field">
-                <label className="br-label" htmlFor="property-address">
-                  Адрес
-                </label>
-                <input id="property-address" className="br-field" placeholder="Введите адрес" />
-              </div>
-              <div className="br-form-field">
-                <label className="br-label" htmlFor="property-timezone">
-                  Часовой пояс
-                </label>
-                <select id="property-timezone" className="br-field" defaultValue="moscow">
-                  <option value="moscow">(UTC+03:00) Москва</option>
-                </select>
-              </div>
-              <div className="br-upload-tile">
-                <strong>Загрузите фото объекта</strong>
-                <span>JPG, PNG до 10 МБ</span>
-              </div>
-            </form>
-            <div className="br-active-step__actions">
-              <button type="button" className="br-button br-button--secondary">
-                Назад
-              </button>
-              <button type="button" className="br-button br-button--primary">
-                Продолжить
-              </button>
-            </div>
           </div>
         </section>
 
-        <aside className="br-dashboard-aside">
-          {emptyStates.map((state) => (
-            <article key={state.title} className="br-empty-card br-card">
-              <div className="br-empty-card__art" aria-hidden="true">
-                <AppIcon icon={state.icon} />
-              </div>
-              <strong>{state.title}</strong>
-              <p>{state.text}</p>
-              <Link href="/dashboard/properties" className="br-button br-button--primary br-button--full">
-                {state.action}
-              </Link>
-            </article>
-          ))}
-        </aside>
+        {emptyStatesToShow.length ? (
+          <aside className="br-dashboard-aside">
+            {emptyStatesToShow.map((state) => (
+              <article key={state.title} className="br-empty-card br-card">
+                <div className="br-empty-card__art" aria-hidden="true">
+                  <AppIcon icon={state.icon} />
+                </div>
+                <strong>{state.title}</strong>
+                <p>{state.text}</p>
+                <Link href={state.href} className="br-button br-button--primary br-button--full">
+                  {state.action}
+                </Link>
+              </article>
+            ))}
+          </aside>
+        ) : null}
       </section>
     </>
   );

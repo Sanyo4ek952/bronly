@@ -14,6 +14,14 @@ export function buildPropertyRoomCreatePath(propertyId: string) {
   return `/dashboard/properties/${propertyId}/rooms/new`;
 }
 
+export function buildPropertyRoomPath(propertyId: string, roomId: string) {
+  return `/dashboard/properties/${propertyId}/rooms/${roomId}`;
+}
+
+export function buildPropertyRoomSettingsPath(propertyId: string, roomId: string) {
+  return `/dashboard/properties/${propertyId}/rooms/${roomId}/settings`;
+}
+
 export function buildPropertyPathWithState(
   propertyId: string,
   section: "property" | "rooms" | "calendar",

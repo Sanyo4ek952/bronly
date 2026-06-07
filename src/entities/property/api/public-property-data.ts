@@ -41,6 +41,14 @@ type OwnerPublicSlugResolution = {
   shouldRedirect: boolean;
 };
 
+function normalizePublicSlug(slug: string) {
+  try {
+    return decodeURIComponent(slug);
+  } catch {
+    return slug;
+  }
+}
+
 function mapPublicOwner(row: PublicOwnerRow): OwnerPublicProfile {
   return {
     id: row.id,
@@ -177,10 +185,12 @@ export function getOwnerPropertySectionBySlug(pageData: PublicPropertyPageData, 
 }
 
 export const resolveOwnerPublicSlug = cache(async (slug: string): Promise<OwnerPublicSlugResolution | null> => {
+  const normalizedSlug = normalizePublicSlug(slug);
+
   if (!canUseSupabase()) {
-    return slug === getDemoPropertySlug()
+    return normalizedSlug === getDemoPropertySlug()
       ? {
-          ownerSlug: slug,
+          ownerSlug: normalizedSlug,
           matchedPropertySlug: null,
           shouldRedirect: false,
         }
@@ -189,17 +199,21 @@ export const resolveOwnerPublicSlug = cache(async (slug: string): Promise<OwnerP
 
   try {
     const supabase = createSupabaseAdminClient();
-    const { data: ownerData } = await supabase.from("profiles").select("slug").eq("slug", slug).maybeSingle();
+    const { data: ownerData } = await supabase.from("profiles").select("slug").eq("slug", normalizedSlug).maybeSingle();
 
     if (ownerData?.slug) {
       return {
         ownerSlug: ownerData.slug as string,
         matchedPropertySlug: null,
-        shouldRedirect: false,
+        shouldRedirect: ownerData.slug !== normalizedSlug,
       };
     }
 
-    const { data: propertyData } = await supabase.from("properties").select("slug, owner_id").eq("slug", slug).maybeSingle();
+    const { data: propertyData } = await supabase
+      .from("properties")
+      .select("slug, owner_id")
+      .eq("slug", normalizedSlug)
+      .maybeSingle();
     const propertyRow = (propertyData ?? null) as Pick<SupabasePropertyRow, "slug" | "owner_id"> | null;
 
     if (!propertyRow) {
@@ -216,7 +230,7 @@ export const resolveOwnerPublicSlug = cache(async (slug: string): Promise<OwnerP
     return {
       ownerSlug,
       matchedPropertySlug: propertyRow.slug,
-      shouldRedirect: ownerSlug !== slug,
+      shouldRedirect: ownerSlug !== normalizedSlug,
     };
   } catch {
     return null;
@@ -233,10 +247,11 @@ export const getPublicPropertyPageData = cache(
       rooms?: string | number;
     } = {},
   ): Promise<PublicPropertyPageData | null> => {
+    const normalizedSlug = normalizePublicSlug(slug);
     const filters = normalizePublicStayFilters(filterInput);
 
     if (!canUseSupabase()) {
-      return slug === getDemoPropertySlug() ? toPublicFallbackData(filters) : null;
+      return normalizedSlug === getDemoPropertySlug() ? toPublicFallbackData(filters) : null;
     }
 
     try {
@@ -244,7 +259,7 @@ export const getPublicPropertyPageData = cache(
       const { data: ownerData } = await supabase
         .from("profiles")
         .select("id, slug, display_name, phone, whatsapp, telegram, is_public_hidden_by_admin")
-        .eq("slug", slug)
+        .eq("slug", normalizedSlug)
         .maybeSingle();
 
       const ownerRow = (ownerData ?? null) as PublicOwnerRow | null;

@@ -29,6 +29,10 @@
   gap: 16px;
 }
 
+.br-owner-property-list {
+  grid-template-columns: 1fr;
+}
+
 .br-owner-property-card,
 .br-owner-editor {
   display: grid;
@@ -47,6 +51,7 @@
 .br-collection-card {
   display: grid;
   gap: 8px;
+  min-height: 220px;
   padding: 18px;
   transition:
     border-color var(--transition),
@@ -77,6 +82,253 @@
   color: var(--color-muted);
   font-size: 13px;
   line-height: 1.5;
+}
+
+.br-collection-card--link {
+  align-content: space-between;
+}
+
+.br-collection-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.br-collection-grid__empty {
+  min-height: 220px;
+}
+
+.br-collection-create-mobile {
+  display: none;
+  margin-bottom: 16px;
+}
+
+.br-collection-create-card {
+  display: grid;
+  gap: 12px;
+  align-content: center;
+  min-height: 220px;
+  padding: 20px;
+  text-align: left;
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition),
+    background-color var(--transition),
+    transform var(--transition);
+}
+
+.br-collection-create-card:hover {
+  transform: translateY(-1px);
+  border-color: rgb(7 154 145 / 24%);
+  background: var(--color-primary-pale);
+  box-shadow: 0 18px 34px rgb(7 154 145 / 10%);
+}
+
+.br-collection-create-card strong {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.br-collection-create-card span:last-child {
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.br-collection-create-card__icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 18px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.br-collection-create-card__icon .br-ui-icon,
+.br-collection-create-card__icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.br-collection-detail-grid,
+.br-collection-stats-grid,
+.br-collection-actions-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.br-collection-detail-grid,
+.br-collection-actions-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.br-collection-stats-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.br-collection-link-card {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 98%), rgb(241 250 249 / 98%)),
+    var(--color-surface);
+}
+
+.br-collection-link-card__icon,
+.br-collection-action-tile__icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border-radius: 18px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.br-collection-link-card__field {
+  font-weight: 600;
+}
+
+.br-collection-action-tile {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: rgba(248, 250, 252, 0.92);
+  color: var(--color-text);
+  text-align: left;
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition),
+    background-color var(--transition),
+    transform var(--transition);
+}
+
+.br-collection-action-tile:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgb(7 154 145 / 24%);
+  background: var(--color-primary-pale);
+  box-shadow: 0 18px 34px rgb(7 154 145 / 10%);
+}
+
+.br-collection-action-tile:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.br-collection-action-tile strong {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.br-collection-action-tile span:last-child {
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.br-collection-inline-empty {
+  margin-top: 4px;
+}
+
+.br-collection-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 24px 16px calc(24px + var(--safe-area-bottom));
+  background: rgb(17 29 27 / 42%);
+  backdrop-filter: blur(8px);
+}
+
+.br-collection-sheet {
+  display: grid;
+  gap: 18px;
+  width: min(100%, 760px);
+  max-height: min(80vh, 720px);
+  padding: 20px;
+  overflow: hidden;
+}
+
+.br-collection-sheet__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.br-collection-sheet__header p {
+  margin-top: 6px;
+  color: var(--color-muted);
+}
+
+.br-collection-sheet__close {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.br-collection-sheet__list {
+  display: grid;
+  gap: 12px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.br-collection-sheet__empty {
+  margin: 0;
+}
+
+.br-collection-choice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.br-collection-choice--selected {
+  background: rgba(243, 248, 247, 0.92);
+}
+
+.br-collection-choice__copy {
+  display: grid;
+  gap: 6px;
+}
+
+.br-collection-choice__copy > span {
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.br-collection-choice__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.br-collection-choice__meta span {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 28px;
+  background: rgb(255 255 255 / 82%);
 }
 
 .br-owner-property-card__link {
@@ -118,13 +370,17 @@
 }
 
 .br-owner-property-card__media {
+  position: relative;
   overflow: hidden;
+  aspect-ratio: 16 / 9;
+  min-height: 180px;
   border-radius: 18px;
 }
 
 .br-owner-property-card__image {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  height: 100%;
+  display: block;
   object-fit: cover;
   background:
     linear-gradient(180deg, rgb(255 255 255 / 10%), rgb(17 29 27 / 8%)),
@@ -132,7 +388,7 @@
 }
 
 .br-owner-property-card__image--placeholder {
-  min-height: 180px;
+  height: 100%;
 }
 
 .br-owner-photo-upload,
@@ -295,6 +551,11 @@
   justify-content: flex-start;
 }
 
+.br-owner-actions--end {
+  align-self: end;
+  justify-content: flex-end;
+}
+
 .br-owner-danger {
   align-items: end;
 }
@@ -308,6 +569,7 @@
   .br-room-photo-preview {
     grid-template-columns: 1fr;
   }
+
 }
 
 html {
@@ -1519,22 +1781,24 @@ ul {
 }
 
 .br-stepper-line {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
 }
 
 .br-stepper-line__item {
   position: relative;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
   min-height: 36px;
 }
 
 .br-stepper-line__item::before {
   position: absolute;
-  inset: 17px -12px auto;
+  inset: 17px -10px auto;
   height: 2px;
   content: "";
   background: var(--color-border);
@@ -1582,23 +1846,49 @@ ul {
 
 .br-onboarding-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
 }
 
 .br-onboarding-card {
   display: grid;
-  gap: 12px;
-  padding: 18px;
+  gap: 16px;
+  min-height: 100%;
+  padding: 22px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+  color: var(--color-text);
   background: var(--color-bg);
+  box-shadow: 0 10px 28px rgb(15 23 42 / 4%);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition),
+    transform var(--transition),
+    background-color var(--transition);
+}
+
+.br-onboarding-card:hover,
+.br-onboarding-card:focus-visible {
+  border-color: rgb(7 154 145 / 30%);
+  box-shadow: 0 18px 36px rgb(15 23 42 / 8%);
+  transform: translateY(-2px);
+}
+
+.br-onboarding-card:focus-visible {
+  outline: 2px solid rgb(7 154 145 / 18%);
+  outline-offset: 3px;
 }
 
 .br-onboarding-card--current {
   border-color: rgb(7 154 145 / 36%);
-  box-shadow: 0 12px 24px rgb(7 154 145 / 8%);
+  background:
+    linear-gradient(180deg, rgb(243 251 250 / 92%) 0%, rgb(255 255 255 / 100%) 100%);
+  box-shadow: 0 18px 36px rgb(7 154 145 / 12%);
+}
+
+.br-onboarding-card--done {
+  background: linear-gradient(180deg, rgb(248 252 251 / 100%) 0%, rgb(255 255 255 / 100%) 100%);
 }
 
 .br-onboarding-card__top {
@@ -1606,6 +1896,16 @@ ul {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.br-onboarding-card__body {
+  display: grid;
+  gap: 10px;
+}
+
+.br-onboarding-card__body strong {
+  font-size: 18px;
+  line-height: 1.3;
 }
 
 .br-onboarding-card__status {
@@ -1623,6 +1923,30 @@ ul {
   background: #e6f7ef;
 }
 
+.br-onboarding-card__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: auto;
+  padding: 0 18px;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary-hover);
+  background: var(--color-primary-soft);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.br-onboarding-card--current .br-onboarding-card__cta {
+  color: #ffffff;
+  background: var(--color-primary);
+  box-shadow: 0 10px 22px rgb(7 154 145 / 18%);
+}
+
+.br-anchor-target {
+  scroll-margin-top: 110px;
+}
+
 .br-active-step {
   display: grid;
   gap: 20px;
@@ -1635,6 +1959,10 @@ ul {
   grid-template-columns: repeat(2, minmax(0, 1fr)) 240px;
   gap: 16px;
   align-items: start;
+}
+
+.br-form-grid--single-action {
+  grid-template-columns: minmax(0, 1fr) 240px;
 }
 
 .br-form-field {
@@ -2008,6 +2336,154 @@ ul {
   font-weight: 800;
 }
 
+.br-owner-room-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.br-owner-room-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: stretch;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 98%), rgb(246 248 247 / 96%));
+}
+
+.br-owner-room-card__main {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 16px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.br-owner-room-card__main:hover .br-owner-room-card__content strong,
+.br-owner-room-card__main:focus-visible .br-owner-room-card__content strong {
+  color: var(--color-primary-hover);
+}
+
+.br-owner-room-card__main:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+  border-radius: 18px;
+}
+
+.br-owner-room-card__thumb {
+  overflow: hidden;
+  min-height: 136px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 12%), rgb(17 29 27 / 10%)),
+    linear-gradient(135deg, #b8dbe2 0%, #88bdd0 45%, #d6e3d5 78%, #cab69d 100%);
+}
+
+.br-owner-room-card__image,
+.br-room-page-hero__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.br-owner-room-card__placeholder,
+.br-room-page-hero__placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 136px;
+  background:
+    radial-gradient(circle at 30% 30%, rgb(255 255 255 / 45%) 0 18px, transparent 19px),
+    linear-gradient(135deg, #dfeceb 0%, #b8dbe2 50%, #d7c3aa 100%);
+}
+
+.br-owner-room-card__content {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.br-owner-room-card__header,
+.br-room-page__actions,
+.br-room-page-hero__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.br-owner-room-card__subtitle {
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.br-owner-room-card__meta,
+.br-room-amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.br-owner-room-card__meta span,
+.br-room-amenity-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-muted);
+  font-size: 13px;
+  background: rgb(255 255 255 / 82%);
+}
+
+.br-owner-room-card__aside {
+  display: grid;
+  gap: 12px;
+  align-content: center;
+  justify-items: end;
+}
+
+.br-owner-room-card__price,
+.br-room-page__price {
+  white-space: nowrap;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.br-owner-room-card__settings {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.br-room-page-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.br-room-page-hero__media {
+  overflow: hidden;
+  border-radius: 24px;
+  min-height: 280px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 12%), rgb(17 29 27 / 10%)),
+    linear-gradient(135deg, #b8dbe2 0%, #88bdd0 45%, #d6e3d5 78%, #cab69d 100%);
+}
+
+.br-room-page-hero__content {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.br-quick-grid--rooms {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .br-selected-room-meta {
   display: grid;
   gap: 6px;
@@ -2149,6 +2625,189 @@ ul {
 .br-calendar-modal__grid {
   display: grid;
   gap: 16px;
+}
+
+.br-owner-calendar-flow,
+.br-owner-calendar-stats,
+.br-owner-calendar-overview,
+.br-owner-calendar-history,
+.br-owner-calendar-history__list {
+  display: grid;
+  gap: 16px;
+}
+
+.br-owner-calendar-flow {
+  align-items: start;
+}
+
+.br-owner-calendar-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.br-owner-calendar-controls,
+.br-owner-calendar-editor {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+}
+
+.br-owner-calendar-controls__top,
+.br-owner-calendar-controls__toolbar,
+.br-owner-calendar-monthbar,
+.br-owner-calendar-overview__meta,
+.br-owner-calendar-history__header,
+.br-owner-calendar-editor__header,
+.br-owner-calendar-editor__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.br-owner-calendar-controls__top p {
+  margin: 6px 0 0;
+  color: var(--color-muted);
+}
+
+.br-owner-calendar-controls__selectors {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 360px);
+}
+
+.br-owner-calendar-monthbar {
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgb(7 154 145 / 8%), rgb(255 255 255 / 96%));
+}
+
+.br-owner-calendar-monthbar span,
+.br-owner-calendar-overview__meta p,
+.br-owner-calendar-history__header span,
+.br-owner-calendar-editor__header p,
+.br-owner-calendar-editor__empty p {
+  color: var(--color-muted);
+}
+
+.br-owner-calendar-overview__row,
+.br-owner-calendar-history__item,
+.br-owner-calendar-editor {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.br-owner-calendar-overview__row {
+  padding: 18px;
+}
+
+.br-owner-calendar-strip__viewport {
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.br-owner-calendar-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(38px, 38px);
+  gap: 6px;
+  min-width: max-content;
+}
+
+.br-owner-calendar-strip__day {
+  min-height: 58px;
+  padding: 8px 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-bg);
+  text-align: center;
+}
+
+.br-owner-calendar-strip__day span {
+  display: block;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.br-owner-calendar-strip__day--busy {
+  background: #fde7e7;
+  border-color: rgb(213 80 80 / 22%);
+}
+
+.br-owner-calendar-strip__day--today {
+  border-color: rgb(7 154 145 / 42%);
+  box-shadow: inset 0 0 0 1px rgb(7 154 145 / 18%);
+}
+
+.br-owner-calendar-day {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  text-align: left;
+  min-height: 112px;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+button.br-owner-calendar-day {
+  cursor: pointer;
+}
+
+button.br-owner-calendar-day:hover {
+  transform: translateY(-1px);
+  border-color: rgb(7 154 145 / 36%);
+  box-shadow: 0 12px 32px rgb(15 23 42 / 8%);
+}
+
+.br-owner-calendar-day__date {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.br-owner-calendar-month {
+  display: grid;
+  gap: 20px;
+}
+
+.br-owner-calendar-day--selected {
+  background: #edf0f2;
+  border-color: rgb(15 23 42 / 18%);
+}
+
+.br-owner-calendar-day--active {
+  border-color: rgb(7 154 145 / 52%);
+  box-shadow: inset 0 0 0 1px rgb(7 154 145 / 24%);
+}
+
+.br-owner-calendar-history__item {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.br-owner-calendar-history__item span,
+.br-owner-calendar-history__item small {
+  color: var(--color-muted);
+}
+
+.br-owner-calendar-history__item--active {
+  border-color: rgb(7 154 145 / 44%);
+  background: var(--color-primary-soft);
+}
+
+.br-owner-calendar-editor__body,
+.br-owner-calendar-editor__empty {
+  display: grid;
+  gap: 14px;
+}
+
+.br-owner-calendar-editor__empty {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgb(248 250 252 / 92%);
 }
 
 .br-agent-calendar-summary {
@@ -2724,6 +3383,33 @@ ul {
   .br-public-hero__actions {
     min-width: 0;
   }
+
+  .br-collection-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .br-collection-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .br-collection-detail-grid,
+  .br-collection-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 700px) {
+  .br-owner-property-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1180px) {
+  .br-owner-property-list {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -2785,6 +3471,18 @@ ul {
   .br-admin-stats,
   .br-admin-grid {
     grid-template-columns: 1fr;
+  }
+
+  .br-collection-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .br-collection-create-mobile {
+    display: block;
+  }
+
+  .br-collection-create-card--desktop {
+    display: none;
   }
 
   .br-hero__visual {
@@ -2850,6 +3548,13 @@ ul {
   .br-rooms-toolbar,
   .br-rooms-toolbar__actions,
   .br-calendar-toolbar,
+  .br-owner-calendar-controls__top,
+  .br-owner-calendar-controls__toolbar,
+  .br-owner-calendar-monthbar,
+  .br-owner-calendar-overview__meta,
+  .br-owner-calendar-history__header,
+  .br-owner-calendar-editor__header,
+  .br-owner-calendar-editor__actions,
   .br-public-room-card__footer,
   .br-public-selected-room__actions {
     flex-direction: column;
@@ -2862,6 +3567,28 @@ ul {
   }
 
   .br-room-card__price {
+    white-space: normal;
+  }
+
+  .br-owner-room-card,
+  .br-owner-room-card__main,
+  .br-room-page-hero,
+  .br-quick-grid--rooms,
+  .br-owner-calendar-stats,
+  .br-owner-calendar-controls__selectors {
+    grid-template-columns: 1fr;
+  }
+
+  .br-owner-calendar-controls__selectors {
+    width: 100%;
+  }
+
+  .br-owner-room-card__aside {
+    justify-items: stretch;
+  }
+
+  .br-owner-room-card__price,
+  .br-room-page__price {
     white-space: normal;
   }
 
@@ -2882,5 +3609,21 @@ ul {
   .br-table__head--compact,
   .br-table__row--compact {
     grid-template-columns: 1fr;
+  }
+
+  .br-collection-stats-grid,
+  .br-collection-choice {
+    grid-template-columns: 1fr;
+  }
+
+  .br-collection-sheet-backdrop {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .br-collection-sheet {
+    max-height: min(84vh, 760px);
+    padding: 18px;
+    border-radius: 24px 24px 18px 18px;
   }
 }

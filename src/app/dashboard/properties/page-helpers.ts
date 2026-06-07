@@ -139,6 +139,8 @@ export function getCalendarNotice(error: string, success: string) {
   switch (error) {
     case "validation":
       return "Проверьте обязательные поля и порядок дат.";
+    case "overlap":
+      return "Занятые даты не должны пересекаться по одному номеру.";
     case "subscription":
       return "Подписка не продлена. Изменение календаря временно недоступно.";
     case "delete":

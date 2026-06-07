@@ -83,7 +83,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
         </form>
       </section>
 
-      <section className="br-dashboard-block br-card">
+      <section id="photos" className="br-dashboard-block br-card br-anchor-target">
         <div className="br-dashboard-block__header">
           <div>
             <h2>Фото объекта</h2>

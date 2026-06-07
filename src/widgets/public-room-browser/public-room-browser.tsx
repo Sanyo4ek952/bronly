@@ -11,7 +11,6 @@ type PublicRoomBrowserProps = {
   propertySlug: string;
   rooms: PublicRoom[];
   filters: PublicStayFilters;
-  requestHrefBuilder?: (roomId: string, filters: PublicStayFilters) => string;
   resetHref?: string;
   showFilter?: boolean;
   showSelectedRoomSummary?: boolean;
@@ -52,17 +51,14 @@ export function PublicRoomBrowser({
   propertySlug,
   rooms,
   filters,
-  requestHrefBuilder,
   resetHref,
   showFilter = true,
   showSelectedRoomSummary = true,
 }: PublicRoomBrowserProps) {
   const defaultRoom = rooms.find((room) => room.isAvailableForFilter) ?? rooms[0];
   const [selectedRoomId, setSelectedRoomId] = useState(defaultRoom?.id ?? "");
-  const resolveRequestHref =
-    requestHrefBuilder ??
-    ((roomId: string, currentFilters: PublicStayFilters) =>
-      buildPublicRequestHref(publicBaseHref, propertySlug, roomId, currentFilters));
+  const resolveRequestHref = (roomId: string, currentFilters: PublicStayFilters) =>
+    buildPublicRequestHref(publicBaseHref, propertySlug, roomId, currentFilters);
 
   const selectedRoom = useMemo(
     () => rooms.find((room) => room.id === selectedRoomId) ?? defaultRoom,
