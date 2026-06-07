@@ -60,6 +60,7 @@ const agentNavigationItems: NavigationItem[] = [
 
 const ownerMobilePrimaryHrefs = [
   "/dashboard",
+  "/dashboard/properties",
   "/dashboard/calendar",
   "/dashboard/requests",
 ] as const;

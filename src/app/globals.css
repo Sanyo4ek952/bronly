@@ -3506,6 +3506,7 @@ button.br-owner-calendar-day:hover {
     flex: 1;
     flex-direction: column;
     min-height: 100%;
+    padding-bottom: calc(88px + var(--safe-area-bottom));
   }
 
   .br-dashboard-row,
@@ -3669,13 +3670,16 @@ button.br-owner-calendar-day:hover {
   }
 
   .br-owner-bottom-nav {
-    position: static;
-    z-index: 10;
+    position: fixed;
+    right: 12px;
+    bottom: 0;
+    left: 12px;
+    z-index: 20;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 4px;
-    margin-top: auto;
-    margin-bottom: max(12px, var(--safe-area-bottom));
+    margin-top: 0;
+    margin-bottom: 0;
     padding:
       8px
       8px
