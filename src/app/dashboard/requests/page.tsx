@@ -1,10 +1,10 @@
-import { getOwnerRequests } from "@/entities/request";
-import { RequestsBrowser } from "@/widgets/requests-browser";
 import {
   acceptOwnerRequestAction,
   completeOwnerRequestAction,
   rejectOwnerRequestAction,
 } from "@/app/dashboard/requests/actions";
+import { getOwnerRequests } from "@/entities/request";
+import { RequestsBrowser } from "@/widgets/requests-browser";
 
 export default async function RequestsPage() {
   const requests = await getOwnerRequests();

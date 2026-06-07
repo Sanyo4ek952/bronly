@@ -3456,6 +3456,15 @@ button.br-owner-calendar-day:hover {
 }
 
 @media (max-width: 1080px) {
+  .br-page--dashboard {
+    min-height: 100dvh;
+  }
+
+  .br-dashboard-layout {
+    display: flex;
+    min-height: 100%;
+  }
+
   .br-nav {
     display: none;
   }
@@ -3479,11 +3488,20 @@ button.br-owner-calendar-day:hover {
   }
 
   .br-owner {
+    flex: 1;
+    min-height: 100%;
     grid-template-columns: 1fr;
   }
 
   .br-owner__sidebar {
     display: none;
+  }
+
+  .br-owner__content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 100%;
   }
 
   .br-dashboard-row,
@@ -3647,12 +3665,12 @@ button.br-owner-calendar-day:hover {
   }
 
   .br-owner-bottom-nav {
-    position: sticky;
-    bottom: 0;
+    position: static;
     z-index: 10;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 4px;
+    margin-top: auto;
     margin-bottom: max(12px, var(--safe-area-bottom));
     padding:
       8px

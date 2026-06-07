@@ -16,12 +16,12 @@ type RequestsBrowserProps = {
 type RequestStatusFilter = OwnerRequestItem["status"] | "all";
 
 const requestStatuses = [
-  { label: "Р’СЃРµ", value: "all" },
-  { label: "РќРѕРІС‹Рµ", value: "new" },
-  { label: "РџРµСЂРµРґР°РЅС‹ РІР»Р°РґРµР»СЊС†Сѓ", value: "transferred_to_owner" },
-  { label: "РџСЂРёРЅСЏС‚С‹ РІР»Р°РґРµР»СЊС†РµРј", value: "accepted_by_owner" },
-  { label: "РћС‚РєР»РѕРЅРµРЅРЅС‹Рµ", value: "rejected" },
-  { label: "Р—Р°РІРµСЂС€РµРЅРЅС‹Рµ", value: "completed" },
+  { label: "Все", value: "all" },
+  { label: "Новые", value: "new" },
+  { label: "Переданы владельцу", value: "transferred_to_owner" },
+  { label: "Приняты владельцем", value: "accepted_by_owner" },
+  { label: "Отклоненные", value: "rejected" },
+  { label: "Завершенные", value: "completed" },
 ] as const;
 
 function getRequestStatusVariant(status: OwnerRequestItem["status"]) {
@@ -42,26 +42,26 @@ function getRequestStatusVariant(status: OwnerRequestItem["status"]) {
 function getRequestStatusLabel(status: OwnerRequestItem["status"]) {
   switch (status) {
     case "accepted_by_owner":
-      return "РџСЂРёРЅСЏС‚Р° РІР»Р°РґРµР»СЊС†РµРј";
+      return "Принята владельцем";
     case "rejected":
-      return "РћС‚РєР»РѕРЅРµРЅР°";
+      return "Отклонена";
     case "transferred_to_owner":
-      return "РџРµСЂРµРґР°РЅР° РІР»Р°РґРµР»СЊС†Сѓ";
+      return "Передана владельцу";
     case "completed":
-      return "Р—Р°РІРµСЂС€РµРЅР°";
+      return "Завершена";
     default:
-      return "РќРѕРІР°СЏ";
+      return "Новая";
   }
 }
 
 function getRequestSourceLabel(source: OwnerRequestItem["source"]) {
   switch (source) {
     case "agent":
-      return "РђРіРµРЅС‚СЃРєР°СЏ СЃСЃС‹Р»РєР°";
+      return "Агентская ссылка";
     case "collection":
-      return "РљРѕР»Р»РµРєС†РёСЏ";
+      return "Коллекция";
     default:
-      return "РЎСЃС‹Р»РєР° РІР»Р°РґРµР»СЊС†Р°";
+      return "Ссылка владельца";
   }
 }
 
@@ -100,24 +100,24 @@ export function RequestsBrowser({
     <>
       <div className="br-dashboard-block__header">
         <div>
-          <h2>Р—Р°СЏРІРєРё</h2>
-          <p>РџСЂРѕСЃРјР°С‚СЂРёРІР°Р№С‚Рµ Р·Р°РїСЂРѕСЃС‹ РЅР° РїСЂРѕР¶РёРІР°РЅРёРµ Рё РІСЂСѓС‡РЅСѓСЋ РѕР±РЅРѕРІР»СЏР№С‚Рµ РёС… СЃС‚Р°С‚СѓСЃ.</p>
+          <h2>Заявки</h2>
+          <p>Просматривайте запросы на проживание и вручную обновляйте их статус.</p>
         </div>
         <Select
           className="br-select-inline"
           value={selectedRoomId}
           onChange={(event) => setSelectedRoomId(event.target.value)}
-          options={[{ value: "all", label: "Р’СЃРµ РЅРѕРјРµСЂР°" }, ...roomOptions]}
+          options={[{ value: "all", label: "Все номера" }, ...roomOptions]}
         />
       </div>
 
       <Tabs
-        ariaLabel="РЎС‚Р°С‚СѓСЃС‹ Р·Р°СЏРІРѕРє"
+        ariaLabel="Статусы заявок"
         items={requestStatuses.map((item) => ({
           ...item,
           label:
             item.value === "all"
-              ? `Р’СЃРµ (${requests.length})`
+              ? `Все (${requests.length})`
               : `${item.label} (${requests.filter((request) => request.status === item.value).length})`,
         }))}
         value={statusFilter}
@@ -126,8 +126,8 @@ export function RequestsBrowser({
 
       {filteredRequests.length === 0 ? (
         <div className="br-empty-state">
-          <strong>РџРѕРґС…РѕРґСЏС‰РёС… Р·Р°СЏРІРѕРє РїРѕРєР° РЅРµС‚</strong>
-          <p>РџРѕРїСЂРѕР±СѓР№С‚Рµ СЃРјРµРЅРёС‚СЊ С„РёР»СЊС‚СЂ РїРѕ СЃС‚Р°С‚СѓСЃСѓ РёР»Рё РЅРѕРјРµСЂСѓ.</p>
+          <strong>Подходящих заявок пока нет</strong>
+          <p>Попробуйте сменить фильтр по статусу или номеру.</p>
         </div>
       ) : (
         <div className="br-requests-layout">
@@ -164,53 +164,53 @@ export function RequestsBrowser({
               </div>
               <dl className="br-request-detail__grid">
                 <div>
-                  <dt>РСЃС‚РѕС‡РЅРёРє</dt>
+                  <dt>Источник</dt>
                   <dd>{getRequestSourceLabel(activeRequest.source)}</dd>
                 </div>
                 <div>
-                  <dt>РћР±СЉРµРєС‚</dt>
+                  <dt>Объект</dt>
                   <dd>{activeRequest.propertyTitle}</dd>
                 </div>
                 <div>
-                  <dt>РќРѕРјРµСЂ</dt>
+                  <dt>Номер</dt>
                   <dd>{activeRequest.roomTitle}</dd>
                 </div>
                 <div>
-                  <dt>Р—Р°РµР·Рґ</dt>
+                  <dt>Заезд</dt>
                   <dd>{activeRequest.checkIn}</dd>
                 </div>
                 <div>
-                  <dt>Р’С‹РµР·Рґ</dt>
+                  <dt>Выезд</dt>
                   <dd>{activeRequest.checkOut}</dd>
                 </div>
                 <div>
-                  <dt>Р“РѕСЃС‚Рё</dt>
+                  <dt>Гости</dt>
                   <dd>{activeRequest.guestsLabel}</dd>
                 </div>
                 <div>
-                  <dt>РљРѕРјРЅР°С‚</dt>
+                  <dt>Комнат</dt>
                   <dd>{activeRequest.roomsCount}</dd>
                 </div>
                 <div>
-                  <dt>РљРѕРјРјРµРЅС‚Р°СЂРёР№</dt>
-                  <dd>{activeRequest.comment || "Р‘РµР· РєРѕРјРјРµРЅС‚Р°СЂРёСЏ"}</dd>
+                  <dt>Комментарий</dt>
+                  <dd>{activeRequest.comment || "Без комментария"}</dd>
                 </div>
                 <div>
-                  <dt>РЎСѓРјРјР°</dt>
-                  <dd>{activeRequest.totalPrice.toLocaleString("ru-RU")} в‚Ѕ</dd>
+                  <dt>Сумма</dt>
+                  <dd>{activeRequest.totalPrice.toLocaleString("ru-RU")} ₽</dd>
                 </div>
                 <div>
-                  <dt>Р¦РµРЅР° РІ Р·Р°СЏРІРєРµ</dt>
-                  <dd>{`${activeRequest.quotedPricePerNight.toLocaleString("ru-RU")} в‚Ѕ / РЅРѕС‡СЊ`}</dd>
+                  <dt>Цена в заявке</dt>
+                  <dd>{`${activeRequest.quotedPricePerNight.toLocaleString("ru-RU")} ₽ / ночь`}</dd>
                 </div>
                 <div>
-                  <dt>Р‘Р°Р·РѕРІР°СЏ С†РµРЅР° РЅРѕРјРµСЂР°</dt>
-                  <dd>{`${activeRequest.basePricePerNight.toLocaleString("ru-RU")} в‚Ѕ / РЅРѕС‡СЊ`}</dd>
+                  <dt>Базовая цена номера</dt>
+                  <dd>{`${activeRequest.basePricePerNight.toLocaleString("ru-RU")} ₽ / ночь`}</dd>
                 </div>
               </dl>
               {activeRequest.status === "accepted_by_owner" && activeRequest.completionRequestedAt ? (
                 <p className="br-inline-notice br-inline-notice--soft" style={{ marginTop: 18 }}>
-                  РђРіРµРЅС‚ РїСЂРѕСЃРёС‚ РѕС‚РјРµС‚РёС‚СЊ СЌС‚Сѓ Р·Р°СЏРІРєСѓ Р·Р°РІРµСЂС€РµРЅРЅРѕР№.
+                  Агент просит отметить эту заявку завершенной.
                 </p>
               ) : null}
               <div className="br-request-detail__actions">
@@ -218,7 +218,7 @@ export function RequestsBrowser({
                   <form action={acceptAction}>
                     <input type="hidden" name="requestId" value={activeRequest.id} />
                     <Button fullWidth type="submit">
-                      РџСЂРёРЅСЏС‚СЊ РІР»Р°РґРµР»СЊС†РµРј
+                      Принять владельцем
                     </Button>
                   </form>
                 ) : null}
@@ -226,7 +226,7 @@ export function RequestsBrowser({
                   <form action={completeAction}>
                     <input type="hidden" name="requestId" value={activeRequest.id} />
                     <Button fullWidth type="submit">
-                      РћС‚РјРµС‚РёС‚СЊ Р·Р°РІРµСЂС€РµРЅРЅРѕР№
+                      Отметить завершенной
                     </Button>
                   </form>
                 ) : null}
@@ -234,7 +234,7 @@ export function RequestsBrowser({
                   <form action={rejectAction}>
                     <input type="hidden" name="requestId" value={activeRequest.id} />
                     <Button variant="danger" fullWidth type="submit">
-                      РћС‚РєР»РѕРЅРёС‚СЊ
+                      Отклонить
                     </Button>
                   </form>
                 ) : null}
