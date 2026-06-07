@@ -39,7 +39,6 @@ const navigationItems: NavigationItem[] = [
   { href: "/dashboard/notifications", label: "Уведомления", icon: Bell },
   { href: "/dashboard/properties", label: "Объекты", icon: Building2 },
   { href: "/dashboard/collections", label: "Коллекции", icon: Layers3 },
-  { href: "/dashboard/rooms", label: "Номера", icon: Link2 },
   { href: "/dashboard/calendar", label: "Календарь", icon: CalendarDays },
   { href: "/dashboard/subscription", label: "Подписка", icon: CreditCard },
   { href: "/dashboard/agent-proposals", label: "Агенты", icon: Handshake },
@@ -61,7 +60,6 @@ const agentNavigationItems: NavigationItem[] = [
 
 const ownerMobilePrimaryHrefs = [
   "/dashboard",
-  "/dashboard/rooms",
   "/dashboard/calendar",
   "/dashboard/requests",
 ] as const;
