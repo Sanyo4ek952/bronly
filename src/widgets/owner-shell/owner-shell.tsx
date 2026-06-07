@@ -35,27 +35,27 @@ type NavigationConfig = {
 };
 
 const navigationItems: NavigationItem[] = [
-  { href: "/dashboard", label: "Р“Р»Р°РІРЅР°СЏ", icon: Home },
-  { href: "/dashboard/notifications", label: "РЈРІРµРґРѕРјР»РµРЅРёСЏ", icon: Bell },
-  { href: "/dashboard/properties", label: "РћР±СЉРµРєС‚С‹", icon: Building2 },
-  { href: "/dashboard/collections", label: "РљРѕР»Р»РµРєС†РёРё", icon: Layers3 },
-  { href: "/dashboard/calendar", label: "РљР°Р»РµРЅРґР°СЂСЊ", icon: CalendarDays },
-  { href: "/dashboard/subscription", label: "РџРѕРґРїРёСЃРєР°", icon: CreditCard },
-  { href: "/dashboard/agent-proposals", label: "РђРіРµРЅС‚С‹", icon: Handshake },
-  { href: "/dashboard/requests", label: "Р—Р°СЏРІРєРё", icon: Inbox },
-  { href: "/dashboard/settings", label: "РќР°СЃС‚СЂРѕР№РєРё", icon: Settings },
+  { href: "/dashboard", label: "Главная", icon: Home },
+  { href: "/dashboard/notifications", label: "Уведомления", icon: Bell },
+  { href: "/dashboard/properties", label: "Объекты", icon: Building2 },
+  { href: "/dashboard/collections", label: "Коллекции", icon: Layers3 },
+  { href: "/dashboard/calendar", label: "Календарь", icon: CalendarDays },
+  { href: "/dashboard/subscription", label: "Подписка", icon: CreditCard },
+  { href: "/dashboard/agent-proposals", label: "Агенты", icon: Handshake },
+  { href: "/dashboard/requests", label: "Заявки", icon: Inbox },
+  { href: "/dashboard/settings", label: "Настройки", icon: Settings },
 ];
 
 const agentNavigationItems: NavigationItem[] = [
-  { href: "/agent/dashboard", label: "Р“Р»Р°РІРЅР°СЏ", icon: Home },
-  { href: "/agent/dashboard/notifications", label: "РЈРІРµРґРѕРјР»РµРЅРёСЏ", icon: Bell },
-  { href: "/agent/dashboard/collections", label: "РљРѕР»Р»РµРєС†РёРё", icon: Layers3 },
-  { href: "/agent/dashboard/opportunities", label: "Рљ СЃРѕС‚СЂСѓРґРЅРёС‡РµСЃС‚РІСѓ", icon: Search },
-  { href: "/agent/dashboard/collaborations", label: "РЎРІСЏР·Рё", icon: Link2 },
-  { href: "/agent/dashboard/calendar", label: "РљР°Р»РµРЅРґР°СЂСЊ", icon: CalendarDays },
-  { href: "/agent/dashboard/requests", label: "Р—Р°СЏРІРєРё", icon: Inbox },
-  { href: "/agent/dashboard/deals", label: "РЎРґРµР»РєРё", icon: BadgeCheck },
-  { href: "/agent/dashboard/settings", label: "РќР°СЃС‚СЂРѕР№РєРё", icon: Settings },
+  { href: "/agent/dashboard", label: "Главная", icon: Home },
+  { href: "/agent/dashboard/notifications", label: "Уведомления", icon: Bell },
+  { href: "/agent/dashboard/collections", label: "Коллекции", icon: Layers3 },
+  { href: "/agent/dashboard/opportunities", label: "К сотрудничеству", icon: Search },
+  { href: "/agent/dashboard/collaborations", label: "Связи", icon: Link2 },
+  { href: "/agent/dashboard/calendar", label: "Календарь", icon: CalendarDays },
+  { href: "/agent/dashboard/requests", label: "Заявки", icon: Inbox },
+  { href: "/agent/dashboard/deals", label: "Сделки", icon: BadgeCheck },
+  { href: "/agent/dashboard/settings", label: "Настройки", icon: Settings },
 ];
 
 const ownerMobilePrimaryHrefs = [
@@ -143,7 +143,7 @@ export function OwnerShell({
           <BrandLogo />
         </div>
 
-        <nav className="br-owner-nav" aria-label="РќР°РІРёРіР°С†РёСЏ РєР°Р±РёРЅРµС‚Р°">
+        <nav className="br-owner-nav" aria-label="Навигация кабинета">
           {desktopItems.map((item) => {
             const isActive = isItemActive(pathname, item.href);
 
@@ -170,7 +170,7 @@ export function OwnerShell({
 
         <form action={signOutAction}>
           <Button className="br-owner-signout" variant="ghost" fullWidth type="submit">
-            Р’С‹Р№С‚Рё
+            Выйти
           </Button>
         </form>
       </aside>
@@ -178,12 +178,12 @@ export function OwnerShell({
       <div className="br-owner__content">
         <header className="br-owner-topbar br-card">
           <div>
-            <h1>Р”РѕР±СЂРѕ РїРѕР¶Р°Р»РѕРІР°С‚СЊ, {userName}</h1>
-            <p>РЎР»РµРґРёС‚Рµ Р·Р° РѕР±СЉРµРєС‚Р°РјРё, РєР°Р»РµРЅРґР°СЂС‘Рј Р·Р°РЅСЏС‚РѕСЃС‚Рё Рё Р·Р°СЏРІРєР°РјРё РІ РѕРґРЅРѕРј РјРµСЃС‚Рµ.</p>
+            <h1>Добро пожаловать, {userName}</h1>
+            <p>Следите за объектами, календарём занятости и заявками в одном месте.</p>
           </div>
           <div className="br-owner-topbar__actions">
             <span className="br-owner-topbar__chip">Bronly</span>
-            <Link className="br-icon-link" href={notificationsHref} aria-label="РЈРІРµРґРѕРјР»РµРЅРёСЏ">
+            <Link className="br-icon-link" href={notificationsHref} aria-label="Уведомления">
               <AppIcon icon={Bell} aria-hidden="true" />
               {unreadNotificationsCount > 0 ? <span className="br-icon-link__badge">{badgeLabel}</span> : null}
             </Link>
@@ -198,7 +198,7 @@ export function OwnerShell({
 
         {children}
 
-        <nav className="br-owner-bottom-nav br-card" aria-label="РњРѕР±РёР»СЊРЅР°СЏ РЅР°РІРёРіР°С†РёСЏ">
+        <nav className="br-owner-bottom-nav br-card" aria-label="Мобильная навигация">
           {mobilePrimaryItems.map((item) => {
             const isActive = isItemActive(pathname, item.href);
 
@@ -219,11 +219,11 @@ export function OwnerShell({
             className={`br-owner-bottom-nav__item${isMobileMenuOpen || isOverflowActive ? " br-owner-bottom-nav__item--active" : ""}`}
             aria-expanded={isMobileMenuOpen}
             aria-controls="br-owner-mobile-menu"
-            aria-label="Р•С‰С‘"
+            aria-label="Ещё"
             onClick={() => setIsMobileMenuOpen(true)}
           >
             <AppIcon icon={Menu} aria-hidden="true" />
-            <span>Р•С‰С‘</span>
+            <span>Ещё</span>
           </button>
         </nav>
 
@@ -244,13 +244,13 @@ export function OwnerShell({
               <div className="br-owner-mobile-sheet__handle" aria-hidden="true" />
               <div className="br-owner-mobile-sheet__header">
                 <div>
-                  <h2 id="br-owner-mobile-sheet-title">Р•С‰С‘</h2>
-                  <p>Р‘С‹СЃС‚СЂС‹Р№ РґРѕСЃС‚СѓРї Рє РѕСЃС‚Р°Р»СЊРЅС‹Рј СЂР°Р·РґРµР»Р°Рј РєР°Р±РёРЅРµС‚Р°.</p>
+                  <h2 id="br-owner-mobile-sheet-title">Ещё</h2>
+                  <p>Быстрый доступ к остальным разделам кабинета.</p>
                 </div>
                 <IconButton
                   type="button"
                   className="br-owner-mobile-sheet__close"
-                  aria-label="Р—Р°РєСЂС‹С‚СЊ"
+                  aria-label="Закрыть"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <AppIcon icon={X} aria-hidden="true" />
