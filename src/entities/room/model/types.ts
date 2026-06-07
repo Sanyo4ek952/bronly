@@ -1,7 +1,30 @@
+export type RoomKind = "property_room" | "standalone_room";
+
+export type RoomLocation = {
+  propertyId: string | null;
+  propertyType: string;
+  city: string;
+  address: string;
+  timezone: string;
+  shortDescription: string;
+  fullDescription: string;
+  phone: string;
+  whatsapp: string;
+  telegram: string;
+  checkInTime: string;
+  checkOutTime: string;
+  allowAgentInquiries: boolean;
+  allowOwnerContactSharing: boolean;
+};
+
 export type PublicRoom = {
   id: string;
+  ownerId?: string;
+  kind?: RoomKind;
   title: string;
   subtitle: string;
+  propertyTitle?: string;
+  propertySlug?: string | null;
   capacity: number;
   bedrooms: number;
   area: number;
@@ -17,6 +40,7 @@ export type PublicRoom = {
   displayPricePerNight?: number;
   totalPrice?: number;
   photos: RoomPhoto[];
+  location?: RoomLocation;
   nightlyPrices?: Array<{
     date: string;
     pricePerNight: number;
@@ -54,10 +78,14 @@ export type OwnerBusyRange = {
 
 export type OwnerRoomListItem = {
   id: string;
-  propertyId: string;
+  ownerId: string;
+  kind: RoomKind;
+  propertyId: string | null;
   slug: string;
   title: string;
   subtitle: string;
+  propertyTitle: string;
+  propertySlug: string | null;
   capacity: number;
   bedrooms: number;
   area: number;
@@ -67,6 +95,7 @@ export type OwnerRoomListItem = {
   amenities: string[];
   seasonalPrices: OwnerSeasonalPrice[];
   busyRanges: OwnerBusyRange[];
+  location: RoomLocation;
 };
 
 export type OwnerRoomDetail = OwnerRoomListItem;

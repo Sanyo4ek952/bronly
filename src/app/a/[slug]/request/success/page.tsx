@@ -31,7 +31,7 @@ export default async function AgentRequestSuccessPage({ params, searchParams }: 
     const redirectQuery = new URLSearchParams();
 
     for (const [key, value] of Object.entries(query)) {
-      if (typeof value === "string") {
+      if (typeof value === "string" && value) {
         redirectQuery.set(key, value);
       }
     }
@@ -50,7 +50,7 @@ export default async function AgentRequestSuccessPage({ params, searchParams }: 
           <p>{unavailable.description}</p>
           <div className="br-request-success__actions">
             <ButtonLink href="/" fullWidth>
-              РќР° РіР»Р°РІРЅСѓСЋ
+              На главную
             </ButtonLink>
           </div>
         </Panel>
@@ -58,9 +58,18 @@ export default async function AgentRequestSuccessPage({ params, searchParams }: 
     );
   }
 
-  const selectedSection = pageData.properties.find((property) => property.property.slug === propertySlug) ?? pageData.properties[0];
-  const selectedRoom = selectedSection?.rooms.find((room) => room.id === roomId) ?? null;
-  const roomSummary = selectedSection && selectedRoom ? `${selectedSection.property.shortTitle} - ${selectedRoom.title}` : "РІС‹Р±СЂР°РЅРЅС‹Р№ РЅРѕРјРµСЂ";
+  const selectedSection = propertySlug
+    ? pageData.properties.find((property) => property.property.slug === propertySlug) ?? null
+    : null;
+  const selectedRoom =
+    pageData.standaloneRooms.find((room) => room.id === roomId) ??
+    selectedSection?.rooms.find((room) => room.id === roomId) ??
+    null;
+  const roomSummary = selectedRoom
+    ? selectedSection
+      ? `${selectedSection.property.shortTitle} - ${selectedRoom.title}`
+      : selectedRoom.title
+    : "Выбранный номер";
 
   return (
     <main className="br-auth-page">
@@ -68,18 +77,18 @@ export default async function AgentRequestSuccessPage({ params, searchParams }: 
         <div className="br-request-success__icon" aria-hidden="true">
           <AppIcon icon={CircleCheckBig} />
         </div>
-        <h1>Р—Р°СЏРІРєР° РѕС‚РїСЂР°РІР»РµРЅР°</h1>
+        <h1>Заявка отправлена</h1>
         <p>
-          Р—Р°СЏРІРєР° РЅР° {roomSummary} РѕС‚РїСЂР°РІР»РµРЅР°. РђРіРµРЅС‚ {pageData.agent.displayName} РїРѕР»СѓС‡РёР» РІР°С€ Р·Р°РїСЂРѕСЃ РЅР° РїСЂРѕР¶РёРІР°РЅРёРµ Рё РїСЂРё
-          РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё РїРµСЂРµРґР°СЃС‚ РµРіРѕ РІР»Р°РґРµР»СЊС†Сѓ, С‡С‚РѕР±С‹ СѓС‚РѕС‡РЅРёС‚СЊ РґРѕСЃС‚СѓРїРЅРѕСЃС‚СЊ.
-          {pageData.agent.phone ? ` Р РµРєРѕРјРµРЅРґСѓРµРј СЃРѕС…СЂР°РЅРёС‚СЊ РЅРѕРјРµСЂ ${pageData.agent.phone}.` : ""}
+          Заявка на {roomSummary} отправлена. Агент {pageData.agent.displayName} получит ваш запрос на проживание и при
+          необходимости передаст его владельцу, чтобы уточнить доступность.
+          {pageData.agent.phone ? ` Рекомендуем сохранить номер ${pageData.agent.phone}.` : ""}
         </p>
         <div className="br-request-success__actions">
           <ButtonLink href={`/a/${pageData.agent.publicId}`} fullWidth>
-            Р’РµСЂРЅСѓС‚СЊСЃСЏ Рє РІРёС‚СЂРёРЅРµ
+            Вернуться к витрине
           </ButtonLink>
           <Link href="/" className="br-button br-button--secondary br-button--full">
-            РќР° РіР»Р°РІРЅСѓСЋ
+            На главную
           </Link>
         </div>
       </Panel>

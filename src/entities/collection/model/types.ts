@@ -84,6 +84,11 @@ export type PublicCollectionSection = {
   sourceKinds: Array<"property" | "room">;
 };
 
+export type PublicCollectionStandaloneRoomItem = {
+  room: import("@/entities/room").PublicRoom;
+  sourceKinds: Array<"property" | "room">;
+};
+
 export type PublicCollectionPageData = {
   collection: {
     id: string;
@@ -94,6 +99,7 @@ export type PublicCollectionPageData = {
   } | null;
   contact: PublicCollectionContact | null;
   sections: PublicCollectionSection[];
+  standaloneRooms: PublicCollectionStandaloneRoomItem[];
   filters: import("@/entities/room").PublicStayFilters;
   publicUnavailableReason: PublicUnavailableReason | null;
   publicWarningText: string | null;

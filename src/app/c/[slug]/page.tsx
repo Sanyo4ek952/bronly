@@ -53,8 +53,13 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
 
   await recordPublicCollectionOpen(slug);
 
-  const { collection, contact, sections, filters, publicWarningText } = pageData;
+  const { collection, contact, sections, standaloneRooms, filters, publicWarningText } = pageData;
   const heroPhoto = sections[0]?.property.photos[0];
+  const firstRequestHref = sections[0]
+    ? `/c/${collection.slug}/request?propertySlug=${encodeURIComponent(sections[0].property.slug)}`
+    : standaloneRooms[0]
+      ? `/c/${collection.slug}/request?roomId=${encodeURIComponent(standaloneRooms[0].room.id)}`
+      : `/c/${collection.slug}`;
 
   return (
     <main className="br-page">
@@ -65,15 +70,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
             <a href="#collection-rooms">Номера и цены</a>
             <a href="#collection-contact">Контакт</a>
           </nav>
-          <ButtonLink
-            href={
-              sections[0]
-                ? `/c/${collection.slug}/request?propertySlug=${encodeURIComponent(sections[0].property.slug)}`
-                : `/c/${collection.slug}`
-            }
-          >
-            Оставить заявку
-          </ButtonLink>
+          <ButtonLink href={firstRequestHref}>Оставить заявку</ButtonLink>
         </header>
 
         <section className="br-public-hero br-card">
@@ -185,7 +182,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
             </div>
           ) : null}
 
-          {sections.length ? (
+          {sections.length || standaloneRooms.length ? (
             <div className="br-owner-stack" style={{ marginTop: 24 }}>
               {sections.map((section) => (
                 <article key={section.property.id} className="br-card br-collection-public-section">
@@ -210,6 +207,25 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
                   />
                 </article>
               ))}
+
+              {standaloneRooms.length ? (
+                <article className="br-card br-collection-public-section">
+                  <div className="br-dashboard-block__header">
+                    <div>
+                      <h3>Отдельные номера</h3>
+                      <p>Самостоятельные варианты размещения без привязки к объекту.</p>
+                    </div>
+                    <span className="br-collection-public-badge">Номера в коллекции</span>
+                  </div>
+
+                  <PublicRoomBrowser
+                    publicBaseHref={`/c/${collection.slug}`}
+                    rooms={standaloneRooms.map((item) => item.room)}
+                    filters={filters}
+                    showFilter={false}
+                  />
+                </article>
+              ) : null}
             </div>
           ) : (
             <section className="br-dashboard-block br-card" style={{ marginTop: 24 }}>

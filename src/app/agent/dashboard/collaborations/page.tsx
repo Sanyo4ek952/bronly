@@ -20,7 +20,7 @@ function getMessage(success: string, error: string) {
   }
 
   if (error === "not_allowed") {
-    return "Можно задавать надбавку только для своих комнат или для комнат по активному сотрудничеству.";
+    return "Надбавку можно задавать только для своих номеров или для номеров по активному сотрудничеству.";
   }
 
   if (error === "validation") {
@@ -58,7 +58,7 @@ export default async function AgentCollaborationsPage({ searchParams }: AgentCol
         <div className="br-dashboard-block__header">
           <div>
             <h2>Связи с владельцами</h2>
-            <p>Здесь видны отправленные предложения, активные сотрудничества и надбавка агента по доступным комнатам.</p>
+            <p>Здесь видны отправленные предложения, активные сотрудничества и надбавка агента по доступным номерам.</p>
           </div>
         </div>
 
@@ -72,10 +72,11 @@ export default async function AgentCollaborationsPage({ searchParams }: AgentCol
       <div className="br-requests-list">
         {collaborations.length ? (
           collaborations.map((item) => (
-            <article key={item.id} className="br-request-item" style={{ alignItems: "stretch" }}>
+            <article key={`${item.targetType}-${item.id}`} className="br-request-item" style={{ alignItems: "stretch" }}>
               <div className="br-request-item__avatar">{item.ownerName[0] ?? "В"}</div>
               <div className="br-request-item__body" style={{ width: "100%" }}>
-                <strong>{item.propertyTitle}</strong>
+                <strong>{item.title}</strong>
+                <span>{item.targetType === "property" ? "Объект владельца" : item.subtitle}</span>
                 <span>{item.ownerName}</span>
                 <span>{item.terms || "Сообщение не добавлено"}</span>
                 <span className="br-request-item__status">{item.statusLabel}</span>
@@ -93,7 +94,7 @@ export default async function AgentCollaborationsPage({ searchParams }: AgentCol
                           <div className="br-owner-editor__header">
                             <div>
                               <strong>{room.title}</strong>
-                              <p>{room.subtitle || "Комната доступна в агентской витрине."}</p>
+                              <p>{room.subtitle || "Номер доступен в агентской витрине."}</p>
                             </div>
                           </div>
                           <div className="br-property-form__grid">
@@ -128,7 +129,7 @@ export default async function AgentCollaborationsPage({ searchParams }: AgentCol
                       ))}
                     </div>
                   ) : (
-                    <p style={{ marginTop: 12 }}>В активном сотрудничестве пока нет доступных комнат для настройки надбавки.</p>
+                    <p style={{ marginTop: 12 }}>В активном сотрудничестве пока нет доступных номеров для настройки надбавки.</p>
                   )
                 ) : null}
               </div>

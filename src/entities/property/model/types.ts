@@ -40,6 +40,7 @@ export type PublicPropertyPageData = {
     };
     rooms: PublicRoom[];
   }>;
+  standaloneRooms: PublicRoom[];
   filters: PublicStayFilters;
   publicUnavailableReason: PublicUnavailableReason | null;
   publicWarningText: string | null;
@@ -134,6 +135,7 @@ export type OwnerDashboardSummary = {
 };
 
 export type OwnerPropertyListItem = {
+  kind?: "property";
   id: string;
   ownerPublicSlug: string | null;
   slug: string;
@@ -151,6 +153,27 @@ export type OwnerPropertyListItem = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type OwnerStandaloneRoomListItem = {
+  kind: "standalone_room";
+  id: string;
+  ownerPublicSlug: string | null;
+  slug: string;
+  title: string;
+  subtitle: string;
+  propertyType: string;
+  city: string;
+  address: string;
+  timezone: string;
+  isActive: boolean;
+  photos: PropertyPhoto[];
+  coverImageUrl: string;
+  pricePerNight: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OwnerInventoryListItem = OwnerPropertyListItem | OwnerStandaloneRoomListItem;
 
 export type OwnerPropertyDetail = {
   id: string;

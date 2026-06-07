@@ -4,7 +4,7 @@ import { Button, Input, Select, Textarea } from "@/shared/ui";
 
 type GuestRequestFormProps = {
   publicSlug?: string;
-  propertySlug: string;
+  propertySlug?: string;
   rooms: PublicRoom[];
   defaultRoomId: string;
   filters: PublicStayFilters;
@@ -26,7 +26,7 @@ export function GuestRequestForm({
   return (
     <form className="br-request-form" action={action}>
       {publicSlug ? <input type="hidden" name="publicSlug" value={publicSlug} /> : null}
-      <input type="hidden" name="propertySlug" value={propertySlug} />
+      {propertySlug ? <input type="hidden" name="propertySlug" value={propertySlug} /> : null}
       {hiddenFields.map((field) => (
         <input key={field.name} type="hidden" name={field.name} value={field.value} />
       ))}

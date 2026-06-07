@@ -17,6 +17,7 @@ import type {
 
 export function mapOwnerRoomRow(
   row: SupabaseRoomRow,
+  property: { title: string; slug: string; propertyType: string; city: string; address: string; timezone: string },
   photos: RoomPhoto[],
   amenities: string[],
   seasonalPrices: OwnerSeasonalPrice[],
@@ -24,10 +25,14 @@ export function mapOwnerRoomRow(
 ): OwnerRoomDetail {
   return {
     id: row.id,
+    ownerId: row.owner_id,
+    kind: row.room_kind,
     propertyId: row.property_id,
     slug: row.slug,
     title: row.title,
     subtitle: row.subtitle ?? "",
+    propertyTitle: property.title,
+    propertySlug: property.slug,
     capacity: row.capacity,
     bedrooms: row.bedrooms,
     area: row.area,
@@ -37,6 +42,22 @@ export function mapOwnerRoomRow(
     amenities,
     seasonalPrices,
     busyRanges,
+    location: {
+      propertyId: row.property_id,
+      propertyType: row.property_type ?? property.propertyType,
+      city: row.city ?? property.city,
+      address: row.address ?? property.address,
+      timezone: row.timezone ?? property.timezone,
+      shortDescription: row.short_description ?? "",
+      fullDescription: row.full_description ?? "",
+      phone: row.phone ?? "",
+      whatsapp: row.whatsapp ?? "",
+      telegram: row.telegram ?? "",
+      checkInTime: row.check_in_time ?? "",
+      checkOutTime: row.check_out_time ?? "",
+      allowAgentInquiries: row.allow_agent_inquiries,
+      allowOwnerContactSharing: row.allow_owner_contact_sharing,
+    },
   };
 }
 
@@ -168,6 +189,14 @@ export async function getOwnerPropertyDetail(propertyIdOrSlug: string): Promise<
     rooms: safeRoomRows.map((room) =>
       mapOwnerRoomRow(
         room,
+        {
+          title: propertyRow.title,
+          slug: propertyRow.slug,
+          propertyType: propertyRow.property_type,
+          city: propertyRow.city,
+          address: propertyRow.address,
+          timezone: propertyRow.timezone,
+        },
         roomPhotoMap.get(room.id) ?? [],
         amenityMap.get(room.id) ?? [],
         seasonalMap.get(room.id) ?? [],

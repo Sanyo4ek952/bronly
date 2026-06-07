@@ -11,13 +11,27 @@ function getString(formData: FormData, key: string) {
 }
 
 function buildRequestPath(agentPublicId: string, state: Record<string, string>) {
-  const params = new URLSearchParams(state);
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(state)) {
+    if (value) {
+      params.set(key, value);
+    }
+  }
+
   const query = params.toString();
   return `/a/${agentPublicId}/request${query ? `?${query}` : ""}`;
 }
 
 function buildSuccessPath(agentPublicId: string, state: Record<string, string>) {
-  const params = new URLSearchParams(state);
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(state)) {
+    if (value) {
+      params.set(key, value);
+    }
+  }
+
   const query = params.toString();
   return `/a/${agentPublicId}/request/success${query ? `?${query}` : ""}`;
 }
@@ -42,18 +56,18 @@ export async function submitAgentGuestRequestAction(formData: FormData) {
     rooms: String(roomsCount),
   };
 
-  if (!guestName || !guestPhone || !checkIn || !checkOut || !roomId || !propertySlug || !agentPublicId) {
+  if (!guestName || !guestPhone || !checkIn || !checkOut || !roomId || !agentPublicId) {
     redirect(buildRequestPath(agentPublicId || "agent", { ...baseState, error: "validation" }));
   }
 
-  const requestContext = await getAgentRequestContext(agentPublicId, propertySlug, roomId);
+  const requestContext = await getAgentRequestContext(agentPublicId, propertySlug || undefined, roomId);
 
   if (!requestContext) {
     redirect(buildRequestPath(agentPublicId, { ...baseState, error: "room" }));
   }
 
   const result = await createGuestRequest({
-    propertySlug,
+    propertySlug: requestContext.propertySlug ?? undefined,
     roomId,
     guestName,
     guestPhone,

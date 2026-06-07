@@ -9,8 +9,17 @@ function getProposalId(formData: FormData) {
   return typeof value === "string" ? value : "";
 }
 
-async function updateProposal(proposalId: string, decision: "active" | "declined") {
-  const result = await reviewAgentProposal({ proposalId, decision });
+function getTargetType(formData: FormData) {
+  const value = formData.get("targetType");
+  return value === "standalone_room" ? "standalone_room" : "property";
+}
+
+async function updateProposal(formData: FormData, decision: "active" | "declined") {
+  const result = await reviewAgentProposal({
+    proposalId: getProposalId(formData),
+    targetType: getTargetType(formData),
+    decision,
+  });
 
   if (result.ok) {
     revalidatePath("/dashboard");
@@ -22,9 +31,9 @@ async function updateProposal(proposalId: string, decision: "active" | "declined
 }
 
 export async function acceptAgentProposalAction(formData: FormData) {
-  return updateProposal(getProposalId(formData), "active");
+  return updateProposal(formData, "active");
 }
 
 export async function rejectAgentProposalAction(formData: FormData) {
-  return updateProposal(getProposalId(formData), "declined");
+  return updateProposal(formData, "declined");
 }

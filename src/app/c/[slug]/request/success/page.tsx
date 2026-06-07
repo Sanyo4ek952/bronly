@@ -44,9 +44,16 @@ export default async function CollectionRequestSuccessPage({ params, searchParam
     );
   }
 
-  const selectedSection = pageData.sections.find((section) => section.property.slug === propertySlug) ?? pageData.sections[0];
-  const selectedRoom = selectedSection?.rooms.find((room) => room.id === roomId) ?? null;
-  const roomSummary = selectedSection && selectedRoom ? `${selectedSection.property.shortTitle} - ${selectedRoom.title}` : "выбранный номер";
+  const selectedSection = propertySlug ? pageData.sections.find((section) => section.property.slug === propertySlug) ?? null : null;
+  const selectedRoom =
+    pageData.standaloneRooms.find((item) => item.room.id === roomId)?.room ??
+    selectedSection?.rooms.find((room) => room.id === roomId) ??
+    null;
+  const roomSummary = selectedRoom
+    ? selectedSection
+      ? `${selectedSection.property.shortTitle} - ${selectedRoom.title}`
+      : selectedRoom.title
+    : "выбранный номер";
   const isAgentCollection = pageData.collection.creatorRole === "agent";
 
   return (

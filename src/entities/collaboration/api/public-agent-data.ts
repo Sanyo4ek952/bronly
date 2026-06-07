@@ -42,6 +42,14 @@ function getAgentPublicUnavailableReason(input: {
   return null;
 }
 
+function getSingleRow<T>(value: T | T[] | null): T | null {
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value;
+}
+
 function mapRoomRow(
   room: SupabaseRoomRow,
   photos: RoomPhoto[],
@@ -51,8 +59,11 @@ function mapRoomRow(
 ): PublicRoom {
   return {
     id: room.id,
+    ownerId: room.owner_id,
+    kind: room.room_kind,
     title: room.title,
     subtitle: room.subtitle ?? "",
+    propertyTitle: room.property_id ? undefined : room.property_type ?? "Отдельный номер",
     capacity: room.capacity,
     bedrooms: room.bedrooms,
     area: room.area,
@@ -63,6 +74,22 @@ function mapRoomRow(
     seasonalPrices,
     busyRanges,
     agentMarkupPercent,
+    location: {
+      propertyId: room.property_id,
+      propertyType: room.property_type ?? "",
+      city: room.city ?? "",
+      address: room.address ?? "",
+      timezone: room.timezone ?? "",
+      shortDescription: room.short_description ?? "",
+      fullDescription: room.full_description ?? "",
+      phone: room.phone ?? "",
+      whatsapp: room.whatsapp ?? "",
+      telegram: room.telegram ?? "",
+      checkInTime: room.check_in_time ?? "",
+      checkOutTime: room.check_out_time ?? "",
+      allowAgentInquiries: room.allow_agent_inquiries,
+      allowOwnerContactSharing: room.allow_owner_contact_sharing,
+    },
   };
 }
 
@@ -160,6 +187,7 @@ export const getPublicAgentPageData = cache(
         return {
           agent: null,
           properties: [],
+          standaloneRooms: [],
           filters,
           publicUnavailableReason,
           publicWarningText: null,
@@ -167,29 +195,33 @@ export const getPublicAgentPageData = cache(
         };
       }
 
-      const [{ data: linkedRows }, { data: ownPropertyRows }] = await Promise.all([
+      const [
+        { data: linkedPropertyRows },
+        { data: linkedStandaloneRoomRows },
+        { data: ownPropertyRows },
+        { data: ownStandaloneRoomRows },
+      ] = await Promise.all([
+        supabase.from("agent_property_links").select("property_id").eq("agent_id", agent.id).eq("status", "active"),
+        supabase.from("agent_room_links").select("room_id").eq("agent_id", agent.id).eq("status", "active"),
+        supabase.from("properties").select("*").eq("owner_id", agent.id).eq("published", true).eq("is_frozen", false),
         supabase
-          .from("agent_property_links")
-          .select("property_id")
-          .eq("agent_id", agent.id)
-          .eq("status", "active"),
-        supabase
-          .from("properties")
+          .from("rooms")
           .select("*")
           .eq("owner_id", agent.id)
-          .eq("published", true)
-          .eq("is_frozen", false),
+          .eq("room_kind", "standalone_room")
+          .eq("is_active", true),
       ]);
 
-      const linkedPropertyIds = (linkedRows ?? []).map((row) => row.property_id as string);
-      const linkedPropertiesResult = linkedPropertyIds.length
-        ? await supabase
-            .from("properties")
-            .select("*")
-            .in("id", linkedPropertyIds)
-            .eq("published", true)
-            .eq("is_frozen", false)
-        : { data: [] };
+      const linkedPropertyIds = (linkedPropertyRows ?? []).map((row) => row.property_id as string);
+      const linkedStandaloneRoomIds = (linkedStandaloneRoomRows ?? []).map((row) => row.room_id as string);
+      const [linkedPropertiesResult, linkedStandaloneRoomsResult] = await Promise.all([
+        linkedPropertyIds.length
+          ? supabase.from("properties").select("*").in("id", linkedPropertyIds).eq("published", true).eq("is_frozen", false)
+          : Promise.resolve({ data: [] }),
+        linkedStandaloneRoomIds.length
+          ? supabase.from("rooms").select("*").in("id", linkedStandaloneRoomIds).eq("room_kind", "standalone_room").eq("is_active", true)
+          : Promise.resolve({ data: [] }),
+      ]);
 
       const rawPropertyMap = new Map<string, SupabasePropertyRow>();
       for (const property of (ownPropertyRows ?? []) as SupabasePropertyRow[]) {
@@ -199,17 +231,32 @@ export const getPublicAgentPageData = cache(
         rawPropertyMap.set(property.id, property);
       }
 
+      const rawStandaloneRoomMap = new Map<string, SupabaseRoomRow>();
+      for (const room of (ownStandaloneRoomRows ?? []) as SupabaseRoomRow[]) {
+        rawStandaloneRoomMap.set(room.id, room);
+      }
+      for (const room of (linkedStandaloneRoomsResult.data ?? []) as SupabaseRoomRow[]) {
+        rawStandaloneRoomMap.set(room.id, room);
+      }
+
+      const ownerIds = Array.from(
+        new Set([
+          ...Array.from(rawPropertyMap.values()).map((property) => property.owner_id),
+          ...Array.from(rawStandaloneRoomMap.values()).map((room) => room.owner_id),
+        ]),
+      );
       const subscriptionStates = await Promise.all(
-        Array.from(new Set(Array.from(rawPropertyMap.values()).map((property) => property.owner_id))).map(
-          async (ownerId) => [ownerId, await getSubscriptionRuntimeState(ownerId, "owner")] as const,
-        ),
+        ownerIds.map(async (ownerId) => [ownerId, await getSubscriptionRuntimeState(ownerId, "owner")] as const),
       );
       const ownerSubscriptionMap = new Map(subscriptionStates);
       const safeProperties = Array.from(rawPropertyMap.values()).filter(
         (property) => ownerSubscriptionMap.get(property.owner_id)?.isPublicAllowed,
       );
+      const safeStandaloneRooms = Array.from(rawStandaloneRoomMap.values()).filter(
+        (room) => ownerSubscriptionMap.get(room.owner_id)?.isPublicAllowed,
+      );
 
-      if (!safeProperties.length) {
+      if (!safeProperties.length && !safeStandaloneRooms.length) {
         return {
           agent: {
             id: agent.id,
@@ -220,6 +267,7 @@ export const getPublicAgentPageData = cache(
             telegram: agent.telegram ?? "",
           },
           properties: [],
+          standaloneRooms: [],
           filters,
           publicUnavailableReason: null,
           publicWarningText: agentSubscription.publicWarningText,
@@ -228,22 +276,22 @@ export const getPublicAgentPageData = cache(
       }
 
       const propertyIds = safeProperties.map((property) => property.id);
-      const [{ data: roomRows }, { data: propertyPhotoRows }] = await Promise.all([
-        supabase
-          .from("rooms")
-          .select("*")
-          .in("property_id", propertyIds)
-          .eq("is_active", true)
-          .order("title", { ascending: true }),
-        supabase
-          .from("property_photos")
-          .select("*")
-          .in("property_id", propertyIds)
-          .order("sort_order", { ascending: true })
-          .order("created_at", { ascending: true }),
+      const allRoomIds = safeStandaloneRooms.map((room) => room.id);
+      const [{ data: propertyRoomRows }, { data: propertyPhotoRows }] = await Promise.all([
+        propertyIds.length
+          ? supabase.from("rooms").select("*").in("property_id", propertyIds).eq("is_active", true).order("title", { ascending: true })
+          : Promise.resolve({ data: [] }),
+        propertyIds.length
+          ? supabase
+              .from("property_photos")
+              .select("*")
+              .in("property_id", propertyIds)
+              .order("sort_order", { ascending: true })
+              .order("created_at", { ascending: true })
+          : Promise.resolve({ data: [] }),
       ]);
-      const safeRoomRows = (roomRows ?? []) as SupabaseRoomRow[];
-      const roomIds = safeRoomRows.map((room) => room.id);
+      const safePropertyRoomRows = (propertyRoomRows ?? []) as SupabaseRoomRow[];
+      const roomIds = [...safePropertyRoomRows.map((room) => room.id), ...allRoomIds];
 
       const [seasonalResult, busyResult, markupResult, roomPhotosResult] = roomIds.length
         ? await Promise.all([
@@ -288,7 +336,11 @@ export const getPublicAgentPageData = cache(
       const roomPhotoMap = buildRoomPhotoMap((roomPhotosResult.data ?? []) as SupabaseRoomPhotoRow[]);
       const roomsByProperty = new Map<string, PublicRoom[]>();
 
-      for (const room of safeRoomRows) {
+      for (const room of safePropertyRoomRows) {
+        if (!room.property_id) {
+          continue;
+        }
+
         const publicRoom = buildPublicRoomQuote(
           mapRoomRow(
             room,
@@ -321,6 +373,21 @@ export const getPublicAgentPageData = cache(
         }))
         .filter((item) => item.rooms.length > 0);
 
+      const standaloneRooms = safeStandaloneRooms
+        .map((room) =>
+          buildPublicRoomQuote(
+            mapRoomRow(
+              room,
+              roomPhotoMap.get(room.id) ?? [],
+              seasonalMap.get(room.id) ?? [],
+              busyMap.get(room.id) ?? [],
+              markupMap.get(room.id) ?? 0,
+            ),
+            filters,
+          ),
+        )
+        .sort((a, b) => Number(Boolean(b.isAvailableForFilter)) - Number(Boolean(a.isAvailableForFilter)));
+
       return {
         agent: {
           id: agent.id,
@@ -331,6 +398,7 @@ export const getPublicAgentPageData = cache(
           telegram: agent.telegram ?? "",
         },
         properties,
+        standaloneRooms,
         filters,
         publicUnavailableReason: null,
         publicWarningText: agentSubscription.publicWarningText,
@@ -342,10 +410,26 @@ export const getPublicAgentPageData = cache(
   },
 );
 
-export async function getAgentRequestContext(agentIdentifier: string, propertySlug: string, roomId: string) {
+export async function getAgentRequestContext(agentIdentifier: string, propertySlug: string | undefined, roomId: string) {
   const pageData = await getPublicAgentPageData(agentIdentifier);
 
   if (!pageData?.agent) {
+    return null;
+  }
+
+  const standaloneRoom = pageData.standaloneRooms.find((room) => room.id === roomId);
+
+  if (standaloneRoom) {
+    return {
+      agentId: pageData.agent.id,
+      agentPublicId: pageData.agent.publicId,
+      propertySlug: null,
+      roomId: standaloneRoom.id,
+      agentMarkupPercent: standaloneRoom.agentMarkupPercent ?? 0,
+    };
+  }
+
+  if (!propertySlug) {
     return null;
   }
 

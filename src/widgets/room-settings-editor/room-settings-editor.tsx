@@ -14,12 +14,15 @@ import type { OwnerRoomDetail } from "@/entities/room/model/types";
 import { Button, Input, Textarea } from "@/shared/ui";
 
 type RoomSettingsEditorProps = {
-  propertyId: string;
+  propertyId?: string | null;
   redirectTo: string;
   room: OwnerRoomDetail;
 };
 
 export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSettingsEditorProps) {
+  const isStandalone = room.kind === "standalone_room";
+  const location = room.location;
+
   return (
     <article className="br-owner-editor">
       <div className="br-owner-editor__header">
@@ -55,7 +58,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
       </div>
 
       <form action={updateOwnerRoom} className="br-owner-stack">
-        <input type="hidden" name="propertyId" value={propertyId} />
+        <input type="hidden" name="propertyId" value={propertyId ?? ""} />
         <input type="hidden" name="roomId" value={room.id} />
         <input type="hidden" name="redirectTo" value={redirectTo} />
         <div className="br-property-form__grid">
@@ -73,9 +76,55 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
             label="Базовая цена за ночь"
             defaultValue={String(room.pricePerNight)}
           />
+          {isStandalone ? (
+            <>
+              <Input id={`room-type-${room.id}`} name="propertyType" label="Тип размещения" defaultValue={location.propertyType} />
+              <Input id={`room-city-${room.id}`} name="city" label="Город" defaultValue={location.city} />
+              <Input id={`room-timezone-${room.id}`} name="timezone" label="Часовой пояс" defaultValue={location.timezone} />
+              <Input
+                id={`room-address-${room.id}`}
+                name="address"
+                label="Адрес"
+                defaultValue={location.address}
+                wrapperClassName="br-form-field--span-2"
+              />
+            </>
+          ) : null}
         </div>
 
         <Textarea id={`room-amenities-${room.id}`} name="amenities" label="Удобства" defaultValue={room.amenities.join("\n")} />
+
+        {isStandalone ? (
+          <>
+            <Textarea id={`room-short-description-${room.id}`} name="shortDescription" label="Краткое описание" defaultValue={location.shortDescription} />
+            <Textarea
+              id={`room-full-description-${room.id}`}
+              name="fullDescription"
+              label="Подробное описание"
+              defaultValue={location.fullDescription}
+              className="br-textarea--lg"
+            />
+            <div className="br-inline-fields">
+              <Input id={`room-phone-${room.id}`} name="phone" label="Телефон" defaultValue={location.phone} />
+              <Input id={`room-whatsapp-${room.id}`} name="whatsapp" label="WhatsApp" defaultValue={location.whatsapp} />
+              <Input id={`room-telegram-${room.id}`} name="telegram" label="Telegram" defaultValue={location.telegram} />
+            </div>
+            <div className="br-inline-fields">
+              <Input id={`room-check-in-${room.id}`} name="checkInTime" label="Заезд" defaultValue={location.checkInTime} />
+              <Input id={`room-check-out-${room.id}`} name="checkOutTime" label="Выезд" defaultValue={location.checkOutTime} />
+            </div>
+            <div className="br-toggle-list">
+              <label className="br-toggle">
+                <span>Готов сотрудничать с агентами</span>
+                <input type="checkbox" name="allowAgentInquiries" defaultChecked={location.allowAgentInquiries} />
+              </label>
+              <label className="br-toggle">
+                <span>Показывать контакты владельца агенту</span>
+                <input type="checkbox" name="allowOwnerContactSharing" defaultChecked={location.allowOwnerContactSharing} />
+              </label>
+            </div>
+          </>
+        ) : null}
 
         <label className="br-toggle">
           <span>Номер активен</span>
@@ -94,7 +143,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
         </div>
 
         <form action={uploadRoomPhoto} className="br-owner-photo-upload" encType="multipart/form-data">
-          <input type="hidden" name="propertyId" value={propertyId} />
+          <input type="hidden" name="propertyId" value={propertyId ?? ""} />
           <input type="hidden" name="roomId" value={room.id} />
           <input type="hidden" name="redirectTo" value={redirectTo} />
           <Input
@@ -129,7 +178,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
                   </div>
                   <div className="br-photo-card__actions">
                     <form action={setRoomPhotoPrimary}>
-                      <input type="hidden" name="propertyId" value={propertyId} />
+                      <input type="hidden" name="propertyId" value={propertyId ?? ""} />
                       <input type="hidden" name="roomId" value={room.id} />
                       <input type="hidden" name="photoId" value={photo.id} />
                       <input type="hidden" name="redirectTo" value={redirectTo} />
@@ -138,7 +187,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
                       </Button>
                     </form>
                     <form action={deleteRoomPhoto}>
-                      <input type="hidden" name="propertyId" value={propertyId} />
+                      <input type="hidden" name="propertyId" value={propertyId ?? ""} />
                       <input type="hidden" name="roomId" value={room.id} />
                       <input type="hidden" name="photoId" value={photo.id} />
                       <input type="hidden" name="redirectTo" value={redirectTo} />
@@ -161,7 +210,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
         {room.seasonalPrices.length ? (
           room.seasonalPrices.map((seasonalPrice) => (
             <form key={seasonalPrice.id} action={updateRoomSeasonalPrice} className="br-owner-inline-form">
-              <input type="hidden" name="propertyId" value={propertyId} />
+              <input type="hidden" name="propertyId" value={propertyId ?? ""} />
               <input type="hidden" name="roomId" value={room.id} />
               <input type="hidden" name="seasonalPriceId" value={seasonalPrice.id} />
               <input type="hidden" name="redirectTo" value={redirectTo} />
@@ -193,7 +242,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
         )}
 
         <form action={createRoomSeasonalPrice} className="br-owner-inline-form">
-          <input type="hidden" name="propertyId" value={propertyId} />
+          <input type="hidden" name="propertyId" value={propertyId ?? ""} />
           <input type="hidden" name="roomId" value={room.id} />
           <input type="hidden" name="redirectTo" value={redirectTo} />
           <Input id={`season-start-new-${room.id}`} name="startsOn" type="date" label="С" />
@@ -208,7 +257,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
       </div>
 
       <form action={deleteOwnerRoom} className="br-owner-danger">
-        <input type="hidden" name="propertyId" value={propertyId} />
+        <input type="hidden" name="propertyId" value={propertyId ?? ""} />
         <input type="hidden" name="roomId" value={room.id} />
         <Input id={`room-delete-${room.id}`} name="confirmation" label="Введите DELETE для удаления номера" placeholder="DELETE" />
         <Button type="submit" variant="danger">

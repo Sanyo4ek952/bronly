@@ -23,12 +23,12 @@ function shouldOwnerSeeRequestAsNew(request: {
 function getSubscriptionWarningText(input: { status: string; graceEndsAt: string | null }) {
   if (input.status === "grace") {
     return input.graceEndsAt
-      ? `РџРѕРґРїРёСЃРєСѓ РЅСѓР¶РЅРѕ РїСЂРѕРґР»РёС‚СЊ РґРѕ ${formatDateLabel(input.graceEndsAt)}. Р”Рѕ СЌС‚РѕР№ РґР°С‚С‹ РїСѓР±Р»РёС‡РЅС‹Рµ СЃС‚СЂР°РЅРёС†С‹ Рё РЅРѕРІС‹Рµ Р·Р°СЏРІРєРё РµС‰Рµ РґРѕСЃС‚СѓРїРЅС‹.`
-      : "РџРѕРґРїРёСЃРєСѓ РЅСѓР¶РЅРѕ РїСЂРѕРґР»РёС‚СЊ. РџРѕРєР° grace period РЅРµ Р·Р°РєРѕРЅС‡РёР»СЃСЏ, РїСѓР±Р»РёС‡РЅС‹Рµ СЃС‚СЂР°РЅРёС†С‹ Рё РЅРѕРІС‹Рµ Р·Р°СЏРІРєРё РµС‰Рµ РґРѕСЃС‚СѓРїРЅС‹.";
+      ? `Подписку нужно продлить до ${formatDateLabel(input.graceEndsAt)}. До этой даты публичные страницы и новые заявки еще доступны.`
+      : "Подписку нужно продлить. Пока grace period не закончился, публичные страницы и новые заявки еще доступны.";
   }
 
   if (input.status === "expired") {
-    return "РџСѓР±Р»РёС‡РЅС‹Рµ СЃС‚СЂР°РЅРёС†С‹ Рё РЅРѕРІС‹Рµ Р·Р°СЏРІРєРё РІСЂРµРјРµРЅРЅРѕ РѕРіСЂР°РЅРёС‡РµРЅС‹ РґРѕ СЂСѓС‡РЅРѕРіРѕ РїСЂРѕРґР»РµРЅРёСЏ РїРѕРґРїРёСЃРєРё. РљР°Р±РёРЅРµС‚ РґРѕСЃС‚СѓРїРµРЅ РґР»СЏ РїСЂРѕСЃРјРѕС‚СЂР°, РЅРѕ РёР·РјРµРЅРµРЅРёСЏ РґР°РЅРЅС‹С… РѕСЃС‚Р°РЅРѕРІР»РµРЅС‹.";
+    return "Публичные страницы и новые заявки временно ограничены до ручного продления подписки.";
   }
 
   return null;
@@ -49,15 +49,15 @@ function getOnboardingStatus(state: OwnerOnboardingStep["state"]) {
 function getOnboardingStepText(stepId: OwnerOnboardingStep["id"]) {
   switch (stepId) {
     case "profile":
-      return "Укажите контакты и базовые данные кабинета для работы с объектами и заявками.";
+      return "Укажите контакты и базовые данные кабинета для работы с объектами, номерами и заявками.";
     case "property":
-      return "Добавьте первый объект размещения, чтобы подготовить витрину к показу гостям.";
+      return "Создайте первый объект или отдельный номер, чтобы подготовить витрину к показу гостям.";
     case "room":
-      return "Создайте номер и заполните основные данные, чтобы гость мог оставить заявку.";
+      return "Добавьте номер в объект или заполните данные отдельного номера, чтобы гость мог оставить заявку.";
     case "photos":
-      return "Загрузите фото объекта и номера, чтобы витрина выглядела понятно и привлекательно.";
+      return "Загрузите фотографии объекта или номера, чтобы витрина выглядела понятной и привлекательной.";
     case "public":
-      return "Проверьте персональную ссылку владельца и откройте страницу так, как её видит гость.";
+      return "Проверьте персональную ссылку владельца и откройте страницу так, как ее видит гость.";
     default:
       return "";
   }
@@ -78,29 +78,31 @@ function getStepState(isDone: boolean, isCurrent: boolean): OwnerOnboardingStep[
 function buildOwnerOnboarding(input: {
   profile: AuthProfile;
   publicUrl: string | null;
-  firstProperty: { id: string; roomCount: number; photoCount: number } | null;
+  firstPropertyId: string | null;
+  hasProperty: boolean;
+  hasStandaloneRoom: boolean;
+  hasRoom: boolean;
+  hasPhotos: boolean;
 }) {
   const hasProfile = Boolean(input.profile.displayName.trim() && input.profile.phone.trim());
-  const hasProperty = Boolean(input.firstProperty);
-  const hasRoom = Boolean(input.firstProperty?.roomCount);
-  const hasPhotos = Boolean(input.firstProperty?.photoCount);
+  const hasInventory = input.hasProperty || input.hasStandaloneRoom;
   const hasPublicUrl = Boolean(input.publicUrl);
 
   const currentStepId: OwnerOnboardingStep["id"] | null = !hasProfile
     ? "profile"
-    : !hasProperty
+    : !hasInventory
       ? "property"
-      : !hasRoom
+      : !input.hasRoom
         ? "room"
-        : !hasPhotos
+        : !input.hasPhotos
           ? "photos"
           : !hasPublicUrl
             ? "public"
             : null;
 
-  const propertyHref = input.firstProperty ? `/dashboard/properties/${input.firstProperty.id}` : "/dashboard/properties/new";
-  const roomHref = input.firstProperty ? `/dashboard/properties/${input.firstProperty.id}/rooms/new` : "/dashboard/properties/new";
-  const photosHref = input.firstProperty ? `/dashboard/properties/${input.firstProperty.id}#photos` : "/dashboard/properties/new";
+  const propertyHref = input.firstPropertyId ? `/dashboard/properties/${input.firstPropertyId}` : "/dashboard/properties";
+  const roomHref = input.firstPropertyId ? `/dashboard/properties/${input.firstPropertyId}/rooms/new` : "/dashboard/rooms/new";
+  const photosHref = input.firstPropertyId ? `/dashboard/properties/${input.firstPropertyId}` : "/dashboard/rooms";
 
   const steps: OwnerOnboardingStep[] = [
     {
@@ -114,19 +116,19 @@ function buildOwnerOnboarding(input: {
     },
     {
       id: "property",
-      title: "Создание объекта",
+      title: "Первый вариант размещения",
       text: getOnboardingStepText("property"),
-      state: getStepState(hasProperty, currentStepId === "property"),
-      status: getOnboardingStatus(getStepState(hasProperty, currentStepId === "property")),
-      href: propertyHref,
+      state: getStepState(hasInventory, currentStepId === "property"),
+      status: getOnboardingStatus(getStepState(hasInventory, currentStepId === "property")),
+      href: "/dashboard/properties",
       ctaLabel: "Открыть шаг",
     },
     {
       id: "room",
       title: "Первый номер",
       text: getOnboardingStepText("room"),
-      state: getStepState(hasRoom, currentStepId === "room"),
-      status: getOnboardingStatus(getStepState(hasRoom, currentStepId === "room")),
+      state: getStepState(input.hasRoom, currentStepId === "room"),
+      status: getOnboardingStatus(getStepState(input.hasRoom, currentStepId === "room")),
       href: roomHref,
       ctaLabel: "Открыть шаг",
     },
@@ -134,8 +136,8 @@ function buildOwnerOnboarding(input: {
       id: "photos",
       title: "Фотографии",
       text: getOnboardingStepText("photos"),
-      state: getStepState(hasPhotos, currentStepId === "photos"),
-      status: getOnboardingStatus(getStepState(hasPhotos, currentStepId === "photos")),
+      state: getStepState(input.hasPhotos, currentStepId === "photos"),
+      status: getOnboardingStatus(getStepState(input.hasPhotos, currentStepId === "photos")),
       href: photosHref,
       ctaLabel: "Открыть шаг",
     },
@@ -145,7 +147,7 @@ function buildOwnerOnboarding(input: {
       text: getOnboardingStepText("public"),
       state: getStepState(hasPublicUrl, currentStepId === "public"),
       status: getOnboardingStatus(getStepState(hasPublicUrl, currentStepId === "public")),
-      href: input.publicUrl ?? "/dashboard/settings",
+      href: input.publicUrl ?? propertyHref,
       ctaLabel: "Открыть шаг",
     },
   ];
@@ -171,72 +173,48 @@ export const getOwnerDashboardSummary = cache(async (): Promise<OwnerDashboardSu
     }
 
     const supabase = await createSupabaseServerClient();
-    const { data: propertyRows } = await supabase
-      .from("properties")
-      .select("id")
-      .eq("owner_id", profile.id)
-      .order("created_at", { ascending: true });
+    const [propertyRowsResult, roomRowsResult, newRequestRowsResult, propertyPhotoRowsResult, roomPhotoRowsResult] = await Promise.all([
+      supabase.from("properties").select("id").eq("owner_id", profile.id).order("created_at", { ascending: true }),
+      supabase
+        .from("rooms")
+        .select("id, property_id, room_kind, is_active")
+        .eq("owner_id", profile.id)
+        .order("created_at", { ascending: true }),
+      supabase.from("guest_requests").select("owner_id, agent_id, source, status").eq("owner_id", profile.id).eq("status", "new"),
+      supabase.from("property_photos").select("property_id"),
+      supabase.from("room_photos").select("room_id"),
+    ]);
 
+    const propertyRows = (propertyRowsResult.data ?? []) as Array<{ id: string }>;
+    const roomRows = (roomRowsResult.data ?? []) as Array<{
+      id: string;
+      property_id: string | null;
+      room_kind: "property_room" | "standalone_room";
+      is_active: boolean;
+    }>;
+    const propertyIds = propertyRows.map((row) => row.id);
+    const roomIds = roomRows.map((row) => row.id);
+    const propertyPhotoRows = (propertyPhotoRowsResult.data ?? []) as Array<{ property_id: string }>;
+    const roomPhotoRows = (roomPhotoRowsResult.data ?? []) as Array<{ room_id: string }>;
     const subscription = await getSubscriptionRuntimeState(profile.id, "owner");
     const publicUrl = buildOwnerPublicPath(profile.slug);
 
-    if (!(propertyRows ?? []).length) {
-      return {
-        objects: 0,
-        rooms: 0,
-        activeRooms: 0,
-        newRequests: 0,
-        publicUrl,
-        subscriptionStatus: subscription.status,
-        subscriptionStatusLabel: subscription.statusLabel,
-        subscriptionPlan: subscription.planName,
-        subscriptionValidUntil: subscription.validUntil
-          ? formatDateLabel(subscription.validUntil)
-          : dashboardStats.subscriptionValidUntil,
-        subscriptionWarningText: getSubscriptionWarningText(subscription),
-        isCabinetRestricted: subscription.isCabinetRestricted,
-        isMutationAllowed: subscription.isMutationAllowed,
-        onboarding: buildOwnerOnboarding({
-          profile,
-          publicUrl,
-          firstProperty: null,
-        }),
-      };
-    }
-
-    const propertyIds = (propertyRows ?? []).map((row) => row.id);
-    const [{ count: objectCount }, { data: roomRows }, { data: newRequestRows }, { data: propertyPhotoRows }] = await Promise.all([
-      supabase.from("properties").select("*", { count: "exact", head: true }).eq("owner_id", profile.id),
-      supabase.from("rooms").select("id, property_id, is_active").in("property_id", propertyIds),
-      supabase
-        .from("guest_requests")
-        .select("owner_id, agent_id, source, status")
-        .eq("owner_id", profile.id)
-        .eq("status", "new"),
-      supabase.from("property_photos").select("property_id").in("property_id", propertyIds),
-    ]);
-
-    const safeRoomRows = (roomRows ?? []) as Array<{ property_id: string; is_active: boolean }>;
-    const activeRooms = safeRoomRows.filter((room) => room.is_active).length;
-    const roomCountByProperty = new Map<string, number>();
-    const photoCountByProperty = new Map<string, number>();
-
-    for (const room of safeRoomRows) {
-      roomCountByProperty.set(room.property_id, (roomCountByProperty.get(room.property_id) ?? 0) + 1);
-    }
-
-    for (const photo of (propertyPhotoRows ?? []) as Array<{ property_id: string }>) {
-      photoCountByProperty.set(photo.property_id, (photoCountByProperty.get(photo.property_id) ?? 0) + 1);
-    }
-
-    const firstPropertyRow = (propertyRows ?? [])[0];
+    const activeRooms = roomRows.filter((room) => room.is_active).length;
+    const photoPropertyIds = new Set(
+      propertyPhotoRows.filter((row) => propertyIds.includes(row.property_id)).map((row) => row.property_id),
+    );
+    const photoRoomIds = new Set(roomPhotoRows.filter((row) => roomIds.includes(row.room_id)).map((row) => row.room_id));
+    const hasProperty = propertyRows.length > 0;
+    const hasStandaloneRoom = roomRows.some((room) => room.room_kind === "standalone_room");
+    const hasRoom = roomRows.length > 0;
+    const hasPhotos = photoPropertyIds.size > 0 || photoRoomIds.size > 0;
 
     return {
-      objects: objectCount ?? propertyRows?.length ?? dashboardStats.objects,
-      rooms: safeRoomRows.length,
+      objects: propertyRows.length,
+      rooms: roomRows.length,
       activeRooms,
       newRequests:
-        ((newRequestRows ?? []) as Array<{
+        ((newRequestRowsResult.data ?? []) as Array<{
           owner_id: string;
           agent_id: string | null;
           source: "owner" | "agent" | "collection";
@@ -255,13 +233,11 @@ export const getOwnerDashboardSummary = cache(async (): Promise<OwnerDashboardSu
       onboarding: buildOwnerOnboarding({
         profile,
         publicUrl,
-        firstProperty: firstPropertyRow
-          ? {
-              id: firstPropertyRow.id,
-              roomCount: roomCountByProperty.get(firstPropertyRow.id) ?? 0,
-              photoCount: photoCountByProperty.get(firstPropertyRow.id) ?? 0,
-            }
-          : null,
+        firstPropertyId: propertyRows[0]?.id ?? null,
+        hasProperty,
+        hasStandaloneRoom,
+        hasRoom,
+        hasPhotos,
       }),
     };
   } catch {

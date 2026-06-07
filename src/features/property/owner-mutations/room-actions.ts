@@ -15,6 +15,9 @@ import {
   buildPropertyRoomCreatePath,
   buildPropertyRoomPath,
   buildPropertyRoomSettingsPath,
+  buildStandaloneRoomCreatePath,
+  buildStandaloneRoomPath,
+  buildStandaloneRoomSettingsPath,
 } from "./lib/paths";
 import { generateUniqueRoomSlug } from "./lib/slugs";
 
@@ -26,30 +29,56 @@ function buildRoomRedirectTarget(formData: FormData, fallbackPath: string, state
   return query ? `${basePath}?${query}` : basePath;
 }
 
+function getStandaloneRoomPayload(formData: FormData) {
+  return {
+    property_type: getString(formData, "propertyType"),
+    city: getString(formData, "city"),
+    address: getString(formData, "address"),
+    timezone: getString(formData, "timezone") || "(UTC+03:00) Москва",
+    short_description: getString(formData, "shortDescription") || null,
+    full_description: getString(formData, "fullDescription") || null,
+    phone: getString(formData, "phone") || null,
+    whatsapp: getString(formData, "whatsapp") || null,
+    telegram: getString(formData, "telegram") || null,
+    check_in_time: getString(formData, "checkInTime") || null,
+    check_out_time: getString(formData, "checkOutTime") || null,
+    allow_agent_inquiries: getCheckbox(formData, "allowAgentInquiries"),
+    allow_owner_contact_sharing: getCheckbox(formData, "allowOwnerContactSharing"),
+  };
+}
+
+function validateStandaloneRoom(formData: FormData) {
+  const payload = getStandaloneRoomPayload(formData);
+  return Boolean(payload.property_type && payload.city && payload.address);
+}
+
 export async function createOwnerRoom(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
-  await requireOwnerMutationAccess(propertyId ? buildPropertyRoomCreatePath(propertyId) : "/dashboard/properties");
+  const isStandalone = !propertyId;
+  const profile = await requireOwnerMutationAccess(propertyId ? buildPropertyRoomCreatePath(propertyId) : buildStandaloneRoomCreatePath());
   const title = getString(formData, "title");
   const isActive = getCheckbox(formData, "isActive");
 
-  if (!propertyId || !title) {
+  if (!title || (!propertyId && !validateStandaloneRoom(formData))) {
     if (!propertyId) {
-      redirect("/dashboard/properties?error=validation");
+      redirect(`${buildStandaloneRoomCreatePath()}?error=validation`);
     }
 
     redirect(`${buildPropertyRoomCreatePath(propertyId)}?error=validation`);
   }
 
   if (isActive) {
-    await requireOwnerActiveRoomSlotAccess(buildPropertyRoomCreatePath(propertyId));
+    await requireOwnerActiveRoomSlotAccess(propertyId ? buildPropertyRoomCreatePath(propertyId) : buildStandaloneRoomCreatePath());
   }
 
   const supabase = await createSupabaseServerClient();
-  const slug = await generateUniqueRoomSlug(propertyId, title);
+  const slug = await generateUniqueRoomSlug(title, { propertyId: propertyId || null, ownerId: profile.id });
   const { data, error } = await supabase
     .from("rooms")
     .insert({
-      property_id: propertyId,
+      owner_id: profile.id,
+      property_id: propertyId || null,
+      room_kind: isStandalone ? "standalone_room" : "property_room",
       slug,
       title,
       subtitle: getString(formData, "subtitle") || null,
@@ -58,11 +87,16 @@ export async function createOwnerRoom(formData: FormData) {
       area: getInteger(formData, "area", 0),
       price_per_night: getNumber(formData, "pricePerNight", 0),
       is_active: isActive,
+      ...(isStandalone ? getStandaloneRoomPayload(formData) : {}),
     })
     .select("id")
     .maybeSingle();
 
   if (error || !data?.id) {
+    if (!propertyId) {
+      redirect(`${buildStandaloneRoomCreatePath()}?error=${mapActionError(error)}`);
+    }
+
     redirect(`${buildPropertyRoomCreatePath(propertyId)}?error=${mapActionError(error)}`);
   }
 
@@ -70,41 +104,49 @@ export async function createOwnerRoom(formData: FormData) {
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/properties");
+  revalidatePath("/dashboard/rooms");
+
+  if (!propertyId) {
+    redirect(`${buildStandaloneRoomPath(data.id as string)}?success=room-created`);
+  }
+
   revalidatePath(buildPropertyPath(propertyId));
   redirect(buildPropertyPathWithState(propertyId, "rooms", { success: "room-created" }));
 }
 
 export async function updateOwnerRoom(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
-  await requireOwnerMutationAccess(buildPropertyPath(propertyId, "rooms"));
   const roomId = getString(formData, "roomId");
+  const isStandalone = !propertyId;
+  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId));
   const title = getString(formData, "title");
   const nextIsActive = getCheckbox(formData, "isActive");
-  const fallbackPath = buildPropertyRoomSettingsPath(propertyId, roomId);
+  const fallbackPath = propertyId ? buildPropertyRoomSettingsPath(propertyId, roomId) : buildStandaloneRoomSettingsPath(roomId);
 
-  if (!propertyId || !roomId || !title) {
+  if (!roomId || !title || (!propertyId && !validateStandaloneRoom(formData))) {
     redirect(buildRoomRedirectTarget(formData, fallbackPath, { error: "validation" }));
   }
 
   const supabase = await createSupabaseServerClient();
   const { data: existingRoom } = await supabase
     .from("rooms")
-    .select("is_active")
+    .select("is_active, owner_id")
     .eq("id", roomId)
-    .eq("property_id", propertyId)
     .maybeSingle();
 
-  if (!existingRoom) {
+  if (!existingRoom || existingRoom.owner_id == null) {
     redirect(buildRoomRedirectTarget(formData, fallbackPath, { error: "save" }));
   }
 
   if (!existingRoom.is_active && nextIsActive) {
-    await requireOwnerActiveRoomSlotAccess(buildPropertyPath(propertyId, "rooms"));
+    await requireOwnerActiveRoomSlotAccess(propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId));
   }
 
   const { error } = await supabase
     .from("rooms")
     .update({
+      property_id: propertyId || null,
+      room_kind: isStandalone ? "standalone_room" : "property_room",
       title,
       subtitle: getString(formData, "subtitle") || null,
       capacity: getInteger(formData, "capacity", 1),
@@ -112,10 +154,24 @@ export async function updateOwnerRoom(formData: FormData) {
       area: getInteger(formData, "area", 0),
       price_per_night: getNumber(formData, "pricePerNight", 0),
       is_active: nextIsActive,
+      ...(isStandalone ? getStandaloneRoomPayload(formData) : {
+        property_type: null,
+        city: null,
+        address: null,
+        timezone: null,
+        short_description: null,
+        full_description: null,
+        phone: null,
+        whatsapp: null,
+        telegram: null,
+        check_in_time: null,
+        check_out_time: null,
+        allow_agent_inquiries: false,
+        allow_owner_contact_sharing: false,
+      }),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", roomId)
-    .eq("property_id", propertyId);
+    .eq("id", roomId);
 
   if (error) {
     redirect(buildRoomRedirectTarget(formData, fallbackPath, { error: mapActionError(error) }));
@@ -125,6 +181,13 @@ export async function updateOwnerRoom(formData: FormData) {
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/properties");
+
+  if (!propertyId) {
+    revalidatePath(buildStandaloneRoomPath(roomId));
+    revalidatePath(buildStandaloneRoomSettingsPath(roomId));
+    redirect(buildRoomRedirectTarget(formData, fallbackPath, { success: "room-saved" }));
+  }
+
   revalidatePath(buildPropertyPath(propertyId));
   revalidatePath(buildPropertyRoomPath(propertyId, roomId));
   revalidatePath(buildPropertyRoomSettingsPath(propertyId, roomId));
@@ -133,23 +196,36 @@ export async function updateOwnerRoom(formData: FormData) {
 
 export async function deleteOwnerRoom(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
-  await requireOwnerMutationAccess(buildPropertyPath(propertyId, "rooms"));
   const roomId = getString(formData, "roomId");
+  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId));
   const confirmation = getString(formData, "confirmation");
 
-  if (!propertyId || !roomId || confirmation !== "DELETE") {
+  if (!roomId || confirmation !== "DELETE") {
+    if (!propertyId) {
+      redirect(`${buildStandaloneRoomSettingsPath(roomId)}?error=delete-confirmation`);
+    }
+
     redirect(buildPropertyPathWithState(propertyId, "rooms", { error: "delete-confirmation" }));
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("rooms").delete().eq("id", roomId).eq("property_id", propertyId);
+  const { error } = await supabase.from("rooms").delete().eq("id", roomId);
 
   if (error) {
+    if (!propertyId) {
+      redirect(`${buildStandaloneRoomSettingsPath(roomId)}?error=delete`);
+    }
+
     redirect(buildPropertyPathWithState(propertyId, "rooms", { error: "delete" }));
   }
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/properties");
+
+  if (!propertyId) {
+    redirect("/dashboard/properties?success=room-deleted");
+  }
+
   revalidatePath(buildPropertyPath(propertyId));
   redirect(buildPropertyPathWithState(propertyId, "rooms", { success: "room-deleted" }));
 }

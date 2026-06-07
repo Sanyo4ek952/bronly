@@ -1,13 +1,19 @@
 import { redirect } from "next/navigation";
 
-import { getOwnerProperties } from "@/entities/property";
+import { getOwnerInventory } from "@/entities/property";
 
 export default async function LegacyRoomsPage() {
-  const properties = await getOwnerProperties();
+  const inventory = await getOwnerInventory();
 
-  if (!properties.length) {
-    redirect("/dashboard/properties/new");
+  if (!inventory.length) {
+    redirect("/dashboard/rooms/new");
   }
 
-  redirect(`/dashboard/properties/${properties[0].id}/rooms`);
+  const firstStandaloneRoom = inventory.find((item) => item.kind === "standalone_room");
+
+  if (firstStandaloneRoom?.kind === "standalone_room") {
+    redirect(`/dashboard/rooms/${firstStandaloneRoom.id}`);
+  }
+
+  redirect(`/dashboard/properties/${inventory[0].id}/rooms`);
 }

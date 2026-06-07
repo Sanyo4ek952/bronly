@@ -54,7 +54,7 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
     const redirectQuery = new URLSearchParams();
 
     for (const [key, value] of Object.entries(query)) {
-      if (typeof value === "string") {
+      if (typeof value === "string" && value) {
         redirectQuery.set(key, value);
       }
     }
@@ -81,16 +81,14 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
     );
   }
 
-  const selectedSection =
-    pageData.properties.find((property) => property.property.slug === propertySlug) ?? pageData.properties[0];
-
-  if (!selectedSection) {
-    notFound();
-  }
-
   const requestedError = getSearchString(query, "error");
   const requestedRoomId = getSearchString(query, "roomId");
-  const activeRooms = selectedSection.rooms.filter((room) => room.status === "active");
+  const selectedSection =
+    pageData.properties.find((property) => property.property.slug === propertySlug) ??
+    (propertySlug ? null : pageData.properties[0] ?? null);
+  const standaloneActiveRooms = pageData.standaloneRooms.filter((room) => room.status === "active");
+  const propertyActiveRooms = selectedSection?.rooms.filter((room) => room.status === "active") ?? [];
+  const activeRooms = propertySlug ? propertyActiveRooms : standaloneActiveRooms;
   const hasRequestedRoom = Boolean(requestedRoomId);
   const requestedRoomIsValid = hasRequestedRoom ? activeRooms.some((room) => room.id === requestedRoomId) : true;
   const defaultRoomId =
@@ -105,7 +103,7 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
       <main className="br-auth-page">
         <Panel className="br-request-success" as="section">
           <h1>Сейчас нет доступных номеров</h1>
-          <p>По этому объекту сейчас нельзя оставить заявку. Вернитесь в агентскую витрину и выберите другой вариант.</p>
+          <p>По этой витрине сейчас нельзя оставить заявку. Вернитесь и выберите другой вариант.</p>
           <div className="br-request-success__actions">
             <ButtonLink href={`/a/${pageData.agent.publicId}`} fullWidth>
               Вернуться к витрине
@@ -138,8 +136,8 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
         {pageData.publicWarningText ? <p className="br-inline-notice">{pageData.publicWarningText}</p> : null}
 
         <GuestRequestForm
-          propertySlug={selectedSection.property.slug}
-          rooms={selectedSection.rooms}
+          propertySlug={selectedSection?.property.slug}
+          rooms={activeRooms}
           defaultRoomId={defaultRoomId}
           filters={pageData.filters}
           action={submitAgentGuestRequestAction}

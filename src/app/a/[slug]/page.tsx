@@ -53,7 +53,7 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
     );
   }
 
-  const { agent, properties, filters, publicWarningText } = pageData;
+  const { agent, properties, standaloneRooms, filters, publicWarningText } = pageData;
 
   return (
     <main className="br-page">
@@ -61,7 +61,7 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
         <header className="br-header br-header--public">
           <div>
             <h1>{agent.displayName}</h1>
-            <p>Агентская витрина Bronly. Агент принимает заявку и передаёт её владельцу вручную.</p>
+            <p>Агентская витрина Bronly. Агент принимает заявку и вручную передает ее владельцу для уточнения доступности.</p>
           </div>
           <div className="br-public-hero__actions">
             {agent.phone ? <Button variant="secondary">{agent.phone}</Button> : null}
@@ -74,7 +74,7 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
           В агентской витрине показана итоговая цена агента. Базовую цену владельца агент не меняет.
         </div>
 
-        {properties.length ? (
+        {properties.length || standaloneRooms.length ? (
           <div className="br-owner-stack">
             {properties.map((section) => (
               <section key={section.property.id} className="br-dashboard-block br-card">
@@ -95,12 +95,25 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
                 />
               </section>
             ))}
+
+            {standaloneRooms.length ? (
+              <section className="br-dashboard-block br-card">
+                <div className="br-dashboard-block__header">
+                  <div>
+                    <h2>Отдельные номера</h2>
+                    <p>Самостоятельные варианты размещения без привязки к объекту.</p>
+                  </div>
+                </div>
+
+                <PublicRoomBrowser publicBaseHref={`/a/${agent.publicId}`} rooms={standaloneRooms} filters={filters} />
+              </section>
+            ) : null}
           </div>
         ) : (
           <section className="br-dashboard-block br-card">
             <div className="br-dashboard-block__header">
               <div>
-                <h2>Пока нет доступных объектов</h2>
+                <h2>Пока нет доступных вариантов</h2>
                 <p>Агентская витрина появится после активного сотрудничества с владельцем.</p>
               </div>
             </div>

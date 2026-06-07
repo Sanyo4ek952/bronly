@@ -70,14 +70,12 @@ export default async function PublicCollectionRequestPage({ params, searchParams
   const propertySlug = getSearchString(query, "propertySlug");
   const requestedError = getSearchString(query, "error");
   const requestedRoomId = getSearchString(query, "roomId");
-  const selectedSection =
-    pageData.sections.find((section) => section.property.slug === propertySlug) ?? pageData.sections[0];
-
-  if (!selectedSection) {
-    notFound();
-  }
-
-  const activeRooms = selectedSection.rooms.filter((room) => room.status === "active");
+  const selectedSection = propertySlug
+    ? pageData.sections.find((section) => section.property.slug === propertySlug) ?? null
+    : null;
+  const standaloneActiveRooms = pageData.standaloneRooms.map((item) => item.room).filter((room) => room.status === "active");
+  const propertyActiveRooms = selectedSection?.rooms.filter((room) => room.status === "active") ?? [];
+  const activeRooms = propertySlug ? propertyActiveRooms : standaloneActiveRooms;
   const hasRequestedRoom = Boolean(requestedRoomId);
   const requestedRoomIsValid = hasRequestedRoom ? activeRooms.some((room) => room.id === requestedRoomId) : true;
   const defaultRoomId =
@@ -91,11 +89,11 @@ export default async function PublicCollectionRequestPage({ params, searchParams
     return (
       <main className="br-auth-page">
         <Panel className="br-request-success" as="section">
-          <h1>Р—Р°СЏРІРєР° РІСЂРµРјРµРЅРЅРѕ РЅРµРґРѕСЃС‚СѓРїРЅР°</h1>
-          <p>РџРѕ СЌС‚РѕРјСѓ РѕР±СЉРµРєС‚Сѓ СЃРµР№С‡Р°СЃ РЅРµС‚ Р°РєС‚РёРІРЅС‹С… РЅРѕРјРµСЂРѕРІ РґР»СЏ Р·Р°РїСЂРѕСЃР° РЅР° РїСЂРѕР¶РёРІР°РЅРёРµ.</p>
+          <h1>Заявка временно недоступна</h1>
+          <p>По этой подборке сейчас нет активных номеров для запроса на проживание.</p>
           <div className="br-request-success__actions">
             <ButtonLink href={`/c/${pageData.collection.slug}`} fullWidth>
-              Р’РµСЂРЅСѓС‚СЊСЃСЏ Рє РєРѕР»Р»РµРєС†РёРё
+              Вернуться к коллекции
             </ButtonLink>
           </div>
         </Panel>
@@ -125,8 +123,8 @@ export default async function PublicCollectionRequestPage({ params, searchParams
         {pageData.publicWarningText ? <p className="br-inline-notice">{pageData.publicWarningText}</p> : null}
 
         <GuestRequestForm
-          propertySlug={selectedSection.property.slug}
-          rooms={selectedSection.rooms}
+          propertySlug={selectedSection?.property.slug}
+          rooms={activeRooms}
           defaultRoomId={defaultRoomId}
           filters={pageData.filters}
           action={submitCollectionGuestRequestAction}

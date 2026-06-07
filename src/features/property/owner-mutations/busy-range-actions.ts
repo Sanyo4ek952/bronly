@@ -7,39 +7,47 @@ import { createSupabaseServerClient } from "@/shared/api/supabase";
 import { getString } from "@/shared/lib/form-data";
 
 import { requireOwnerMutationAccess } from "./lib/owner-access";
-import { buildPropertyPath, buildPropertyPathWithState } from "./lib/paths";
+import {
+  buildPropertyPath,
+  buildPropertyPathWithState,
+  buildStandaloneRoomCalendarPath,
+  buildStandaloneRoomPath,
+} from "./lib/paths";
 
-function redirectWithCalendarError(propertyId: string, error: "validation" | "save" | "delete" | "overlap"): never {
-  redirect(buildPropertyPathWithState(propertyId, "calendar", { error }));
+function buildCalendarRedirectPath(propertyId: string, roomId: string, state: Record<string, string>) {
+  const params = new URLSearchParams(state);
+  const query = params.toString();
+  const basePath = propertyId ? buildPropertyPath(propertyId, "calendar") : buildStandaloneRoomCalendarPath(roomId);
+  return query ? `${basePath}?${query}` : basePath;
 }
 
-async function getOwnedRoomForCalendar(propertyId: string, roomId: string) {
-  const supabase = await createSupabaseServerClient();
-  const { data } = await supabase
-    .from("rooms")
-    .select("id, property_id")
-    .eq("id", roomId)
-    .eq("property_id", propertyId)
-    .maybeSingle();
+function redirectWithCalendarError(propertyId: string, roomId: string, error: "validation" | "save" | "delete" | "overlap"): never {
+  redirect(buildCalendarRedirectPath(propertyId, roomId, { error }));
+}
 
+async function getOwnedRoomForCalendar(roomId: string, propertyId?: string) {
+  const supabase = await createSupabaseServerClient();
+  let query = supabase.from("rooms").select("id, property_id, owner_id").eq("id", roomId);
+
+  if (propertyId) {
+    query = query.eq("property_id", propertyId);
+  }
+
+  const { data } = await query.maybeSingle();
   return data;
 }
 
-async function getOwnedBusyRange(propertyId: string, busyRangeId: string) {
+async function getOwnedBusyRange(roomId: string, busyRangeId: string, propertyId?: string) {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase
-    .from("room_busy_ranges")
-    .select("id, room_id")
-    .eq("id", busyRangeId)
-    .maybeSingle();
+  const { data } = await supabase.from("room_busy_ranges").select("id, room_id").eq("id", busyRangeId).maybeSingle();
 
   if (!data?.room_id) {
     return null;
   }
 
-  const room = await getOwnedRoomForCalendar(propertyId, data.room_id as string);
+  const room = await getOwnedRoomForCalendar(data.room_id as string, propertyId);
 
-  if (!room) {
+  if (!room || room.id !== roomId) {
     return null;
   }
 
@@ -72,30 +80,35 @@ async function hasBusyRangeOverlap(input: {
   return Boolean(data?.length);
 }
 
-function revalidateOwnerCalendarPaths(propertyId: string) {
-  revalidatePath(buildPropertyPath(propertyId));
-  revalidatePath(buildPropertyPath(propertyId, "calendar"));
+function revalidateOwnerCalendarPaths(propertyId: string, roomId: string) {
+  if (propertyId) {
+    revalidatePath(buildPropertyPath(propertyId));
+    revalidatePath(buildPropertyPath(propertyId, "calendar"));
+  } else {
+    revalidatePath(buildStandaloneRoomPath(roomId));
+    revalidatePath(buildStandaloneRoomCalendarPath(roomId));
+  }
 }
 
 export async function createRoomBusyRange(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
-  await requireOwnerMutationAccess(buildPropertyPath(propertyId, "calendar"));
   const roomId = getString(formData, "roomId");
+  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "calendar") : buildStandaloneRoomCalendarPath(roomId));
   const startsOn = getString(formData, "startsOn");
   const endsOn = getString(formData, "endsOn");
 
-  if (!propertyId || !roomId || !startsOn || !endsOn || startsOn > endsOn) {
-    redirectWithCalendarError(propertyId, "validation");
+  if (!roomId || !startsOn || !endsOn || startsOn > endsOn) {
+    redirectWithCalendarError(propertyId, roomId, "validation");
   }
 
-  const room = await getOwnedRoomForCalendar(propertyId, roomId);
+  const room = await getOwnedRoomForCalendar(roomId, propertyId || undefined);
 
   if (!room) {
-    redirectWithCalendarError(propertyId, "save");
+    redirectWithCalendarError(propertyId, roomId, "save");
   }
 
   if (await hasBusyRangeOverlap({ roomId, startsOn, endsOn })) {
-    redirectWithCalendarError(propertyId, "overlap");
+    redirectWithCalendarError(propertyId, roomId, "overlap");
   }
 
   const supabase = await createSupabaseServerClient();
@@ -109,32 +122,33 @@ export async function createRoomBusyRange(formData: FormData) {
   });
 
   if (error) {
-    redirectWithCalendarError(propertyId, "save");
+    redirectWithCalendarError(propertyId, roomId, "save");
   }
 
-  revalidateOwnerCalendarPaths(propertyId);
-  redirect(buildPropertyPathWithState(propertyId, "calendar", { success: "busy-created" }));
+  revalidateOwnerCalendarPaths(propertyId, roomId);
+  redirect(buildCalendarRedirectPath(propertyId, roomId, { success: "busy-created" }));
 }
 
 export async function updateRoomBusyRange(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
-  await requireOwnerMutationAccess(buildPropertyPath(propertyId, "calendar"));
+  const roomId = getString(formData, "roomId");
+  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "calendar") : buildStandaloneRoomCalendarPath(roomId));
   const busyRangeId = getString(formData, "busyRangeId");
   const startsOn = getString(formData, "startsOn");
   const endsOn = getString(formData, "endsOn");
 
-  if (!propertyId || !busyRangeId || !startsOn || !endsOn || startsOn > endsOn) {
-    redirectWithCalendarError(propertyId, "validation");
+  if (!roomId || !busyRangeId || !startsOn || !endsOn || startsOn > endsOn) {
+    redirectWithCalendarError(propertyId, roomId, "validation");
   }
 
-  const busyRange = await getOwnedBusyRange(propertyId, busyRangeId);
+  const busyRange = await getOwnedBusyRange(roomId, busyRangeId, propertyId || undefined);
 
   if (!busyRange) {
-    redirectWithCalendarError(propertyId, "save");
+    redirectWithCalendarError(propertyId, roomId, "save");
   }
 
   if (await hasBusyRangeOverlap({ roomId: busyRange.roomId, startsOn, endsOn, excludedBusyRangeId: busyRangeId })) {
-    redirectWithCalendarError(propertyId, "overlap");
+    redirectWithCalendarError(propertyId, roomId, "overlap");
   }
 
   const supabase = await createSupabaseServerClient();
@@ -150,39 +164,36 @@ export async function updateRoomBusyRange(formData: FormData) {
     .eq("room_id", busyRange.roomId);
 
   if (error) {
-    redirectWithCalendarError(propertyId, "save");
+    redirectWithCalendarError(propertyId, roomId, "save");
   }
 
-  revalidateOwnerCalendarPaths(propertyId);
-  redirect(buildPropertyPathWithState(propertyId, "calendar", { success: "busy-saved" }));
+  revalidateOwnerCalendarPaths(propertyId, roomId);
+  redirect(buildCalendarRedirectPath(propertyId, roomId, { success: "busy-saved" }));
 }
 
 export async function deleteRoomBusyRange(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
-  await requireOwnerMutationAccess(buildPropertyPath(propertyId, "calendar"));
+  const roomId = getString(formData, "roomId");
+  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "calendar") : buildStandaloneRoomCalendarPath(roomId));
   const busyRangeId = getString(formData, "busyRangeId");
 
-  if (!propertyId || !busyRangeId) {
-    redirectWithCalendarError(propertyId, "delete");
+  if (!roomId || !busyRangeId) {
+    redirectWithCalendarError(propertyId, roomId, "delete");
   }
 
-  const busyRange = await getOwnedBusyRange(propertyId, busyRangeId);
+  const busyRange = await getOwnedBusyRange(roomId, busyRangeId, propertyId || undefined);
 
   if (!busyRange) {
-    redirectWithCalendarError(propertyId, "delete");
+    redirectWithCalendarError(propertyId, roomId, "delete");
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
-    .from("room_busy_ranges")
-    .delete()
-    .eq("id", busyRangeId)
-    .eq("room_id", busyRange.roomId);
+  const { error } = await supabase.from("room_busy_ranges").delete().eq("id", busyRangeId).eq("room_id", busyRange.roomId);
 
   if (error) {
-    redirectWithCalendarError(propertyId, "delete");
+    redirectWithCalendarError(propertyId, roomId, "delete");
   }
 
-  revalidateOwnerCalendarPaths(propertyId);
-  redirect(buildPropertyPathWithState(propertyId, "calendar", { success: "busy-deleted" }));
+  revalidateOwnerCalendarPaths(propertyId, roomId);
+  redirect(buildCalendarRedirectPath(propertyId, roomId, { success: "busy-deleted" }));
 }

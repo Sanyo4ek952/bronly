@@ -55,10 +55,25 @@ export type SupabaseUserRoleRow = {
 
 export type SupabaseRoomRow = {
   id: string;
-  property_id: string;
+  property_id: string | null;
+  owner_id: string;
+  room_kind: "property_room" | "standalone_room";
   slug: string;
   title: string;
   subtitle: string | null;
+  property_type: string | null;
+  city: string | null;
+  address: string | null;
+  timezone: string | null;
+  short_description: string | null;
+  full_description: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  telegram: string | null;
+  check_in_time: string | null;
+  check_out_time: string | null;
+  allow_agent_inquiries: boolean;
+  allow_owner_contact_sharing: boolean;
   capacity: number;
   bedrooms: number;
   area: number;
@@ -133,6 +148,20 @@ export type SupabaseAgentPropertyLinkRow = {
   created_at: string;
 };
 
+export type SupabaseAgentRoomLinkRow = {
+  id: string;
+  room_id: string;
+  owner_id: string;
+  agent_id: string;
+  status: "pending" | "active" | "declined" | "revoked";
+  proposal_message: string | null;
+  collaboration_terms: string | null;
+  owner_contact_visible: boolean;
+  proposed_at: string;
+  decided_at: string | null;
+  created_at: string;
+};
+
 export type SupabaseRoomAgentMarkupRow = {
   id: string;
   room_id: string;
@@ -183,7 +212,7 @@ export type SupabaseCollectionItemRow = {
 export type SupabaseGuestRequestRow = {
   id: string;
   source: "owner" | "agent" | "collection";
-  property_id: string;
+  property_id: string | null;
   room_id: string;
   owner_id: string;
   agent_id: string | null;

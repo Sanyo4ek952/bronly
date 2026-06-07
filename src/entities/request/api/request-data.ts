@@ -122,7 +122,7 @@ async function getRoomAndPropertyMeta(
   requestRows: SupabaseGuestRequestRow[],
 ) {
   const roomIds = [...new Set(requestRows.map((request) => request.room_id))];
-  const propertyIds = [...new Set(requestRows.map((request) => request.property_id))];
+  const propertyIds = [...new Set(requestRows.map((request) => request.property_id).filter((value): value is string => Boolean(value)))];
 
   const [{ data: roomRows }, { data: propertyRows }] = await Promise.all([
     roomIds.length
@@ -192,7 +192,7 @@ export const getOwnerRequests = cache(async (): Promise<OwnerRequestItem[]> => {
     const { roomMap, propertyMap } = await getRoomAndPropertyMeta(supabase, safeRows);
 
     return safeRows.map((request) =>
-      mapOwnerRequestItem(request, roomMap.get(request.room_id), propertyMap.get(request.property_id)),
+      mapOwnerRequestItem(request, roomMap.get(request.room_id), propertyMap.get(request.property_id ?? "")),
     );
   } catch {
     return guestRequests;
@@ -200,7 +200,8 @@ export const getOwnerRequests = cache(async (): Promise<OwnerRequestItem[]> => {
 });
 
 export async function createGuestRequest(input: {
-  propertySlug: string;
+  publicSlug?: string;
+  propertySlug?: string;
   roomId: string;
   guestName: string;
   guestPhone: string;
@@ -231,49 +232,17 @@ export async function createGuestRequest(input: {
   }
 
   const supabase = createSupabaseAdminClient();
-  const { data: propertyData } = await supabase
-    .from("properties")
-    .select("id, owner_id, title, published, is_frozen")
-    .eq("slug", input.propertySlug)
-    .maybeSingle();
-
-  const propertyRow = propertyData as {
-    id: string;
-    owner_id: string;
-    title: string;
-    published: boolean;
-    is_frozen: boolean;
-  } | null;
-
-  if (!propertyRow || !propertyRow.published || propertyRow.is_frozen) {
-    return { ok: false, reason: "property_not_found" as const };
-  }
-
-  const subscription = await getSubscriptionRuntimeState(propertyRow.owner_id, "owner");
-
-  if (!subscription.isRequestIntakeAllowed) {
-    return { ok: false, reason: "subscription_expired" as const };
-  }
-
-  const { data: ownerProfileData } = await supabase
-    .from("profiles")
-    .select("is_public_hidden_by_admin")
-    .eq("id", propertyRow.owner_id)
-    .maybeSingle();
-
-  if (ownerProfileData?.is_public_hidden_by_admin) {
-    return { ok: false, reason: "property_not_found" as const };
-  }
-
   const { data: roomData } = await supabase
     .from("rooms")
-    .select("id, title, price_per_night, capacity, bedrooms, is_active")
+    .select("id, owner_id, property_id, room_kind, title, price_per_night, capacity, bedrooms, is_active")
     .eq("id", input.roomId)
-    .eq("property_id", propertyRow.id)
     .maybeSingle();
 
   const roomRow = roomData as {
     id: string;
+    owner_id: string;
+    property_id: string | null;
+    room_kind: "property_room" | "standalone_room";
     title: string;
     price_per_night: number;
     capacity: number;
@@ -283,6 +252,47 @@ export async function createGuestRequest(input: {
 
   if (!roomRow || !roomRow.is_active) {
     return { ok: false, reason: "room_not_found" as const };
+  }
+
+  const propertyRow = roomRow.property_id
+    ? ((await supabase
+        .from("properties")
+        .select("id, owner_id, slug, title, published, is_frozen")
+        .eq("id", roomRow.property_id)
+        .maybeSingle()).data as {
+        id: string;
+        owner_id: string;
+        slug: string;
+        title: string;
+        published: boolean;
+        is_frozen: boolean;
+      } | null)
+    : null;
+
+  if (roomRow.room_kind === "property_room") {
+    if (!propertyRow || !propertyRow.published || propertyRow.is_frozen) {
+      return { ok: false, reason: "property_not_found" as const };
+    }
+
+    if (input.propertySlug && propertyRow.slug !== input.propertySlug) {
+      return { ok: false, reason: "property_not_found" as const };
+    }
+  }
+
+  const subscription = await getSubscriptionRuntimeState(roomRow.owner_id, "owner");
+
+  if (!subscription.isRequestIntakeAllowed) {
+    return { ok: false, reason: "subscription_expired" as const };
+  }
+
+  const { data: ownerProfileData } = await supabase
+    .from("profiles")
+    .select("is_public_hidden_by_admin")
+    .eq("id", roomRow.owner_id)
+    .maybeSingle();
+
+  if (ownerProfileData?.is_public_hidden_by_admin) {
+    return { ok: false, reason: "property_not_found" as const };
   }
 
   if (roomRow.capacity < filters.adults) {
@@ -336,9 +346,9 @@ export async function createGuestRequest(input: {
 
   const { data: insertedRequest, error } = await supabase.from("guest_requests").insert({
     source,
-    property_id: propertyRow.id,
+    property_id: propertyRow?.id ?? null,
     room_id: roomRow.id,
-    owner_id: propertyRow.owner_id,
+    owner_id: roomRow.owner_id,
     agent_id: source === "agent" || source === "collection" ? input.agentProfileId ?? null : null,
     collection_id: input.collectionId ?? null,
     guest_name: input.guestName,
@@ -356,7 +366,7 @@ export async function createGuestRequest(input: {
     pricing_snapshot: {
       source,
       room_id: roomRow.id,
-      property_id: propertyRow.id,
+        property_id: propertyRow?.id ?? null,
       check_in: filters.checkIn,
       check_out: filters.checkOut,
       adults_count: filters.adults,
@@ -381,7 +391,7 @@ export async function createGuestRequest(input: {
     return { ok: false, reason: "save_failed" as const };
   }
 
-  const recipientId = hasAgentPricing ? input.agentProfileId ?? null : propertyRow.owner_id;
+  const recipientId = hasAgentPricing ? input.agentProfileId ?? null : roomRow.owner_id;
   const linkPath = hasAgentPricing ? "/agent/dashboard/requests" : "/dashboard/requests";
 
   if (recipientId) {
@@ -390,8 +400,8 @@ export async function createGuestRequest(input: {
       eventType: "new_request",
       payload: {
         requestId: insertedRequest?.id as string | undefined,
-        propertyId: propertyRow.id,
-        propertyTitle: propertyRow.title,
+        propertyId: propertyRow?.id ?? undefined,
+        propertyTitle: propertyRow?.title ?? roomRow.title,
         roomTitle: roomRow.title,
         linkPath,
       },
@@ -513,7 +523,7 @@ export async function transferAgentRequestToOwner(input: { requestId: string }) 
 
   const admin = createSupabaseAdminClient();
   const [{ data: propertyData }, { data: roomData }] = await Promise.all([
-    admin.from("properties").select("title").eq("id", request.property_id).maybeSingle(),
+    request.property_id ? admin.from("properties").select("title").eq("id", request.property_id).maybeSingle() : Promise.resolve({ data: null }),
     admin.from("rooms").select("title").eq("id", request.room_id).maybeSingle(),
   ]);
 
@@ -522,7 +532,7 @@ export async function transferAgentRequestToOwner(input: { requestId: string }) 
     eventType: "request_transferred_to_owner",
     payload: {
       requestId: request.id,
-      propertyId: request.property_id,
+      propertyId: request.property_id ?? undefined,
       propertyTitle: (propertyData?.title as string | null) ?? undefined,
       roomTitle: (roomData?.title as string | null) ?? undefined,
       linkPath: "/dashboard/requests",
@@ -576,7 +586,7 @@ export async function requestAgentCompletion(input: { requestId: string }) {
 
   const admin = createSupabaseAdminClient();
   const [{ data: propertyData }, { data: roomData }] = await Promise.all([
-    admin.from("properties").select("title").eq("id", request.property_id).maybeSingle(),
+    request.property_id ? admin.from("properties").select("title").eq("id", request.property_id).maybeSingle() : Promise.resolve({ data: null }),
     admin.from("rooms").select("title").eq("id", request.room_id).maybeSingle(),
   ]);
 
@@ -585,7 +595,7 @@ export async function requestAgentCompletion(input: { requestId: string }) {
     eventType: "request_completion_requested",
     payload: {
       requestId: request.id,
-      propertyId: request.property_id,
+      propertyId: request.property_id ?? undefined,
       propertyTitle: (propertyData?.title as string | null) ?? undefined,
       roomTitle: (roomData?.title as string | null) ?? undefined,
       linkPath: "/dashboard/requests",
@@ -614,7 +624,7 @@ export async function getAgentRequests(profile: { id: string }): Promise<AgentRe
         request.source === "agent" || request.source === "collection",
     );
     const roomIds = [...new Set(safeRows.map((request) => request.room_id))];
-    const propertyIds = [...new Set(safeRows.map((request) => request.property_id))];
+    const propertyIds = [...new Set(safeRows.map((request) => request.property_id).filter((value): value is string => Boolean(value)))];
     const [{ data: roomRows }, { data: propertyRows }] = await Promise.all([
       roomIds.length
         ? supabase.from("rooms").select("id, title").in("id", roomIds)
@@ -632,7 +642,7 @@ export async function getAgentRequests(profile: { id: string }): Promise<AgentRe
 
       return {
         id: request.id,
-        propertyTitle: propertyMap.get(request.property_id) ?? "Объект",
+        propertyTitle: propertyMap.get(request.property_id ?? "") ?? "Отдельный номер",
         roomTitle: roomMap.get(request.room_id) ?? "Номер",
         guestName: request.guest_name,
         createdAt: formatDateTimeLabel(request.created_at),

@@ -8,7 +8,7 @@ import { Button, ButtonLink, Input, Select, StatCard } from "@/shared/ui";
 
 type PublicRoomBrowserProps = {
   publicBaseHref: string;
-  propertySlug: string;
+  propertySlug?: string;
   rooms: PublicRoom[];
   filters: PublicStayFilters;
   resetHref?: string;
@@ -32,8 +32,12 @@ function formatRoomPrice(room: PublicRoom, hasDates: boolean) {
   return `от ${formatMoney(room.displayPricePerNight ?? room.pricePerNight)} / ночь`;
 }
 
-function buildPublicRequestHref(publicBaseHref: string, propertySlug: string, roomId: string, filters: PublicStayFilters) {
-  const params = new URLSearchParams({ propertySlug, roomId });
+function buildPublicRequestHref(publicBaseHref: string, propertySlug: string | undefined, roomId: string, filters: PublicStayFilters) {
+  const params = new URLSearchParams({ roomId });
+
+  if (propertySlug) {
+    params.set("propertySlug", propertySlug);
+  }
 
   if (filters.hasDates) {
     params.set("checkIn", filters.checkIn);

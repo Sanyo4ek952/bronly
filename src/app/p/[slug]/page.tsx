@@ -72,14 +72,8 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
             <h1>{unavailable.title}</h1>
             <p>{unavailable.description}</p>
             <div className="br-request-success__actions">
-              {unavailable.showLogin ? (
-                <ButtonLink href="/login" fullWidth>
-                  Войти в кабинет
-                </ButtonLink>
-              ) : null}
-              <ButtonLink href="/" variant="secondary" fullWidth>
-                На главную
-              </ButtonLink>
+              {unavailable.showLogin ? <ButtonLink href="/login" fullWidth>Войти в кабинет</ButtonLink> : null}
+              <ButtonLink href="/" variant="secondary" fullWidth>На главную</ButtonLink>
             </div>
           </section>
         </div>
@@ -87,12 +81,14 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
     );
   }
 
-  const { owner, properties, filters, publicWarningText } = pageData;
-  const heroPhoto = properties[0]?.property.photos[0];
+  const { owner, properties, standaloneRooms, filters, publicWarningText } = pageData;
+  const heroPhoto = properties[0]?.property.photos[0] ?? standaloneRooms[0]?.photos[0];
   const firstSectionWithRooms = properties.find((section) => section.rooms.length > 0);
   const firstRequestHref = firstSectionWithRooms
     ? `/p/${owner.slug}/request?propertySlug=${encodeURIComponent(firstSectionWithRooms.property.slug)}`
-    : null;
+    : standaloneRooms[0]
+      ? `/p/${owner.slug}/request?roomId=${encodeURIComponent(standaloneRooms[0].id)}`
+      : null;
 
   return (
     <main className="br-page">
@@ -109,20 +105,13 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
         <section className="br-public-hero br-card">
           <div className="br-public-hero__media">
             {heroPhoto ? (
-              <Image
-                src={heroPhoto.url}
-                alt={owner.displayName}
-                width={1600}
-                height={1000}
-                unoptimized
-                className="br-public-hero__image"
-              />
+              <Image src={heroPhoto.url} alt={owner.displayName} width={1600} height={1000} unoptimized className="br-public-hero__image" />
             ) : null}
           </div>
           <div className="br-public-hero__body">
             <div>
               <h1>{owner.displayName}</h1>
-              <p>Персональная страница владельца Bronly. Выберите объект, конкретный номер и оставьте запрос на проживание.</p>
+              <p>Персональная страница владельца Bronly. Выберите объект или отдельный номер и оставьте запрос на проживание.</p>
             </div>
             <div id="owner-contact" className="br-public-hero__actions">
               {owner.phone ? <Button variant="secondary">{owner.phone}</Button> : null}
@@ -133,16 +122,12 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
           </div>
         </section>
 
-        {publicWarningText ? (
-          <div className="br-inline-notice" style={{ marginTop: 18 }}>
-            {publicWarningText}
-          </div>
-        ) : null}
+        {publicWarningText ? <div className="br-inline-notice" style={{ marginTop: 18 }}>{publicWarningText}</div> : null}
 
         <section id="owner-rooms" className="br-section br-section--public">
           <div className="br-section-heading">
             <h2>Номера и цены</h2>
-            <p>Гость видит только объекты этого владельца по конкретной ссылке. Заявка всегда создается на конкретный номер.</p>
+            <p>Гость видит только контент этого владельца по конкретной ссылке. Заявка всегда создается на конкретный номер.</p>
           </div>
 
           {properties.length ? (
@@ -152,20 +137,12 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
                   <div className="br-dashboard-block__header">
                     <div>
                       <h3>{section.property.shortTitle}</h3>
-                      <p>
-                        {section.property.city}, {section.property.address}
-                      </p>
+                      <p>{section.property.city}, {section.property.address}</p>
                     </div>
                   </div>
 
                   {section.rooms.length ? (
-                    <PublicRoomBrowser
-                      publicBaseHref={`/p/${owner.slug}`}
-                      propertySlug={section.property.slug}
-                      rooms={section.rooms}
-                      filters={filters}
-                      showFilter={false}
-                    />
+                    <PublicRoomBrowser publicBaseHref={`/p/${owner.slug}`} propertySlug={section.property.slug} rooms={section.rooms} filters={filters} showFilter={false} />
                   ) : (
                     <div className="br-card" style={{ marginTop: 16, padding: 16 }}>
                       По этому объекту пока нет активных номеров для заявки.
@@ -174,16 +151,30 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
                 </article>
               ))}
             </div>
-          ) : (
+          ) : null}
+
+          {standaloneRooms.length ? (
+            <article className="br-card br-collection-public-section" style={{ marginTop: properties.length ? 16 : 0 }}>
+              <div className="br-dashboard-block__header">
+                <div>
+                  <h3>Отдельные номера</h3>
+                  <p>Самостоятельные номера без объекта, доступные по этой ссылке владельца.</p>
+                </div>
+              </div>
+              <PublicRoomBrowser publicBaseHref={`/p/${owner.slug}`} propertySlug="" rooms={standaloneRooms} filters={filters} showFilter={false} />
+            </article>
+          ) : null}
+
+          {!properties.length && !standaloneRooms.length ? (
             <section className="br-dashboard-block br-card">
               <div className="br-dashboard-block__header">
                 <div>
-                  <h3>Пока нет доступных объектов</h3>
-                  <p>Владелец еще не опубликовал объекты или номера для этой ссылки.</p>
+                  <h3>Пока нет доступных вариантов</h3>
+                  <p>Владелец ещё не опубликовал объекты или отдельные номера для этой ссылки.</p>
                 </div>
               </div>
             </section>
-          )}
+          ) : null}
         </section>
       </div>
     </main>
@@ -193,9 +184,7 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
 function BrandSlot() {
   return (
     <Link href="/" className="br-logo">
-      <span className="br-logo__mark" aria-hidden="true">
-        b
-      </span>
+      <span className="br-logo__mark" aria-hidden="true">b</span>
       <span className="br-logo__wordmark">
         Bron<span className="br-logo__accent">ly</span>
       </span>

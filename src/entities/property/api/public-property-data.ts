@@ -92,8 +92,11 @@ function mapRoomRow(
 ): PublicRoom {
   return {
     id: room.id,
+    ownerId: room.owner_id,
+    kind: room.room_kind,
     title: room.title,
     subtitle: room.subtitle ?? "",
+    propertySlug: null,
     capacity: room.capacity,
     bedrooms: room.bedrooms,
     area: room.area,
@@ -103,6 +106,22 @@ function mapRoomRow(
     amenities,
     seasonalPrices,
     busyRanges,
+    location: {
+      propertyId: room.property_id,
+      propertyType: room.property_type ?? "",
+      city: room.city ?? "",
+      address: room.address ?? "",
+      timezone: room.timezone ?? "",
+      shortDescription: room.short_description ?? "",
+      fullDescription: room.full_description ?? "",
+      phone: room.phone ?? "",
+      whatsapp: room.whatsapp ?? "",
+      telegram: room.telegram ?? "",
+      checkInTime: room.check_in_time ?? "",
+      checkOutTime: room.check_out_time ?? "",
+      allowAgentInquiries: room.allow_agent_inquiries,
+      allowOwnerContactSharing: room.allow_owner_contact_sharing,
+    },
   };
 }
 
@@ -161,6 +180,7 @@ function toPublicFallbackData(filters: PublicStayFilters): PublicPropertyPageDat
           .sort((a, b) => Number(Boolean(b.isAvailableForFilter)) - Number(Boolean(a.isAvailableForFilter))),
       },
     ],
+    standaloneRooms: [],
     filters,
     publicUnavailableReason: null,
     publicWarningText: null,
@@ -174,6 +194,7 @@ function buildUnavailablePageData(
   return {
     owner: null,
     properties: [],
+    standaloneRooms: [],
     filters,
     publicUnavailableReason: reason,
     publicWarningText: null,
@@ -292,6 +313,7 @@ export const getPublicPropertyPageData = cache(
         return {
           owner: mapPublicOwner(ownerRow),
           properties: [],
+          standaloneRooms: [],
           filters,
           publicUnavailableReason: null,
           publicWarningText: subscription.publicWarningText,
@@ -323,9 +345,17 @@ export const getPublicPropertyPageData = cache(
           .order("sort_order", { ascending: true })
           .order("created_at", { ascending: true }),
       ]);
+      const { data: standaloneRoomRows } = await supabase
+        .from("rooms")
+        .select("*")
+        .eq("owner_id", ownerRow.id)
+        .eq("room_kind", "standalone_room")
+        .eq("is_active", true)
+        .order("title", { ascending: true });
 
       const safeRoomRows = (roomRows ?? []) as SupabaseRoomRow[];
-      const roomIds = safeRoomRows.map((room) => room.id);
+      const safeStandaloneRoomRows = (standaloneRoomRows ?? []) as SupabaseRoomRow[];
+      const roomIds = [...safeRoomRows, ...safeStandaloneRoomRows].map((room) => room.id);
       const [amenitiesResult, seasonalResult, busyResult, roomPhotosResult] = roomIds.length
         ? await Promise.all([
             supabase
@@ -404,10 +434,29 @@ export const getPublicPropertyPageData = cache(
           ),
           filters,
         );
+        if (!room.property_id) {
+          continue;
+        }
+        publicRoom.propertySlug = safePropertyRows.find((item) => item.id === room.property_id)?.slug ?? null;
         const current = roomsByProperty.get(room.property_id) ?? [];
         current.push(publicRoom);
         roomsByProperty.set(room.property_id, current);
       }
+
+      const standaloneRooms = safeStandaloneRoomRows
+        .map((room) =>
+          buildPublicRoomQuote(
+            mapRoomRow(
+              room,
+              roomPhotoMap.get(room.id) ?? [],
+              amenityMap.get(room.id) ?? [],
+              seasonalMap.get(room.id) ?? [],
+              busyMap.get(room.id) ?? [],
+            ),
+            filters,
+          ),
+        )
+        .sort((a, b) => Number(Boolean(b.isAvailableForFilter)) - Number(Boolean(a.isAvailableForFilter)));
 
       const properties: PublicPropertySection[] = safePropertyRows.map((property) => {
         const photos = withLegacyPropertyCover(propertyPhotoMap.get(property.id) ?? [], property.cover_image_url);
@@ -428,6 +477,7 @@ export const getPublicPropertyPageData = cache(
       return {
         owner: mapPublicOwner(ownerRow),
         properties,
+        standaloneRooms,
         filters,
         publicUnavailableReason: null,
         publicWarningText: subscription.publicWarningText,

@@ -28,7 +28,7 @@ type OwnerCalendarRoom = {
 };
 
 type OwnerCalendarBrowserProps = {
-  propertyId: string;
+  propertyId?: string;
   rooms: OwnerCalendarRoom[];
   serverNotice?: string;
 };
@@ -72,7 +72,7 @@ function getPanelDescription(activeEditor: ActiveEditorState | null) {
   return "Обновите даты, пометку или комментарий для выбранного диапазона.";
 }
 
-export function OwnerCalendarBrowser({ propertyId, rooms, serverNotice = "" }: OwnerCalendarBrowserProps) {
+export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = "" }: OwnerCalendarBrowserProps) {
   const [mode, setMode] = useState<CalendarMode>("overview");
   const [selectedRoomId, setSelectedRoomId] = useState(rooms[0]?.id ?? "");
   const [currentMonth, setCurrentMonth] = useState(() => {

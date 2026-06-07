@@ -1,5 +1,6 @@
 export {
   getOwnerDashboardSummary,
+  getOwnerInventory,
   getOwnerProperties,
   getOwnerPropertyDetail,
   getOwnerPropertySectionBySlug,
@@ -11,7 +12,9 @@ export { property } from "@/entities/property/model/mock";
 export type {
   OwnerDashboardSummary,
   OwnerPropertyDetail,
+  OwnerInventoryListItem,
   OwnerPropertyListItem,
+  OwnerStandaloneRoomListItem,
   OwnerPublicProfile,
   PropertyPhoto,
   PublicPropertyPageData,

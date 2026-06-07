@@ -51,14 +51,8 @@ export default async function PublicRequestSuccessPage({ params, searchParams }:
           <h1>{unavailable.title}</h1>
           <p>{unavailable.description}</p>
           <div className="br-request-success__actions">
-            {unavailable.showLogin ? (
-              <ButtonLink href="/login" fullWidth>
-                Войти в кабинет
-              </ButtonLink>
-            ) : null}
-            <ButtonLink href="/" variant="secondary" fullWidth>
-              На главную
-            </ButtonLink>
+            {unavailable.showLogin ? <ButtonLink href="/login" fullWidth>Войти в кабинет</ButtonLink> : null}
+            <ButtonLink href="/" variant="secondary" fullWidth>На главную</ButtonLink>
           </div>
         </Panel>
       </main>
@@ -67,9 +61,11 @@ export default async function PublicRequestSuccessPage({ params, searchParams }:
 
   const propertySlug = getSearchString(query, "propertySlug");
   const roomId = getSearchString(query, "roomId");
-  const selectedSection = pageData.properties.find((section) => section.property.slug === propertySlug) ?? pageData.properties[0];
-  const selectedRoom = selectedSection?.rooms.find((room) => room.id === roomId) ?? null;
-  const roomSummary = selectedSection && selectedRoom ? `${selectedSection.property.shortTitle} - ${selectedRoom.title}` : "выбранный номер";
+  const selectedSection = propertySlug ? pageData.properties.find((section) => section.property.slug === propertySlug) ?? null : null;
+  const selectedRoom = selectedSection?.rooms.find((room) => room.id === roomId) ?? pageData.standaloneRooms.find((room) => room.id === roomId) ?? null;
+  const roomSummary = selectedSection && selectedRoom
+    ? `${selectedSection.property.shortTitle} - ${selectedRoom.title}`
+    : selectedRoom?.title ?? "выбранный номер";
 
   return (
     <main className="br-auth-page">
@@ -79,17 +75,12 @@ export default async function PublicRequestSuccessPage({ params, searchParams }:
         </div>
         <h1>Заявка отправлена</h1>
         <p>
-          Заявка на {roomSummary} отправлена. Владелец получил ваш запрос на проживание и свяжется с вами, чтобы уточнить
-          доступность.
+          Заявка на {roomSummary} отправлена. Владелец получил ваш запрос на проживание и свяжется с вами, чтобы уточнить доступность.
           {pageData.owner.phone ? ` Рекомендуем сохранить номер ${pageData.owner.phone}.` : ""}
         </p>
         <div className="br-request-success__actions">
-          <ButtonLink href={`/p/${pageData.owner.slug}`} fullWidth>
-            Вернуться к странице
-          </ButtonLink>
-          <ButtonLink href="/" variant="secondary" fullWidth>
-            На главную
-          </ButtonLink>
+          <ButtonLink href={`/p/${pageData.owner.slug}`} fullWidth>Вернуться к странице</ButtonLink>
+          <ButtonLink href="/" variant="secondary" fullWidth>На главную</ButtonLink>
         </div>
       </Panel>
     </main>

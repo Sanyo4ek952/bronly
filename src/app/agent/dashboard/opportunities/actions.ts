@@ -11,7 +11,9 @@ function getString(formData: FormData, key: string) {
 
 export async function submitAgentProposalAction(formData: FormData) {
   const result = await submitAgentProposal({
-    propertyId: getString(formData, "propertyId"),
+    targetType: (getString(formData, "targetType") || "property") as "property" | "standalone_room",
+    propertyId: getString(formData, "propertyId") || undefined,
+    roomId: getString(formData, "roomId") || undefined,
     message: getString(formData, "message"),
   });
 

@@ -12,6 +12,8 @@ import {
   buildPropertyPathWithState,
   buildPropertyRoomPath,
   buildPropertyRoomSettingsPath,
+  buildStandaloneRoomPath,
+  buildStandaloneRoomSettingsPath,
 } from "./lib/paths";
 
 const PHOTO_BUCKET = "property-media";
@@ -76,18 +78,19 @@ async function loadOwnedProperty(propertyId: string) {
   };
 }
 
-async function loadOwnedRoom(roomId: string, propertyId: string) {
+async function loadOwnedRoom(roomId: string, propertyId?: string) {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase
-    .from("rooms")
-    .select("id, property_id")
-    .eq("id", roomId)
-    .eq("property_id", propertyId)
-    .maybeSingle();
+  let query = supabase.from("rooms").select("id, property_id, owner_id").eq("id", roomId);
+
+  if (propertyId) {
+    query = query.eq("property_id", propertyId);
+  }
+
+  const { data } = await query.maybeSingle();
 
   return {
     supabase,
-    room: (data ?? null) as { id: string; property_id: string } | null,
+    room: (data ?? null) as { id: string; property_id: string | null; owner_id: string } | null,
   };
 }
 
@@ -139,11 +142,20 @@ async function getOwnerPublicSlug(
   return (profileData?.slug as string | undefined) ?? "";
 }
 
-function revalidatePropertyMedia(propertyId: string, ownerPublicSlug?: string) {
+function revalidateRoomMedia(propertyId: string, roomId: string, ownerPublicSlug?: string) {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/properties");
-  revalidatePath(buildPropertyPath(propertyId));
-  revalidatePath(buildPropertyPath(propertyId, "rooms"));
+  revalidatePath("/dashboard/rooms");
+
+  if (propertyId) {
+    revalidatePath(buildPropertyPath(propertyId));
+    revalidatePath(buildPropertyPath(propertyId, "rooms"));
+    revalidatePath(buildPropertyRoomPath(propertyId, roomId));
+    revalidatePath(buildPropertyRoomSettingsPath(propertyId, roomId));
+  } else {
+    revalidatePath(buildStandaloneRoomPath(roomId));
+    revalidatePath(buildStandaloneRoomSettingsPath(roomId));
+  }
 
   if (ownerPublicSlug) {
     revalidatePath(`/p/${ownerPublicSlug}`);
@@ -152,9 +164,12 @@ function revalidatePropertyMedia(propertyId: string, ownerPublicSlug?: string) {
 }
 
 function buildRoomRedirectTarget(formData: FormData, propertyId: string, roomId: string, state: Record<string, string>) {
-  const fallbackPath = buildPropertyRoomSettingsPath(propertyId, roomId);
+  const fallbackPath = propertyId ? buildPropertyRoomSettingsPath(propertyId, roomId) : buildStandaloneRoomSettingsPath(roomId);
   const redirectTo = getString(formData, "redirectTo");
-  const basePath = redirectTo.startsWith("/dashboard/properties/") ? redirectTo : fallbackPath;
+  const basePath =
+    redirectTo.startsWith("/dashboard/properties/") || redirectTo.startsWith("/dashboard/rooms/")
+      ? redirectTo
+      : fallbackPath;
   const params = new URLSearchParams(state);
   const query = params.toString();
   return query ? `${basePath}?${query}` : basePath;
@@ -214,7 +229,7 @@ export async function uploadPropertyPhoto(formData: FormData) {
   }
 
   const ownerPublicSlug = await getOwnerPublicSlug(supabase, propertyId, property.owner_id);
-  revalidatePropertyMedia(propertyId, ownerPublicSlug);
+  revalidateRoomMedia(propertyId, "", ownerPublicSlug);
   redirect(buildPropertyPathWithState(propertyId, "property", { success: "photo-uploaded" }));
 }
 
@@ -262,7 +277,7 @@ export async function deletePropertyPhoto(formData: FormData) {
   }
 
   const ownerPublicSlug = await getOwnerPublicSlug(supabase, propertyId, property.owner_id);
-  revalidatePropertyMedia(propertyId, ownerPublicSlug);
+  revalidateRoomMedia(propertyId, "", ownerPublicSlug);
   redirect(buildPropertyPathWithState(propertyId, "property", { success: "photo-deleted" }));
 }
 
@@ -301,17 +316,17 @@ export async function setPropertyPhotoPrimary(formData: FormData) {
   }
 
   const ownerPublicSlug = await getOwnerPublicSlug(supabase, propertyId, property.owner_id);
-  revalidatePropertyMedia(propertyId, ownerPublicSlug);
+  revalidateRoomMedia(propertyId, "", ownerPublicSlug);
   redirect(buildPropertyPathWithState(propertyId, "property", { success: "photo-primary" }));
 }
 
 export async function uploadRoomPhoto(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
-  const profile = await requireOwnerMutationAccess(buildPropertyPath(propertyId, "rooms"));
   const roomId = getString(formData, "roomId");
+  const profile = await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId));
   const file = getUploadedFile(formData, "photo");
 
-  if (!propertyId || !roomId || !file) {
+  if (!roomId || !file) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "room-photo-validation" }));
   }
 
@@ -321,13 +336,13 @@ export async function uploadRoomPhoto(formData: FormData) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: fileError === "photo-type" ? "room-photo-type" : "room-photo-size" }));
   }
 
-  const { supabase, room } = await loadOwnedRoom(roomId, propertyId);
+  const { supabase, room } = await loadOwnedRoom(roomId, propertyId || undefined);
 
   if (!room) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "room-photo-upload" }));
   }
 
-  const ownerPublicSlug = await getOwnerPublicSlug(supabase, propertyId);
+  const ownerPublicSlug = propertyId ? await getOwnerPublicSlug(supabase, propertyId) : "";
   const { data: photoRows } = await supabase
     .from("room_photos")
     .select("sort_order")
@@ -360,29 +375,27 @@ export async function uploadRoomPhoto(formData: FormData) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "room-photo-upload" }));
   }
 
-  revalidatePropertyMedia(propertyId, ownerPublicSlug);
-  revalidatePath(buildPropertyRoomPath(propertyId, roomId));
-  revalidatePath(buildPropertyRoomSettingsPath(propertyId, roomId));
+  revalidateRoomMedia(propertyId, roomId, ownerPublicSlug);
   redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { success: "room-photo-uploaded" }));
 }
 
 export async function deleteRoomPhoto(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
-  await requireOwnerMutationAccess(buildPropertyPath(propertyId, "rooms"));
   const roomId = getString(formData, "roomId");
+  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId));
   const photoId = getString(formData, "photoId");
 
-  if (!propertyId || !roomId || !photoId) {
+  if (!roomId || !photoId) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "room-photo-delete" }));
   }
 
-  const { supabase, room } = await loadOwnedRoom(roomId, propertyId);
+  const { supabase, room } = await loadOwnedRoom(roomId, propertyId || undefined);
 
   if (!room) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "room-photo-delete" }));
   }
 
-  const ownerPublicSlug = await getOwnerPublicSlug(supabase, propertyId);
+  const ownerPublicSlug = propertyId ? await getOwnerPublicSlug(supabase, propertyId) : "";
   const { data: photoRowData } = await supabase
     .from("room_photos")
     .select("id, room_id, storage_path")
@@ -408,29 +421,27 @@ export async function deleteRoomPhoto(formData: FormData) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "room-photo-delete" }));
   }
 
-  revalidatePropertyMedia(propertyId, ownerPublicSlug);
-  revalidatePath(buildPropertyRoomPath(propertyId, roomId));
-  revalidatePath(buildPropertyRoomSettingsPath(propertyId, roomId));
+  revalidateRoomMedia(propertyId, roomId, ownerPublicSlug);
   redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { success: "room-photo-deleted" }));
 }
 
 export async function setRoomPhotoPrimary(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
-  await requireOwnerMutationAccess(buildPropertyPath(propertyId, "rooms"));
   const roomId = getString(formData, "roomId");
+  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId));
   const photoId = getString(formData, "photoId");
 
-  if (!propertyId || !roomId || !photoId) {
+  if (!roomId || !photoId) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "room-photo-order" }));
   }
 
-  const { supabase, room } = await loadOwnedRoom(roomId, propertyId);
+  const { supabase, room } = await loadOwnedRoom(roomId, propertyId || undefined);
 
   if (!room) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "room-photo-order" }));
   }
 
-  const ownerPublicSlug = await getOwnerPublicSlug(supabase, propertyId);
+  const ownerPublicSlug = propertyId ? await getOwnerPublicSlug(supabase, propertyId) : "";
   const { data: photoRowsData } = await supabase
     .from("room_photos")
     .select("id, room_id, storage_path, sort_order, created_at")
@@ -450,8 +461,6 @@ export async function setRoomPhotoPrimary(formData: FormData) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "room-photo-order" }));
   }
 
-  revalidatePropertyMedia(propertyId, ownerPublicSlug);
-  revalidatePath(buildPropertyRoomPath(propertyId, roomId));
-  revalidatePath(buildPropertyRoomSettingsPath(propertyId, roomId));
+  revalidateRoomMedia(propertyId, roomId, ownerPublicSlug);
   redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { success: "room-photo-primary" }));
 }

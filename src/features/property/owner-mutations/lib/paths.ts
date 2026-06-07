@@ -14,6 +14,22 @@ export function buildPropertyRoomCreatePath(propertyId: string) {
   return `/dashboard/properties/${propertyId}/rooms/new`;
 }
 
+export function buildStandaloneRoomCreatePath() {
+  return "/dashboard/rooms/new";
+}
+
+export function buildStandaloneRoomPath(roomId: string) {
+  return `/dashboard/rooms/${roomId}`;
+}
+
+export function buildStandaloneRoomSettingsPath(roomId: string) {
+  return `/dashboard/rooms/${roomId}/settings`;
+}
+
+export function buildStandaloneRoomCalendarPath(roomId: string) {
+  return `/dashboard/rooms/${roomId}/calendar`;
+}
+
 export function buildPropertyRoomPath(propertyId: string, roomId: string) {
   return `/dashboard/properties/${propertyId}/rooms/${roomId}`;
 }

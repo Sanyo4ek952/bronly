@@ -17,7 +17,13 @@ import type {
   SupabaseRoomSeasonalPriceRow,
 } from "@/shared/api/supabase/types";
 
-import type { CollectionRole, PublicCollectionContact, PublicCollectionPageData, PublicCollectionSection } from "../model/types";
+import type {
+  CollectionRole,
+  PublicCollectionContact,
+  PublicCollectionPageData,
+  PublicCollectionSection,
+  PublicCollectionStandaloneRoomItem,
+} from "../model/types";
 
 type CollectionRoomRow = SupabaseRoomRow & {
   properties:
@@ -53,6 +59,7 @@ type CollectionContext = {
   collection: PublicCollectionPageData["collection"];
   contact: PublicCollectionContact | null;
   sections: PublicCollectionSection[];
+  standaloneRooms: PublicCollectionStandaloneRoomItem[];
   publicWarningText: string | null;
   publicUnavailableReason: PublicUnavailableReason | null;
 } | null;
@@ -74,8 +81,11 @@ function mapRoomRow(
 ): PublicRoom {
   return {
     id: room.id,
+    ownerId: room.owner_id,
+    kind: room.room_kind,
     title: room.title,
     subtitle: room.subtitle ?? "",
+    propertyTitle: room.property_id ? undefined : room.property_type ?? "Отдельный номер",
     capacity: room.capacity,
     bedrooms: room.bedrooms,
     area: room.area,
@@ -86,6 +96,22 @@ function mapRoomRow(
     seasonalPrices,
     busyRanges,
     agentMarkupPercent,
+    location: {
+      propertyId: room.property_id,
+      propertyType: room.property_type ?? "",
+      city: room.city ?? "",
+      address: room.address ?? "",
+      timezone: room.timezone ?? "",
+      shortDescription: room.short_description ?? "",
+      fullDescription: room.full_description ?? "",
+      phone: room.phone ?? "",
+      whatsapp: room.whatsapp ?? "",
+      telegram: room.telegram ?? "",
+      checkInTime: room.check_in_time ?? "",
+      checkOutTime: room.check_out_time ?? "",
+      allowAgentInquiries: room.allow_agent_inquiries,
+      allowOwnerContactSharing: room.allow_owner_contact_sharing,
+    },
   };
 }
 
@@ -119,6 +145,7 @@ async function loadPublicCollectionContext(
       collection: null,
       contact: null,
       sections: [],
+      standaloneRooms: [],
       publicWarningText: null,
       publicUnavailableReason: "subscription_expired",
     };
@@ -129,6 +156,7 @@ async function loadPublicCollectionContext(
       collection: null,
       contact: null,
       sections: [],
+      standaloneRooms: [],
       publicWarningText: null,
       publicUnavailableReason: "admin_hidden",
     };
@@ -176,11 +204,12 @@ async function loadPublicCollectionContext(
   const directRoomRowsResult = directRoomIds.length
     ? await supabase
         .from("rooms")
-        .select("*, properties!inner(id, slug, title, short_title, city, address, owner_id, cover_image_url)")
+        .select("*, properties(id, slug, title, short_title, city, address, owner_id, cover_image_url)")
         .in("id", directRoomIds)
         .eq("is_active", true)
         .order("title", { ascending: true })
     : { data: [] };
+
   const directRoomPropertyIds = [
     ...new Set(
       ((directRoomRowsResult.data ?? []) as CollectionRoomRow[])
@@ -205,9 +234,12 @@ async function loadPublicCollectionContext(
     >
   >;
   const ownerStates = await Promise.all(
-    [...new Set(propertyRows.map((property) => property.owner_id))].map(
-      async (ownerId) => [ownerId, await getSubscriptionRuntimeState(ownerId, "owner")] as const,
-    ),
+    [
+      ...new Set([
+        ...propertyRows.map((property) => property.owner_id),
+        ...((directRoomRowsResult.data ?? []) as CollectionRoomRow[]).map((room) => room.owner_id),
+      ]),
+    ].map(async (ownerId) => [ownerId, await getSubscriptionRuntimeState(ownerId, "owner")] as const),
   );
   const ownerStateMap = new Map(ownerStates);
   const safePropertyMap = new Map(
@@ -225,18 +257,30 @@ async function loadPublicCollectionContext(
         .order("title", { ascending: true })
     : { data: [] };
 
-  const roomMap = new Map<string, CollectionRoomRow>();
-  for (const row of [...((propertyRoomRowsResult.data ?? []) as CollectionRoomRow[]), ...((directRoomRowsResult.data ?? []) as CollectionRoomRow[])]) {
+  const propertyRoomMap = new Map<string, CollectionRoomRow>();
+  const standaloneRoomMap = new Map<string, CollectionRoomRow>();
+
+  for (const row of [
+    ...((propertyRoomRowsResult.data ?? []) as CollectionRoomRow[]),
+    ...((directRoomRowsResult.data ?? []) as CollectionRoomRow[]),
+  ]) {
     const property = getSingleRow(row.properties);
+
+    if (row.room_kind === "standalone_room") {
+      if (ownerStateMap.get(row.owner_id)?.isPublicAllowed) {
+        standaloneRoomMap.set(row.id, row);
+      }
+      continue;
+    }
 
     if (!property || !safePropertyMap.has(property.id)) {
       continue;
     }
 
-    roomMap.set(row.id, row);
+    propertyRoomMap.set(row.id, row);
   }
 
-  const roomIds = [...roomMap.keys()];
+  const roomIds = [...propertyRoomMap.keys(), ...standaloneRoomMap.keys()];
   const propertyPhotoIds = [...safePropertyMap.keys()];
   const [seasonalResult, busyResult, markupResult, roomPhotosResult, propertyPhotosResult] = roomIds.length
     ? await Promise.all([
@@ -246,11 +290,7 @@ async function loadPublicCollectionContext(
           .in("room_id", roomIds)
           .eq("is_active", true)
           .order("starts_on", { ascending: true }),
-        supabase
-          .from("room_busy_ranges")
-          .select("*")
-          .in("room_id", roomIds)
-          .order("starts_on", { ascending: true }),
+        supabase.from("room_busy_ranges").select("*").in("room_id", roomIds).order("starts_on", { ascending: true }),
         collectionRow.creator_role === "agent"
           ? supabase
               .from("room_agent_markups")
@@ -299,6 +339,7 @@ async function loadPublicCollectionContext(
   const roomPhotoMap = buildRoomPhotoMap((roomPhotosResult.data ?? []) as SupabaseRoomPhotoRow[]);
   const roomsByProperty = new Map<string, Map<string, PublicRoom>>();
   const sourceKindsByProperty = new Map<string, Set<"property" | "room">>();
+  const standaloneRooms = new Map<string, PublicCollectionStandaloneRoomItem>();
 
   for (const item of safeItemRows) {
     if (item.property_id) {
@@ -310,7 +351,7 @@ async function loadPublicCollectionContext(
 
       sourceKindsByProperty.set(property.id, new Set([...(sourceKindsByProperty.get(property.id) ?? []), "property"]));
 
-      for (const room of roomMap.values()) {
+      for (const room of propertyRoomMap.values()) {
         if (room.property_id !== property.id) {
           continue;
         }
@@ -333,32 +374,54 @@ async function loadPublicCollectionContext(
       }
     }
 
-    if (item.room_id) {
-      const room = roomMap.get(item.room_id);
-      const property = room ? getSingleRow(room.properties) : null;
+    if (!item.room_id) {
+      continue;
+    }
 
-      if (!room || !property) {
-        continue;
-      }
+    const standaloneRoom = standaloneRoomMap.get(item.room_id);
 
-      sourceKindsByProperty.set(property.id, new Set([...(sourceKindsByProperty.get(property.id) ?? []), "room"]));
-
-      const scopedRooms = roomsByProperty.get(property.id) ?? new Map<string, PublicRoom>();
-      scopedRooms.set(
-        room.id,
-        buildPublicRoomQuote(
+    if (standaloneRoom) {
+      const existing = standaloneRooms.get(standaloneRoom.id);
+      standaloneRooms.set(standaloneRoom.id, {
+        room: buildPublicRoomQuote(
           mapRoomRow(
-            room,
-            roomPhotoMap.get(room.id) ?? [],
-            seasonalMap.get(room.id) ?? [],
-            busyMap.get(room.id) ?? [],
-            markupMap.get(room.id) ?? 0,
+            standaloneRoom,
+            roomPhotoMap.get(standaloneRoom.id) ?? [],
+            seasonalMap.get(standaloneRoom.id) ?? [],
+            busyMap.get(standaloneRoom.id) ?? [],
+            markupMap.get(standaloneRoom.id) ?? 0,
           ),
           filters,
         ),
-      );
-      roomsByProperty.set(property.id, scopedRooms);
+        sourceKinds: [...new Set<"property" | "room">([...(existing?.sourceKinds ?? []), "room"])],
+      });
+      continue;
     }
+
+    const room = propertyRoomMap.get(item.room_id);
+    const property = room ? getSingleRow(room.properties) : null;
+
+    if (!room || !property) {
+      continue;
+    }
+
+    sourceKindsByProperty.set(property.id, new Set([...(sourceKindsByProperty.get(property.id) ?? []), "room"]));
+
+    const scopedRooms = roomsByProperty.get(property.id) ?? new Map<string, PublicRoom>();
+    scopedRooms.set(
+      room.id,
+      buildPublicRoomQuote(
+        mapRoomRow(
+          room,
+          roomPhotoMap.get(room.id) ?? [],
+          seasonalMap.get(room.id) ?? [],
+          busyMap.get(room.id) ?? [],
+          markupMap.get(room.id) ?? 0,
+        ),
+        filters,
+      ),
+    );
+    roomsByProperty.set(property.id, scopedRooms);
   }
 
   const sections: PublicCollectionSection[] = [...roomsByProperty.entries()]
@@ -406,6 +469,9 @@ async function loadPublicCollectionContext(
       telegram: creator.telegram ?? "",
     },
     sections,
+    standaloneRooms: [...standaloneRooms.values()].sort(
+      (a, b) => Number(Boolean(b.room.isAvailableForFilter)) - Number(Boolean(a.room.isAvailableForFilter)),
+    ),
     publicWarningText: creatorSubscription.publicWarningText,
     publicUnavailableReason: null,
   };
@@ -439,6 +505,7 @@ export const getPublicCollectionPageData = cache(
           collection: null,
           contact: null,
           sections: [],
+          standaloneRooms: [],
           filters,
           publicUnavailableReason: context.publicUnavailableReason,
           publicWarningText: null,
@@ -449,6 +516,7 @@ export const getPublicCollectionPageData = cache(
         collection: context.collection,
         contact: context.contact,
         sections: context.sections,
+        standaloneRooms: context.standaloneRooms,
         filters,
         publicUnavailableReason: context.publicUnavailableReason,
         publicWarningText: context.publicWarningText,
@@ -509,10 +577,30 @@ export async function recordPublicCollectionOpen(collectionSlug: string) {
   }
 }
 
-export async function getCollectionRequestContext(collectionSlug: string, propertySlug: string, roomId: string) {
+export async function getCollectionRequestContext(collectionSlug: string, propertySlug: string | undefined, roomId: string) {
   const pageData = await getPublicCollectionPageData(collectionSlug);
 
   if (!pageData?.collection || !pageData.contact) {
+    return null;
+  }
+
+  const standaloneRoom = pageData.standaloneRooms.find((item) => item.room.id === roomId)?.room;
+
+  if (standaloneRoom) {
+    return {
+      collectionId: pageData.collection.id,
+      collectionSlug: pageData.collection.slug,
+      collectionTitle: pageData.collection.title,
+      creatorRole: pageData.collection.creatorRole,
+      contactId: pageData.contact.id,
+      propertySlug: null,
+      roomId: standaloneRoom.id,
+      agentProfileId: pageData.collection.creatorRole === "agent" ? pageData.contact.id : null,
+      agentMarkupPercent: pageData.collection.creatorRole === "agent" ? standaloneRoom.agentMarkupPercent ?? 0 : null,
+    };
+  }
+
+  if (!propertySlug) {
     return null;
   }
 

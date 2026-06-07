@@ -27,11 +27,11 @@ function getErrorText(error: string) {
     case "property":
       return "Объект больше недоступен по этой ссылке.";
     case "subscription":
-      return "Владелец еще не продлил доступ к сервису. Новые заявки по этой ссылке сейчас не принимаются.";
+      return "Владелец ещё не продлил доступ к сервису. Новые заявки по этой ссылке сейчас не принимаются.";
     case "validation":
       return "Проверьте имя, телефон, номер и даты проживания.";
     default:
-      return "Не удалось отправить заявку. Проверьте поля и попробуйте еще раз.";
+      return "Не удалось отправить заявку. Проверьте поля и попробуйте ещё раз.";
   }
 }
 
@@ -89,14 +89,8 @@ export default async function PublicRequestPage({ params, searchParams }: Public
           <h1>{unavailable.title}</h1>
           <p>{unavailable.description}</p>
           <div className="br-request-success__actions">
-            <ButtonLink href="/" fullWidth>
-              На главную
-            </ButtonLink>
-            {unavailable.showLogin ? (
-              <ButtonLink href="/login" variant="secondary" fullWidth>
-                Войти в кабинет
-              </ButtonLink>
-            ) : null}
+            <ButtonLink href="/" fullWidth>На главную</ButtonLink>
+            {unavailable.showLogin ? <ButtonLink href="/login" variant="secondary" fullWidth>Войти в кабинет</ButtonLink> : null}
           </div>
         </Panel>
       </main>
@@ -106,13 +100,9 @@ export default async function PublicRequestPage({ params, searchParams }: Public
   const propertySlug = getSearchString(query, "propertySlug");
   const requestedError = getSearchString(query, "error");
   const requestedRoomId = getSearchString(query, "roomId");
-  const selectedSection = getOwnerPropertySectionBySlug(pageData, propertySlug) ?? pageData.properties[0];
-
-  if (!selectedSection) {
-    notFound();
-  }
-
-  const activeRooms = selectedSection.rooms.filter((room) => room.status === "active");
+  const selectedSection = propertySlug ? getOwnerPropertySectionBySlug(pageData, propertySlug) : null;
+  const scopedRooms = selectedSection ? selectedSection.rooms : pageData.standaloneRooms.length ? pageData.standaloneRooms : pageData.properties[0]?.rooms ?? [];
+  const activeRooms = scopedRooms.filter((room) => room.status === "active");
   const hasRequestedRoom = Boolean(requestedRoomId);
   const requestedRoomIsValid = hasRequestedRoom ? activeRooms.some((room) => room.id === requestedRoomId) : true;
   const defaultRoomId =
@@ -127,11 +117,9 @@ export default async function PublicRequestPage({ params, searchParams }: Public
       <main className="br-auth-page">
         <Panel className="br-request-success" as="section">
           <h1>Заявка временно недоступна</h1>
-          <p>По выбранному объекту сейчас нет активных номеров для запроса на проживание.</p>
+          <p>По выбранному варианту сейчас нет активных номеров для запроса на проживание.</p>
           <div className="br-request-success__actions">
-            <ButtonLink href={`/p/${pageData.owner.slug}`} fullWidth>
-              Вернуться на страницу владельца
-            </ButtonLink>
+            <ButtonLink href={`/p/${pageData.owner.slug}`} fullWidth>Вернуться на страницу владельца</ButtonLink>
           </div>
         </Panel>
       </main>
@@ -151,18 +139,13 @@ export default async function PublicRequestPage({ params, searchParams }: Public
           </Link>
         </div>
 
-        {error ? (
-          <p className="br-card" style={{ marginBottom: 16, padding: 16 }}>
-            {getErrorText(error)}
-          </p>
-        ) : null}
-
+        {error ? <p className="br-card" style={{ marginBottom: 16, padding: 16 }}>{getErrorText(error)}</p> : null}
         {pageData.publicWarningText ? <p className="br-inline-notice">{pageData.publicWarningText}</p> : null}
 
         <GuestRequestForm
           publicSlug={pageData.owner.slug}
-          propertySlug={selectedSection.property.slug}
-          rooms={selectedSection.rooms}
+          propertySlug={selectedSection?.property.slug}
+          rooms={scopedRooms}
           defaultRoomId={defaultRoomId}
           filters={pageData.filters}
           action={submitGuestRequestAction}

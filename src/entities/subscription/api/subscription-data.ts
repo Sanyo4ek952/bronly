@@ -219,22 +219,10 @@ async function maybeSyncRuntimeSubscriptionState(
 
 async function countOwnerActiveRooms(profileId: string) {
   const admin = createSupabaseAdminClient();
-  const { data: propertyRows } = await admin
-    .from("properties")
-    .select("id")
-    .eq("owner_id", profileId)
-    .eq("is_frozen", false);
-
-  const propertyIds = (propertyRows ?? []).map((row) => row.id as string);
-
-  if (!propertyIds.length) {
-    return 0;
-  }
-
   const { count } = await admin
     .from("rooms")
     .select("*", { count: "exact", head: true })
-    .in("property_id", propertyIds)
+    .eq("owner_id", profileId)
     .eq("is_active", true);
 
   return count ?? 0;

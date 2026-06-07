@@ -103,6 +103,9 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
 
   const roomStatsByProperty = new Map<string, { totalRoomCount: number; activeRoomCount: number }>();
   for (const room of safeRooms) {
+    if (!room.property_id) {
+      continue;
+    }
     const current = roomStatsByProperty.get(room.property_id) ?? { totalRoomCount: 0, activeRoomCount: 0 };
     current.totalRoomCount += 1;
     if (room.is_active) {

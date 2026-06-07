@@ -11,13 +11,23 @@ function getString(formData: FormData, key: string) {
 }
 
 function buildRequestPath(collectionSlug: string, state: Record<string, string>) {
-  const params = new URLSearchParams(state);
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(state)) {
+    if (value) {
+      params.set(key, value);
+    }
+  }
   const query = params.toString();
   return `/c/${collectionSlug}/request${query ? `?${query}` : ""}`;
 }
 
 function buildSuccessPath(collectionSlug: string, state: Record<string, string>) {
-  const params = new URLSearchParams(state);
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(state)) {
+    if (value) {
+      params.set(key, value);
+    }
+  }
   const query = params.toString();
   return `/c/${collectionSlug}/request/success${query ? `?${query}` : ""}`;
 }
@@ -42,18 +52,18 @@ export async function submitCollectionGuestRequestAction(formData: FormData) {
     rooms: String(roomsCount),
   };
 
-  if (!guestName || !guestPhone || !checkIn || !checkOut || !roomId || !propertySlug || !collectionSlug) {
+  if (!guestName || !guestPhone || !checkIn || !checkOut || !roomId || !collectionSlug) {
     redirect(buildRequestPath(collectionSlug || "collection", { ...baseState, error: "validation" }));
   }
 
-  const requestContext = await getCollectionRequestContext(collectionSlug, propertySlug, roomId);
+  const requestContext = await getCollectionRequestContext(collectionSlug, propertySlug || undefined, roomId);
 
   if (!requestContext) {
     redirect(buildRequestPath(collectionSlug, { ...baseState, error: "room" }));
   }
 
   const result = await createGuestRequest({
-    propertySlug,
+    propertySlug: requestContext.propertySlug ?? undefined,
     roomId,
     guestName,
     guestPhone,

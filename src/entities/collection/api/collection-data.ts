@@ -35,7 +35,7 @@ type RoomPropertyJoinRow = {
   address: string;
   owner_id: string;
 };
-type RoomCandidateRow = Pick<SupabaseRoomRow, "id" | "property_id" | "title" | "subtitle"> & {
+type RoomCandidateRow = Pick<SupabaseRoomRow, "id" | "owner_id" | "room_kind" | "property_id" | "title" | "subtitle" | "property_type" | "city" | "address"> & {
   properties: RoomPropertyJoinRow | RoomPropertyJoinRow[] | null;
 };
 type CollectionItemQueryRow = {
@@ -63,7 +63,10 @@ type CollectionItemQueryRow = {
         id: string;
         title: string;
         subtitle: string | null;
-        property_id: string;
+        property_id: string | null;
+        property_type?: string | null;
+        city?: string | null;
+        address?: string | null;
         properties:
           | {
               id: string;
@@ -83,7 +86,10 @@ type CollectionItemQueryRow = {
         id: string;
         title: string;
         subtitle: string | null;
-        property_id: string;
+        property_id: string | null;
+        property_type?: string | null;
+        city?: string | null;
+        address?: string | null;
         properties:
           | {
               id: string;
@@ -147,21 +153,21 @@ function mapPropertyCandidate(row: PropertyCandidateRow, currentProfileId: strin
 function mapRoomCandidate(row: RoomCandidateRow, currentProfileId: string): CollectionAccessCandidate | null {
   const property = getSingleRow(row.properties);
 
-  if (!property) {
+  if (!property && row.room_kind !== "standalone_room") {
     return null;
   }
 
-  const subtitleParts = [property.title];
+  const subtitleParts = [property?.title ?? row.property_type ?? "Отдельный номер"];
   if (row.subtitle) {
     subtitleParts.push(row.subtitle);
   }
-  subtitleParts.push(property.city);
+  subtitleParts.push(property?.city ?? row.city ?? "");
 
   return {
     id: row.id,
     title: row.title,
     subtitle: subtitleParts.join(" · "),
-    scope: property.owner_id === currentProfileId ? "own" : "collaboration",
+    scope: (property?.owner_id ?? row.owner_id) === currentProfileId ? "own" : "collaboration",
   };
 }
 
@@ -202,15 +208,15 @@ function mapCollectionItem(row: CollectionItemQueryRow): CollectionItem | null {
   const room = getSingleRow(row.rooms);
   const property = room ? getSingleRow(room.properties) : null;
 
-  if (!room || !property) {
+  if (!room) {
     return null;
   }
 
-  const subtitleParts = [property.title];
+  const subtitleParts = [property?.title ?? room.property_type ?? "Отдельный номер"];
   if (room.subtitle) {
     subtitleParts.push(room.subtitle);
   }
-  subtitleParts.push(property.city);
+  subtitleParts.push(property?.city ?? room.city ?? "");
 
   return {
     id: row.id,
@@ -279,6 +285,19 @@ async function hasActiveCollaboration(profileId: string, propertyId: string) {
   return Boolean(data);
 }
 
+async function hasActiveStandaloneRoomCollaboration(profileId: string, roomId: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from("agent_room_links")
+    .select("id")
+    .eq("agent_id", profileId)
+    .eq("room_id", roomId)
+    .eq("status", "active")
+    .maybeSingle();
+
+  return Boolean(data);
+}
+
 async function getAccessibleProperty(profile: AuthProfile, role: CollectionRole, propertyId: string) {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.from("properties").select("id, owner_id, title, city, address").eq("id", propertyId).maybeSingle();
@@ -303,7 +322,7 @@ async function getAccessibleRoom(profile: AuthProfile, role: CollectionRole, roo
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from("rooms")
-    .select("id, property_id, title, subtitle, properties!inner(id, title, city, address, owner_id)")
+    .select("id, owner_id, room_kind, property_id, property_type, city, address, title, subtitle, properties(id, title, city, address, owner_id)")
     .eq("id", roomId)
     .maybeSingle();
   const room = (data ?? null) as RoomCandidateRow | null;
@@ -314,11 +333,11 @@ async function getAccessibleRoom(profile: AuthProfile, role: CollectionRole, roo
 
   const property = getSingleRow(room.properties);
 
-  if (!property) {
+  if (!property && room.room_kind !== "standalone_room") {
     return null;
   }
 
-  if (property.owner_id === profile.id) {
+  if ((property?.owner_id ?? room.owner_id) === profile.id) {
     return room;
   }
 
@@ -326,7 +345,11 @@ async function getAccessibleRoom(profile: AuthProfile, role: CollectionRole, roo
     return null;
   }
 
-  return (await hasActiveCollaboration(profile.id, room.property_id)) ? room : null;
+  if (room.property_id) {
+    return (await hasActiveCollaboration(profile.id, room.property_id)) ? room : null;
+  }
+
+  return (await hasActiveStandaloneRoomCollaboration(profile.id, room.id)) ? room : null;
 }
 
 async function getNextSortOrder(collectionId: string) {
@@ -421,22 +444,58 @@ async function getAvailableProperties(profile: AuthProfile, role: CollectionRole
 async function getAvailableRooms(profile: AuthProfile, role: CollectionRole) {
   const supabase = await createSupabaseServerClient();
   const propertyCandidates = await getAvailableProperties(profile, role);
-
-  if (!propertyCandidates.length) {
-    return [];
-  }
-
-  const { data } = await supabase
+  const propertyRoomsQuery = propertyCandidates.length
+    ? supabase
+        .from("rooms")
+        .select("id, owner_id, room_kind, property_id, property_type, city, address, title, subtitle, properties(id, title, city, address, owner_id)")
+        .in(
+          "property_id",
+          propertyCandidates.map((item) => item.id),
+        )
+        .eq("is_active", true)
+        .order("title", { ascending: true })
+    : Promise.resolve({ data: [] });
+  const ownStandaloneRoomsQuery = supabase
     .from("rooms")
-    .select("id, property_id, title, subtitle, properties!inner(id, title, city, address, owner_id)")
-    .in(
-      "property_id",
-      propertyCandidates.map((item) => item.id),
-    )
+    .select("id, owner_id, room_kind, property_id, property_type, city, address, title, subtitle, properties(id, title, city, address, owner_id)")
+    .eq("owner_id", profile.id)
+    .eq("room_kind", "standalone_room")
+    .eq("is_active", true)
     .order("title", { ascending: true });
+  const standaloneLinkedRoomIds =
+    role === "agent"
+      ? (
+          (
+            await supabase
+              .from("agent_room_links")
+              .select("room_id")
+              .eq("agent_id", profile.id)
+              .eq("status", "active")
+          ).data ?? []
+        ).map((row) => row.room_id as string)
+      : [];
+  const linkedStandaloneRoomsQuery =
+    role === "agent" && standaloneLinkedRoomIds.length
+      ? supabase
+          .from("rooms")
+          .select("id, owner_id, room_kind, property_id, property_type, city, address, title, subtitle, properties(id, title, city, address, owner_id)")
+          .in("id", standaloneLinkedRoomIds)
+          .eq("room_kind", "standalone_room")
+          .eq("is_active", true)
+          .order("title", { ascending: true })
+      : Promise.resolve({ data: [] });
+  const [propertyRoomsResult, ownStandaloneRoomsResult, linkedStandaloneRoomsResult] = await Promise.all([
+    propertyRoomsQuery,
+    ownStandaloneRoomsQuery,
+    linkedStandaloneRoomsQuery,
+  ]);
 
   const roomMap = new Map<string, CollectionAccessCandidate>();
-  for (const row of (data ?? []) as RoomCandidateRow[]) {
+  for (const row of [
+    ...((propertyRoomsResult.data ?? []) as RoomCandidateRow[]),
+    ...((ownStandaloneRoomsResult.data ?? []) as RoomCandidateRow[]),
+    ...((linkedStandaloneRoomsResult.data ?? []) as RoomCandidateRow[]),
+  ]) {
     const mapped = mapRoomCandidate(row, profile.id);
 
     if (mapped) {
@@ -452,7 +511,7 @@ async function getCollectionItems(collectionId: string) {
   const { data } = await supabase
     .from("collection_items")
     .select(
-      "id, property_id, room_id, sort_order, created_at, properties(id, title, city, address), rooms(id, title, subtitle, property_id, properties(id, title, city, address))",
+      "id, property_id, room_id, sort_order, created_at, properties(id, title, city, address), rooms(id, title, subtitle, property_id, property_type, city, address, properties(id, title, city, address))",
     )
     .eq("collection_id", collectionId)
     .order("sort_order", { ascending: true })

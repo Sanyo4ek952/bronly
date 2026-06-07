@@ -41,11 +41,12 @@ export async function submitGuestRequestAction(formData: FormData) {
     rooms: String(roomsCount),
   };
 
-  if (!guestName || !guestPhone || !checkIn || !checkOut || !roomId || !propertySlug || !publicSlug) {
+  if (!guestName || !guestPhone || !checkIn || !checkOut || !roomId || !publicSlug) {
     redirect(buildRequestPath(publicSlug || "owner", { ...baseState, error: "validation" }));
   }
 
   const result = await createGuestRequest({
+    publicSlug,
     propertySlug,
     roomId,
     guestName,
