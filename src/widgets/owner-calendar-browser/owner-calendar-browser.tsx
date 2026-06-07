@@ -1,18 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CalendarDays, ChevronLeft, ChevronRight, Dot, PencilLine } from "lucide-react";
 
 import { createRoomBusyRange, deleteRoomBusyRange, updateRoomBusyRange } from "@/app/dashboard/properties/actions";
 import type { OwnerBusyRange } from "@/entities/room";
 import { formatDateLabel } from "@/shared/lib/date";
-import { Button, Input, Select, StatCard, Tabs, Textarea } from "@/shared/ui";
+import { AppIcon, Button, IconButton, Input, StatCard, Textarea } from "@/shared/ui";
 import {
   addMonths,
   formatMonthLabel,
+  formatMonthRangeLabel,
   formatShortDateLabel,
   getMonthDays,
   getNearestBusyRange,
-  getOverviewDays,
+  getTimelineBusyRanges,
+  getTimelineDays,
   hasBusyOverlap,
   normalizeDateRange,
   parseDateKey,
@@ -32,8 +35,6 @@ type OwnerCalendarBrowserProps = {
   rooms: OwnerCalendarRoom[];
   serverNotice?: string;
 };
-
-type CalendarMode = "overview" | "month";
 
 type ActiveEditorState =
   | {
@@ -62,7 +63,7 @@ function getPanelTitle(activeEditor: ActiveEditorState | null) {
 
 function getPanelDescription(activeEditor: ActiveEditorState | null) {
   if (!activeEditor) {
-    return "Выберите свободные даты в календаре или откройте существующий диапазон.";
+    return "Выберите свободные даты в сетке или откройте существующий диапазон ниже.";
   }
 
   if (activeEditor.mode === "create") {
@@ -72,8 +73,23 @@ function getPanelDescription(activeEditor: ActiveEditorState | null) {
   return "Обновите даты, пометку или комментарий для выбранного диапазона.";
 }
 
+function getRoomSummary(room: OwnerCalendarRoom) {
+  if (!room.busyRanges.length) {
+    return "Свободно";
+  }
+
+  return `${room.busyRanges.length} занятых диапазонов`;
+}
+
+function getTimelineRangeLabel(range: OwnerBusyRange) {
+  return range.label || "Занято";
+}
+
+function getSelectionNotice(selectionStart: string | null) {
+  return selectionStart ? `Начало диапазона выбрано: ${formatDateLabel(selectionStart)}.` : "Кликните по двум датам, чтобы отметить занятый диапазон.";
+}
+
 export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = "" }: OwnerCalendarBrowserProps) {
-  const [mode, setMode] = useState<CalendarMode>("overview");
   const [selectedRoomId, setSelectedRoomId] = useState(rooms[0]?.id ?? "");
   const [currentMonth, setCurrentMonth] = useState(() => {
     const today = new Date();
@@ -91,6 +107,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
     () => (selectedRoom ? getMonthDays(currentMonth, selectedRoom.busyRanges) : []),
     [currentMonth, selectedRoom],
   );
+  const timelineDays = useMemo(() => getTimelineDays(currentMonth), [currentMonth]);
   const nearestBusyRange = useMemo(
     () => (selectedRoom ? getNearestBusyRange(selectedRoom.busyRanges) : null),
     [selectedRoom],
@@ -103,35 +120,29 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
     setLocalNotice("");
   }
 
-  function openRoomMonth(roomId: string) {
+  function handleRoomFocus(roomId: string) {
     setSelectedRoomId(roomId);
-    setMode("month");
-    resetInteractionState();
+    setSelectionStart(null);
+    setLocalNotice("");
   }
 
-  function handleRoomChange(roomId: string) {
-    setSelectedRoomId(roomId);
-    resetInteractionState();
-  }
-
-  function handleCalendarDayClick(dayKey: string, busyRange: OwnerBusyRange | null) {
-    if (!selectedRoom) {
-      return;
-    }
-
+  function handleTimelineCellClick(room: OwnerCalendarRoom, dayKey: string) {
+    setSelectedRoomId(room.id);
     setLocalNotice("");
 
-    if (busyRange) {
+    const dayBusyRange = room.busyRanges.find((range) => dayKey >= range.startsOn && dayKey <= range.endsOn) ?? null;
+
+    if (dayBusyRange) {
       setSelectionStart(null);
       setActiveEditor({
         mode: "edit",
-        roomId: selectedRoom.id,
-        busyRange,
+        roomId: room.id,
+        busyRange: dayBusyRange,
       });
       return;
     }
 
-    if (!selectionStart) {
+    if (!selectionStart || selectedRoomId !== room.id) {
       setSelectionStart(dayKey);
       setActiveEditor(null);
       return;
@@ -139,7 +150,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
 
     const nextRange = normalizeDateRange(selectionStart, dayKey);
 
-    if (hasBusyOverlap(selectedRoom.busyRanges, nextRange.startsOn, nextRange.endsOn)) {
+    if (hasBusyOverlap(room.busyRanges, nextRange.startsOn, nextRange.endsOn)) {
       setSelectionStart(null);
       setActiveEditor(null);
       setLocalNotice("Выбранный диапазон пересекается с уже отмеченными занятыми датами.");
@@ -149,22 +160,18 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
     setSelectionStart(null);
     setActiveEditor({
       mode: "create",
-      roomId: selectedRoom.id,
+      roomId: room.id,
       startsOn: nextRange.startsOn,
       endsOn: nextRange.endsOn,
     });
   }
 
-  function handleOpenBusyRange(busyRange: OwnerBusyRange) {
-    if (!selectedRoom) {
-      return;
-    }
-
-    setMode("month");
+  function handleOpenBusyRange(roomId: string, busyRange: OwnerBusyRange) {
+    setSelectedRoomId(roomId);
     setSelectionStart(null);
     setActiveEditor({
       mode: "edit",
-      roomId: selectedRoom.id,
+      roomId,
       busyRange,
     });
 
@@ -188,10 +195,9 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
             </div>
           </div>
           <div className="br-owner-calendar-editor__empty">
-            <strong>Отмечайте свободные даты прямо в месяце</strong>
-            <p>Первый клик выбирает начало диапазона, второй клик завершает его.</p>
-            <p>Клик по занятой дате открывает существующий диапазон для редактирования.</p>
-            {selectionStart ? <p>Начало диапазона выбрано: {formatDateLabel(selectionStart)}.</p> : null}
+            <strong>Отмечайте занятые даты прямо в сетке</strong>
+            <p>{getSelectionNotice(selectionStart)}</p>
+            <p>Клик по занятому диапазону откроет его для редактирования.</p>
           </div>
         </section>
       );
@@ -214,7 +220,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
           <div className="br-owner-calendar-editor__body">
             <Input id="owner-busy-new-start" name="startsOn" type="date" label="С" defaultValue={activeEditor.startsOn} />
             <Input id="owner-busy-new-end" name="endsOn" type="date" label="По" defaultValue={activeEditor.endsOn} />
-            <Input id="owner-busy-new-label" name="label" label="Пометка" placeholder="Например, занято" />
+            <Input id="owner-busy-new-label" name="label" label="Пометка" placeholder="Например, заявка" />
             <Textarea id="owner-busy-new-note" name="note" label="Комментарий" rows={3} />
           </div>
           <div className="br-owner-calendar-editor__actions">
@@ -241,10 +247,33 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
           </button>
         </div>
         <div className="br-owner-calendar-editor__body">
-          <Input id={`owner-busy-edit-start-${activeEditor.busyRange.id}`} name="startsOn" type="date" label="С" defaultValue={activeEditor.busyRange.startsOn} />
-          <Input id={`owner-busy-edit-end-${activeEditor.busyRange.id}`} name="endsOn" type="date" label="По" defaultValue={activeEditor.busyRange.endsOn} />
-          <Input id={`owner-busy-edit-label-${activeEditor.busyRange.id}`} name="label" label="Пометка" defaultValue={activeEditor.busyRange.label} />
-          <Textarea id={`owner-busy-edit-note-${activeEditor.busyRange.id}`} name="note" label="Комментарий" rows={3} defaultValue={activeEditor.busyRange.note} />
+          <Input
+            id={`owner-busy-edit-start-${activeEditor.busyRange.id}`}
+            name="startsOn"
+            type="date"
+            label="С"
+            defaultValue={activeEditor.busyRange.startsOn}
+          />
+          <Input
+            id={`owner-busy-edit-end-${activeEditor.busyRange.id}`}
+            name="endsOn"
+            type="date"
+            label="По"
+            defaultValue={activeEditor.busyRange.endsOn}
+          />
+          <Input
+            id={`owner-busy-edit-label-${activeEditor.busyRange.id}`}
+            name="label"
+            label="Пометка"
+            defaultValue={activeEditor.busyRange.label}
+          />
+          <Textarea
+            id={`owner-busy-edit-note-${activeEditor.busyRange.id}`}
+            name="note"
+            label="Комментарий"
+            rows={3}
+            defaultValue={activeEditor.busyRange.note}
+          />
         </div>
         <div className="br-owner-calendar-editor__actions">
           <Button type="submit" variant="danger" formAction={deleteRoomBusyRange}>
@@ -260,123 +289,187 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
     <section className="br-owner-stack">
       {(serverNotice || localNotice) ? <div className="br-inline-notice">{serverNotice || localNotice}</div> : null}
 
-      <section className="br-owner-calendar-flow">
-        <section className="br-owner-calendar-controls br-card">
-          <div className="br-owner-calendar-controls__top">
+      <section className="br-calendar-shell br-card">
+        <div className="br-calendar-shell__header">
+          <div className="br-calendar-shell__heading">
+            <div className="br-calendar-shell__icon">
+              <AppIcon icon={CalendarDays} />
+            </div>
             <div>
-              <h3>Номер</h3>
-              <p>{selectedRoom?.subtitle || "Отмечайте занятые даты вручную без автоматического подтверждения заявок."}</p>
-            </div>
-            <Select
-              value={selectedRoom?.id ?? ""}
-              onChange={(event) => handleRoomChange(event.target.value)}
-              options={rooms.map((room) => ({ value: room.id, label: room.title }))}
-            />
-          </div>
-
-          <div className="br-owner-calendar-controls__toolbar">
-            <Tabs
-              ariaLabel="Режим календаря занятости"
-              items={[
-                { value: "overview", label: "Обзор" },
-                { value: "month", label: "Месяц" },
-              ]}
-              value={mode}
-              onChange={(value) => setMode(value as CalendarMode)}
-            />
-            <div className="br-calendar-toolbar">
-              <Button variant="secondary" onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}>
-                Назад
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  const today = new Date();
-                  setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-                }}
-              >
-                Сегодня
-              </Button>
-              <Button variant="secondary" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-                Вперёд
-              </Button>
+              <h3>Календарь занятости</h3>
+              <p>{formatMonthRangeLabel(currentMonth)}</p>
             </div>
           </div>
 
-          {selectedRoom ? (
-            <div className="br-owner-calendar-stats">
-              <StatCard title="Базовая цена" value={formatRoomPrice(selectedRoom.pricePerNight)} subtitle={selectedRoom.title} />
-              <StatCard
-                title="Занятые диапазоны"
-                value={String(selectedRoom.busyRanges.length)}
-                subtitle={nearestBusyRange ? `Ближайший: ${formatDateLabel(nearestBusyRange.startsOn)}` : "Занятые даты пока не отмечены"}
-              />
-              <StatCard
-                title="Ближайший период"
-                value={
-                  nearestBusyRange
-                    ? `${formatShortDateLabel(nearestBusyRange.startsOn)} - ${formatShortDateLabel(nearestBusyRange.endsOn)}`
-                    : "Нет занятых дат"
-                }
-                subtitle={nearestBusyRange?.label || "Свободные даты"}
-              />
-            </div>
-          ) : null}
-        </section>
-
-        <section className="br-dashboard-block br-card">
-          <div className="br-owner-calendar-monthbar">
-            <strong>{formatMonthLabel(currentMonth)}</strong>
-            <span>{selectedRoom ? `Номер: ${selectedRoom.title}` : "Выберите номер для просмотра занятых дат."}</span>
+          <div className="br-calendar-shell__actions">
+            <IconButton
+              aria-label="Предыдущий месяц"
+              className="br-calendar-shell__nav"
+              onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}
+            >
+              <AppIcon icon={ChevronLeft} />
+            </IconButton>
+            <Button
+              variant="secondary"
+              className="br-calendar-shell__today"
+              onClick={() => {
+                const today = new Date();
+                setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+              }}
+            >
+              Текущий месяц
+            </Button>
+            <IconButton
+              aria-label="Следующий месяц"
+              className="br-calendar-shell__nav"
+              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+            >
+              <AppIcon icon={ChevronRight} />
+            </IconButton>
           </div>
+        </div>
 
-          {mode === "overview" ? (
-            <div className="br-owner-calendar-overview">
-              {rooms.map((room) => {
-                const overviewDays = getOverviewDays(room.busyRanges);
-                const roomNearestBusyRange = getNearestBusyRange(room.busyRanges);
+        <div className="br-calendar-shell__legend">
+          <span><Dot />Свободно</span>
+          <span><Dot />Занятые даты</span>
+          <span><Dot />Сегодня</span>
+          <span><Dot />Выбранное начало</span>
+          <span><Dot />Активный диапазон</span>
+        </div>
+
+        <div className="br-calendar-timeline">
+          <div className="br-calendar-timeline__scroll">
+            <div
+              className="br-calendar-timeline__grid"
+              style={{ ["--calendar-columns" as string]: String(timelineDays.length) }}
+            >
+              <div className="br-calendar-timeline__spacer" />
+
+              {timelineDays.map((day) => (
+                <div
+                  key={day.key}
+                  className={`br-calendar-timeline__head${day.isToday ? " br-calendar-timeline__head--today" : ""}`}
+                >
+                  <strong>{day.dayLabel}</strong>
+                  <span>{day.weekDayLabel}</span>
+                </div>
+              ))}
+
+              {rooms.map((room, rowIndex) => {
+                const ranges = getTimelineBusyRanges(room.busyRanges, timelineDays);
+                const isSelectedRoom = room.id === selectedRoom?.id;
 
                 return (
-                  <article key={room.id} className="br-owner-calendar-overview__row">
-                    <div className="br-owner-calendar-overview__meta">
-                      <div>
+                  <div key={room.id} className="br-calendar-timeline__row">
+                    <button
+                      type="button"
+                      className={`br-calendar-room-card${isSelectedRoom ? " br-calendar-room-card--active" : ""}`}
+                      onClick={() => handleRoomFocus(room.id)}
+                    >
+                      <span className={`br-calendar-room-card__badge br-calendar-room-card__badge--${(rowIndex % 4) + 1}`}>
+                        {rowIndex + 1}
+                      </span>
+                      <span className="br-calendar-room-card__copy">
                         <strong>{room.title}</strong>
-                        <p>Базовая цена: {formatRoomPrice(room.pricePerNight)} • Занятых диапазонов: {room.busyRanges.length}</p>
+                        <small>{room.subtitle || getRoomSummary(room)}</small>
+                      </span>
+                    </button>
+
+                    <div className={`br-calendar-room-grid${isSelectedRoom ? " br-calendar-room-grid--active" : ""}`}>
+                      <div className="br-calendar-room-grid__cells">
+                        {timelineDays.map((day) => {
+                          const dayBusyRange =
+                            room.busyRanges.find((range) => day.key >= range.startsOn && day.key <= range.endsOn) ?? null;
+                          const isSelectionStart = isSelectedRoom && selectionStart === day.key;
+                          const isActiveRange = selectedBusyRangeId ? dayBusyRange?.id === selectedBusyRangeId : false;
+
+                          return (
+                            <button
+                              key={`${room.id}-${day.key}`}
+                              type="button"
+                              className={`br-calendar-room-grid__cell${dayBusyRange ? " br-calendar-room-grid__cell--busy" : ""}${day.isToday ? " br-calendar-room-grid__cell--today" : ""}${isSelectionStart ? " br-calendar-room-grid__cell--selected" : ""}${isActiveRange ? " br-calendar-room-grid__cell--active" : ""}`}
+                              onClick={() => handleTimelineCellClick(room, day.key)}
+                              aria-label={`${room.title}: ${formatDateLabel(day.date)}. ${dayBusyRange ? "Занято" : "Свободно"}.`}
+                            />
+                          );
+                        })}
                       </div>
-                      <Button variant="secondary" onClick={() => openRoomMonth(room.id)}>
-                        Открыть месяц
-                      </Button>
-                    </div>
-                    <div className="br-owner-calendar-strip__viewport">
-                      <div className="br-owner-calendar-strip" aria-label={`Обзор занятости номера ${room.title}`}>
-                        {overviewDays.map((day) => (
-                          <div
-                            key={`${room.id}-${day.key}`}
-                            className={`br-owner-calendar-strip__day${day.busyRange ? " br-owner-calendar-strip__day--busy" : ""}${day.isToday ? " br-owner-calendar-strip__day--today" : ""}`}
-                            title={day.busyRange ? `${day.key}: ${day.busyRange.label || "Занято"}` : `${day.key}: свободно`}
+
+                      <div className="br-calendar-room-grid__prices">
+                        {timelineDays.map((day) => (
+                          <span key={`${room.id}-price-${day.key}`}>{room.pricePerNight.toLocaleString("ru-RU")}</span>
+                        ))}
+                      </div>
+
+                      <div className="br-calendar-room-grid__ranges">
+                        {ranges.map((range) => (
+                          <button
+                            key={range.busyRange.id}
+                            type="button"
+                            className={`br-calendar-range-card${selectedBusyRangeId === range.busyRange.id ? " br-calendar-range-card--active" : ""}`}
+                            style={{
+                              gridColumn: `${range.startIndex + 1} / span ${range.span}`,
+                            }}
+                            onClick={() => handleOpenBusyRange(room.id, range.busyRange)}
                           >
-                            <span>{day.label}</span>
-                          </div>
+                            <span className="br-calendar-range-card__label">
+                              {range.clippedStart ? "…" : ""}
+                              {getTimelineRangeLabel(range.busyRange)}
+                              {range.clippedEnd ? "…" : ""}
+                            </span>
+                            <span className="br-calendar-range-card__meta">
+                              {formatShortDateLabel(range.busyRange.startsOn)} - {formatShortDateLabel(range.busyRange.endsOn)}
+                              <AppIcon icon={PencilLine} />
+                            </span>
+                          </button>
                         ))}
                       </div>
                     </div>
-                    <p className="br-owner-muted">
-                      {roomNearestBusyRange
-                        ? `Ближайший занятый период: ${formatDateLabel(roomNearestBusyRange.startsOn)} - ${formatDateLabel(roomNearestBusyRange.endsOn)}`
-                        : "Ближайшие 31 день без занятых дат."}
-                    </p>
-                  </article>
+                  </div>
                 );
               })}
             </div>
-          ) : selectedRoom ? (
-            <div className="br-owner-calendar-month">
+          </div>
+        </div>
+      </section>
+
+      {selectedRoom ? (
+        <section className="br-owner-calendar-detail">
+          <div className="br-owner-calendar-stats">
+            <StatCard title="Выбранный номер" value={selectedRoom.title} subtitle={selectedRoom.subtitle || "Календарь занятости номера"} />
+            <StatCard
+              title="Базовая цена"
+              value={formatRoomPrice(selectedRoom.pricePerNight)}
+              subtitle="Отображается для каждого дня в шкале"
+            />
+            <StatCard
+              title="Ближайший период"
+              value={
+                nearestBusyRange
+                  ? `${formatShortDateLabel(nearestBusyRange.startsOn)} - ${formatShortDateLabel(nearestBusyRange.endsOn)}`
+                  : "Нет занятых дат"
+              }
+              subtitle={nearestBusyRange?.label || "Свободные даты"}
+            />
+          </div>
+
+          <section className="br-owner-calendar-detail__grid">
+            <section className="br-owner-calendar-month br-card">
+              <div className="br-owner-calendar-month__header">
+                <div>
+                  <strong>{selectedRoom.title}</strong>
+                  <p>Детальный месяц для проверки выбора и занятых дат.</p>
+                </div>
+                <span>{formatMonthLabel(currentMonth)}</span>
+              </div>
+
               <div className="br-calendar-grid">
                 {weekDays.map((day) => (
                   <div key={day} className="br-calendar-grid__head">
                     {day}
                   </div>
                 ))}
+
                 {monthDays.map((day) => {
                   const isSelectionStart = selectionStart === day.key;
                   const isActiveBusyRange = selectedBusyRangeId ? day.busyRange?.id === selectedBusyRangeId : false;
@@ -386,7 +479,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
                       key={day.key}
                       type="button"
                       className={`br-calendar-day br-owner-calendar-day${day.busyRange ? " br-calendar-day--busy" : ""}${!day.inCurrentMonth ? " br-calendar-day--outside" : ""}${day.isToday ? " br-calendar-day--today" : ""}${isSelectionStart ? " br-owner-calendar-day--selected" : ""}${isActiveBusyRange ? " br-owner-calendar-day--active" : ""}`}
-                      onClick={() => handleCalendarDayClick(day.key, day.busyRange)}
+                      onClick={() => handleTimelineCellClick(selectedRoom, day.key)}
                     >
                       <span className="br-owner-calendar-day__date">{day.date.getDate()}</span>
                       <small>{day.busyRange?.label || (day.busyRange ? "Занято" : "Свободно")}</small>
@@ -394,11 +487,19 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
                   );
                 })}
               </div>
+            </section>
 
-              <div className="br-owner-calendar-history">
+            <section className="br-owner-calendar-side">
+              <section className="br-owner-calendar-history br-card">
                 <div className="br-owner-calendar-history__header">
-                  <strong>Занятые диапазоны номера</strong>
-                  <span>{selectedRoom.busyRanges.length ? "Клик по диапазону открывает его ниже для редактирования." : "Пока нет занятых дат."}</span>
+                  <div>
+                    <strong>Занятые диапазоны</strong>
+                    <span>
+                      {selectedRoom.busyRanges.length
+                        ? "Откройте диапазон, чтобы изменить даты или комментарий."
+                        : "Пока нет занятых дат."}
+                    </span>
+                  </div>
                 </div>
                 {selectedRoom.busyRanges.length ? (
                   <div className="br-owner-calendar-history__list">
@@ -407,7 +508,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
                         key={busyRange.id}
                         type="button"
                         className={`br-owner-calendar-history__item${selectedBusyRangeId === busyRange.id ? " br-owner-calendar-history__item--active" : ""}`}
-                        onClick={() => handleOpenBusyRange(busyRange)}
+                        onClick={() => handleOpenBusyRange(selectedRoom.id, busyRange)}
                       >
                         <strong>
                           {formatDateLabel(busyRange.startsOn)} - {formatDateLabel(busyRange.endsOn)}
@@ -420,18 +521,13 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
                 ) : (
                   <p className="br-owner-muted">Занятые даты еще не отмечены.</p>
                 )}
-              </div>
-            </div>
-          ) : (
-            <div className="br-empty-state">
-              <strong>Сначала добавьте номер</strong>
-              <p>После добавления номера здесь появится календарь занятости и обзор по занятым датам.</p>
-            </div>
-          )}
-        </section>
+              </section>
 
-        {mode === "month" && selectedRoom ? renderEditorPanel() : null}
-      </section>
+              {renderEditorPanel()}
+            </section>
+          </section>
+        </section>
+      ) : null}
     </section>
   );
 }

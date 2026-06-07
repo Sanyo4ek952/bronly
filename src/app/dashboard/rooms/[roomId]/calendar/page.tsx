@@ -34,8 +34,12 @@ export default async function StandaloneRoomCalendarPage({ params, searchParams 
             <p>Ручное управление занятыми датами для отдельного номера.</p>
           </div>
           <div className="br-room-page__actions">
-            <ButtonLink href={roomViewHref} variant="secondary">К карточке номера</ButtonLink>
-            <ButtonLink href={`/dashboard/rooms/${room.id}/settings`} variant="secondary">Настройки</ButtonLink>
+            <ButtonLink href={roomViewHref} variant="secondary">
+              К карточке номера
+            </ButtonLink>
+            <ButtonLink href={`/dashboard/rooms/${room.id}/settings`} variant="secondary">
+              Настройки
+            </ButtonLink>
           </div>
         </div>
       </section>

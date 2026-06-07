@@ -23,6 +23,23 @@ export type OverviewDayCell<TBusyRange extends BusyRangeLike> = {
   busyRange: TBusyRange | null;
 };
 
+export type TimelineDayCell = {
+  key: string;
+  date: Date;
+  dayLabel: string;
+  weekDayLabel: string;
+  isToday: boolean;
+};
+
+export type TimelineRangeCell<TBusyRange extends BusyRangeLike> = {
+  busyRange: TBusyRange;
+  startIndex: number;
+  endIndex: number;
+  span: number;
+  clippedStart: boolean;
+  clippedEnd: boolean;
+};
+
 function getLocalDateParts(value: Date) {
   return {
     year: value.getFullYear(),
@@ -45,6 +62,10 @@ export function startOfMonth(value: Date) {
   return new Date(value.getFullYear(), value.getMonth(), 1);
 }
 
+export function endOfMonth(value: Date) {
+  return new Date(value.getFullYear(), value.getMonth() + 1, 0);
+}
+
 export function addMonths(value: Date, amount: number) {
   return new Date(value.getFullYear(), value.getMonth() + amount, 1);
 }
@@ -54,6 +75,20 @@ export function formatMonthLabel(value: Date) {
     month: "long",
     year: "numeric",
   }).format(value);
+}
+
+export function formatMonthRangeLabel(value: Date) {
+  const start = startOfMonth(value);
+  const end = endOfMonth(value);
+
+  return `${new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "short",
+  }).format(start)} - ${new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(end)}`;
 }
 
 export function formatShortDateLabel(value: string) {
@@ -125,6 +160,59 @@ export function getMonthDays<TBusyRange extends BusyRangeLike>(month: Date, busy
   });
 }
 
+export function getTimelineDays(month: Date) {
+  const start = startOfMonth(month);
+  const end = endOfMonth(month);
+  const days = end.getDate();
+  const todayKey = formatDateKey(new Date());
+
+  return Array.from({ length: days }, (_, index): TimelineDayCell => {
+    const current = new Date(start);
+    current.setDate(start.getDate() + index);
+    const currentKey = formatDateKey(current);
+
+    return {
+      key: currentKey,
+      date: current,
+      dayLabel: String(current.getDate()),
+      weekDayLabel: shortWeekDays[(current.getDay() + 6) % 7],
+      isToday: currentKey === todayKey,
+    };
+  });
+}
+
+export function getTimelineBusyRanges<TBusyRange extends BusyRangeLike>(
+  busyRanges: TBusyRange[],
+  days: TimelineDayCell[],
+) {
+  if (!days.length) {
+    return [] as Array<TimelineRangeCell<TBusyRange>>;
+  }
+
+  const startKey = days[0].key;
+  const endKey = days[days.length - 1].key;
+
+  return busyRanges
+    .filter((range) => doesDateRangeOverlap(startKey, endKey, range.startsOn, range.endsOn))
+    .sort((a, b) => a.startsOn.localeCompare(b.startsOn))
+    .map((range) => {
+      const visibleStart = range.startsOn < startKey ? startKey : range.startsOn;
+      const visibleEnd = range.endsOn > endKey ? endKey : range.endsOn;
+      const startIndex = days.findIndex((day) => day.key === visibleStart);
+      const endIndex = days.findIndex((day) => day.key === visibleEnd);
+
+      return {
+        busyRange: range,
+        startIndex,
+        endIndex,
+        span: endIndex - startIndex + 1,
+        clippedStart: range.startsOn < startKey,
+        clippedEnd: range.endsOn > endKey,
+      };
+    })
+    .filter((range) => range.startIndex >= 0 && range.endIndex >= range.startIndex);
+}
+
 export function getOverviewDays<TBusyRange extends BusyRangeLike>(
   busyRanges: TBusyRange[],
   startDate = new Date(),
@@ -148,5 +236,7 @@ export function getOverviewDays<TBusyRange extends BusyRangeLike>(
     };
   });
 }
+
+const shortWeekDays = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"];
 
 export const weekDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
