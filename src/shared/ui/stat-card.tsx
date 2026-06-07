@@ -8,7 +8,7 @@ type StatCardProps = {
 
 export function StatCard({ title, value, subtitle }: StatCardProps) {
   return (
-    <Panel as="article" className="br-stat-card">
+    <Panel as="article" className="br-stat-card" surface="subtle" padding="md">
       <span>{title}</span>
       <strong>{value}</strong>
       {subtitle ? <small>{subtitle}</small> : null}
