@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import type { OwnerDashboardSummary } from "@/entities/property";
 import { AppIcon, ButtonLink, type AppIconComponent } from "@/shared/ui";
+import { OwnerDashboardOnboarding } from "./owner-dashboard-onboarding";
 
 const quickActions = [
   {
@@ -44,7 +45,14 @@ const emptyStates = [
     action: "Открыть объекты",
     href: "/dashboard/properties",
   },
-] satisfies Array<{ id: "no-properties" | "no-rooms"; icon: AppIconComponent; title: string; text: string; action: string; href: string }>;
+] satisfies Array<{
+  id: "no-properties" | "no-rooms";
+  icon: AppIconComponent;
+  title: string;
+  text: string;
+  action: string;
+  href: string;
+}>;
 
 type OwnerDashboardOverviewProps = {
   dashboardStats: OwnerDashboardSummary;
@@ -85,7 +93,7 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
       rows: [
         { label: "Статус", value: dashboardStats.subscriptionStatusLabel },
         { label: "Действует до", value: dashboardStats.subscriptionValidUntil },
-      ] satisfies SummaryCardRow[],
+      ],
       href: "/dashboard/subscription",
       action: "Открыть подписку",
     },
@@ -101,7 +109,7 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
           label: "Доступ",
           value: dashboardStats.isCabinetRestricted ? "Временно ограничен" : "Открыта для гостей",
         },
-      ] satisfies SummaryCardRow[],
+      ],
       href: hasPublicUrl ? (dashboardStats.publicUrl as string) : "/dashboard/settings",
       action: hasPublicUrl ? "Открыть публичную страницу" : "Заполнить slug",
     },
@@ -111,7 +119,7 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
         { label: "Объекты", value: String(dashboardStats.objects) },
         { label: "Номера", value: String(dashboardStats.rooms) },
         { label: "Новые заявки", value: String(dashboardStats.newRequests) },
-      ] satisfies SummaryCardRow[],
+      ],
       href: "/dashboard/requests",
       action: "Посмотреть заявки",
     },
@@ -124,7 +132,10 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
           <div className="br-dashboard-block__header">
             <div>
               <h2>Продление доступа</h2>
-              <p>Публичные страницы и новые заявки временно недоступны. Доступ восстановится после ручного продления подписки.</p>
+              <p>
+                Публичные страницы и новые заявки временно недоступны. Доступ восстановится после ручного
+                продления подписки.
+              </p>
             </div>
           </div>
           <div className="br-summary-card__rows">
@@ -141,7 +152,9 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
         </section>
       ) : null}
 
-      {dashboardStats.subscriptionWarningText ? <div className="br-inline-notice">{dashboardStats.subscriptionWarningText}</div> : null}
+      {dashboardStats.subscriptionWarningText ? (
+        <div className="br-inline-notice">{dashboardStats.subscriptionWarningText}</div>
+      ) : null}
 
       <section className="br-summary-grid">
         {summaryCards.map((card) => (
@@ -191,63 +204,7 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
         </div>
       </section>
 
-      <section className="br-dashboard-row">
-        <section className="br-dashboard-block br-card br-dashboard-block--wide">
-          <div className="br-dashboard-block__header">
-            <div>
-              <h2>Онбординг владельца</h2>
-              <p>Пять шагов до первой рабочей витрины и приёма заявок.</p>
-            </div>
-            <span className="br-stepper-chip">{dashboardStats.onboarding.activeStepLabel}</span>
-          </div>
-
-          <div className="br-stepper-line" aria-hidden="true">
-            {dashboardStats.onboarding.steps.map((step, index) => (
-              <div key={step.id} className={`br-stepper-line__item br-stepper-line__item--${step.state}`}>
-                <span>{index + 1}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="br-onboarding-grid">
-            {dashboardStats.onboarding.steps.map((step, index) => (
-              <Link
-                key={step.id}
-                href={step.href}
-                className={`br-onboarding-card br-onboarding-card--${step.state}`}
-                aria-label={`${step.title}. ${step.status}. Открыть страницу шага.`}
-              >
-                <div className="br-onboarding-card__top">
-                  <span className="br-onboarding-card__index">{index + 1}</span>
-                  <span className="br-onboarding-card__status">{step.status}</span>
-                </div>
-                <div className="br-onboarding-card__body">
-                  <strong>{step.title}</strong>
-                  <p>{step.text}</p>
-                </div>
-                <span className="br-onboarding-card__cta">{step.ctaLabel}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {emptyStatesToShow.length ? (
-          <aside className="br-dashboard-aside">
-            {emptyStatesToShow.map((state) => (
-              <article key={state.title} className="br-empty-card br-card">
-                <div className="br-empty-card__art" aria-hidden="true">
-                  <AppIcon icon={state.icon} />
-                </div>
-                <strong>{state.title}</strong>
-                <p>{state.text}</p>
-                <Link href={state.href} className="br-button br-button--primary br-button--full">
-                  {state.action}
-                </Link>
-              </article>
-            ))}
-          </aside>
-        ) : null}
-      </section>
+      <OwnerDashboardOnboarding onboarding={dashboardStats.onboarding} emptyStates={emptyStatesToShow} />
     </>
   );
 }
