@@ -11,11 +11,14 @@ import {
   Inbox,
   Layers3,
   Link2,
+  Menu,
   Search,
   Settings,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { signOutAction } from "@/app/auth/actions";
 import { AppIcon, type AppIconComponent, BrandLogo } from "@/shared/ui";
@@ -24,6 +27,11 @@ type NavigationItem = {
   href: string;
   label: string;
   icon: AppIconComponent;
+};
+
+type NavigationConfig = {
+  desktopItems: NavigationItem[];
+  mobilePrimaryItems: NavigationItem[];
 };
 
 const navigationItems: NavigationItem[] = [
@@ -51,6 +59,37 @@ const agentNavigationItems: NavigationItem[] = [
   { href: "/agent/dashboard/settings", label: "Настройки", icon: Settings },
 ];
 
+const ownerMobilePrimaryHrefs = [
+  "/dashboard",
+  "/dashboard/rooms",
+  "/dashboard/calendar",
+  "/dashboard/requests",
+] as const;
+
+const agentMobilePrimaryHrefs = [
+  "/agent/dashboard",
+  "/agent/dashboard/collections",
+  "/agent/dashboard/calendar",
+  "/agent/dashboard/requests",
+] as const;
+
+function isItemActive(pathname: string, href: string) {
+  return pathname === href || (href !== "/dashboard" && href !== "/agent/dashboard" && pathname.startsWith(href));
+}
+
+function getNavigationConfig(roleKind: "owner" | "agent"): NavigationConfig {
+  const desktopItems = roleKind === "agent" ? agentNavigationItems : navigationItems;
+  const mobilePrimaryHrefs = roleKind === "agent" ? agentMobilePrimaryHrefs : ownerMobilePrimaryHrefs;
+  const mobilePrimaryItems = mobilePrimaryHrefs
+    .map((href) => desktopItems.find((item) => item.href === href))
+    .filter((item): item is NavigationItem => Boolean(item));
+
+  return {
+    desktopItems,
+    mobilePrimaryItems,
+  };
+}
+
 type OwnerShellProps = {
   children: React.ReactNode;
   userName: string;
@@ -74,9 +113,29 @@ export function OwnerShell({
   notice = null,
 }: OwnerShellProps) {
   const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const userInitial = userName.charAt(0).toUpperCase() || "B";
-  const items = roleKind === "agent" ? agentNavigationItems : navigationItems;
+  const { desktopItems, mobilePrimaryItems } = getNavigationConfig(roleKind);
+  const mobileOverflowItems = desktopItems.filter(
+    (item) => !mobilePrimaryItems.some((primaryItem) => primaryItem.href === item.href),
+  );
+  const isOverflowActive = mobileOverflowItems.some((item) => isItemActive(pathname, item.href));
   const badgeLabel = unreadNotificationsCount > 99 ? "99+" : String(unreadNotificationsCount);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMobileMenuOpen]);
 
   return (
     <div className="br-owner">
@@ -86,8 +145,8 @@ export function OwnerShell({
         </div>
 
         <nav className="br-owner-nav" aria-label="Навигация кабинета">
-          {items.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          {desktopItems.map((item) => {
+            const isActive = isItemActive(pathname, item.href);
 
             return (
               <Link
@@ -142,8 +201,8 @@ export function OwnerShell({
         {children}
 
         <nav className="br-owner-bottom-nav br-card" aria-label="Мобильная навигация">
-          {items.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          {mobilePrimaryItems.map((item) => {
+            const isActive = isItemActive(pathname, item.href);
 
             return (
               <Link
@@ -156,7 +215,70 @@ export function OwnerShell({
               </Link>
             );
           })}
+
+          <button
+            type="button"
+            className={`br-owner-bottom-nav__item${isMobileMenuOpen || isOverflowActive ? " br-owner-bottom-nav__item--active" : ""}`}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="br-owner-mobile-menu"
+            aria-label="Ещё"
+            onClick={() => setIsMobileMenuOpen(true)}
+          >
+            <AppIcon icon={Menu} aria-hidden="true" />
+            <span>Ещё</span>
+          </button>
         </nav>
+
+        {isMobileMenuOpen ? (
+          <div
+            className="br-owner-mobile-sheet-backdrop"
+            role="presentation"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <div
+              id="br-owner-mobile-menu"
+              className="br-owner-mobile-sheet br-card"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="br-owner-mobile-sheet-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="br-owner-mobile-sheet__handle" aria-hidden="true" />
+              <div className="br-owner-mobile-sheet__header">
+                <div>
+                  <h2 id="br-owner-mobile-sheet-title">Ещё</h2>
+                  <p>Быстрый доступ к остальным разделам кабинета.</p>
+                </div>
+                <button
+                  type="button"
+                  className="br-owner-mobile-sheet__close"
+                  aria-label="Закрыть"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <AppIcon icon={X} aria-hidden="true" />
+                </button>
+              </div>
+
+              <div className="br-owner-mobile-sheet__list">
+                {mobileOverflowItems.map((item) => {
+                  const isActive = isItemActive(pathname, item.href);
+
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={`br-owner-mobile-sheet__item${isActive ? " br-owner-mobile-sheet__item--active" : ""}`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <AppIcon icon={item.icon} aria-hidden="true" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
