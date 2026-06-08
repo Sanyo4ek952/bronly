@@ -192,7 +192,7 @@ export function RoomAmenitiesField({
         next.add(amenity);
       }
 
-      return catalogLabels.filter((label) => next.has(label));
+      return catalogLabels.filter((item) => next.has(item));
     });
   }
 
@@ -261,47 +261,50 @@ export function RoomAmenitiesField({
       <textarea hidden readOnly name={name} value={serializedAmenities} />
 
       <div className="br-room-amenities-grid">
-        {visibleCategories.map((category) => (
-          <section
-            key={category.title}
-            className="br-room-amenities-card"
-            data-open={openCategories.has(category.title) ? "true" : "false"}
-          >
-            <button
-              type="button"
-              className="br-room-amenities-card__toggle"
-              aria-expanded={openCategories.has(category.title)}
-              onClick={() => toggleCategory(category.title)}
-            >
-              <span className="br-room-amenities-card__copy">
-                <strong>{category.title}</strong>
-                <small>
-                  {category.selectedCount
-                    ? `Выбрано: ${category.selectedCount}`
-                    : `Пунктов: ${category.items.length}`}
-                </small>
-              </span>
-              <span className="br-room-amenities-card__chevron" aria-hidden="true">
-                ▾
-              </span>
-            </button>
+        {visibleCategories.map((category) => {
+          const isOpen = openCategories.has(category.title);
 
-            <div className="br-room-amenities-card__body">
-              <div className="br-room-amenities-options">
-                {category.items.map((item) => (
-                  <label key={item.label} className="br-room-amenities-option">
-                    <input
-                      type="checkbox"
-                      checked={selectedSet.has(item.label)}
-                      onChange={() => toggleAmenity(item.label)}
-                    />
-                    <span>{item.label}</span>
-                  </label>
-                ))}
+          return (
+            <section key={category.title} className="br-room-amenities-card" data-open={isOpen ? "true" : "false"}>
+              <button
+                type="button"
+                className="br-room-amenities-card__toggle"
+                aria-expanded={isOpen}
+                onClick={() => toggleCategory(category.title)}
+              >
+                <span className="br-room-amenities-card__copy">
+                  <strong>{category.title}</strong>
+                  <small className="br-room-amenities-card__meta">
+                    {category.selectedCount ? `Выбрано: ${category.selectedCount}` : `Пунктов: ${category.items.length}`}
+                  </small>
+                </span>
+                <span className="br-room-amenities-card__chevron" aria-hidden="true">
+                  ▾
+                </span>
+              </button>
+
+              <div className="br-room-amenities-card__body">
+                <div className="br-room-amenities-options" role="group" aria-label={category.title}>
+                  {category.items.map((item, index) => {
+                    const checked = selectedSet.has(item.label);
+
+                    return (
+                      <label
+                        key={item.label}
+                        className="br-room-amenities-option"
+                        data-checked={checked ? "true" : "false"}
+                        data-last={index === category.items.length - 1 ? "true" : "false"}
+                      >
+                        <input type="checkbox" checked={checked} onChange={() => toggleAmenity(item.label)} />
+                        <span>{item.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          </section>
-        ))}
+            </section>
+          );
+        })}
       </div>
 
       {hasAdditionalAmenities ? (
@@ -323,7 +326,9 @@ export function RoomAmenitiesField({
         >
           <span className="br-room-amenities-card__copy">
             <strong>Свои удобства</strong>
-            <small>{customAmenities.length ? `Добавлено: ${customAmenities.length}` : "То, чего нет в списке"}</small>
+            <small className="br-room-amenities-card__meta">
+              {customAmenities.length ? `Добавлено: ${customAmenities.length}` : "То, чего нет в списке"}
+            </small>
           </span>
           <span className="br-room-amenities-card__chevron" aria-hidden="true">
             ▾
