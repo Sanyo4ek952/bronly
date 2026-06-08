@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 
 import { getCalendarNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerPropertyDetail } from "@/entities/property";
+import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
+import { DashboardPageNav } from "@/shared/ui";
 import { PropertySectionNav } from "@/widgets/property-section-nav";
 import { OwnerCalendarBrowser } from "@/widgets/owner-calendar-browser/owner-calendar-browser";
 
@@ -26,6 +28,15 @@ export default async function PropertyCalendarPage({ params, searchParams }: Pro
 
   return (
     <section className="br-owner-stack">
+      <DashboardPageNav
+        backHref="/dashboard/properties"
+        breadcrumbs={buildOwnerInventoryBreadcrumbs([
+          { label: property.title, href: `/dashboard/properties/${property.id}` },
+          { label: "Календарь занятости" },
+        ])}
+        compact
+      />
+
       <div className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>

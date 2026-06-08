@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { getCollectionDetailData } from "@/entities/collection";
+import { buildOwnerCollectionsBreadcrumbs } from "@/shared/lib";
+import { DashboardPageNav } from "@/shared/ui";
 import { CollectionDetailSection } from "@/widgets/collections-dashboard/collection-detail-section";
 
 import {
@@ -30,17 +32,24 @@ export default async function OwnerCollectionDetailPage({ params, searchParams }
 
   return (
     <CollectionDetailSection
-      title="Коллекция владельца"
-      description="Управляйте составом подборки, статистикой и настройками по отдельной странице коллекции."
+      title="РљРѕР»Р»РµРєС†РёСЏ РІР»Р°РґРµР»СЊС†Р°"
+      description="РЈРїСЂР°РІР»СЏР№С‚Рµ СЃРѕСЃС‚Р°РІРѕРј РїРѕРґР±РѕСЂРєРё, СЃС‚Р°С‚РёСЃС‚РёРєРѕР№ Рё РЅР°СЃС‚СЂРѕР№РєР°РјРё РїРѕ РѕС‚РґРµР»СЊРЅРѕР№ СЃС‚СЂР°РЅРёС†Рµ РєРѕР»Р»РµРєС†РёРё."
       backHref="/dashboard/collections"
+      pageNav={(
+        <DashboardPageNav
+          backHref="/dashboard/collections"
+          breadcrumbs={buildOwnerCollectionsBreadcrumbs([{ label: data.collection.title }])}
+          compact
+        />
+      )}
       data={data}
       renameAction={renameOwnerCollectionAction}
       archiveAction={archiveOwnerCollectionAction}
       addPropertyAction={addOwnerPropertyToCollectionAction}
       addRoomAction={addOwnerRoomToCollectionAction}
       removeItemAction={removeOwnerCollectionItemAction}
-      propertyDescription="Владелец может добавлять только свои объекты."
-      roomDescription="Номер добавляется отдельно и будет доступен гостю как конкретный вариант."
+      propertyDescription="Р’Р»Р°РґРµР»РµС† РјРѕР¶РµС‚ РґРѕР±Р°РІР»СЏС‚СЊ С‚РѕР»СЊРєРѕ СЃРІРѕРё РѕР±СЉРµРєС‚С‹."
+      roomDescription="РќРѕРјРµСЂ РґРѕР±Р°РІР»СЏРµС‚СЃСЏ РѕС‚РґРµР»СЊРЅРѕ Рё Р±СѓРґРµС‚ РґРѕСЃС‚СѓРїРµРЅ РіРѕСЃС‚СЋ РєР°Рє РєРѕРЅРєСЂРµС‚РЅС‹Р№ РІР°СЂРёР°РЅС‚."
       success={success}
       error={error}
     />

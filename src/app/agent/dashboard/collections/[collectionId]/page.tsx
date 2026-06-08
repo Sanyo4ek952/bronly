@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { getCollectionDetailData } from "@/entities/collection";
+import { buildAgentCollectionsBreadcrumbs } from "@/shared/lib";
+import { DashboardPageNav } from "@/shared/ui";
 import { CollectionDetailSection } from "@/widgets/collections-dashboard/collection-detail-section";
 
 import {
@@ -30,17 +32,24 @@ export default async function AgentCollectionDetailPage({ params, searchParams }
 
   return (
     <CollectionDetailSection
-      title="Коллекция агента"
-      description="Управляйте составом подборки, статистикой и настройками по отдельной странице коллекции."
+      title="РљРѕР»Р»РµРєС†РёСЏ Р°РіРµРЅС‚Р°"
+      description="РЈРїСЂР°РІР»СЏР№С‚Рµ СЃРѕСЃС‚Р°РІРѕРј РїРѕРґР±РѕСЂРєРё, СЃС‚Р°С‚РёСЃС‚РёРєРѕР№ Рё РЅР°СЃС‚СЂРѕР№РєР°РјРё РїРѕ РѕС‚РґРµР»СЊРЅРѕР№ СЃС‚СЂР°РЅРёС†Рµ РєРѕР»Р»РµРєС†РёРё."
       backHref="/agent/dashboard/collections"
+      pageNav={(
+        <DashboardPageNav
+          backHref="/agent/dashboard/collections"
+          breadcrumbs={buildAgentCollectionsBreadcrumbs([{ label: data.collection.title }])}
+          compact
+        />
+      )}
       data={data}
       renameAction={renameAgentCollectionAction}
       archiveAction={archiveAgentCollectionAction}
       addPropertyAction={addAgentPropertyToCollectionAction}
       addRoomAction={addAgentRoomToCollectionAction}
       removeItemAction={removeAgentCollectionItemAction}
-      propertyDescription="Агент может добавлять свои объекты и объекты владельцев только при активном сотрудничестве."
-      roomDescription="Доступны свои номера и номера владельцев при активном сотрудничестве."
+      propertyDescription="РђРіРµРЅС‚ РјРѕР¶РµС‚ РґРѕР±Р°РІР»СЏС‚СЊ СЃРІРѕРё РѕР±СЉРµРєС‚С‹ Рё РѕР±СЉРµРєС‚С‹ РІР»Р°РґРµР»СЊС†РµРІ С‚РѕР»СЊРєРѕ РїСЂРё Р°РєС‚РёРІРЅРѕРј СЃРѕС‚СЂСѓРґРЅРёС‡РµСЃС‚РІРµ."
+      roomDescription="Р”РѕСЃС‚СѓРїРЅС‹ СЃРІРѕРё РЅРѕРјРµСЂР° Рё РЅРѕРјРµСЂР° РІР»Р°РґРµР»СЊС†РµРІ РїСЂРё Р°РєС‚РёРІРЅРѕРј СЃРѕС‚СЂСѓРґРЅРёС‡РµСЃС‚РІРµ."
       success={success}
       error={error}
     />

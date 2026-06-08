@@ -1,5 +1,6 @@
 export { BrandLogo } from "@/shared/ui/brand-logo";
 export { Button, ButtonLink } from "@/shared/ui/button";
+export { DashboardPageNav } from "@/shared/ui/dashboard-page-nav";
 export { Input, Select, Textarea } from "@/shared/ui/field";
 export { AppIcon } from "@/shared/ui/icon";
 export type { AppIconComponent } from "@/shared/ui/icon";

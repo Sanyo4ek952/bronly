@@ -1,6 +1,24 @@
 import { createSupabaseServerClient } from "@/shared/api/supabase";
 import { splitLines } from "@/shared/lib/form-data";
 
+function dedupeLabels(labels: string[]) {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+
+  for (const label of labels) {
+    const normalized = label.trim().replace(/\s+/g, " ").toLowerCase();
+
+    if (!normalized || seen.has(normalized)) {
+      continue;
+    }
+
+    seen.add(normalized);
+    unique.push(label.trim().replace(/\s+/g, " "));
+  }
+
+  return unique;
+}
+
 export async function replacePropertyLabels(
   propertyId: string,
   featuresRaw: string,
@@ -36,7 +54,7 @@ export async function replacePropertyLabels(
 
 export async function replaceRoomAmenities(roomId: string, amenitiesRaw: string) {
   const supabase = await createSupabaseServerClient();
-  const amenities = splitLines(amenitiesRaw);
+  const amenities = dedupeLabels(splitLines(amenitiesRaw));
 
   await supabase.from("room_amenities").delete().eq("room_id", roomId);
 

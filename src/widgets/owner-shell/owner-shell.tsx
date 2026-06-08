@@ -94,8 +94,7 @@ type OwnerShellProps = {
   userName: string;
   roleLabel: string;
   roleKind?: "owner" | "agent";
-  unreadNotificationsCount?: number;
-  notificationsHref?: string;
+  topbar?: React.ReactNode;
   notice?: {
     title: string;
     text: string;
@@ -107,19 +106,18 @@ export function OwnerShell({
   userName,
   roleLabel,
   roleKind = "owner",
-  unreadNotificationsCount = 0,
-  notificationsHref = roleKind === "agent" ? "/agent/dashboard/notifications" : "/dashboard/notifications",
+  topbar = null,
   notice = null,
 }: OwnerShellProps) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const userInitial = userName.charAt(0).toUpperCase() || "B";
   const { desktopItems, mobilePrimaryItems } = getNavigationConfig(roleKind);
+  const dashboardRootPath = roleKind === "agent" ? "/agent/dashboard" : "/dashboard";
   const mobileOverflowItems = desktopItems.filter(
     (item) => !mobilePrimaryItems.some((primaryItem) => primaryItem.href === item.href),
   );
   const isOverflowActive = mobileOverflowItems.some((item) => isItemActive(pathname, item.href));
-  const badgeLabel = unreadNotificationsCount > 99 ? "99+" : String(unreadNotificationsCount);
 
   useEffect(() => {
     if (!isMobileMenuOpen) {
@@ -176,19 +174,7 @@ export function OwnerShell({
       </aside>
 
       <div className="br-owner__content">
-        <header className="br-owner-topbar br-card">
-          <div>
-            <h1>Добро пожаловать, {userName}</h1>
-            <p>Следите за объектами, календарём занятости и заявками в одном месте.</p>
-          </div>
-          <div className="br-owner-topbar__actions">
-            <span className="br-owner-topbar__chip">Bronly</span>
-            <Link className="br-icon-link" href={notificationsHref} aria-label="Уведомления">
-              <AppIcon icon={Bell} aria-hidden="true" />
-              {unreadNotificationsCount > 0 ? <span className="br-icon-link__badge">{badgeLabel}</span> : null}
-            </Link>
-          </div>
-        </header>
+        {pathname === dashboardRootPath ? topbar : null}
 
         {notice ? (
           <InlineNotice title={notice.title} aria-live="polite">

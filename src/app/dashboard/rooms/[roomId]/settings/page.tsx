@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 
 import { getRoomsNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerRoomDetail } from "@/entities/room";
-import { ButtonLink } from "@/shared/ui";
+import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
+import { ButtonLink, DashboardPageNav } from "@/shared/ui";
 import { RoomSettingsEditor } from "@/widgets/room-settings-editor/room-settings-editor";
 
 type StandaloneRoomSettingsPageProps = {
@@ -28,16 +29,25 @@ export default async function StandaloneRoomSettingsPage({ params, searchParams 
 
   return (
     <section className="br-owner-stack">
+      <DashboardPageNav
+        backHref={roomViewHref}
+        breadcrumbs={buildOwnerInventoryBreadcrumbs([
+          { label: "Отдельные номера", href: "/dashboard/properties" },
+          { label: room.title, href: roomViewHref },
+          { label: "Настройки" },
+        ])}
+        compact
+      />
+
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>
             <p className="br-owner-muted">{room.location.propertyType}</p>
-            <h2>Настройки отдельного номера</h2>
-            <p>Здесь можно обновить данные номера, сезонные цены и фотографии.</p>
+            <h2>РќР°СЃС‚СЂРѕР№РєРё РѕС‚РґРµР»СЊРЅРѕРіРѕ РЅРѕРјРµСЂР°</h2>
+            <p>Р—РґРµСЃСЊ РјРѕР¶РЅРѕ РѕР±РЅРѕРІРёС‚СЊ РґР°РЅРЅС‹Рµ РЅРѕРјРµСЂР°, СЃРµР·РѕРЅРЅС‹Рµ С†РµРЅС‹ Рё С„РѕС‚РѕРіСЂР°С„РёРё.</p>
           </div>
           <div className="br-room-page__actions">
-            <ButtonLink href={roomViewHref} variant="secondary">К карточке номера</ButtonLink>
-            <ButtonLink href="/dashboard/properties" variant="secondary">К общему списку</ButtonLink>
+            <ButtonLink href="/dashboard/properties" variant="secondary">Рљ РѕР±С‰РµРјСѓ СЃРїРёСЃРєСѓ</ButtonLink>
           </div>
         </div>
         {notice ? <div className="br-inline-notice">{notice}</div> : null}

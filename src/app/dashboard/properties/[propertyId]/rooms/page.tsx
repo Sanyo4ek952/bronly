@@ -5,8 +5,9 @@ import { notFound } from "next/navigation";
 import { getRoomsNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerPropertyDetail } from "@/entities/property";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
+import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
-import { ButtonLink, StatusPill } from "@/shared/ui";
+import { ButtonLink, DashboardPageNav, StatusPill } from "@/shared/ui";
 import { PropertySectionNav } from "@/widgets/property-section-nav";
 
 type PropertyRoomsPageProps = {
@@ -57,6 +58,15 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
 
   return (
     <section className="br-owner-stack">
+      <DashboardPageNav
+        backHref="/dashboard/properties"
+        breadcrumbs={buildOwnerInventoryBreadcrumbs([
+          { label: property.title, href: `/dashboard/properties/${property.id}` },
+          { label: "Номера" },
+        ])}
+        compact
+      />
+
       <div className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>

@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 
 import { getCalendarNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerRoomDetail } from "@/entities/room";
-import { ButtonLink } from "@/shared/ui";
+import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
+import { ButtonLink, DashboardPageNav } from "@/shared/ui";
 import { OwnerCalendarBrowser } from "@/widgets/owner-calendar-browser/owner-calendar-browser";
 
 type StandaloneRoomCalendarPageProps = {
@@ -27,18 +28,25 @@ export default async function StandaloneRoomCalendarPage({ params, searchParams 
 
   return (
     <section className="br-owner-stack">
+      <DashboardPageNav
+        backHref={roomViewHref}
+        breadcrumbs={buildOwnerInventoryBreadcrumbs([
+          { label: "Отдельные номера", href: "/dashboard/properties" },
+          { label: room.title, href: roomViewHref },
+          { label: "Календарь занятости" },
+        ])}
+        compact
+      />
+
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>
             <h2>{room.title}</h2>
-            <p>Ручное управление занятыми датами для отдельного номера.</p>
+            <p>Р СѓС‡РЅРѕРµ СѓРїСЂР°РІР»РµРЅРёРµ Р·Р°РЅСЏС‚С‹РјРё РґР°С‚Р°РјРё РґР»СЏ РѕС‚РґРµР»СЊРЅРѕРіРѕ РЅРѕРјРµСЂР°.</p>
           </div>
           <div className="br-room-page__actions">
-            <ButtonLink href={roomViewHref} variant="secondary">
-              К карточке номера
-            </ButtonLink>
             <ButtonLink href={`/dashboard/rooms/${room.id}/settings`} variant="secondary">
-              Настройки
+              РќР°СЃС‚СЂРѕР№РєРё
             </ButtonLink>
           </div>
         </div>
@@ -47,8 +55,8 @@ export default async function StandaloneRoomCalendarPage({ params, searchParams 
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>
-            <h2>Календарь занятости</h2>
-            <p>Отмечайте занятые даты без автоматического подтверждения заявок.</p>
+            <h2>РљР°Р»РµРЅРґР°СЂСЊ Р·Р°РЅСЏС‚РѕСЃС‚Рё</h2>
+            <p>РћС‚РјРµС‡Р°Р№С‚Рµ Р·Р°РЅСЏС‚С‹Рµ РґР°С‚С‹ Р±РµР· Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРіРѕ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ Р·Р°СЏРІРѕРє.</p>
           </div>
         </div>
 

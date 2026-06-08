@@ -31,6 +31,7 @@
 
 .br-owner-property-list {
   grid-template-columns: 1fr;
+  align-items: start;
 }
 
 .br-owner-property-card,
@@ -566,7 +567,8 @@
 
 @media (max-width: 900px) {
   .br-owner-grid-2,
-  .br-owner-inline-form {
+  .br-owner-inline-form,
+  .br-room-amenities-grid {
     grid-template-columns: 1fr;
   }
 
@@ -682,7 +684,8 @@ ul {
 }
 
 .br-container {
-  width: min(100% - 40px, var(--container));
+  width: calc(100% - 40px);
+  max-width: none;
   margin-inline: auto;
 }
 
@@ -768,6 +771,102 @@ ul {
 
 .br-button--full {
   width: 100%;
+}
+
+.br-dashboard-page-nav {
+  display: grid;
+  gap: 10px;
+}
+
+.br-dashboard-page-nav--compact {
+  gap: 8px;
+}
+
+.br-dashboard-page-nav__back,
+.br-dashboard-page-nav__breadcrumbs a,
+.br-dashboard-page-nav__breadcrumbs span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.br-dashboard-page-nav__back {
+  justify-self: start;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: rgb(255 255 255 / 88%);
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    background-color var(--transition),
+    border-color var(--transition),
+    color var(--transition),
+    transform var(--transition);
+}
+
+.br-dashboard-page-nav__back:hover {
+  border-color: rgb(7 154 145 / 32%);
+  background: var(--color-primary-pale);
+  transform: translateY(-1px);
+}
+
+.br-dashboard-page-nav__back svg,
+.br-dashboard-page-nav__breadcrumbs svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.br-dashboard-page-nav__breadcrumbs {
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.br-dashboard-page-nav__breadcrumbs::-webkit-scrollbar {
+  display: none;
+}
+
+.br-dashboard-page-nav__breadcrumbs ol {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: max-content;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.br-dashboard-page-nav__breadcrumbs li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.br-dashboard-page-nav__breadcrumbs a,
+.br-dashboard-page-nav__breadcrumbs span {
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.br-dashboard-page-nav__breadcrumbs a:hover {
+  color: var(--color-primary-hover);
+}
+
+.br-dashboard-page-nav__breadcrumbs span[aria-current="page"] {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.br-dashboard-page-nav__back:focus-visible,
+.br-dashboard-page-nav__breadcrumbs a:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .br-header {
@@ -1451,7 +1550,7 @@ ul {
 }
 
 .br-dashboard-layout {
-  width: min(100% - 32px, 1320px);
+  width: 100%;
 }
 
 .br-owner {
@@ -2554,6 +2653,122 @@ ul {
   font-size: 14px;
   font-weight: 700;
   text-align: left;
+}
+
+.br-room-amenities-field,
+.br-room-amenities-field__intro,
+.br-room-amenities-grid,
+.br-room-amenities-card,
+.br-room-amenities-options,
+.br-room-amenities-custom,
+.br-room-amenities-custom__header {
+  display: grid;
+}
+
+.br-room-amenities-field,
+.br-room-amenities-custom {
+  gap: 14px;
+}
+
+.br-room-amenities-field__intro,
+.br-room-amenities-card,
+.br-room-amenities-custom__header {
+  gap: 6px;
+}
+
+.br-room-amenities-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.br-room-amenities-card,
+.br-room-amenities-custom {
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.br-room-amenities-card h3,
+.br-room-amenities-custom__header strong {
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.br-room-amenities-card span,
+.br-room-amenities-custom__header span {
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.br-room-amenities-options {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.br-room-amenities-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.br-room-amenities-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.br-room-amenities-option span {
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.br-room-amenities-custom__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.br-room-amenities-custom__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid rgb(7 154 145 / 16%);
+  border-radius: var(--radius-full);
+  background: var(--color-primary-pale);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.br-room-amenities-custom__chip button {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.br-room-amenities-custom__composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
 }
 
 .br-toggle {
@@ -3785,13 +4000,14 @@ button.br-owner-calendar-day:hover {
 
 @media (min-width: 700px) {
   .br-owner-property-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 280px));
+    justify-content: start;
   }
 }
 
 @media (min-width: 1180px) {
   .br-owner-property-list {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(340px, 340px));
   }
 }
 
@@ -4111,7 +4327,8 @@ body {
 }
 
 .br-container {
-  width: min(100% - 32px, var(--container));
+  width: calc(100% - 32px);
+  max-width: none;
 }
 
 .br-card {
@@ -5395,6 +5612,10 @@ button.br-calendar-range-card {
 }
 
 @media (max-width: 640px) {
+  .br-room-amenities-custom__composer {
+    grid-template-columns: 1fr;
+  }
+
   .br-container {
     width: min(100% - 24px, var(--container));
   }
@@ -5438,6 +5659,11 @@ button.br-calendar-range-card {
     left: 10px;
     padding: 6px 6px calc(6px + var(--safe-area-bottom));
     border-radius: 16px 16px 0 0;
+  }
+
+  .br-dashboard-page-nav__back {
+    min-height: 36px;
+    padding-inline: 12px;
   }
 
   .br-owner-bottom-nav__item {

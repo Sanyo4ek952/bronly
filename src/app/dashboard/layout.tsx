@@ -4,6 +4,7 @@ import { getUnreadNotificationCount } from "@/entities/notification";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile, getPrimaryRole } from "@/shared/api/supabase";
 import { formatDateLabel } from "@/shared/lib/date";
+import { DashboardTopbar } from "@/widgets/dashboard-topbar";
 import { OwnerShell } from "@/widgets/owner-shell";
 
 export default async function DashboardLayout({
@@ -52,8 +53,14 @@ export default async function DashboardLayout({
         <OwnerShell
           userName={profile.displayName}
           roleLabel={roleLabel}
-          unreadNotificationsCount={unreadNotificationsCount}
-          notificationsHref="/dashboard/notifications"
+          topbar={(
+            <DashboardTopbar
+              title={`Добро пожаловать, ${profile.displayName}`}
+              description="Следите за объектами, календарём занятости и заявками в одном месте."
+              notificationsHref="/dashboard/notifications"
+              unreadNotificationsCount={unreadNotificationsCount}
+            />
+          )}
           notice={notice}
         >
           {children}

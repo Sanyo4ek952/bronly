@@ -17,6 +17,7 @@ type CollectionDetailSectionProps = {
   title: string;
   description: string;
   backHref: string;
+  pageNav?: React.ReactNode;
   data: CollectionDetailData;
   renameAction: CollectionAction;
   archiveAction: CollectionAction;
@@ -68,6 +69,7 @@ export function CollectionDetailSection({
   title,
   description,
   backHref,
+  pageNav = null,
   data,
   renameAction,
   archiveAction,
@@ -135,6 +137,8 @@ export function CollectionDetailSection({
 
   return (
     <>
+      {pageNav}
+
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>

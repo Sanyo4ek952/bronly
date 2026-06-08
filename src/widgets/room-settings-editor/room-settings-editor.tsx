@@ -10,6 +10,7 @@ import {
   updateRoomSeasonalPrice,
   uploadRoomPhoto,
 } from "@/app/dashboard/properties/actions";
+import { RoomAmenitiesField } from "@/features/property/edit-room/ui/room-amenities-field";
 import type { OwnerRoomDetail } from "@/entities/room/model/types";
 import { Button, Input, Textarea } from "@/shared/ui";
 
@@ -92,7 +93,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
           ) : null}
         </div>
 
-        <Textarea id={`room-amenities-${room.id}`} name="amenities" label="Удобства" defaultValue={room.amenities.join("\n")} />
+        <RoomAmenitiesField id={`room-amenities-${room.id}`} initialAmenities={room.amenities} />
 
         {isStandalone ? (
           <>
