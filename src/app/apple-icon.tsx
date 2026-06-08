@@ -45,10 +45,9 @@ export default function AppleIcon() {
               fontSize: 64,
               fontWeight: 800,
               letterSpacing: "-0.08em",
-              textTransform: "lowercase",
             }}
           >
-            b
+            B
           </div>
         </div>
       </div>

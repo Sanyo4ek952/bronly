@@ -46,10 +46,9 @@ export default function Icon() {
               fontSize: 176,
               fontWeight: 800,
               letterSpacing: "-0.08em",
-              textTransform: "lowercase",
             }}
           >
-            b
+            B
           </div>
         </div>
       </div>
