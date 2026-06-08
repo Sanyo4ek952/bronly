@@ -49,12 +49,12 @@ export default async function PropertyRoomSettingsPage({ params, searchParams }:
         <div className="br-dashboard-block__header">
           <div>
             <p className="br-owner-muted">{property.title}</p>
-            <h2>РќР°СЃС‚СЂРѕР№РєРё РЅРѕРјРµСЂР°</h2>
-            <p>Р—РґРµСЃСЊ РјРѕР¶РЅРѕ РѕР±РЅРѕРІРёС‚СЊ РґР°РЅРЅС‹Рµ РЅРѕРјРµСЂР°, СЃРµР·РѕРЅРЅС‹Рµ С†РµРЅС‹ Рё С„РѕС‚РѕРіСЂР°С„РёРё.</p>
+            <h2>Настройки номера</h2>
+            <p>Здесь можно обновить данные номера, сезонные цены и фотографии.</p>
           </div>
           <div className="br-room-page__actions">
             <ButtonLink href={`/dashboard/properties/${property.id}/rooms`} variant="secondary">
-              Рљ СЃРїРёСЃРєСѓ РЅРѕРјРµСЂРѕРІ
+              К списку номеров
             </ButtonLink>
           </div>
         </div>

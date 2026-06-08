@@ -64,9 +64,9 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
         <input type="hidden" name="roomId" value={room.id} />
         <input type="hidden" name="redirectTo" value={redirectTo} />
 
-        <RoomFormSection title="Основное" description="Держим под рукой самые частые правки.">
+        <RoomFormSection title="Основное" description="Самые частые правки по номеру в одном блоке.">
           <div className="br-property-form__grid">
-            <Input id={`room-title-${room.id}`} name="title" label="Название" defaultValue={room.title} />
+            <Input id={`room-title-${room.id}`} name="title" label="Название номера" defaultValue={room.title} />
             <Input id={`room-subtitle-${room.id}`} name="subtitle" label="Подзаголовок" defaultValue={room.subtitle} />
             {isStandalone ? (
               <>
@@ -85,7 +85,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
           </div>
         </RoomFormSection>
 
-        <RoomFormSection title="Вместимость и цена" description="Основные параметры для карточки и расчета.">
+        <RoomFormSection title="Вместимость и цена" description="Параметры для карточки номера и расчета цены.">
           <div className="br-property-form__grid br-room-form__grid--compact">
             <Input id={`room-capacity-${room.id}`} name="capacity" type="number" min="1" label="Гостей" defaultValue={String(room.capacity)} />
             <Input id={`room-bedrooms-${room.id}`} name="bedrooms" type="number" min="1" label="Спален" defaultValue={String(room.bedrooms)} />
@@ -102,12 +102,12 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
           </div>
         </RoomFormSection>
 
-        <RoomFormSection title="Удобства номера" description="Категории складываются компактно на телефоне.">
+        <RoomFormSection title="Удобства номера" description="Основные удобства, которые увидит гость в карточке.">
           <RoomAmenitiesField id={`room-amenities-${room.id}`} initialAmenities={room.amenities} />
         </RoomFormSection>
 
         {isStandalone ? (
-          <RoomFormSection title="Описание и контакты" description="Тексты, связь и время заезда в одном месте.">
+          <RoomFormSection title="Описание и контакты" description="Тексты, контакты и время заезда в одном месте.">
             <div className="br-owner-stack">
               <Textarea id={`room-short-description-${room.id}`} name="shortDescription" label="Краткое описание" defaultValue={location.shortDescription} />
               <Textarea
@@ -130,7 +130,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
           </RoomFormSection>
         ) : null}
 
-        <RoomFormSection title="Настройки" description="Финальные переключатели без лишнего скролла.">
+        <RoomFormSection title="Настройки" description="Финальные переключатели для публикации и работы с агентами.">
           <div className="br-toggle-list br-room-form__toggles">
             <label className="br-toggle">
               <span>Номер активен</span>
@@ -159,7 +159,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
       <section className="br-owner-photo-section">
         <div className="br-section-heading">
           <h3>Фото номера</h3>
-          <p>Первое фото показывается гостю в карточках номера и в заявке.</p>
+          <p>Первое фото показывается гостю в карточке номера и в заявке.</p>
         </div>
 
         <form action={uploadRoomPhoto} className="br-owner-photo-upload" encType="multipart/form-data">
