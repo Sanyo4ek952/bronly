@@ -572,6 +572,10 @@
     grid-template-columns: 1fr;
   }
 
+  .br-room-form__grid--compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .br-room-photo-preview {
     grid-template-columns: 1fr;
   }
@@ -2659,21 +2663,72 @@ ul {
 .br-room-amenities-field__intro,
 .br-room-amenities-grid,
 .br-room-amenities-card,
+.br-room-amenities-card__body,
 .br-room-amenities-options,
 .br-room-amenities-custom,
-.br-room-amenities-custom__header {
+.br-room-amenities-custom__header,
+.br-room-amenities-custom__body,
+.br-room-form,
+.br-room-form__section,
+.br-room-form__section-body {
   display: grid;
 }
 
 .br-room-amenities-field,
-.br-room-amenities-custom {
+.br-room-amenities-custom,
+.br-room-form {
   gap: 14px;
 }
 
 .br-room-amenities-field__intro,
 .br-room-amenities-card,
-.br-room-amenities-custom__header {
+.br-room-amenities-custom__header,
+.br-room-form__section,
+.br-room-form__section-body {
   gap: 6px;
+}
+
+.br-room-form__section {
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(248 250 252 / 0.92));
+}
+
+.br-room-form__section-header {
+  display: grid;
+  gap: 4px;
+}
+
+.br-room-form__section-header h3 {
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.br-room-form__section-header p {
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.br-room-form__grid--compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.br-room-form__toggles .br-toggle {
+  min-height: 56px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+}
+
+.br-room-form__toggles .br-toggle span {
+  max-width: calc(100% - 42px);
+}
+
+.br-room-form__actions {
+  margin-top: 4px;
 }
 
 .br-room-amenities-grid {
@@ -2693,6 +2748,43 @@ ul {
 .br-room-amenities-custom__header strong {
   font-size: 15px;
   line-height: 1.3;
+}
+
+.br-room-amenities-card__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.br-room-amenities-card__copy {
+  display: grid;
+  gap: 3px;
+}
+
+.br-room-amenities-card__copy strong {
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.br-room-amenities-card__copy small {
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.br-room-amenities-card__chevron {
+  display: none;
+}
+
+.br-room-amenities-card__body,
+.br-room-amenities-custom__body {
+  gap: 12px;
 }
 
 .br-room-amenities-card span,
@@ -2769,6 +2861,10 @@ ul {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   align-items: start;
+}
+
+.br-room-amenities-field__more {
+  justify-self: start;
 }
 
 .br-toggle {
@@ -5612,6 +5708,62 @@ button.br-calendar-range-card {
 }
 
 @media (max-width: 640px) {
+  .br-room-form__section {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .br-room-form__grid--compact {
+    grid-template-columns: 1fr;
+  }
+
+  .br-room-form__actions .br-button,
+  .br-room-amenities-custom__composer .br-button {
+    width: 100%;
+  }
+
+  .br-room-amenities-card,
+  .br-room-amenities-custom {
+    padding: 14px;
+  }
+
+  .br-room-amenities-card__chevron {
+    display: inline-flex;
+    flex: none;
+    color: var(--color-muted);
+    font-size: 18px;
+    line-height: 1;
+    transform: rotate(-90deg);
+    transition: transform var(--transition);
+  }
+
+  .br-room-amenities-card[data-open="true"] .br-room-amenities-card__chevron,
+  .br-room-amenities-custom[data-open="true"] .br-room-amenities-card__chevron {
+    transform: rotate(0deg);
+  }
+
+  .br-room-amenities-card__toggle {
+    min-height: 32px;
+  }
+
+  .br-room-amenities-card[data-open="false"] .br-room-amenities-card__body,
+  .br-room-amenities-custom[data-open="false"] .br-room-amenities-custom__body {
+    display: none;
+  }
+
+  .br-room-amenities-option {
+    min-height: 48px;
+    padding: 12px 14px;
+  }
+
+  .br-room-amenities-field__more {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+  }
+
   .br-room-amenities-custom__composer {
     grid-template-columns: 1fr;
   }

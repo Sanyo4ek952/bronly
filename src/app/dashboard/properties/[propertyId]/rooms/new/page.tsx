@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { createOwnerRoom } from "@/app/dashboard/properties/actions";
 import { RoomAmenitiesField } from "@/features/property/edit-room/ui/room-amenities-field";
+import { RoomFormSection } from "@/features/property/edit-room/ui/room-form-section";
 import { getRoomCreateNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerPropertyDetail } from "@/entities/property";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
@@ -20,14 +21,14 @@ function getActiveRoomWord(count: number) {
   const mod100 = count % 100;
 
   if (mod10 === 1 && mod100 !== 11) {
-    return "Р°РєС‚РёРІРЅС‹Р№ РЅРѕРјРµСЂ";
+    return "активный номер";
   }
 
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-    return "Р°РєС‚РёРІРЅС‹С… РЅРѕРјРµСЂР°";
+    return "активных номера";
   }
 
-  return "Р°РєС‚РёРІРЅС‹С… РЅРѕРјРµСЂРѕРІ";
+  return "активных номеров";
 }
 
 export default async function PropertyRoomCreatePage({ params, searchParams }: PropertyRoomCreatePageProps) {
@@ -41,13 +42,13 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
   const subscription = profile ? await getSubscriptionRuntimeState(profile.id, "owner") : null;
   const roomUsageLabel = subscription
     ? subscription.roomLimit == null
-      ? `${subscription.activeRoomCount} Р°РєС‚РёРІРЅС‹С… РЅРѕРјРµСЂРѕРІ`
-      : `${subscription.activeRoomCount} РёР· ${subscription.roomLimit} Р°РєС‚РёРІРЅС‹С… РЅРѕРјРµСЂРѕРІ`
+      ? `${subscription.activeRoomCount} активных номеров`
+      : `${subscription.activeRoomCount} из ${subscription.roomLimit} активных номеров`
     : null;
   const roomLimitHint = subscription?.isRoomLimitReached
-    ? "Р›РёРјРёС‚ Р°РєС‚РёРІРЅС‹С… РЅРѕРјРµСЂРѕРІ СѓР¶Рµ РёСЃС‡РµСЂРїР°РЅ. Р’С‹ РјРѕР¶РµС‚Рµ СЃРѕС…СЂР°РЅРёС‚СЊ РЅРѕРІС‹Р№ РЅРѕРјРµСЂ РєР°Рє РЅРµР°РєС‚РёРІРЅС‹Р№, Р° Р·Р°С‚РµРј РґРµР°РєС‚РёРІРёСЂРѕРІР°С‚СЊ РґСЂСѓРіРѕР№ РЅРѕРјРµСЂ РёР»Рё РїСЂРѕРґР»РёС‚СЊ РїРѕРґРїРёСЃРєСѓ."
+    ? "Лимит активных номеров уже исчерпан. Вы можете сохранить новый номер как неактивный, а затем деактивировать другой номер или продлить подписку."
     : subscription?.roomLimit != null && subscription.remainingRoomSlots != null
-      ? `РЎРµР№С‡Р°СЃ РґРѕСЃС‚СѓРїРЅРѕ РµС‰Рµ ${subscription.remainingRoomSlots} ${getActiveRoomWord(subscription.remainingRoomSlots)}.`
+      ? `Сейчас доступно еще ${subscription.remainingRoomSlots} ${getActiveRoomWord(subscription.remainingRoomSlots)}.`
       : null;
 
   const fallbackParams: Record<string, string | string[] | undefined> = {};
@@ -71,7 +72,7 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
         <div className="br-dashboard-block__header">
           <div>
             <h2>{property.title}</h2>
-            <p>Р”РѕР±Р°РІСЊС‚Рµ РЅРѕРІС‹Р№ РЅРѕРјРµСЂ РґР»СЏ СЌС‚РѕРіРѕ РѕР±СЉРµРєС‚Р°.</p>
+            <p>Добавьте новый номер для этого объекта.</p>
           </div>
         </div>
 
@@ -80,8 +81,8 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
         {notice ? <div className="br-inline-notice">{notice}</div> : null}
         {subscription && roomUsageLabel ? (
           <div className="br-owner-muted">
-            РџРѕРґРїРёСЃРєР°: {roomUsageLabel}
-            {roomLimitHint ? ` вЂ” ${roomLimitHint}` : ""}
+            Подписка: {roomUsageLabel}
+            {roomLimitHint ? ` — ${roomLimitHint}` : ""}
           </div>
         ) : null}
       </div>
@@ -89,36 +90,53 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>
-            <h2>Р”РѕР±Р°РІРёС‚СЊ РЅРѕРјРµСЂ</h2>
-            <p>Р—Р°РїРѕР»РЅРёС‚Рµ РѕСЃРЅРѕРІРЅС‹Рµ РґР°РЅРЅС‹Рµ РЅРѕРјРµСЂР°, Р° Р·Р°С‚РµРј СЃРѕС…СЂР°РЅРёС‚Рµ РµРіРѕ РІ РѕР±СЉРµРєС‚.</p>
+            <h2>Добавить номер</h2>
+            <p>Заполните основные данные номера, а затем сохраните его в объект.</p>
           </div>
         </div>
 
-        <form action={createOwnerRoom} className="br-owner-editor br-owner-editor--muted">
+        <form action={createOwnerRoom} className="br-owner-editor br-owner-editor--muted br-room-form">
           <input type="hidden" name="propertyId" value={property.id} />
-          <div className="br-property-form__grid">
-            <Input id="room-title-new" name="title" label="РќР°Р·РІР°РЅРёРµ РЅРѕРјРµСЂР°" />
-            <Input id="room-subtitle-new" name="subtitle" label="РџРѕРґР·Р°РіРѕР»РѕРІРѕРє" />
-            <Input id="room-capacity-new" name="capacity" type="number" min="1" label="Р“РѕСЃС‚РµР№" defaultValue="2" />
-            <Input id="room-bedrooms-new" name="bedrooms" type="number" min="1" label="РЎРїР°Р»РµРЅ" defaultValue="1" />
-            <Input id="room-area-new" name="area" type="number" min="0" label="РџР»РѕС‰Р°РґСЊ, РјВІ" defaultValue="0" />
-            <Input
-              id="room-price-new"
-              name="pricePerNight"
-              type="number"
-              min="0"
-              step="0.01"
-              label="Р‘Р°Р·РѕРІР°СЏ С†РµРЅР° Р·Р° РЅРѕС‡СЊ"
-              defaultValue="0"
-            />
-          </div>
-          <RoomAmenitiesField initialAmenities={[]} />
-          <label className="br-toggle">
-            <span>РќРѕРјРµСЂ Р°РєС‚РёРІРµРЅ</span>
-            <input type="checkbox" name="isActive" defaultChecked />
-          </label>
-          <div className="br-active-step__actions">
-            <Button type="submit">РЎРѕС…СЂР°РЅРёС‚СЊ РЅРѕРјРµСЂ</Button>
+
+          <RoomFormSection title="Основное" description="Короткая карточка номера без лишнего шума.">
+            <div className="br-property-form__grid">
+              <Input id="room-title-new" name="title" label="Название номера" />
+              <Input id="room-subtitle-new" name="subtitle" label="Подзаголовок" />
+            </div>
+          </RoomFormSection>
+
+          <RoomFormSection title="Вместимость и цена" description="То, что чаще всего правят с телефона.">
+            <div className="br-property-form__grid br-room-form__grid--compact">
+              <Input id="room-capacity-new" name="capacity" type="number" min="1" label="Гостей" defaultValue="2" />
+              <Input id="room-bedrooms-new" name="bedrooms" type="number" min="1" label="Спален" defaultValue="1" />
+              <Input id="room-area-new" name="area" type="number" min="0" label="Площадь, м²" defaultValue="0" />
+              <Input
+                id="room-price-new"
+                name="pricePerNight"
+                type="number"
+                min="0"
+                step="0.01"
+                label="Базовая цена за ночь"
+                defaultValue="0"
+              />
+            </div>
+          </RoomFormSection>
+
+          <RoomFormSection title="Удобства номера" description="Главные удобства сразу, дополнительные по раскрытию.">
+            <RoomAmenitiesField initialAmenities={[]} />
+          </RoomFormSection>
+
+          <RoomFormSection title="Настройки" description="Оставьте только то, что важно для публикации.">
+            <div className="br-toggle-list br-room-form__toggles">
+              <label className="br-toggle">
+                <span>Номер активен</span>
+                <input type="checkbox" name="isActive" defaultChecked />
+              </label>
+            </div>
+          </RoomFormSection>
+
+          <div className="br-active-step__actions br-room-form__actions">
+            <Button type="submit">Сохранить номер</Button>
           </div>
         </form>
       </section>

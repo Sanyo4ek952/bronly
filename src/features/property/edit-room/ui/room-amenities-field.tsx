@@ -12,6 +12,10 @@ type AmenityCategory = {
   items: AmenityItem[];
 };
 
+type AmenityCategoryView = AmenityCategory & {
+  selectedCount: number;
+};
+
 type RoomAmenitiesFieldProps = {
   name?: string;
   id?: string;
@@ -132,6 +136,23 @@ function splitInitialAmenities(initialAmenities: string[]) {
   return { selected, custom };
 }
 
+function buildInitialOpenCategories(selectedAmenities: string[], customAmenities: string[]) {
+  const selectedKeys = new Set(selectedAmenities);
+  const open = new Set<string>();
+
+  amenityCatalog.forEach((category, index) => {
+    if (index === 0 || category.items.some((item) => selectedKeys.has(item.label))) {
+      open.add(category.title);
+    }
+  });
+
+  if (customAmenities.length) {
+    open.add("custom");
+  }
+
+  return open;
+}
+
 export function RoomAmenitiesField({
   name = "amenities",
   id = "room-amenities",
@@ -143,14 +164,18 @@ export function RoomAmenitiesField({
   const [selectedAmenities, setSelectedAmenities] = useState(initialState.selected);
   const [customAmenities, setCustomAmenities] = useState(initialState.custom);
   const [draftAmenity, setDraftAmenity] = useState("");
+  const [openCategories, setOpenCategories] = useState(() =>
+    buildInitialOpenCategories(initialState.selected, initialState.custom),
+  );
   const [showAll, setShowAll] = useState(
     initialState.selected.some((amenity) => !popularLabels.has(amenity)) || initialState.custom.length > 0,
   );
   const selectedSet = new Set(selectedAmenities);
-  const visibleCategories = amenityCatalog
+  const visibleCategories: AmenityCategoryView[] = amenityCatalog
     .map((category) => ({
       ...category,
       items: showAll ? category.items : category.items.filter((item) => item.popular),
+      selectedCount: category.items.filter((item) => selectedSet.has(item.label)).length,
     }))
     .filter((category) => category.items.length > 0);
   const orderedSelectedAmenities = catalogLabels.filter((amenity) => selectedSet.has(amenity));
@@ -171,6 +196,20 @@ export function RoomAmenitiesField({
     });
   }
 
+  function toggleCategory(categoryTitle: string) {
+    setOpenCategories((current) => {
+      const next = new Set(current);
+
+      if (next.has(categoryTitle)) {
+        next.delete(categoryTitle);
+      } else {
+        next.add(categoryTitle);
+      }
+
+      return next;
+    });
+  }
+
   function addCustomAmenity() {
     const value = draftAmenity.trim().replace(/\s+/g, " ");
 
@@ -188,6 +227,11 @@ export function RoomAmenitiesField({
     }
 
     setCustomAmenities((current) => dedupeAmenities([...current, value]));
+    setOpenCategories((current) => {
+      const next = new Set(current);
+      next.add("custom");
+      return next;
+    });
     setDraftAmenity("");
   }
 
@@ -218,62 +262,107 @@ export function RoomAmenitiesField({
 
       <div className="br-room-amenities-grid">
         {visibleCategories.map((category) => (
-          <section key={category.title} className="br-room-amenities-card">
-            <h3>{category.title}</h3>
-            <div className="br-room-amenities-options">
-              {category.items.map((item) => (
-                <label key={item.label} className="br-room-amenities-option">
-                  <input
-                    type="checkbox"
-                    checked={selectedSet.has(item.label)}
-                    onChange={() => toggleAmenity(item.label)}
-                  />
-                  <span>{item.label}</span>
-                </label>
-              ))}
+          <section
+            key={category.title}
+            className="br-room-amenities-card"
+            data-open={openCategories.has(category.title) ? "true" : "false"}
+          >
+            <button
+              type="button"
+              className="br-room-amenities-card__toggle"
+              aria-expanded={openCategories.has(category.title)}
+              onClick={() => toggleCategory(category.title)}
+            >
+              <span className="br-room-amenities-card__copy">
+                <strong>{category.title}</strong>
+                <small>
+                  {category.selectedCount
+                    ? `Выбрано: ${category.selectedCount}`
+                    : `Пунктов: ${category.items.length}`}
+                </small>
+              </span>
+              <span className="br-room-amenities-card__chevron" aria-hidden="true">
+                ▾
+              </span>
+            </button>
+
+            <div className="br-room-amenities-card__body">
+              <div className="br-room-amenities-options">
+                {category.items.map((item) => (
+                  <label key={item.label} className="br-room-amenities-option">
+                    <input
+                      type="checkbox"
+                      checked={selectedSet.has(item.label)}
+                      onChange={() => toggleAmenity(item.label)}
+                    />
+                    <span>{item.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </section>
         ))}
       </div>
 
       {hasAdditionalAmenities ? (
-        <button type="button" className="br-link-button" onClick={() => setShowAll((current) => !current)}>
+        <button
+          type="button"
+          className="br-link-button br-room-amenities-field__more"
+          onClick={() => setShowAll((current) => !current)}
+        >
           {showAll ? "Скрыть дополнительные удобства" : "Показать еще удобства"}
         </button>
       ) : null}
 
-      <section className="br-room-amenities-custom">
-        <div className="br-room-amenities-custom__header">
-          <strong>Свои удобства</strong>
-          <span>Добавьте то, чего нет в списке выше.</span>
-        </div>
+      <section className="br-room-amenities-custom" data-open={openCategories.has("custom") ? "true" : "false"}>
+        <button
+          type="button"
+          className="br-room-amenities-card__toggle br-room-amenities-card__toggle--custom"
+          aria-expanded={openCategories.has("custom")}
+          onClick={() => toggleCategory("custom")}
+        >
+          <span className="br-room-amenities-card__copy">
+            <strong>Свои удобства</strong>
+            <small>{customAmenities.length ? `Добавлено: ${customAmenities.length}` : "То, чего нет в списке"}</small>
+          </span>
+          <span className="br-room-amenities-card__chevron" aria-hidden="true">
+            ▾
+          </span>
+        </button>
 
-        {customAmenities.length ? (
-          <div className="br-room-amenities-custom__list">
-            {customAmenities.map((amenity) => (
-              <span key={amenity} className="br-room-amenities-custom__chip">
-                <span>{amenity}</span>
-                <button type="button" onClick={() => removeCustomAmenity(amenity)} aria-label={`Удалить: ${amenity}`}>
-                  ×
-                </button>
-              </span>
-            ))}
+        <div className="br-room-amenities-custom__body">
+          <div className="br-room-amenities-custom__header">
+            <strong>Свои удобства</strong>
+            <span>Добавьте то, чего нет в списке выше.</span>
           </div>
-        ) : null}
 
-        <div className="br-room-amenities-custom__composer">
-          <input
-            id={`${id}-custom`}
-            type="text"
-            className="br-field"
-            value={draftAmenity}
-            onChange={(event) => setDraftAmenity(event.target.value)}
-            onKeyDown={handleDraftAmenityKeyDown}
-            placeholder="Например: кофемашина"
-          />
-          <button type="button" className="br-button br-button--secondary" onClick={addCustomAmenity}>
-            Добавить
-          </button>
+          {customAmenities.length ? (
+            <div className="br-room-amenities-custom__list">
+              {customAmenities.map((amenity) => (
+                <span key={amenity} className="br-room-amenities-custom__chip">
+                  <span>{amenity}</span>
+                  <button type="button" onClick={() => removeCustomAmenity(amenity)} aria-label={`Удалить: ${amenity}`}>
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="br-room-amenities-custom__composer">
+            <input
+              id={`${id}-custom`}
+              type="text"
+              className="br-field"
+              value={draftAmenity}
+              onChange={(event) => setDraftAmenity(event.target.value)}
+              onKeyDown={handleDraftAmenityKeyDown}
+              placeholder="Например: кофемашина"
+            />
+            <button type="button" className="br-button br-button--secondary" onClick={addCustomAmenity}>
+              Добавить
+            </button>
+          </div>
         </div>
       </section>
     </div>

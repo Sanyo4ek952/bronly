@@ -11,6 +11,7 @@ import {
   uploadRoomPhoto,
 } from "@/app/dashboard/properties/actions";
 import { RoomAmenitiesField } from "@/features/property/edit-room/ui/room-amenities-field";
+import { RoomFormSection } from "@/features/property/edit-room/ui/room-form-section";
 import type { OwnerRoomDetail } from "@/entities/room/model/types";
 import { Button, Input, Textarea } from "@/shared/ui";
 
@@ -58,81 +59,99 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
         </div>
       </div>
 
-      <form action={updateOwnerRoom} className="br-owner-stack">
+      <form action={updateOwnerRoom} className="br-owner-stack br-room-form">
         <input type="hidden" name="propertyId" value={propertyId ?? ""} />
         <input type="hidden" name="roomId" value={room.id} />
         <input type="hidden" name="redirectTo" value={redirectTo} />
-        <div className="br-property-form__grid">
-          <Input id={`room-title-${room.id}`} name="title" label="Название" defaultValue={room.title} />
-          <Input id={`room-subtitle-${room.id}`} name="subtitle" label="Подзаголовок" defaultValue={room.subtitle} />
-          <Input id={`room-capacity-${room.id}`} name="capacity" type="number" min="1" label="Гостей" defaultValue={String(room.capacity)} />
-          <Input id={`room-bedrooms-${room.id}`} name="bedrooms" type="number" min="1" label="Спален" defaultValue={String(room.bedrooms)} />
-          <Input id={`room-area-${room.id}`} name="area" type="number" min="0" label="Площадь, м²" defaultValue={String(room.area)} />
-          <Input
-            id={`room-price-${room.id}`}
-            name="pricePerNight"
-            type="number"
-            min="0"
-            step="0.01"
-            label="Базовая цена за ночь"
-            defaultValue={String(room.pricePerNight)}
-          />
-          {isStandalone ? (
-            <>
-              <Input id={`room-type-${room.id}`} name="propertyType" label="Тип размещения" defaultValue={location.propertyType} />
-              <Input id={`room-city-${room.id}`} name="city" label="Город" defaultValue={location.city} />
-              <Input id={`room-timezone-${room.id}`} name="timezone" label="Часовой пояс" defaultValue={location.timezone} />
-              <Input
-                id={`room-address-${room.id}`}
-                name="address"
-                label="Адрес"
-                defaultValue={location.address}
-                wrapperClassName="br-form-field--span-2"
-              />
-            </>
-          ) : null}
-        </div>
 
-        <RoomAmenitiesField id={`room-amenities-${room.id}`} initialAmenities={room.amenities} />
+        <RoomFormSection title="Основное" description="Держим под рукой самые частые правки.">
+          <div className="br-property-form__grid">
+            <Input id={`room-title-${room.id}`} name="title" label="Название" defaultValue={room.title} />
+            <Input id={`room-subtitle-${room.id}`} name="subtitle" label="Подзаголовок" defaultValue={room.subtitle} />
+            {isStandalone ? (
+              <>
+                <Input id={`room-type-${room.id}`} name="propertyType" label="Тип размещения" defaultValue={location.propertyType} />
+                <Input id={`room-city-${room.id}`} name="city" label="Город" defaultValue={location.city} />
+                <Input id={`room-timezone-${room.id}`} name="timezone" label="Часовой пояс" defaultValue={location.timezone} />
+                <Input
+                  id={`room-address-${room.id}`}
+                  name="address"
+                  label="Адрес"
+                  defaultValue={location.address}
+                  wrapperClassName="br-form-field--span-2"
+                />
+              </>
+            ) : null}
+          </div>
+        </RoomFormSection>
+
+        <RoomFormSection title="Вместимость и цена" description="Основные параметры для карточки и расчета.">
+          <div className="br-property-form__grid br-room-form__grid--compact">
+            <Input id={`room-capacity-${room.id}`} name="capacity" type="number" min="1" label="Гостей" defaultValue={String(room.capacity)} />
+            <Input id={`room-bedrooms-${room.id}`} name="bedrooms" type="number" min="1" label="Спален" defaultValue={String(room.bedrooms)} />
+            <Input id={`room-area-${room.id}`} name="area" type="number" min="0" label="Площадь, м²" defaultValue={String(room.area)} />
+            <Input
+              id={`room-price-${room.id}`}
+              name="pricePerNight"
+              type="number"
+              min="0"
+              step="0.01"
+              label="Базовая цена за ночь"
+              defaultValue={String(room.pricePerNight)}
+            />
+          </div>
+        </RoomFormSection>
+
+        <RoomFormSection title="Удобства номера" description="Категории складываются компактно на телефоне.">
+          <RoomAmenitiesField id={`room-amenities-${room.id}`} initialAmenities={room.amenities} />
+        </RoomFormSection>
 
         {isStandalone ? (
-          <>
-            <Textarea id={`room-short-description-${room.id}`} name="shortDescription" label="Краткое описание" defaultValue={location.shortDescription} />
-            <Textarea
-              id={`room-full-description-${room.id}`}
-              name="fullDescription"
-              label="Подробное описание"
-              defaultValue={location.fullDescription}
-              className="br-textarea--lg"
-            />
-            <div className="br-inline-fields">
-              <Input id={`room-phone-${room.id}`} name="phone" label="Телефон" defaultValue={location.phone} />
-              <Input id={`room-whatsapp-${room.id}`} name="whatsapp" label="WhatsApp" defaultValue={location.whatsapp} />
-              <Input id={`room-telegram-${room.id}`} name="telegram" label="Telegram" defaultValue={location.telegram} />
+          <RoomFormSection title="Описание и контакты" description="Тексты, связь и время заезда в одном месте.">
+            <div className="br-owner-stack">
+              <Textarea id={`room-short-description-${room.id}`} name="shortDescription" label="Краткое описание" defaultValue={location.shortDescription} />
+              <Textarea
+                id={`room-full-description-${room.id}`}
+                name="fullDescription"
+                label="Подробное описание"
+                defaultValue={location.fullDescription}
+                className="br-textarea--lg"
+              />
+              <div className="br-inline-fields">
+                <Input id={`room-phone-${room.id}`} name="phone" label="Телефон" defaultValue={location.phone} />
+                <Input id={`room-whatsapp-${room.id}`} name="whatsapp" label="WhatsApp" defaultValue={location.whatsapp} />
+                <Input id={`room-telegram-${room.id}`} name="telegram" label="Telegram" defaultValue={location.telegram} />
+              </div>
+              <div className="br-inline-fields">
+                <Input id={`room-check-in-${room.id}`} name="checkInTime" label="Заезд" defaultValue={location.checkInTime} />
+                <Input id={`room-check-out-${room.id}`} name="checkOutTime" label="Выезд" defaultValue={location.checkOutTime} />
+              </div>
             </div>
-            <div className="br-inline-fields">
-              <Input id={`room-check-in-${room.id}`} name="checkInTime" label="Заезд" defaultValue={location.checkInTime} />
-              <Input id={`room-check-out-${room.id}`} name="checkOutTime" label="Выезд" defaultValue={location.checkOutTime} />
-            </div>
-            <div className="br-toggle-list">
-              <label className="br-toggle">
-                <span>Готов сотрудничать с агентами</span>
-                <input type="checkbox" name="allowAgentInquiries" defaultChecked={location.allowAgentInquiries} />
-              </label>
-              <label className="br-toggle">
-                <span>Показывать контакты владельца агенту</span>
-                <input type="checkbox" name="allowOwnerContactSharing" defaultChecked={location.allowOwnerContactSharing} />
-              </label>
-            </div>
-          </>
+          </RoomFormSection>
         ) : null}
 
-        <label className="br-toggle">
-          <span>Номер активен</span>
-          <input type="checkbox" name="isActive" defaultChecked={room.isActive} />
-        </label>
+        <RoomFormSection title="Настройки" description="Финальные переключатели без лишнего скролла.">
+          <div className="br-toggle-list br-room-form__toggles">
+            <label className="br-toggle">
+              <span>Номер активен</span>
+              <input type="checkbox" name="isActive" defaultChecked={room.isActive} />
+            </label>
+            {isStandalone ? (
+              <>
+                <label className="br-toggle">
+                  <span>Готов сотрудничать с агентами</span>
+                  <input type="checkbox" name="allowAgentInquiries" defaultChecked={location.allowAgentInquiries} />
+                </label>
+                <label className="br-toggle">
+                  <span>Показывать контакты владельца агенту</span>
+                  <input type="checkbox" name="allowOwnerContactSharing" defaultChecked={location.allowOwnerContactSharing} />
+                </label>
+              </>
+            ) : null}
+          </div>
+        </RoomFormSection>
 
-        <div className="br-active-step__actions">
+        <div className="br-active-step__actions br-room-form__actions">
           <Button type="submit">Сохранить номер</Button>
         </div>
       </form>
