@@ -938,10 +938,91 @@ ul {
   gap: 18px;
 }
 
+.br-header__menu-toggle {
+  display: none;
+  flex: none;
+}
+
 .br-login-link {
   color: var(--color-text);
   font-size: 14px;
   font-weight: 600;
+}
+
+.br-header-mobile-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 88px 16px 24px;
+  background: rgb(17 29 27 / 36%);
+  backdrop-filter: blur(8px);
+  animation: br-fade-in 180ms ease;
+}
+
+.br-header-mobile-sheet {
+  display: grid;
+  gap: 18px;
+  width: min(100%, 560px);
+  max-height: min(78vh, 640px);
+  padding: 16px 16px 18px;
+  overflow: auto;
+  border-radius: 24px;
+  animation: br-sheet-up 220ms ease;
+}
+
+.br-header-mobile-sheet__handle {
+  width: 48px;
+  height: 5px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: rgb(109 123 120 / 32%);
+}
+
+.br-header-mobile-sheet__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.br-header-mobile-sheet__header h2 {
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.br-header-mobile-sheet__header p {
+  margin-top: 6px;
+  color: var(--color-muted);
+}
+
+.br-header-mobile-sheet__close {
+  flex: none;
+}
+
+.br-header-mobile-sheet__nav,
+.br-header-mobile-sheet__actions {
+  display: grid;
+  gap: 10px;
+}
+
+.br-header-mobile-sheet__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 14px;
+  border-radius: 16px;
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 600;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.br-header-mobile-sheet__link:hover {
+  background: var(--color-primary-pale);
+  color: var(--color-primary-hover);
 }
 
 .br-hero {
@@ -4033,6 +4114,14 @@ button.br-owner-calendar-day:hover {
     display: none;
   }
 
+  .br-header__actions {
+    display: none;
+  }
+
+  .br-header__menu-toggle {
+    display: grid;
+  }
+
   .br-hero__grid,
   .br-split,
   .br-auth-shell__grid {
@@ -4130,8 +4219,14 @@ button.br-owner-calendar-day:hover {
     padding: 18px 0;
   }
 
-  .br-header__actions .br-login-link {
-    display: none;
+  .br-header-mobile-sheet-backdrop {
+    padding: 76px 12px 12px;
+  }
+
+  .br-header-mobile-sheet {
+    max-height: min(82vh, 720px);
+    padding-bottom: calc(18px + var(--safe-area-bottom));
+    border-radius: 24px 24px 18px 18px;
   }
 
   .br-hero {
@@ -4572,6 +4667,7 @@ body {
 .br-owner-nav__item:focus-visible,
 .br-owner-bottom-nav__item:focus-visible,
 .br-owner-mobile-sheet__item:focus-visible,
+.br-header-mobile-sheet__link:focus-visible,
 .br-icon-link:focus-visible {
   outline: none;
   border-color: rgb(13 148 136 / 0.44);
