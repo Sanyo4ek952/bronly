@@ -43,11 +43,11 @@ export default async function StandaloneRoomSettingsPage({ params, searchParams 
         <div className="br-dashboard-block__header">
           <div>
             <p className="br-owner-muted">{room.location.propertyType}</p>
-            <h2>РќР°СЃС‚СЂРѕР№РєРё РѕС‚РґРµР»СЊРЅРѕРіРѕ РЅРѕРјРµСЂР°</h2>
-            <p>Р—РґРµСЃСЊ РјРѕР¶РЅРѕ РѕР±РЅРѕРІРёС‚СЊ РґР°РЅРЅС‹Рµ РЅРѕРјРµСЂР°, СЃРµР·РѕРЅРЅС‹Рµ С†РµРЅС‹ Рё С„РѕС‚РѕРіСЂР°С„РёРё.</p>
+            <h2>Настройки отдельного номера</h2>
+            <p>Здесь можно обновить данные номера, сезонные цены и фотографии.</p>
           </div>
           <div className="br-room-page__actions">
-            <ButtonLink href="/dashboard/properties" variant="secondary">Рљ РѕР±С‰РµРјСѓ СЃРїРёСЃРєСѓ</ButtonLink>
+            <ButtonLink href="/dashboard/properties" variant="secondary">К общему списку</ButtonLink>
           </div>
         </div>
         {notice ? <div className="br-inline-notice">{notice}</div> : null}
