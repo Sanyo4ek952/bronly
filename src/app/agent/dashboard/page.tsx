@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getAgentDashboardSummary } from "@/entities/collaboration";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
+import { ButtonLink } from "@/shared/ui";
 
 export default async function AgentDashboardPage() {
   const profile = await getCurrentAuthProfile();
@@ -76,7 +77,7 @@ export default async function AgentDashboardPage() {
         <div className="br-onboarding-grid">
           {[
             "Заполните контакты, которые увидит гость по агентской ссылке.",
-            "Откройте раздел “К сотрудничеству”, чтобы отправить предложение владельцу.",
+            "Откройте раздел «К сотрудничеству», чтобы отправить предложение владельцу.",
             "После принятия связи принимайте заявки и вручную передавайте их владельцу.",
           ].map((step, index) => (
             <article key={step} className="br-onboarding-card br-onboarding-card--current">
@@ -93,13 +94,13 @@ export default async function AgentDashboardPage() {
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>
-            <h2>Пригласить владельца</h2>
-            <p>Отправьте персональную ссылку владельцу. Если он зарегистрируется по ней и создаст первый объект или отдельный номер, администратор сможет вручную продлить вашу подписку на 10 дней.</p>
+            <h2>Приглашения</h2>
+            <p>Подготовьте персональную ссылку для владельца или агента. Роль выбирается на следующем экране.</p>
           </div>
         </div>
-        <Link href="/agent/dashboard/referrals" className="br-button br-button--primary br-button--full">
-          Открыть приглашение
-        </Link>
+        <ButtonLink href="/agent/dashboard/referrals" size="sm">
+          Пригласить
+        </ButtonLink>
       </section>
     </>
   );

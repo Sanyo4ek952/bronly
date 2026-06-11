@@ -26,32 +26,60 @@ function buildInviteUrl(token: string) {
   return `${getBaseUrl()}/invite/${token}`;
 }
 
-function getInviteDefaults(inviterRole: ReferralInviteRole) {
-  if (inviterRole === "agent") {
+function getInviteIntent(inviteeRole: ReferralInviteRole) {
+  if (inviteeRole === "owner") {
     return {
-      inviteeRole: "owner" as const,
       intent: "join_app" as const,
     };
   }
 
   return {
-    inviteeRole: "agent" as const,
     intent: "collaboration" as const,
   };
 }
 
-function buildShareMessage(input: {
-  inviterName: string;
+export function getReferralInviteContent(input: {
   inviterRole: ReferralInviteRole;
   inviteeRole: ReferralInviteRole;
-  intent: ReferralInviteIntent;
-  inviteUrl: string;
+  inviteUrl?: string;
 }) {
-  if (input.inviterRole === "owner") {
-    return `Приглашаю вас в Bronly как агента. Подключайтесь по ссылке, чтобы начать сотрудничество: ${input.inviteUrl}`;
+  const inviteTitle = input.inviteeRole === "agent" ? "Пригласить агента" : "Пригласить владельца";
+  const intent = getInviteIntent(input.inviteeRole).intent;
+  const linkSuffix = input.inviteUrl ? `: ${input.inviteUrl}` : ".";
+
+  if (input.inviteeRole === "agent") {
+    return {
+      title: inviteTitle,
+      description:
+        "Отправьте персональную ссылку агенту. После регистрации он сможет открыть объекты для сотрудничества и отправить предложение владельцу.",
+      nextStepText:
+        "После регистрации вы сможете перейти к объектам для сотрудничества и отправить предложение владельцу.",
+      shareMessage: `Приглашаю вас в Bronly как агента. Подключайтесь по ссылке, чтобы начать сотрудничество${linkSuffix}`,
+      targetHref: "/agent/dashboard/opportunities?invite=accepted",
+      targetLabel: "Открыть объекты для сотрудничества",
+      intent,
+    };
   }
 
-  return `Приглашаю вас в Bronly как владельца. Зарегистрируйтесь по ссылке, чтобы настроить кабинет и начать сотрудничество: ${input.inviteUrl}`;
+  return {
+    title: inviteTitle,
+    description:
+      "Отправьте персональную ссылку владельцу. После регистрации он сможет настроить кабинет и добавить первый объект или отдельный номер.",
+    nextStepText:
+      "После регистрации вы сможете настроить кабинет владельца и добавить первый объект или отдельный номер.",
+    shareMessage: `Приглашаю вас в Bronly как владельца. Зарегистрируйтесь по ссылке, чтобы настроить кабинет и начать работу${linkSuffix}`,
+    targetHref: "/dashboard?invite=accepted",
+    targetLabel: "Открыть кабинет владельца",
+    intent,
+  };
+}
+
+function buildShareMessage(input: {
+  inviterRole: ReferralInviteRole;
+  inviteeRole: ReferralInviteRole;
+  inviteUrl: string;
+}) {
+  return getReferralInviteContent(input).shareMessage;
 }
 
 function getMilestoneLabel(milestoneType: ReferralMilestoneType) {
@@ -64,16 +92,14 @@ function getMilestoneLabel(milestoneType: ReferralMilestoneType) {
 }
 
 function getReferralTarget(role: ReferralInviteRole) {
-  if (role === "agent") {
-    return {
-      href: "/agent/dashboard/opportunities?invite=accepted",
-      label: "Открыть объекты для сотрудничества",
-    };
-  }
+  const content = getReferralInviteContent({
+    inviterRole: role === "agent" ? "owner" : "agent",
+    inviteeRole: role,
+  });
 
   return {
-    href: "/dashboard?invite=accepted",
-    label: "Открыть кабинет владельца",
+    href: content.targetHref,
+    label: content.targetLabel,
   };
 }
 
@@ -85,6 +111,11 @@ function mapInviteRow(
   intent: ReferralInviteIntent,
 ): ReferralInviteSummary {
   const inviteUrl = buildInviteUrl(row.token);
+  const content = getReferralInviteContent({
+    inviterRole,
+    inviteeRole,
+    inviteUrl,
+  });
 
   return {
     id: row.id,
@@ -99,11 +130,12 @@ function mapInviteRow(
     usedAt: row.used_at,
     createdAt: row.created_at,
     inviteUrl,
+    title: content.title,
+    description: content.description,
+    nextStepText: content.nextStepText,
     shareMessage: buildShareMessage({
-      inviterName,
       inviterRole,
       inviteeRole,
-      intent,
       inviteUrl,
     }),
   };
@@ -112,16 +144,17 @@ function mapInviteRow(
 export async function getOrCreateReferralInvite(input: {
   profile: AuthProfile;
   inviterRole: ReferralInviteRole;
+  inviteeRole: ReferralInviteRole;
 }): Promise<ReferralInviteSummary | null> {
   const admin = createSupabaseAdminClient();
-  const defaults = getInviteDefaults(input.inviterRole);
+  const { intent } = getInviteIntent(input.inviteeRole);
   const { data: existingData } = await admin
     .from("referral_invites")
     .select("*")
     .eq("inviter_profile_id", input.profile.id)
     .eq("inviter_role", input.inviterRole)
-    .eq("invitee_role", defaults.inviteeRole)
-    .eq("intent", defaults.intent)
+    .eq("invitee_role", input.inviteeRole)
+    .eq("intent", intent)
     .eq("status", "active")
     .is("used_by_profile_id", null)
     .order("created_at", { ascending: false })
@@ -131,7 +164,7 @@ export async function getOrCreateReferralInvite(input: {
   const existing = (existingData ?? null) as SupabaseReferralInviteRow | null;
 
   if (existing) {
-    return mapInviteRow(existing, input.profile.displayName, input.inviterRole, defaults.inviteeRole, defaults.intent);
+    return mapInviteRow(existing, input.profile.displayName, input.inviterRole, input.inviteeRole, intent);
   }
 
   const nowIso = new Date().toISOString();
@@ -141,8 +174,8 @@ export async function getOrCreateReferralInvite(input: {
       token: crypto.randomUUID().replace(/-/g, ""),
       inviter_profile_id: input.profile.id,
       inviter_role: input.inviterRole,
-      invitee_role: defaults.inviteeRole,
-      intent: defaults.intent,
+      invitee_role: input.inviteeRole,
+      intent,
       status: "active",
       created_at: nowIso,
       updated_at: nowIso,
@@ -155,7 +188,7 @@ export async function getOrCreateReferralInvite(input: {
     return null;
   }
 
-  return mapInviteRow(created, input.profile.displayName, input.inviterRole, defaults.inviteeRole, defaults.intent);
+  return mapInviteRow(created, input.profile.displayName, input.inviterRole, input.inviteeRole, intent);
 }
 
 export async function getReferralInvitePageData(token: string): Promise<ReferralInvitePageData> {

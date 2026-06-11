@@ -40,6 +40,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
     invite: data.invite.token,
     next: `/invite/${data.invite.token}`,
   }).toString()}`;
+  const roleLabel = data.invite.inviteeRole === "agent" ? "агента" : "владельца";
 
   return (
     <main className="br-auth-page">
@@ -47,21 +48,15 @@ export default async function InvitePage({ params }: InvitePageProps) {
         <div className="br-auth-shell__grid">
           <div className="br-auth-shell__intro">
             <span className="br-chip">персональное приглашение</span>
-            <h1 className="br-auth-shell__title">
-              {data.invite.inviterRole === "owner" ? "Владелец приглашает агента" : "Агент приглашает владельца"}
-            </h1>
-            <p className="br-auth-shell__text">{data.invite.inviterName} отправил вам приглашение в Bronly.</p>
+            <h1 className="br-auth-shell__title">{data.invite.inviterName} приглашает вас в Bronly</h1>
+            <p className="br-auth-shell__text">После регистрации вы сможете начать работу в роли {roleLabel}.</p>
           </div>
 
           <div className="br-auth-panel">
             <div className="br-auth-form">
               <div className="br-auth-form__field">
-                <strong>Что будет дальше</strong>
-                <p>
-                  {data.invite.inviteeRole === "agent"
-                    ? "После регистрации вы сможете перейти к объектам для сотрудничества и отправить предложение владельцу."
-                    : "После регистрации вы сможете настроить кабинет владельца и добавить первый объект или отдельный номер."}
-                </p>
+                <strong>{data.invite.title}</strong>
+                <p>{data.invite.nextStepText}</p>
               </div>
 
               {data.canRegister ? (

@@ -19,6 +19,9 @@ export type ReferralInviteSummary = {
   usedAt: string | null;
   createdAt: string;
   inviteUrl: string;
+  title: string;
+  description: string;
+  nextStepText: string;
   shareMessage: string;
 };
 

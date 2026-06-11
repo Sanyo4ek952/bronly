@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getOrCreateReferralInvite } from "@/entities/referral";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
-import { ReferralShareCard } from "@/widgets/referral-share/referral-share-card";
+import { ReferralSharePanel } from "@/widgets/referral-share/referral-share-panel";
 
 export default async function AgentReferralPage() {
   const profile = await getCurrentAuthProfile();
@@ -11,22 +11,22 @@ export default async function AgentReferralPage() {
     redirect("/login");
   }
 
-  const invite = await getOrCreateReferralInvite({
-    profile,
-    inviterRole: "agent",
-  });
+  const [ownerInvite, agentInvite] = await Promise.all([
+    getOrCreateReferralInvite({
+      profile,
+      inviterRole: "agent",
+      inviteeRole: "owner",
+    }),
+    getOrCreateReferralInvite({
+      profile,
+      inviterRole: "agent",
+      inviteeRole: "agent",
+    }),
+  ]);
 
-  if (!invite) {
+  if (!ownerInvite || !agentInvite) {
     redirect("/agent/dashboard");
   }
 
-  return (
-    <section className="br-owner-stack">
-      <ReferralShareCard
-        invite={invite}
-        title="Пригласить владельца"
-        description="Отправьте персональную ссылку владельцу. Если он зарегистрируется по ней и создаст первый объект или отдельный номер, в админке появится ручное продление вашей подписки."
-      />
-    </section>
-  );
+  return <ReferralSharePanel initialRole="owner" invites={{ owner: ownerInvite, agent: agentInvite }} />;
 }

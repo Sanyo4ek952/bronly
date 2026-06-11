@@ -1,5 +1,6 @@
 export {
   consumeReferralInviteForProfile,
+  getReferralInviteContent,
   getOrCreateReferralInvite,
   getPendingReferralQueue,
   getReferralInvitePageData,

@@ -62,11 +62,11 @@ export function ReferralShareCard({ invite, title, description }: ReferralShareC
           <p>{invite.inviteUrl}</p>
         </div>
         <div className="br-owner-actions">
-          <Button type="button" onClick={shareInvite}>
-            Открыть системный share
+          <Button type="button" onClick={shareInvite} size="sm">
+            Поделиться
           </Button>
-          <Button type="button" variant="secondary" onClick={copyInvite}>
-            Скопировать ссылку
+          <Button type="button" variant="secondary" onClick={copyInvite} size="sm">
+            Скопировать
           </Button>
         </div>
       </div>

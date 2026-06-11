@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import type { OwnerDashboardSummary } from "@/entities/property";
 import { AppIcon, ButtonLink, type AppIconComponent } from "@/shared/ui";
+
 import { OwnerDashboardOnboarding } from "./owner-dashboard-onboarding";
 
 const quickActions = [
@@ -133,8 +134,8 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
             <div>
               <h2>Продление доступа</h2>
               <p>
-                Публичные страницы и новые заявки временно недоступны. Доступ восстановится после ручного
-                продления подписки.
+                Публичные страницы и новые заявки временно недоступны. Доступ восстановится после ручного продления
+                подписки.
               </p>
             </div>
           </div>
@@ -152,9 +153,7 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
         </section>
       ) : null}
 
-      {dashboardStats.subscriptionWarningText ? (
-        <div className="br-inline-notice">{dashboardStats.subscriptionWarningText}</div>
-      ) : null}
+      {dashboardStats.subscriptionWarningText ? <div className="br-inline-notice">{dashboardStats.subscriptionWarningText}</div> : null}
 
       <section className="br-summary-grid">
         {summaryCards.map((card) => (
@@ -207,12 +206,14 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>
-            <h2>Пригласить агента</h2>
-            <p>Отправьте персональную ссылку. Если агент зарегистрируется по ней и дойдет до первого активного сотрудничества, администратор сможет вручную продлить вашу подписку на 10 дней.</p>
+            <h2>Приглашения</h2>
+            <p>Подготовьте персональную ссылку для владельца или агента. Роль выбирается на следующем экране.</p>
           </div>
         </div>
         <div className="br-owner-actions">
-          <ButtonLink href="/dashboard/referrals">Открыть приглашение</ButtonLink>
+          <ButtonLink href="/dashboard/referrals" size="sm">
+            Пригласить
+          </ButtonLink>
         </div>
       </section>
 
