@@ -67,7 +67,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 попробуйте снова.
               </p>
             ) : null}
-            {error && error !== "profile" && error !== "session" ? (
+            {error === "email-not-confirmed" ? (
+              <p className="br-card" style={{ marginBottom: 16 }}>
+                Email РµС‰Рµ РЅРµ РїРѕРґС‚РІРµСЂР¶РґРµРЅ. Р—Р°РІРµСЂС€РёС‚Рµ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РёР· РїРёСЃСЊРјР° РёР»Рё РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚Рµ РґРѕСЃС‚СѓРї С‡РµСЂРµР· В«Р—Р°Р±С‹Р»Рё РїР°СЂРѕР»СЊ?В».
+              </p>
+            ) : null}
+            {error && error !== "profile" && error !== "session" && error !== "email-not-confirmed" ? (
               <p className="br-card" style={{ marginBottom: 16 }}>
                 Не удалось войти. Проверьте email и пароль.
               </p>

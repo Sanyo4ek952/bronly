@@ -7,9 +7,12 @@ import { redirect } from "next/navigation";
 import {
   createSupabaseServerClient,
   getAuthUserEmailStatus,
+  getAuthDiagnosticContext,
   getCurrentAuthProfile,
+  logAuthDiagnostic,
   getPostLoginRedirect,
   getPostSignupRedirect,
+  redactAuthEmail,
   requireAppUrl,
 } from "@/shared/api/supabase";
 import { createTelegramLinkSession } from "@/entities/notification";
@@ -74,6 +77,23 @@ export async function signInAction(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    const context = await getAuthDiagnosticContext();
+    const normalizedMessage = error.message.toLowerCase();
+    const isEmailNotConfirmed =
+      normalizedMessage.includes("email not confirmed") || normalizedMessage.includes("email_not_confirmed");
+
+    logAuthDiagnostic("warn", "sign_in_failed", {
+      ...context,
+      email: redactAuthEmail(email),
+      errorCode: error.code ?? null,
+      errorMessage: error.message,
+      next: next || null,
+    });
+
+    if (isEmailNotConfirmed) {
+      redirect(`/login?error=email-not-confirmed&email=${encodeURIComponent(email)}`);
+    }
+
     redirect("/login?error=credentials");
   }
 
@@ -82,6 +102,12 @@ export async function signInAction(formData: FormData) {
   } = await supabase.auth.getSession();
 
   if (!session) {
+    const context = await getAuthDiagnosticContext();
+    logAuthDiagnostic("error", "sign_in_missing_session", {
+      ...context,
+      email: redactAuthEmail(email),
+      next: next || null,
+    });
     redirect("/login?error=session");
   }
 
@@ -90,6 +116,13 @@ export async function signInAction(formData: FormData) {
   const profile = await getCurrentAuthProfile();
 
   if (!profile) {
+    const context = await getAuthDiagnosticContext();
+    logAuthDiagnostic("error", "sign_in_missing_profile", {
+      ...context,
+      email: redactAuthEmail(email),
+      authUserId: session.user.id,
+      next: next || null,
+    });
     redirect("/login?error=profile");
   }
 
@@ -201,6 +234,14 @@ export async function forgotPasswordAction(formData: FormData) {
   });
 
   if (error) {
+    const context = await getAuthDiagnosticContext();
+    logAuthDiagnostic("warn", "password_reset_request_failed", {
+      ...context,
+      email: redactAuthEmail(email),
+      errorCode: error.code ?? null,
+      errorMessage: error.message,
+      redirectTo,
+    });
     redirect("/forgot-password?error=send");
   }
 

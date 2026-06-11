@@ -20,6 +20,7 @@ export { createSupabaseAdminClient, canUseSupabase } from "@/shared/api/supabase
 export { createSupabaseBrowserClient } from "@/shared/api/supabase/browser";
 export { ensureAuthUserProfile } from "@/shared/api/supabase/ensure-profile";
 export { getAuthUserEmailStatus } from "@/shared/api/supabase/auth-lookup";
+export { getAuthDiagnosticContext, logAuthDiagnostic, redactAuthEmail } from "@/shared/api/supabase/auth-diagnostics";
 export {
   createSupabaseServerClient,
   getCurrentAuthProfile,

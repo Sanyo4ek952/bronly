@@ -1,7 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { ensureAuthUserProfile, getSupabaseAnonKey, getSupabaseUrl } from "@/shared/api/supabase";
+import {
+  ensureAuthUserProfile,
+  getSupabaseAnonKey,
+  getSupabaseUrl,
+  logAuthDiagnostic,
+} from "@/shared/api/supabase";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,6 +20,9 @@ export async function GET(request: NextRequest) {
     const anonKey = getSupabaseAnonKey();
 
     if (!url || !anonKey) {
+      logAuthDiagnostic("error", "auth_confirm_missing_env", {
+        requestUrl: request.url,
+      });
       return NextResponse.redirect(new URL("/login?error=auth-confirm", request.url));
     }
 
@@ -36,12 +44,22 @@ export async function GET(request: NextRequest) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
       if (error || !data.user) {
+        logAuthDiagnostic("warn", "auth_confirm_exchange_failed", {
+          requestUrl: request.url,
+          hasCode: true,
+          errorCode: error?.code ?? null,
+          errorMessage: error?.message ?? null,
+        });
         return NextResponse.redirect(new URL("/login?error=auth-confirm", request.url));
       }
 
       const ensured = await ensureAuthUserProfile(data.user);
 
       if (!ensured) {
+        logAuthDiagnostic("error", "auth_confirm_profile_ensure_failed", {
+          requestUrl: request.url,
+          authUserId: data.user.id,
+        });
         return NextResponse.redirect(new URL("/login?error=profile", request.url));
       }
 
@@ -49,6 +67,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (!tokenHash || !type) {
+      logAuthDiagnostic("warn", "auth_confirm_missing_token", {
+        requestUrl: request.url,
+        hasTokenHash: Boolean(tokenHash),
+        type: type ?? null,
+      });
       return NextResponse.redirect(new URL("/login?error=auth-confirm", request.url));
     }
 
@@ -58,17 +81,31 @@ export async function GET(request: NextRequest) {
     });
 
     if (error || !data.user) {
+      logAuthDiagnostic("warn", "auth_confirm_verify_failed", {
+        requestUrl: request.url,
+        type,
+        errorCode: error?.code ?? null,
+        errorMessage: error?.message ?? null,
+      });
       return NextResponse.redirect(new URL("/login?error=auth-confirm", request.url));
     }
 
     const ensured = await ensureAuthUserProfile(data.user);
 
     if (!ensured) {
+      logAuthDiagnostic("error", "auth_confirm_profile_ensure_failed", {
+        requestUrl: request.url,
+        authUserId: data.user.id,
+        type,
+      });
       return NextResponse.redirect(new URL("/login?error=profile", request.url));
     }
 
     return response;
   } catch {
+    logAuthDiagnostic("error", "auth_confirm_unhandled_error", {
+      requestUrl: request.url,
+    });
     return NextResponse.redirect(new URL("/login?error=auth-confirm", request.url));
   }
 }

@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 import { ensureAuthUserProfile } from "@/shared/api/supabase/ensure-profile";
+import { logAuthDiagnostic } from "@/shared/api/supabase/auth-diagnostics";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/shared/api/supabase/env";
 
 export type AuthRole = "owner" | "agent" | "admin";
@@ -100,8 +101,16 @@ export async function getCurrentAuthProfile(): Promise<AuthProfile | null> {
       .maybeSingle();
 
     if (!profileRow) {
+      logAuthDiagnostic("warn", "profile_missing_for_authenticated_user", {
+        authUserId: user.id,
+        email: user.email ?? null,
+      });
       const ensured = await ensureAuthUserProfile(user);
       if (!ensured) {
+        logAuthDiagnostic("error", "profile_auto_create_failed", {
+          authUserId: user.id,
+          email: user.email ?? null,
+        });
         return null;
       }
 
@@ -114,6 +123,10 @@ export async function getCurrentAuthProfile(): Promise<AuthProfile | null> {
     }
 
     if (!profileRow) {
+      logAuthDiagnostic("error", "profile_refetch_failed_after_ensure", {
+        authUserId: user.id,
+        email: user.email ?? null,
+      });
       return null;
     }
 
@@ -133,7 +146,10 @@ export async function getCurrentAuthProfile(): Promise<AuthProfile | null> {
       email: user.email ?? "",
       roles: (roleRows ?? []).map((row) => row.role as AuthRole),
     };
-  } catch {
+  } catch (error) {
+    logAuthDiagnostic("error", "get_current_auth_profile_failed", {
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+    });
     return null;
   }
 }
