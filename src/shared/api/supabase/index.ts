@@ -39,6 +39,8 @@ export type {
   SupabasePropertyFeatureRow,
   SupabasePropertyRow,
   SupabasePushSubscriptionRow,
+  SupabaseReferralInviteRow,
+  SupabaseReferralRewardRow,
   SupabasePropertyRuleRow,
   SupabaseRoomAgentMarkupRow,
   SupabaseRoomAmenityRow,

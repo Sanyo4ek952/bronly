@@ -15,6 +15,7 @@
   OwnerIncomingAgentProposalItem,
 } from "@/entities/collaboration/model/types";
 import { createNotificationEvent } from "@/entities/notification";
+import { markAgentReferralMilestone } from "@/entities/referral";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
 import { createSupabaseServerClient, getCurrentAuthProfile, type AuthProfile } from "@/shared/api/supabase/server-auth";
 import type {
@@ -1294,6 +1295,10 @@ export async function reviewAgentProposal(input: {
         },
       });
 
+      if (input.decision === "active") {
+        await markAgentReferralMilestone(proposal.agent_id);
+      }
+
       return { ok: true as const };
     }
 
@@ -1345,6 +1350,10 @@ export async function reviewAgentProposal(input: {
         linkPath: input.decision === "active" ? "/agent/dashboard/collaborations" : "/agent/dashboard/opportunities",
       },
     });
+
+    if (input.decision === "active") {
+      await markAgentReferralMilestone(proposal.agent_id);
+    }
 
     return { ok: true as const };
   } catch {

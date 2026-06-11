@@ -1,4 +1,5 @@
 import type { SubscriptionRoleContext, SubscriptionStatus } from "@/entities/subscription";
+import type { ReferralQueueItem } from "@/entities/referral";
 
 export type AdminUserItem = {
   profileId: string;
@@ -61,4 +62,5 @@ export type AdminDashboardData = {
   users: AdminUserItem[];
   subscriptions: AdminSubscriptionItem[];
   properties: AdminPropertyItem[];
+  pendingReferralRewards: ReferralQueueItem[];
 };

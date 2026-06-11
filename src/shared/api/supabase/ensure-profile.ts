@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 
+import { consumeReferralInviteForProfile } from "@/entities/referral";
 import { createSupabaseAdminClient } from "@/shared/api/supabase/server";
 import type { AuthRole } from "@/shared/api/supabase/server-auth";
 
@@ -96,5 +97,19 @@ export async function ensureAuthUserProfile(user: User): Promise<boolean> {
     { onConflict: "profile_id,role" },
   );
 
-  return !roleError;
+  if (roleError) {
+    return false;
+  }
+
+  const inviteToken = typeof metadata.referral_invite_token === "string" ? metadata.referral_invite_token : "";
+
+  if (inviteToken) {
+    await consumeReferralInviteForProfile({
+      inviteToken,
+      invitedProfileId: profile.id,
+      inviteeRole: role === "agent" ? "agent" : "owner",
+    });
+  }
+
+  return true;
 }

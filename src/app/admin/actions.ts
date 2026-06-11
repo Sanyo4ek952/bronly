@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createNotificationEvent } from "@/entities/notification";
+import { reviewReferralReward } from "@/entities/referral";
 import { getDefaultGraceEndsAt } from "@/entities/subscription/api/subscription-data";
 import { createSupabaseAdminClient, getCurrentAuthProfile, getPostLoginRedirect } from "@/shared/api/supabase";
 
@@ -277,4 +278,27 @@ export async function toggleProfilePublicVisibilityAction(formData: FormData) {
 
   revalidatePath("/admin");
   redirect(`/admin?success=${nextHidden ? "profile-hidden" : "profile-unhidden"}`);
+}
+
+export async function reviewReferralRewardAction(formData: FormData) {
+  const profile = await requireAdmin();
+  const rewardId = getString(formData, "rewardId");
+  const decision = getString(formData, "decision");
+
+  if (!rewardId || (decision !== "approved" && decision !== "rejected")) {
+    redirect("/admin?error=referral");
+  }
+
+  const ok = await reviewReferralReward({
+    rewardId,
+    decision,
+    adminProfileId: profile.id,
+  });
+
+  if (!ok) {
+    redirect("/admin?error=referral");
+  }
+
+  revalidatePath("/admin");
+  redirect(`/admin?success=${decision === "approved" ? "referral-approved" : "referral-rejected"}`);
 }

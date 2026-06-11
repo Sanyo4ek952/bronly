@@ -33,19 +33,23 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   let message = "";
 
   if (success === "subscription-extended") {
-    message = "Подписка продлена на 30 дней.";
+    message = "РџРѕРґРїРёСЃРєР° РїСЂРѕРґР»РµРЅР° РЅР° 30 РґРЅРµР№.";
   } else if (success === "subscription-saved") {
-    message = "Подписка обновлена.";
+    message = "РџРѕРґРїРёСЃРєР° РѕР±РЅРѕРІР»РµРЅР°.";
   } else if (success === "profile-hidden") {
-    message = "Публичные страницы профиля скрыты администратором.";
+    message = "РџСѓР±Р»РёС‡РЅС‹Рµ СЃС‚СЂР°РЅРёС†С‹ РїСЂРѕС„РёР»СЏ СЃРєСЂС‹С‚С‹ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРј.";
   } else if (success === "profile-unhidden") {
-    message = "Публичные страницы профиля снова доступны.";
+    message = "РџСѓР±Р»РёС‡РЅС‹Рµ СЃС‚СЂР°РЅРёС†С‹ РїСЂРѕС„РёР»СЏ СЃРЅРѕРІР° РґРѕСЃС‚СѓРїРЅС‹.";
   } else if (success === "property-frozen") {
-    message = "Объект заморожен.";
+    message = "РћР±СЉРµРєС‚ Р·Р°РјРѕСЂРѕР¶РµРЅ.";
   } else if (success === "property-unfrozen") {
-    message = "Объект разморожен.";
+    message = "РћР±СЉРµРєС‚ СЂР°Р·РјРѕСЂРѕР¶РµРЅ.";
+  } else if (success === "referral-approved") {
+    message = "Р РµС„РµСЂР°Р»СЊРЅРѕРµ РїСЂРѕРґР»РµРЅРёРµ РїРѕРґС‚РІРµСЂР¶РґРµРЅРѕ.";
+  } else if (success === "referral-rejected") {
+    message = "Р РµС„РµСЂР°Р»СЊРЅРѕРµ РЅР°С‡РёСЃР»РµРЅРёРµ РѕС‚РєР»РѕРЅРµРЅРѕ.";
   } else if (error) {
-    message = "Не удалось выполнить действие. Проверьте данные и попробуйте еще раз.";
+    message = "РќРµ СѓРґР°Р»РѕСЃСЊ РІС‹РїРѕР»РЅРёС‚СЊ РґРµР№СЃС‚РІРёРµ. РџСЂРѕРІРµСЂСЊС‚Рµ РґР°РЅРЅС‹Рµ Рё РїРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰Рµ СЂР°Р·.";
   }
 
   return <AdminDashboard data={data} message={message} />;

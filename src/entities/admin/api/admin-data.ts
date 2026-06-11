@@ -1,5 +1,6 @@
 import { cache } from "react";
 
+import { getPendingReferralQueue } from "@/entities/referral";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import type { AdminDashboardData, AdminPropertyItem, AdminSubscriptionItem, AdminUserItem } from "@/entities/admin/model/types";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase";
@@ -48,6 +49,7 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
       users: [],
       subscriptions: [],
       properties: [],
+      pendingReferralRewards: [],
     };
   }
 
@@ -60,6 +62,7 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
     { data: subscriptionRows },
     { data: guestRequestRows },
     { data: collectionRows },
+    pendingReferralRewards,
   ] =
     await Promise.all([
       admin.from("profiles").select("*").order("created_at", { ascending: true }),
@@ -69,6 +72,7 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
       admin.from("subscriptions").select("*").order("updated_at", { ascending: false }),
       admin.from("guest_requests").select("*").order("created_at", { ascending: false }),
       admin.from("collections").select("*"),
+      getPendingReferralQueue(),
     ]);
 
   const safeProfiles = (profileRows ?? []) as SupabaseProfileRow[];
@@ -239,5 +243,6 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
     users,
     subscriptions,
     properties,
+    pendingReferralRewards,
   };
 });

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { markOwnerReferralMilestone } from "@/entities/referral";
 import { createSupabaseServerClient } from "@/shared/api/supabase";
 import { getCheckbox, getInteger, getNumber, getString } from "@/shared/lib/form-data";
 
@@ -136,6 +137,8 @@ export async function createOwnerRoom(formData: FormData) {
       note: null,
     });
   }
+
+  await markOwnerReferralMilestone(profile.id);
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/properties");

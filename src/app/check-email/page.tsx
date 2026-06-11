@@ -8,18 +8,33 @@ type CheckEmailPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+function buildLoginHref(email: string, invite: string) {
+  const params = new URLSearchParams({
+    info: "already-confirmed",
+    email,
+  });
+
+  if (invite) {
+    params.set("invite", invite);
+    params.set("next", `/invite/${invite}`);
+  }
+
+  return `/login?${params.toString()}`;
+}
+
 export default async function CheckEmailPage({ searchParams }: CheckEmailPageProps) {
   const fallbackParams: Record<string, string | string[] | undefined> = {};
   const params = await (searchParams ?? Promise.resolve(fallbackParams));
   const email = typeof params.email === "string" ? params.email : "";
   const role = typeof params.role === "string" ? params.role : "owner";
+  const invite = typeof params.invite === "string" ? params.invite : "";
   const error = typeof params.error === "string" ? params.error : "";
   const success = typeof params.success === "string" ? params.success : "";
-  const roleLabel = role === "agent" ? "агента" : "владельца";
+  const roleLabel = role === "agent" ? "Р°РіРµРЅС‚Р°" : "РІР»Р°РґРµР»СЊС†Р°";
   const emailStatus = email ? await getAuthUserEmailStatus(email) : "not_found";
 
   if (emailStatus === "confirmed") {
-    const loginHref = `/login?info=already-confirmed&email=${encodeURIComponent(email)}`;
+    const loginHref = buildLoginHref(email, invite);
 
     return (
       <main className="br-auth-page">
@@ -27,21 +42,21 @@ export default async function CheckEmailPage({ searchParams }: CheckEmailPagePro
           <BrandLogo className="br-auth-shell__logo" />
           <div className="br-auth-shell__grid">
             <div className="br-auth-shell__intro">
-              <span className="br-chip">email уже подтвержден</span>
-              <h1 className="br-auth-shell__title">Можно войти</h1>
+              <span className="br-chip">email СѓР¶Рµ РїРѕРґС‚РІРµСЂР¶РґРµРЅ</span>
+              <h1 className="br-auth-shell__title">РњРѕР¶РЅРѕ РІРѕР№С‚Рё</h1>
               <p className="br-auth-shell__text">
-                Аккаунт {email} уже зарегистрирован и подтвержден в Supabase. Новое письмо для этого email не
-                отправляется — войдите с паролем или восстановите доступ.
+                РђРєРєР°СѓРЅС‚ {email} СѓР¶Рµ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅ Рё РїРѕРґС‚РІРµСЂР¶РґРµРЅ РІ Supabase. РќРѕРІРѕРµ РїРёСЃСЊРјРѕ РґР»СЏ СЌС‚РѕРіРѕ email РЅРµ
+                РѕС‚РїСЂР°РІР»СЏРµС‚СЃСЏ вЂ” РІРѕР№РґРёС‚Рµ СЃ РїР°СЂРѕР»РµРј РёР»Рё РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚Рµ РґРѕСЃС‚СѓРї.
               </p>
             </div>
 
             <div className="br-auth-panel">
               <div className="br-auth-form">
                 <Link href={loginHref} className="br-button br-button--primary br-button--full">
-                  Войти в аккаунт
+                  Р’РѕР№С‚Рё РІ Р°РєРєР°СѓРЅС‚
                 </Link>
                 <Link href="/forgot-password" className="br-button br-button--secondary br-button--full">
-                  Забыли пароль?
+                  Р—Р°Р±С‹Р»Рё РїР°СЂРѕР»СЊ?
                 </Link>
               </div>
             </div>
@@ -57,10 +72,10 @@ export default async function CheckEmailPage({ searchParams }: CheckEmailPagePro
         <BrandLogo className="br-auth-shell__logo" />
         <div className="br-auth-shell__grid">
           <div className="br-auth-shell__intro">
-            <span className="br-chip">подтвердите email</span>
-            <h1 className="br-auth-shell__title">Почти готово</h1>
+            <span className="br-chip">РїРѕРґС‚РІРµСЂРґРёС‚Рµ email</span>
+            <h1 className="br-auth-shell__title">РџРѕС‡С‚Рё РіРѕС‚РѕРІРѕ</h1>
             <p className="br-auth-shell__text">
-              Мы создали аккаунт {roleLabel}. Подтвердите email{email ? ` ${email}` : ""}, чтобы завершить вход в
+              РњС‹ СЃРѕР·РґР°Р»Рё Р°РєРєР°СѓРЅС‚ {roleLabel}. РџРѕРґС‚РІРµСЂРґРёС‚Рµ email{email ? ` ${email}` : ""}, С‡С‚РѕР±С‹ Р·Р°РІРµСЂС€РёС‚СЊ РІС…РѕРґ РІ
               Bronly.
             </p>
           </div>
@@ -68,38 +83,42 @@ export default async function CheckEmailPage({ searchParams }: CheckEmailPagePro
           <div className="br-auth-panel">
             {error === "resend" ? (
               <p className="br-card" style={{ marginBottom: 16 }}>
-                Не удалось отправить письмо повторно. Попробуйте позже или проверьте настройки SMTP в Supabase.
+                РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ РїРёСЃСЊРјРѕ РїРѕРІС‚РѕСЂРЅРѕ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ РёР»Рё РїСЂРѕРІРµСЂСЊС‚Рµ РЅР°СЃС‚СЂРѕР№РєРё SMTP РІ Supabase.
               </p>
             ) : null}
             {success === "sent" ? (
               <p className="br-card" style={{ marginBottom: 16 }}>
-                Запрос отправлен. Проверьте входящие и папку «Спам» (отправитель — Supabase Auth).
+                Р—Р°РїСЂРѕСЃ РѕС‚РїСЂР°РІР»РµРЅ. РџСЂРѕРІРµСЂСЊС‚Рµ РІС…РѕРґСЏС‰РёРµ Рё РїР°РїРєСѓ В«РЎРїР°РјВ» (РѕС‚РїСЂР°РІРёС‚РµР»СЊ вЂ” Supabase Auth).
               </p>
             ) : null}
 
             <div className="br-auth-form">
               <div className="br-auth-form__field">
-                <strong>1. Откройте письмо от Supabase (тема вроде «Confirm your signup»).</strong>
+                <strong>1. РћС‚РєСЂРѕР№С‚Рµ РїРёСЃСЊРјРѕ РѕС‚ Supabase (С‚РµРјР° РІСЂРѕРґРµ В«Confirm your signupВ»).</strong>
               </div>
               <div className="br-auth-form__field">
-                <strong>2. Перейдите по ссылке подтверждения.</strong>
+                <strong>2. РџРµСЂРµР№РґРёС‚Рµ РїРѕ СЃСЃС‹Р»РєРµ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ.</strong>
               </div>
               <div className="br-auth-form__field">
-                <strong>3. После этого войдите в кабинет Bronly.</strong>
+                <strong>3. РџРѕСЃР»Рµ СЌС‚РѕРіРѕ РІРѕР№РґРёС‚Рµ РІ РєР°Р±РёРЅРµС‚ Bronly.</strong>
               </div>
 
               {email ? (
                 <form className="br-auth-form" action={resendConfirmationEmailAction}>
                   <input type="hidden" name="email" value={email} />
                   <input type="hidden" name="role" value={role} />
+                  <input type="hidden" name="invite" value={invite} />
                   <button type="submit" className="br-button br-button--secondary br-button--full">
-                    Отправить письмо еще раз
+                    РћС‚РїСЂР°РІРёС‚СЊ РїРёСЃСЊРјРѕ РµС‰Рµ СЂР°Р·
                   </button>
                 </form>
               ) : null}
 
-              <Link href="/login" className="br-button br-button--primary br-button--full">
-                Перейти ко входу
+              <Link
+                href={invite ? `/login?${new URLSearchParams({ invite, next: `/invite/${invite}` }).toString()}` : "/login"}
+                className="br-button br-button--primary br-button--full"
+              >
+                РџРµСЂРµР№С‚Рё РєРѕ РІС…РѕРґСѓ
               </Link>
             </div>
           </div>

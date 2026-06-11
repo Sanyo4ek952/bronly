@@ -89,6 +89,18 @@ export default async function AgentDashboardPage() {
           ))}
         </div>
       </section>
+
+      <section className="br-dashboard-block br-card">
+        <div className="br-dashboard-block__header">
+          <div>
+            <h2>Пригласить владельца</h2>
+            <p>Отправьте персональную ссылку владельцу. Если он зарегистрируется по ней и создаст первый объект или отдельный номер, администратор сможет вручную продлить вашу подписку на 10 дней.</p>
+          </div>
+        </div>
+        <Link href="/agent/dashboard/referrals" className="br-button br-button--primary br-button--full">
+          Открыть приглашение
+        </Link>
+      </section>
     </>
   );
 }

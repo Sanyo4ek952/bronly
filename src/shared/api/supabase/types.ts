@@ -185,6 +185,40 @@ export type SupabaseSubscriptionRow = {
   updated_at: string;
 };
 
+export type SupabaseReferralInviteRow = {
+  id: string;
+  token: string;
+  inviter_profile_id: string;
+  inviter_role: "owner" | "agent" | "admin";
+  invitee_role: "owner" | "agent" | "admin";
+  intent: "join_app" | "collaboration";
+  target_type: "property" | "room" | null;
+  target_id: string | null;
+  status: "active" | "used" | "revoked" | "expired";
+  used_by_profile_id: string | null;
+  used_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SupabaseReferralRewardRow = {
+  id: string;
+  invite_id: string;
+  inviter_profile_id: string;
+  invited_profile_id: string;
+  milestone_type: "owner_inventory_created" | "agent_first_active_collaboration";
+  milestone_reached_at: string;
+  approval_status: "pending" | "approved" | "rejected";
+  reward_days: number;
+  approved_by_admin_id: string | null;
+  approved_at: string | null;
+  rejected_at: string | null;
+  applied_role_contexts: Array<"owner" | "agent" | "admin">;
+  created_at: string;
+  updated_at: string;
+};
+
 export type SupabaseCollectionRow = {
   id: string;
   creator_id: string;

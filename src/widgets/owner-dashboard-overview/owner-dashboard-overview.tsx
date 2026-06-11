@@ -204,6 +204,18 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
         </div>
       </section>
 
+      <section className="br-dashboard-block br-card">
+        <div className="br-dashboard-block__header">
+          <div>
+            <h2>Пригласить агента</h2>
+            <p>Отправьте персональную ссылку. Если агент зарегистрируется по ней и дойдет до первого активного сотрудничества, администратор сможет вручную продлить вашу подписку на 10 дней.</p>
+          </div>
+        </div>
+        <div className="br-owner-actions">
+          <ButtonLink href="/dashboard/referrals">Открыть приглашение</ButtonLink>
+        </div>
+      </section>
+
       <OwnerDashboardOnboarding onboarding={dashboardStats.onboarding} emptyStates={emptyStatesToShow} />
     </>
   );

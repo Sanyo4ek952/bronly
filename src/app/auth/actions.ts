@@ -37,6 +37,14 @@ function getSettingsTargetPath(role: string) {
   return role === "agent" ? "/agent/dashboard/settings" : "/dashboard/settings";
 }
 
+function getInternalNextPath(value: string, fallback: string) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return fallback;
+  }
+
+  return value;
+}
+
 async function getAuthOrigin() {
   const headerStore = await headers();
   const forwardedHost = headerStore.get("x-forwarded-host");
@@ -49,14 +57,14 @@ async function getAuthOrigin() {
   return headerStore.get("origin") ?? getAppUrl() ?? "http://localhost:3000";
 }
 
-function buildEmailConfirmRedirectTo(origin: string, role: RegisterRole) {
-  const next = `/welcome?role=${role}`;
-  return `${origin}/auth/confirm?next=${encodeURIComponent(next)}`;
+function buildEmailConfirmRedirectTo(origin: string, nextPath: string) {
+  return `${origin}/auth/confirm?next=${encodeURIComponent(nextPath)}`;
 }
 
 export async function signInAction(formData: FormData) {
   const email = getString(formData, "email");
   const password = getString(formData, "password");
+  const next = getInternalNextPath(getString(formData, "next"), "");
 
   if (!email || !password) {
     redirect("/login?error=validation");
@@ -85,7 +93,7 @@ export async function signInAction(formData: FormData) {
     redirect("/login?error=profile");
   }
 
-  redirect(getPostLoginRedirect(profile.roles));
+  redirect(next || getPostLoginRedirect(profile.roles));
 }
 
 export async function signUpAction(formData: FormData) {
@@ -95,6 +103,7 @@ export async function signUpAction(formData: FormData) {
   const password = getString(formData, "password");
   const requestedRole = getString(formData, "role");
   const role = isRegisterRole(requestedRole) ? requestedRole : "owner";
+  const inviteToken = getString(formData, "invite");
   const acceptedTerms = formData.get("acceptedTerms");
 
   if (!displayName || !email || !password || !acceptedTerms || (requestedRole && !isRegisterRole(requestedRole))) {
@@ -104,7 +113,8 @@ export async function signUpAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const slug = slugify(displayName);
   const origin = await getAuthOrigin();
-  const emailRedirectTo = buildEmailConfirmRedirectTo(origin, role);
+  const nextPath = inviteToken ? `/invite/${inviteToken}` : `/welcome?role=${role}`;
+  const emailRedirectTo = buildEmailConfirmRedirectTo(origin, nextPath);
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -114,6 +124,7 @@ export async function signUpAction(formData: FormData) {
         display_name: displayName,
         phone,
         role,
+        referral_invite_token: inviteToken || undefined,
         ...(role === "owner" ? { slug } : {}),
       },
     },
@@ -125,20 +136,22 @@ export async function signUpAction(formData: FormData) {
 
   if (data.session) {
     const profile = await getCurrentAuthProfile();
-    redirect(getPostSignupRedirect(profile?.roles ?? [role]));
+    redirect(inviteToken ? nextPath : getPostSignupRedirect(profile?.roles ?? [role]));
   }
 
   if ((await getAuthUserEmailStatus(email)) === "confirmed") {
     redirect(`/login?info=already-confirmed&email=${encodeURIComponent(email)}`);
   }
 
-  redirect(`/check-email?email=${encodeURIComponent(email)}&role=${role}`);
+  const inviteQuery = inviteToken ? `&invite=${encodeURIComponent(inviteToken)}` : "";
+  redirect(`/check-email?email=${encodeURIComponent(email)}&role=${role}${inviteQuery}`);
 }
 
 export async function resendConfirmationEmailAction(formData: FormData) {
   const email = getString(formData, "email");
   const requestedRole = getString(formData, "role");
   const role = isRegisterRole(requestedRole) ? requestedRole : "owner";
+  const inviteToken = getString(formData, "invite");
 
   if (!email || (requestedRole && !isRegisterRole(requestedRole))) {
     redirect("/check-email?error=validation");
@@ -150,14 +163,15 @@ export async function resendConfirmationEmailAction(formData: FormData) {
 
   const supabase = await createSupabaseServerClient();
   const origin = await getAuthOrigin();
-  const emailRedirectTo = buildEmailConfirmRedirectTo(origin, role);
+  const nextPath = inviteToken ? `/invite/${inviteToken}` : `/welcome?role=${role}`;
+  const emailRedirectTo = buildEmailConfirmRedirectTo(origin, nextPath);
   const { error } = await supabase.auth.resend({
     type: "signup",
     email,
     options: { emailRedirectTo },
   });
 
-  const query = `email=${encodeURIComponent(email)}&role=${role}`;
+  const query = `email=${encodeURIComponent(email)}&role=${role}${inviteToken ? `&invite=${encodeURIComponent(inviteToken)}` : ""}`;
   if (error) {
     redirect(`/check-email?${query}&error=resend`);
   }
