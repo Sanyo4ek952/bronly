@@ -36,7 +36,10 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
   const error = typeof params.error === "string" ? params.error : "";
   const invite = typeof params.invite === "string" ? params.invite : "";
   const next = typeof params.next === "string" ? params.next : "";
-  const requestedRole = typeof params.role === "string" && (params.role === "owner" || params.role === "agent") ? params.role : "owner";
+  const requestedRole =
+    typeof params.role === "string" && (params.role === "owner" || params.role === "agent")
+      ? params.role
+      : "owner";
 
   return (
     <main className="br-auth-page">
@@ -44,18 +47,18 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
         <BrandLogo className="br-auth-shell__logo" />
         <div className="br-auth-shell__grid">
           <div className="br-auth-shell__intro">
-            <span className="br-chip">СЃС‚Р°СЂС‚ РґР»СЏ РІР»Р°РґРµР»СЊС†Р° РёР»Рё Р°РіРµРЅС‚Р°</span>
-            <h1 className="br-auth-shell__title">РЎРѕР·РґР°Р№С‚Рµ Р°РєРєР°СѓРЅС‚</h1>
+            <span className="br-chip">Старт для владельца или агента</span>
+            <h1 className="br-auth-shell__title">Создайте аккаунт</h1>
             <p className="br-auth-shell__text">
-              Р—Р°РїСѓСЃС‚РёС‚Рµ СЃРІРѕСЋ РІРёС‚СЂРёРЅСѓ, РґРѕР±Р°РІСЊС‚Рµ РѕР±СЉРµРєС‚, РЅРѕРјРµСЂР° Рё РЅР°С‡РЅРёС‚Рµ РїСЂРёРЅРёРјР°С‚СЊ Р·Р°СЏРІРєРё РїРѕ
-              РїРµСЂСЃРѕРЅР°Р»СЊРЅРѕР№ СЃСЃС‹Р»РєРµ.
+              Запустите свою витрину, добавьте объекты, номера и начните принимать заявки по
+              персональной ссылке.
             </p>
           </div>
 
           <div className="br-auth-panel">
             {error ? (
               <p className="br-card" style={{ marginBottom: 16 }}>
-                РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ Р°РєРєР°СѓРЅС‚. РџСЂРѕРІРµСЂСЊС‚Рµ РїРѕР»СЏ Рё РїРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰Рµ СЂР°Р·.
+                Не удалось создать аккаунт. Проверьте поля и попробуйте еще раз.
               </p>
             ) : null}
 
@@ -65,48 +68,77 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
 
               <div className="br-auth-form__field">
                 <label className="br-label" htmlFor="display-name">
-                  РРјСЏ
+                  Имя
                 </label>
-                <input id="display-name" name="displayName" type="text" className="br-field" placeholder="РРІР°РЅ РРІР°РЅРѕРІ" required />
+                <input
+                  id="display-name"
+                  name="displayName"
+                  type="text"
+                  className="br-field"
+                  placeholder="Иван Иванов"
+                  required
+                />
               </div>
               <div className="br-auth-form__field">
                 <label className="br-label" htmlFor="role">
-                  Р РѕР»СЊ
+                  Роль
                 </label>
                 <select id="role" name="role" className="br-field" defaultValue={requestedRole}>
-                  <option value="owner">Р’Р»Р°РґРµР»РµС†</option>
-                  <option value="agent">РђРіРµРЅС‚</option>
+                  <option value="owner">Владелец</option>
+                  <option value="agent">Агент</option>
                 </select>
               </div>
               <div className="br-auth-form__field">
                 <label className="br-label" htmlFor="register-email">
                   Email
                 </label>
-                <input id="register-email" name="email" type="email" className="br-field" placeholder="name@example.com" required />
+                <input
+                  id="register-email"
+                  name="email"
+                  type="email"
+                  className="br-field"
+                  placeholder="name@example.com"
+                  required
+                />
               </div>
               <div className="br-auth-form__field">
                 <label className="br-label" htmlFor="phone">
-                  РўРµР»РµС„РѕРЅ
+                  Телефон
                 </label>
-                <input id="phone" name="phone" type="tel" className="br-field" placeholder="+7 (900) 123-45-67" />
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  className="br-field"
+                  placeholder="+7 (900) 123-45-67"
+                />
               </div>
               <div className="br-auth-form__field">
                 <label className="br-label" htmlFor="register-password">
-                  РџР°СЂРѕР»СЊ
+                  Пароль
                 </label>
-                <input id="register-password" name="password" type="password" className="br-field" placeholder="РњРёРЅРёРјСѓРј 8 СЃРёРјРІРѕР»РѕРІ" required />
+                <input
+                  id="register-password"
+                  name="password"
+                  type="password"
+                  className="br-field"
+                  placeholder="Минимум 8 символов"
+                  required
+                />
               </div>
               <label className="br-check">
                 <input name="acceptedTerms" type="checkbox" required />
-                <span>РЇ РїСЂРёРЅРёРјР°СЋ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРѕРµ СЃРѕРіР»Р°С€РµРЅРёРµ Рё РїРѕР»РёС‚РёРєСѓ РєРѕРЅС„РёРґРµРЅС†РёР°Р»СЊРЅРѕСЃС‚Рё.</span>
+                <span>
+                  Я принимаю пользовательское соглашение и политику конфиденциальности.
+                </span>
               </label>
               <button type="submit" className="br-button br-button--primary br-button--full">
-                Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ
+                Зарегистрироваться
               </button>
             </form>
 
             <p className="br-auth-bottom">
-              РЈР¶Рµ РµСЃС‚СЊ Р°РєРєР°СѓРЅС‚? <Link href={buildLoginHref(invite, next)}>Р’РѕР№С‚Рё</Link>
+              Уже есть аккаунт? <Link href={buildLoginHref(invite, next)}>Войти</Link>
             </p>
           </div>
         </div>
