@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation";
 
 import { createOwnerRoom } from "@/app/dashboard/properties/actions";
-import { RoomAmenitiesField } from "@/features/property/edit-room/ui/room-amenities-field";
-import { RoomFormSection } from "@/features/property/edit-room/ui/room-form-section";
 import { getRoomCreateNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerPropertyDetail } from "@/entities/property";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
-import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
+import { RoomAmenitiesField } from "@/features/property/edit-room/ui/room-amenities-field";
+import { RoomFormSection } from "@/features/property/edit-room/ui/room-form-section";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
+import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
 import { Button, DashboardPageNav, Input } from "@/shared/ui";
 import { PropertySectionNav } from "@/widgets/property-section-nav";
 
@@ -101,7 +101,6 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
           <RoomFormSection title="Основное" description="Короткая карточка номера без лишнего шума.">
             <div className="br-property-form__grid">
               <Input id="room-title-new" name="title" label="Название номера" />
-              <Input id="room-subtitle-new" name="subtitle" label="Подзаголовок" />
             </div>
           </RoomFormSection>
 
@@ -110,15 +109,7 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
               <Input id="room-capacity-new" name="capacity" type="number" min="1" label="Гостей" defaultValue="2" />
               <Input id="room-bedrooms-new" name="bedrooms" type="number" min="1" label="Спален" defaultValue="1" />
               <Input id="room-area-new" name="area" type="number" min="0" label="Площадь, м²" defaultValue="0" />
-              <Input
-                id="room-price-new"
-                name="pricePerNight"
-                type="number"
-                min="0"
-                step="0.01"
-                label="Базовая цена за ночь"
-                defaultValue="0"
-              />
+              <Input id="room-price-new" name="pricePerNight" type="number" min="0" step="0.01" label="Базовая цена за ночь" defaultValue="0" />
             </div>
           </RoomFormSection>
 

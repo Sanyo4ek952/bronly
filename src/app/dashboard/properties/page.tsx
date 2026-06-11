@@ -200,7 +200,7 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                         <div className="br-owner-property-card__header">
                           <div>
                             <strong>{item.title}</strong>
-                            <p>Отдельный номер • {item.propertyType}</p>
+                            <p>Отдельный номер</p>
                           </div>
                           <div className="br-owner-property-card__topbar">
                             <StatusPill variant={item.isActive ? "active" : "inactive"}>{item.isActive ? "Активен" : "Неактивен"}</StatusPill>
@@ -213,8 +213,8 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                           <p className="br-owner-property-card__address">{item.city}, {item.address}</p>
                           <div className="br-summary-card__rows">
                             <div className="br-summary-card__row">
-                              <span>Тип</span>
-                              <strong>{item.propertyType}</strong>
+                              <span>Город</span>
+                              <strong>{item.city || "не указан"}</strong>
                             </div>
                             <div className="br-summary-card__row">
                               <span>Цена</span>
@@ -238,7 +238,6 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                     <section className="br-dashboard-block br-card">
                       <div className="br-dashboard-block__header">
                         <div>
-                          <p className="br-owner-muted">{standaloneRoomDetail.location.propertyType}</p>
                           <h2>{standaloneRoomDetail.title}</h2>
                           <p>{standaloneRoomDetail.location.city}, {standaloneRoomDetail.location.address}</p>
                         </div>
@@ -271,7 +270,6 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                           </StatusPill>
                           <strong className="br-room-page__price">{formatMoney(standaloneRoomDetail.pricePerNight)} / ночь</strong>
                         </div>
-                        {standaloneRoomDetail.subtitle ? <p>{standaloneRoomDetail.subtitle}</p> : null}
                         <div className="br-selected-room-meta">
                           <span>{standaloneRoomDetail.capacity} гостя</span>
                           <span>{standaloneRoomDetail.bedrooms} спальни</span>
@@ -323,7 +321,6 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                           <strong>Публикация и агентский контур</strong>
                           <p>Показывать агентам: {standaloneRoomDetail.location.allowAgentInquiries ? "да" : "нет"}</p>
                           <p>Передавать контакты владельца: {standaloneRoomDetail.location.allowOwnerContactSharing ? "да" : "нет"}</p>
-                          <p>Часовой пояс: {standaloneRoomDetail.location.timezone || "не указан"}</p>
                         </article>
                       </div>
                     </section>

@@ -125,9 +125,6 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
                       </div>
                       <StatusPill variant={room.isActive ? "active" : "inactive"}>{room.isActive ? "Активен" : "Неактивен"}</StatusPill>
                     </div>
-
-                    {room.subtitle ? <p className="br-owner-room-card__subtitle">{room.subtitle}</p> : null}
-
                     <div className="br-owner-room-card__meta">
                       <span>Фото: {room.photos.length}</span>
                       <span>Сезонных цен: {room.seasonalPrices.length}</span>

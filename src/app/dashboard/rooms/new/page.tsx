@@ -1,11 +1,11 @@
 import Link from "next/link";
 
 import { createOwnerRoom } from "@/app/dashboard/properties/actions";
+import { getRoomCreateNotice } from "@/app/dashboard/properties/page-helpers";
 import { RoomAmenitiesField } from "@/features/property/edit-room/ui/room-amenities-field";
 import { RoomFormSection } from "@/features/property/edit-room/ui/room-form-section";
-import { getRoomCreateNotice } from "@/app/dashboard/properties/page-helpers";
-import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
+import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
 import { Button, DashboardPageNav, Input, Textarea } from "@/shared/ui";
 
 type StandaloneRoomCreatePageProps = {
@@ -46,10 +46,7 @@ export default async function StandaloneRoomCreatePage({ searchParams }: Standal
           <RoomFormSection title="Основное" description="Как называется номер и где он находится.">
             <div className="br-property-form__grid">
               <Input id="room-title-new" name="title" label="Название номера" />
-              <Input id="room-subtitle-new" name="subtitle" label="Подзаголовок" />
-              <Input id="room-type-new" name="propertyType" label="Тип размещения" />
               <Input id="room-city-new" name="city" label="Город" />
-              <Input id="room-timezone-new" name="timezone" label="Часовой пояс" defaultValue="(UTC+03:00) Москва" />
               <Input id="room-address-new" name="address" label="Адрес" wrapperClassName="br-form-field--span-2" />
             </div>
           </RoomFormSection>

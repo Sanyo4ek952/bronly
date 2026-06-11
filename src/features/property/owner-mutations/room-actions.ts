@@ -21,6 +21,9 @@ import {
 } from "./lib/paths";
 import { generateUniqueRoomSlug } from "./lib/slugs";
 
+const DEFAULT_TIMEZONE = "(UTC+03:00) Москва";
+const DEFAULT_STANDALONE_ROOM_TYPE = "Отдельный номер";
+
 function buildRoomRedirectTarget(formData: FormData, fallbackPath: string, state: Record<string, string>) {
   const redirectTo = getString(formData, "redirectTo");
   const basePath =
@@ -39,10 +42,10 @@ function buildRoomRedirectTarget(formData: FormData, fallbackPath: string, state
 
 function getStandaloneRoomPayload(formData: FormData) {
   return {
-    property_type: getString(formData, "propertyType"),
+    property_type: DEFAULT_STANDALONE_ROOM_TYPE,
     city: getString(formData, "city"),
     address: getString(formData, "address"),
-    timezone: getString(formData, "timezone") || "(UTC+03:00) Москва",
+    timezone: DEFAULT_TIMEZONE,
     short_description: getString(formData, "shortDescription") || null,
     full_description: getString(formData, "fullDescription") || null,
     phone: getString(formData, "phone") || null,
@@ -57,7 +60,7 @@ function getStandaloneRoomPayload(formData: FormData) {
 
 function validateStandaloneRoom(formData: FormData) {
   const payload = getStandaloneRoomPayload(formData);
-  return Boolean(payload.property_type && payload.city && payload.address);
+  return Boolean(payload.city && payload.address);
 }
 
 export async function createOwnerRoom(formData: FormData) {
@@ -89,7 +92,7 @@ export async function createOwnerRoom(formData: FormData) {
       room_kind: isStandalone ? "standalone_room" : "property_room",
       slug,
       title,
-      subtitle: getString(formData, "subtitle") || null,
+      subtitle: null,
       capacity: getInteger(formData, "capacity", 1),
       bedrooms: getInteger(formData, "bedrooms", 1),
       area: getInteger(formData, "area", 0),
@@ -156,27 +159,29 @@ export async function updateOwnerRoom(formData: FormData) {
       property_id: propertyId || null,
       room_kind: isStandalone ? "standalone_room" : "property_room",
       title,
-      subtitle: getString(formData, "subtitle") || null,
+      subtitle: null,
       capacity: getInteger(formData, "capacity", 1),
       bedrooms: getInteger(formData, "bedrooms", 1),
       area: getInteger(formData, "area", 0),
       price_per_night: getNumber(formData, "pricePerNight", 0),
       is_active: nextIsActive,
-      ...(isStandalone ? getStandaloneRoomPayload(formData) : {
-        property_type: null,
-        city: null,
-        address: null,
-        timezone: null,
-        short_description: null,
-        full_description: null,
-        phone: null,
-        whatsapp: null,
-        telegram: null,
-        check_in_time: null,
-        check_out_time: null,
-        allow_agent_inquiries: false,
-        allow_owner_contact_sharing: false,
-      }),
+      ...(isStandalone
+        ? getStandaloneRoomPayload(formData)
+        : {
+            property_type: null,
+            city: null,
+            address: null,
+            timezone: null,
+            short_description: null,
+            full_description: null,
+            phone: null,
+            whatsapp: null,
+            telegram: null,
+            check_in_time: null,
+            check_out_time: null,
+            allow_agent_inquiries: false,
+            allow_owner_contact_sharing: false,
+          }),
       updated_at: new Date().toISOString(),
     })
     .eq("id", roomId);

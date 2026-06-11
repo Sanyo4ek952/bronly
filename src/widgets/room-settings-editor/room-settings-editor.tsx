@@ -67,12 +67,9 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
         <RoomFormSection title="Основное" description="Самые частые правки по номеру в одном блоке.">
           <div className="br-property-form__grid">
             <Input id={`room-title-${room.id}`} name="title" label="Название номера" defaultValue={room.title} />
-            <Input id={`room-subtitle-${room.id}`} name="subtitle" label="Подзаголовок" defaultValue={room.subtitle} />
             {isStandalone ? (
               <>
-                <Input id={`room-type-${room.id}`} name="propertyType" label="Тип размещения" defaultValue={location.propertyType} />
                 <Input id={`room-city-${room.id}`} name="city" label="Город" defaultValue={location.city} />
-                <Input id={`room-timezone-${room.id}`} name="timezone" label="Часовой пояс" defaultValue={location.timezone} />
                 <Input
                   id={`room-address-${room.id}`}
                   name="address"

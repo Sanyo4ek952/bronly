@@ -25,7 +25,6 @@ import {
 type OwnerCalendarRoom = {
   id: string;
   title: string;
-  subtitle: string;
   pricePerNight: number;
   busyRanges: OwnerBusyRange[];
 };
@@ -371,7 +370,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
                       </span>
                       <span className="br-calendar-room-card__copy">
                         <strong>{room.title}</strong>
-                        <small>{room.subtitle || getRoomSummary(room)}</small>
+                        <small>{getRoomSummary(room)}</small>
                       </span>
                     </button>
 
@@ -436,7 +435,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
       {selectedRoom ? (
         <section className="br-owner-calendar-detail">
           <div className="br-owner-calendar-stats">
-            <StatCard title="Выбранный номер" value={selectedRoom.title} subtitle={selectedRoom.subtitle || "Календарь занятости номера"} />
+            <StatCard title="Выбранный номер" value={selectedRoom.title} subtitle="Календарь занятости номера" />
             <StatCard
               title="Базовая цена"
               value={formatRoomPrice(selectedRoom.pricePerNight)}

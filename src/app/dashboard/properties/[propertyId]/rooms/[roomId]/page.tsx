@@ -69,7 +69,6 @@ export default async function PropertyRoomPage({ params }: PropertyRoomPageProps
             <StatusPill variant={room.isActive ? "active" : "inactive"}>{room.isActive ? "РђРєС‚РёРІРµРЅ" : "РќРµР°РєС‚РёРІРµРЅ"}</StatusPill>
             <strong className="br-room-page__price">{formatMoney(room.pricePerNight)} / РЅРѕС‡СЊ</strong>
           </div>
-          {room.subtitle ? <p>{room.subtitle}</p> : null}
           <div className="br-selected-room-meta">
             <span>{room.capacity} РіРѕСЃС‚СЏ</span>
             <span>{room.bedrooms} СЃРїР°Р»СЊРЅРё</span>

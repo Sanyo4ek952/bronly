@@ -65,7 +65,6 @@ export default async function StandaloneRoomCalendarPage({ params, searchParams 
             {
               id: room.id,
               title: room.title,
-              subtitle: room.subtitle,
               pricePerNight: room.pricePerNight,
               busyRanges: room.busyRanges,
             },

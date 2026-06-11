@@ -12,6 +12,8 @@ import { requireOwnerMutationAccess } from "./lib/owner-access";
 import { buildPropertyPath, buildPropertyPathWithState } from "./lib/paths";
 import { generateUniquePropertySlug } from "./lib/slugs";
 
+const DEFAULT_TIMEZONE = "(UTC+03:00) Москва";
+
 export async function createOwnerProperty(formData: FormData) {
   const profile = await requireOwnerMutationAccess("/dashboard/properties/new");
   const title = getString(formData, "title");
@@ -19,7 +21,6 @@ export async function createOwnerProperty(formData: FormData) {
   const propertyType = getString(formData, "propertyType");
   const city = getString(formData, "city");
   const address = getString(formData, "address");
-  const timezone = getString(formData, "timezone") || "(UTC+03:00) Москва";
 
   if (!title || !propertyType || !city || !address) {
     redirect("/dashboard/properties/new?error=validation");
@@ -35,7 +36,7 @@ export async function createOwnerProperty(formData: FormData) {
     property_type: propertyType,
     city,
     address,
-    timezone,
+    timezone: DEFAULT_TIMEZONE,
     short_description: getString(formData, "shortDescription"),
     full_description: getString(formData, "fullDescription"),
     phone: getString(formData, "phone"),
@@ -70,7 +71,6 @@ export async function updateOwnerProperty(formData: FormData) {
   const propertyType = getString(formData, "propertyType");
   const city = getString(formData, "city");
   const address = getString(formData, "address");
-  const timezone = getString(formData, "timezone") || "(UTC+03:00) Москва";
 
   if (!propertyId || !title || !propertyType || !city || !address) {
     redirect(buildPropertyPathWithState(propertyId, "property", { error: "validation" }));
@@ -85,7 +85,7 @@ export async function updateOwnerProperty(formData: FormData) {
       property_type: propertyType,
       city,
       address,
-      timezone,
+      timezone: DEFAULT_TIMEZONE,
       short_description: getString(formData, "shortDescription"),
       full_description: getString(formData, "fullDescription"),
       phone: getString(formData, "phone"),

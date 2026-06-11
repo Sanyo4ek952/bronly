@@ -62,7 +62,6 @@ export default async function PropertyCalendarPage({ params, searchParams }: Pro
             rooms={property.rooms.map((room) => ({
               id: room.id,
               title: room.title,
-              subtitle: room.subtitle,
               pricePerNight: room.pricePerNight,
               busyRanges: room.busyRanges,
             }))}

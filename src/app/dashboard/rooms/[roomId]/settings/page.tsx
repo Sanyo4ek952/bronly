@@ -42,7 +42,6 @@ export default async function StandaloneRoomSettingsPage({ params, searchParams 
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>
-            <p className="br-owner-muted">{room.location.propertyType}</p>
             <h2>Настройки отдельного номера</h2>
             <p>Здесь можно обновить данные номера, сезонные цены и фотографии.</p>
           </div>
