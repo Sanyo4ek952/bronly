@@ -42,11 +42,11 @@ export default async function StandaloneRoomCalendarPage({ params, searchParams 
         <div className="br-dashboard-block__header">
           <div>
             <h2>{room.title}</h2>
-            <p>Р СѓС‡РЅРѕРµ СѓРїСЂР°РІР»РµРЅРёРµ Р·Р°РЅСЏС‚С‹РјРё РґР°С‚Р°РјРё РґР»СЏ РѕС‚РґРµР»СЊРЅРѕРіРѕ РЅРѕРјРµСЂР°.</p>
+            <p>Ручное управление занятыми датами для отдельного номера.</p>
           </div>
           <div className="br-room-page__actions">
             <ButtonLink href={`/dashboard/rooms/${room.id}/settings`} variant="secondary">
-              РќР°СЃС‚СЂРѕР№РєРё
+              Настройки
             </ButtonLink>
           </div>
         </div>
@@ -55,8 +55,8 @@ export default async function StandaloneRoomCalendarPage({ params, searchParams 
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>
-            <h2>РљР°Р»РµРЅРґР°СЂСЊ Р·Р°РЅСЏС‚РѕСЃС‚Рё</h2>
-            <p>РћС‚РјРµС‡Р°Р№С‚Рµ Р·Р°РЅСЏС‚С‹Рµ РґР°С‚С‹ Р±РµР· Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРіРѕ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ Р·Р°СЏРІРѕРє.</p>
+            <h2>Календарь занятости</h2>
+            <p>Отмечайте занятые даты без автоматического подтверждения заявок.</p>
           </div>
         </div>
 

@@ -12,11 +12,11 @@ type NewPropertyPageProps = {
 function getMessage(error: string) {
   switch (error) {
     case "validation":
-      return "Р—Р°РїРѕР»РЅРёС‚Рµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїРѕР»СЏ РѕР±СЉРµРєС‚Р°.";
+      return "Заполните обязательные поля объекта.";
     case "duplicate":
-      return "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РѕР±СЉРµРєС‚. РџРѕРїСЂРѕР±СѓР№С‚Рµ РёР·РјРµРЅРёС‚СЊ РЅР°Р·РІР°РЅРёРµ.";
+      return "Не удалось создать объект. Попробуйте изменить название.";
     default:
-      return error ? "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РѕР±СЉРµРєС‚." : "";
+      return error ? "Не удалось создать объект." : "";
   }
 }
 
@@ -37,8 +37,8 @@ export default async function NewPropertyPage({ searchParams }: NewPropertyPageP
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>
-            <h2>РќРѕРІС‹Р№ РѕР±СЉРµРєС‚</h2>
-            <p>РЎРѕР·РґР°Р№С‚Рµ РѕР±СЉРµРєС‚ РІР»Р°РґРµР»СЊС†Р° Рё СЃСЂР°Р·Сѓ РїРѕРґРіРѕС‚РѕРІСЊС‚Рµ РµРіРѕ Рє РїСѓР±Р»РёРєР°С†РёРё Рё РїСЂРёС‘РјСѓ Р·Р°СЏРІРѕРє.</p>
+            <h2>Новый объект</h2>
+            <p>Создайте объект владельца и сразу подготовьте его к публикации и приёму заявок.</p>
           </div>
         </div>
 
@@ -49,9 +49,9 @@ export default async function NewPropertyPage({ searchParams }: NewPropertyPageP
 
           <div className="br-active-step__actions">
             <Link href="/dashboard/properties" className="br-button br-button--secondary">
-              Рљ СЃРїРёСЃРєСѓ РѕР±СЉРµРєС‚РѕРІ
+              К списку объектов
             </Link>
-            <Button type="submit">РЎРѕР·РґР°С‚СЊ РѕР±СЉРµРєС‚</Button>
+            <Button type="submit">Создать объект</Button>
           </div>
         </form>
       </section>

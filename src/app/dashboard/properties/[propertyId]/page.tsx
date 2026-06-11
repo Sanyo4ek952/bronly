@@ -48,12 +48,12 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
           <div>
             <h2>{property.title}</h2>
             <p>
-              {property.city} вЂў {property.propertyType} вЂў slug РѕР±СЉРµРєС‚Р°: {property.slug}
+              {property.city} • {property.propertyType} • slug объекта: {property.slug}
             </p>
           </div>
           <div className="br-owner-actions">
             <StatusPill variant={property.published && !property.isFrozen ? "active" : "inactive"}>
-              {property.isFrozen ? "Р—Р°РјРѕСЂРѕР¶РµРЅ" : property.published ? "РћРїСѓР±Р»РёРєРѕРІР°РЅ" : "РЎРєСЂС‹С‚"}
+              {property.isFrozen ? "Заморожен" : property.published ? "Опубликован" : "Скрыт"}
             </StatusPill>
           </div>
         </div>
@@ -66,8 +66,8 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>
-            <h2>РќР°СЃС‚СЂРѕР№РєРё РѕР±СЉРµРєС‚Р°</h2>
-            <p>РћСЃРЅРѕРІРЅС‹Рµ РґР°РЅРЅС‹Рµ, РєРѕРЅС‚Р°РєС‚С‹, РїСЂР°РІРёР»Р° РїСЂРѕР¶РёРІР°РЅРёСЏ Рё РїР°СЂР°РјРµС‚СЂС‹ РїСѓР±Р»РёРєР°С†РёРё.</p>
+            <h2>Настройки объекта</h2>
+            <p>Основные данные, контакты, правила проживания и параметры публикации.</p>
           </div>
         </div>
 
@@ -76,12 +76,12 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
           <OwnerPropertyFormFields property={property} />
 
           <div className="br-active-step__actions">
-            <Button type="submit">РЎРѕС…СЂР°РЅРёС‚СЊ РѕР±СЉРµРєС‚</Button>
+            <Button type="submit">Сохранить объект</Button>
             <Link
               href={property.ownerPublicSlug ? `/p/${property.ownerPublicSlug}` : "/dashboard/settings"}
               className="br-button br-button--secondary"
             >
-              {property.ownerPublicSlug ? "РћС‚РєСЂС‹С‚СЊ РїСѓР±Р»РёС‡РЅСѓСЋ СЃС‚СЂР°РЅРёС†Сѓ" : "Р—Р°РїРѕР»РЅРёС‚СЊ slug РІР»Р°РґРµР»СЊС†Р°"}
+              {property.ownerPublicSlug ? "Открыть публичную страницу" : "Заполнить slug владельца"}
             </Link>
           </div>
         </form>
@@ -90,8 +90,8 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
       <section id="photos" className="br-dashboard-block br-card br-anchor-target">
         <div className="br-dashboard-block__header">
           <div>
-            <h2>Р¤РѕС‚Рѕ РѕР±СЉРµРєС‚Р°</h2>
-            <p>Р”РѕР±Р°РІСЊС‚Рµ РЅРµСЃРєРѕР»СЊРєРѕ С„РѕС‚Рѕ. РџРµСЂРІРѕРµ С„РѕС‚Рѕ РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РєР°Рє РѕР±Р»РѕР¶РєР° РІ РєР°Р±РёРЅРµС‚Рµ Рё РЅР° РїСѓР±Р»РёС‡РЅРѕР№ СЃС‚СЂР°РЅРёС†Рµ.</p>
+            <h2>Фото объекта</h2>
+            <p>Добавьте несколько фото. Первое фото используется как обложка в кабинете и на публичной странице.</p>
           </div>
         </div>
 
@@ -102,11 +102,11 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
             name="photo"
             type="file"
             accept="image/*"
-            label="Р”РѕР±Р°РІРёС‚СЊ С„РѕС‚Рѕ РѕР±СЉРµРєС‚Р°"
+            label="Добавить фото объекта"
             wrapperClassName="br-owner-photo-upload__field"
           />
-          <p className="br-owner-muted">РџРѕРґРґРµСЂР¶РёРІР°СЋС‚СЃСЏ JPG, PNG, WebP Рё GIF РґРѕ 5 РњР‘.</p>
-          <Button type="submit">Р—Р°РіСЂСѓР·РёС‚СЊ С„РѕС‚Рѕ</Button>
+          <p className="br-owner-muted">Поддерживаются JPG, PNG, WebP и GIF до 5 МБ.</p>
+          <Button type="submit">Загрузить фото</Button>
         </form>
 
         {property.photos.length ? (
@@ -116,7 +116,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
                 <div className="br-photo-card__media">
                   <Image
                     src={photo.url}
-                    alt={`${property.title} вЂ” С„РѕС‚Рѕ ${index + 1}`}
+                    alt={`${property.title} — фото ${index + 1}`}
                     width={1200}
                     height={900}
                     unoptimized
@@ -125,22 +125,22 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
                 </div>
                 <div className="br-photo-card__body">
                   <div className="br-photo-card__meta">
-                    <strong>{index === 0 ? "РћР±Р»РѕР¶РєР° РѕР±СЉРµРєС‚Р°" : `Р¤РѕС‚Рѕ ${index + 1}`}</strong>
-                    <span>{index === 0 ? "РџРѕРєР°Р·С‹РІР°РµС‚СЃСЏ РїРµСЂРІРѕР№" : "РњРѕР¶РЅРѕ СЃРґРµР»Р°С‚СЊ РѕР±Р»РѕР¶РєРѕР№"}</span>
+                    <strong>{index === 0 ? "Обложка объекта" : `Фото ${index + 1}`}</strong>
+                    <span>{index === 0 ? "Показывается первой" : "Можно сделать обложкой"}</span>
                   </div>
                   <div className="br-photo-card__actions">
                     <form action={setPropertyPhotoPrimary}>
                       <input type="hidden" name="propertyId" value={property.id} />
                       <input type="hidden" name="photoId" value={photo.id} />
                       <Button type="submit" variant="secondary" disabled={index === 0}>
-                        {index === 0 ? "РћР±Р»РѕР¶РєР°" : "РЎРґРµР»Р°С‚СЊ РѕР±Р»РѕР¶РєРѕР№"}
+                        {index === 0 ? "Обложка" : "Сделать обложкой"}
                       </Button>
                     </form>
                     <form action={deletePropertyPhoto}>
                       <input type="hidden" name="propertyId" value={property.id} />
                       <input type="hidden" name="photoId" value={photo.id} />
                       <Button type="submit" variant="danger">
-                        РЈРґР°Р»РёС‚СЊ
+                        Удалить
                       </Button>
                     </form>
                   </div>
@@ -150,7 +150,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
           </div>
         ) : (
           <p className="br-owner-muted">
-            Р¤РѕС‚Рѕ РѕР±СЉРµРєС‚Р° РїРѕРєР° РЅРµС‚. РџРѕСЃР»Рµ Р·Р°РіСЂСѓР·РєРё РїРµСЂРІРѕРµ С„РѕС‚Рѕ СЃС‚Р°РЅРµС‚ РѕР±Р»РѕР¶РєРѕР№ РІ РєР°Р±РёРЅРµС‚Рµ Рё РЅР° РїСѓР±Р»РёС‡РЅРѕР№ СЃС‚СЂР°РЅРёС†Рµ.
+            Фото объекта пока нет. После загрузки первое фото станет обложкой в кабинете и на публичной странице.
           </p>
         )}
       </section>
@@ -158,8 +158,8 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>
-            <h2>РЈРґР°Р»РµРЅРёРµ РѕР±СЉРµРєС‚Р°</h2>
-            <p>РЈРґР°Р»РµРЅРёРµ РєР°СЃРєР°РґРЅРѕ СѓРґР°Р»РёС‚ РЅРѕРјРµСЂР°, СЃРµР·РѕРЅРЅС‹Рµ С†РµРЅС‹, Р·Р°РЅСЏС‚С‹Рµ РґР°С‚С‹ Рё СЃРІСЏР·Р°РЅРЅС‹Рµ СЃРїРёСЃРєРё.</p>
+            <h2>Удаление объекта</h2>
+            <p>Удаление каскадно удалит номера, сезонные цены, занятые даты и связанные списки.</p>
           </div>
         </div>
 
@@ -168,11 +168,11 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
           <Input
             id="property-delete-confirmation"
             name="confirmation"
-            label="Р’РІРµРґРёС‚Рµ DELETE РґР»СЏ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ"
+            label="Введите DELETE для подтверждения"
             placeholder="DELETE"
           />
           <Button type="submit" variant="danger">
-            РЈРґР°Р»РёС‚СЊ РѕР±СЉРµРєС‚
+            Удалить объект
           </Button>
         </form>
       </section>

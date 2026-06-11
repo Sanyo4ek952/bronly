@@ -16,9 +16,9 @@ export default async function AgentCollectionCreatePage({ searchParams }: Collec
 
   return (
     <CollectionCreateSection
-      title="РЎРѕР·РґР°С‚СЊ РєРѕР»Р»РµРєС†РёСЋ Р°РіРµРЅС‚Р°"
-      description="РЎРѕР·РґР°Р№С‚Рµ РЅРѕРІСѓСЋ РїРѕРґР±РѕСЂРєСѓ Рё СЃСЂР°Р·Сѓ РїРµСЂРµР№РґРёС‚Рµ Рє СѓРїСЂР°РІР»РµРЅРёСЋ РµРµ СЃРѕСЃС‚Р°РІРѕРј Рё СЃСЃС‹Р»РєРѕР№."
-      fieldPlaceholder="РќР°РїСЂРёРјРµСЂ, РґР»СЏ РћР»СЊРіРё"
+      title="Создать коллекцию агента"
+      description="Создайте новую подборку и сразу перейдите к управлению ее составом и ссылкой."
+      fieldPlaceholder="Например, для Ольги"
       backHref="/agent/dashboard/collections"
       pageNav={(
         <DashboardPageNav

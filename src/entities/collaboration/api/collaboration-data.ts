@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   AgentAvailablePropertyItem,
   AgentCalendarBusyRange,
   AgentCalendarPropertyItem,
@@ -108,13 +108,13 @@ function getFallbackSummary(profile: AuthProfile): AgentDashboardSummary {
 function getStatusLabel(status: AgentLinkStatus) {
   switch (status) {
     case "active":
-      return "РђРєС‚РёРІРЅРѕ";
+      return "Активно";
     case "pending":
-      return "РћР¶РёРґР°РµС‚";
+      return "Ожидает";
     case "declined":
-      return "РћС‚РєР»РѕРЅРµРЅРѕ";
+      return "Отклонено";
     default:
-      return "Р—Р°РІРµСЂС€РµРЅРѕ";
+      return "Завершено";
   }
 }
 
@@ -127,7 +127,7 @@ function getContact(input?: ProfileContactRow | null): CollaborationContact {
 }
 
 function getCollaborationTerms(terms: string | null, message: string | null) {
-  return terms ?? message ?? "РЎРѕРѕР±С‰РµРЅРёРµ РЅРµ РґРѕР±Р°РІР»РµРЅРѕ";
+  return terms ?? message ?? "Сообщение не добавлено";
 }
 
 function buildCollaborationTarget(
@@ -159,7 +159,7 @@ function normalizeMarkupPercent(value: number) {
 }
 
 function mapStandaloneRoomLocation(room: RoomLookupRow) {
-  return [room.property_type ?? "РћС‚РґРµР»СЊРЅС‹Р№ РЅРѕРјРµСЂ", room.city ?? "", room.address ?? ""].filter(Boolean).join(" вЂў ");
+  return [room.property_type ?? "Отдельный номер", room.city ?? "", room.address ?? ""].filter(Boolean).join(" • ");
 }
 
 async function getActiveAgentPropertyIds(profileId: string) {
@@ -480,14 +480,14 @@ export async function getAgentCollaborations(profile: AuthProfile): Promise<Agen
       id: item.id,
       targetType: "property",
       targetId: item.property_id,
-      title: item.properties?.title ?? "РћР±СЉРµРєС‚",
-      subtitle: "РћР±СЉРµРєС‚ РІР»Р°РґРµР»СЊС†Р°",
-      ownerName: item.profiles?.display_name ?? "Р’Р»Р°РґРµР»РµС†",
+      title: item.properties?.title ?? "Объект",
+      subtitle: "Объект владельца",
+      ownerName: item.profiles?.display_name ?? "Владелец",
       status: item.status ?? "pending",
       statusLabel: getStatusLabel(item.status ?? "pending"),
       ownerContact: getContact(item.profiles),
       ownerContactVisible: Boolean(item.owner_contact_visible),
-      terms: item.collaboration_terms ?? item.proposal_message ?? "РЎРѕРѕР±С‰РµРЅРёРµ РЅРµ РґРѕР±Р°РІР»РµРЅРѕ",
+      terms: item.collaboration_terms ?? item.proposal_message ?? "Сообщение не добавлено",
       rooms: roomsByProperty.get(item.property_id) ?? [],
       targets: [buildCollaborationTarget(item.property_id, "property", item.properties?.title ?? "Объект")],
     }));
@@ -495,14 +495,14 @@ export async function getAgentCollaborations(profile: AuthProfile): Promise<Agen
       id: item.id,
       targetType: "standalone_room",
       targetId: item.room_id,
-      title: item.rooms?.title ?? "РћС‚РґРµР»СЊРЅС‹Р№ РЅРѕРјРµСЂ",
-      subtitle: item.rooms?.subtitle ?? "РЎР°РјРѕСЃС‚РѕСЏС‚РµР»СЊРЅС‹Р№ РІР°СЂРёР°РЅС‚ СЂР°Р·РјРµС‰РµРЅРёСЏ",
-      ownerName: item.profiles?.display_name ?? "Р’Р»Р°РґРµР»РµС†",
+      title: item.rooms?.title ?? "Отдельный номер",
+      subtitle: item.rooms?.subtitle ?? "Самостоятельный вариант размещения",
+      ownerName: item.profiles?.display_name ?? "Владелец",
       status: item.status ?? "pending",
       statusLabel: getStatusLabel(item.status ?? "pending"),
       ownerContact: getContact(item.profiles),
       ownerContactVisible: Boolean(item.owner_contact_visible),
-      terms: item.collaboration_terms ?? item.proposal_message ?? "РЎРѕРѕР±С‰РµРЅРёРµ РЅРµ РґРѕР±Р°РІР»РµРЅРѕ",
+      terms: item.collaboration_terms ?? item.proposal_message ?? "Сообщение не добавлено",
       rooms: standaloneRoomMap.has(item.room_id) ? [standaloneRoomMap.get(item.room_id)!] : [],
       targets: [buildCollaborationTarget(item.room_id, "standalone_room", item.rooms?.title ?? "Отдельный номер")],
     }));
@@ -619,7 +619,7 @@ export async function getAgentCalendarData(profile: AuthProfile): Promise<AgentC
       id: room.id,
       targetType: "standalone_room" as const,
       title: room.title,
-      subtitle: [room.property_type ?? "РћС‚РґРµР»СЊРЅС‹Р№ РЅРѕРјРµСЂ", room.city ?? "", room.address ?? ""].filter(Boolean).join(" вЂў "),
+      subtitle: [room.property_type ?? "Отдельный номер", room.city ?? "", room.address ?? ""].filter(Boolean).join(" • "),
       rooms: [
         {
           id: room.id,
@@ -751,7 +751,7 @@ export async function getAgentAvailableProperties(profile: AuthProfile): Promise
       ),
     );
     const ownerNameMap = new Map(
-      (ownerRows ?? []).map((row) => [row.id as string, (row.display_name as string | null) ?? "Р’Р»Р°РґРµР»РµС†"]),
+      (ownerRows ?? []).map((row) => [row.id as string, (row.display_name as string | null) ?? "Владелец"]),
     );
 
     const propertyItems: AgentAvailablePropertyItem[] = safeCandidates
@@ -764,7 +764,7 @@ export async function getAgentAvailableProperties(profile: AuthProfile): Promise
         shortTitle: property.short_title,
         city: property.city,
         address: property.address,
-        ownerName: ownerNameMap.get(property.owner_id) ?? "Р’Р»Р°РґРµР»РµС†",
+        ownerName: ownerNameMap.get(property.owner_id) ?? "Владелец",
         shortDescription: property.short_description ?? "",
       }));
     const roomItems: AgentAvailablePropertyItem[] = safeStandaloneRooms
@@ -777,7 +777,7 @@ export async function getAgentAvailableProperties(profile: AuthProfile): Promise
         shortTitle: room.title,
         city: room.city ?? "",
         address: room.address ?? "",
-        ownerName: ownerNameMap.get(room.owner_id) ?? "Р’Р»Р°РґРµР»РµС†",
+        ownerName: ownerNameMap.get(room.owner_id) ?? "Владелец",
         shortDescription: room.short_description ?? room.subtitle ?? room.property_type ?? "",
       }));
 
@@ -810,8 +810,8 @@ export async function getAgentOutgoingProposals(profile: AuthProfile): Promise<A
     const propertyItems = (propertyLinks ?? []).map((item) => ({
       id: item.id as string,
       targetType: "property" as const,
-      title: ((item.properties as { title?: string } | null)?.title ?? "РћР±СЉРµРєС‚"),
-      ownerName: ((item.profiles as { display_name?: string } | null)?.display_name ?? "Р’Р»Р°РґРµР»РµС†"),
+      title: ((item.properties as { title?: string } | null)?.title ?? "Объект"),
+      ownerName: ((item.profiles as { display_name?: string } | null)?.display_name ?? "Владелец"),
       message: (item.proposal_message as string | null) ?? "",
       status: ((item.status as AgentLinkStatus | null) ?? "pending"),
       statusLabel: getStatusLabel((item.status as AgentLinkStatus | null) ?? "pending"),
@@ -820,8 +820,8 @@ export async function getAgentOutgoingProposals(profile: AuthProfile): Promise<A
     const roomItems = (roomLinks ?? []).map((item) => ({
       id: item.id as string,
       targetType: "standalone_room" as const,
-      title: ((item.rooms as { title?: string } | null)?.title ?? "РћС‚РґРµР»СЊРЅС‹Р№ РЅРѕРјРµСЂ"),
-      ownerName: ((item.profiles as { display_name?: string } | null)?.display_name ?? "Р’Р»Р°РґРµР»РµС†"),
+      title: ((item.rooms as { title?: string } | null)?.title ?? "Отдельный номер"),
+      ownerName: ((item.profiles as { display_name?: string } | null)?.display_name ?? "Владелец"),
       message: (item.proposal_message as string | null) ?? "",
       status: ((item.status as AgentLinkStatus | null) ?? "pending"),
       statusLabel: getStatusLabel((item.status as AgentLinkStatus | null) ?? "pending"),
@@ -865,16 +865,16 @@ export async function getOwnerIncomingAgentProposals(): Promise<OwnerIncomingAge
     const propertyItems = (propertyLinks ?? []).map((item) => ({
       id: item.id as string,
       targetType: "property" as const,
-      title: ((item.properties as { title?: string } | null)?.title ?? "РћР±СЉРµРєС‚"),
-      agentName: ((item.profiles as { display_name?: string } | null)?.display_name ?? "РђРіРµРЅС‚"),
+      title: ((item.properties as { title?: string } | null)?.title ?? "Объект"),
+      agentName: ((item.profiles as { display_name?: string } | null)?.display_name ?? "Агент"),
       message: (item.proposal_message as string | null) ?? "",
       createdAt: formatDateTimeLabel((item.proposed_at as string | null) ?? new Date().toISOString()),
     }));
     const roomItems = (roomLinks ?? []).map((item) => ({
       id: item.id as string,
       targetType: "standalone_room" as const,
-      title: ((item.rooms as { title?: string } | null)?.title ?? "РћС‚РґРµР»СЊРЅС‹Р№ РЅРѕРјРµСЂ"),
-      agentName: ((item.profiles as { display_name?: string } | null)?.display_name ?? "РђРіРµРЅС‚"),
+      title: ((item.rooms as { title?: string } | null)?.title ?? "Отдельный номер"),
+      agentName: ((item.profiles as { display_name?: string } | null)?.display_name ?? "Агент"),
       message: (item.proposal_message as string | null) ?? "",
       createdAt: formatDateTimeLabel((item.proposed_at as string | null) ?? new Date().toISOString()),
     }));
@@ -928,14 +928,14 @@ export async function getOwnerActiveCollaborations(): Promise<OwnerActiveCollabo
     }>) {
       const existing = grouped.get(item.agent_id) ?? {
         agentId: item.agent_id,
-        agentName: item.profiles?.display_name ?? "РђРіРµРЅС‚",
+        agentName: item.profiles?.display_name ?? "Агент",
         agentContact: getContact(item.profiles),
         terms: getCollaborationTerms(item.collaboration_terms, item.proposal_message),
         targets: [],
       };
 
       if (item.properties?.id) {
-        existing.targets.push(buildCollaborationTarget(item.properties.id, "property", item.properties.title ?? "РћР±СЉРµРєС‚"));
+        existing.targets.push(buildCollaborationTarget(item.properties.id, "property", item.properties.title ?? "Объект"));
       }
 
       grouped.set(item.agent_id, existing);
@@ -950,14 +950,14 @@ export async function getOwnerActiveCollaborations(): Promise<OwnerActiveCollabo
     }>) {
       const existing = grouped.get(item.agent_id) ?? {
         agentId: item.agent_id,
-        agentName: item.profiles?.display_name ?? "РђРіРµРЅС‚",
+        agentName: item.profiles?.display_name ?? "Агент",
         agentContact: getContact(item.profiles),
         terms: getCollaborationTerms(item.collaboration_terms, item.proposal_message),
         targets: [],
       };
 
       if (item.rooms?.id) {
-        existing.targets.push(buildCollaborationTarget(item.rooms.id, "standalone_room", item.rooms.title ?? "РћС‚РґРµР»СЊРЅС‹Р№ РЅРѕРјРµСЂ"));
+        existing.targets.push(buildCollaborationTarget(item.rooms.id, "standalone_room", item.rooms.title ?? "Отдельный номер"));
       }
 
       grouped.set(item.agent_id, existing);
@@ -1092,9 +1092,9 @@ export async function getAgentActiveCollaborations(profile: AuthProfile): Promis
       id: item.id,
       targetType: "property",
       targetId: item.property_id,
-      title: item.properties?.title ?? "РћР±СЉРµРєС‚",
-      subtitle: "РћР±СЉРµРєС‚ РІР»Р°РґРµР»СЊС†Р°",
-      ownerName: item.profiles?.display_name ?? "Р’Р»Р°РґРµР»РµС†",
+      title: item.properties?.title ?? "Объект",
+      subtitle: "Объект владельца",
+      ownerName: item.profiles?.display_name ?? "Владелец",
       ownerContact: getContact(item.profiles),
       ownerContactVisible: Boolean(item.owner_contact_visible),
       status: item.status ?? "active",
@@ -1109,9 +1109,9 @@ export async function getAgentActiveCollaborations(profile: AuthProfile): Promis
       id: item.id,
       targetType: "standalone_room",
       targetId: item.room_id,
-      title: item.rooms?.title ?? "РћС‚РґРµР»СЊРЅС‹Р№ РЅРѕРјРµСЂ",
-      subtitle: item.rooms?.subtitle ?? "РЎР°РјРѕСЃС‚РѕСЏС‚РµР»СЊРЅС‹Р№ РІР°СЂРёР°РЅС‚ СЂР°Р·РјРµС‰РµРЅРёСЏ",
-      ownerName: item.profiles?.display_name ?? "Р’Р»Р°РґРµР»РµС†",
+      title: item.rooms?.title ?? "Отдельный номер",
+      subtitle: item.rooms?.subtitle ?? "Самостоятельный вариант размещения",
+      ownerName: item.profiles?.display_name ?? "Владелец",
       ownerContact: getContact(item.profiles),
       ownerContactVisible: Boolean(item.owner_contact_visible),
       status: item.status ?? "active",

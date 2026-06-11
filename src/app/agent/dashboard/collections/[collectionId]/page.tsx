@@ -32,8 +32,8 @@ export default async function AgentCollectionDetailPage({ params, searchParams }
 
   return (
     <CollectionDetailSection
-      title="РљРѕР»Р»РµРєС†РёСЏ Р°РіРµРЅС‚Р°"
-      description="РЈРїСЂР°РІР»СЏР№С‚Рµ СЃРѕСЃС‚Р°РІРѕРј РїРѕРґР±РѕСЂРєРё, СЃС‚Р°С‚РёСЃС‚РёРєРѕР№ Рё РЅР°СЃС‚СЂРѕР№РєР°РјРё РїРѕ РѕС‚РґРµР»СЊРЅРѕР№ СЃС‚СЂР°РЅРёС†Рµ РєРѕР»Р»РµРєС†РёРё."
+      title="Коллекция агента"
+      description="Управляйте составом подборки, статистикой и настройками по отдельной странице коллекции."
       backHref="/agent/dashboard/collections"
       pageNav={(
         <DashboardPageNav
@@ -48,8 +48,8 @@ export default async function AgentCollectionDetailPage({ params, searchParams }
       addPropertyAction={addAgentPropertyToCollectionAction}
       addRoomAction={addAgentRoomToCollectionAction}
       removeItemAction={removeAgentCollectionItemAction}
-      propertyDescription="РђРіРµРЅС‚ РјРѕР¶РµС‚ РґРѕР±Р°РІР»СЏС‚СЊ СЃРІРѕРё РѕР±СЉРµРєС‚С‹ Рё РѕР±СЉРµРєС‚С‹ РІР»Р°РґРµР»СЊС†РµРІ С‚РѕР»СЊРєРѕ РїСЂРё Р°РєС‚РёРІРЅРѕРј СЃРѕС‚СЂСѓРґРЅРёС‡РµСЃС‚РІРµ."
-      roomDescription="Р”РѕСЃС‚СѓРїРЅС‹ СЃРІРѕРё РЅРѕРјРµСЂР° Рё РЅРѕРјРµСЂР° РІР»Р°РґРµР»СЊС†РµРІ РїСЂРё Р°РєС‚РёРІРЅРѕРј СЃРѕС‚СЂСѓРґРЅРёС‡РµСЃС‚РІРµ."
+      propertyDescription="Агент может добавлять свои объекты и объекты владельцев только при активном сотрудничестве."
+      roomDescription="Доступны свои номера и номера владельцев при активном сотрудничестве."
       success={success}
       error={error}
     />

@@ -32,8 +32,8 @@ export default async function OwnerCollectionDetailPage({ params, searchParams }
 
   return (
     <CollectionDetailSection
-      title="РљРѕР»Р»РµРєС†РёСЏ РІР»Р°РґРµР»СЊС†Р°"
-      description="РЈРїСЂР°РІР»СЏР№С‚Рµ СЃРѕСЃС‚Р°РІРѕРј РїРѕРґР±РѕСЂРєРё, СЃС‚Р°С‚РёСЃС‚РёРєРѕР№ Рё РЅР°СЃС‚СЂРѕР№РєР°РјРё РїРѕ РѕС‚РґРµР»СЊРЅРѕР№ СЃС‚СЂР°РЅРёС†Рµ РєРѕР»Р»РµРєС†РёРё."
+      title="Коллекция владельца"
+      description="Управляйте составом подборки, статистикой и настройками по отдельной странице коллекции."
       backHref="/dashboard/collections"
       pageNav={(
         <DashboardPageNav
@@ -48,8 +48,8 @@ export default async function OwnerCollectionDetailPage({ params, searchParams }
       addPropertyAction={addOwnerPropertyToCollectionAction}
       addRoomAction={addOwnerRoomToCollectionAction}
       removeItemAction={removeOwnerCollectionItemAction}
-      propertyDescription="Р’Р»Р°РґРµР»РµС† РјРѕР¶РµС‚ РґРѕР±Р°РІР»СЏС‚СЊ С‚РѕР»СЊРєРѕ СЃРІРѕРё РѕР±СЉРµРєС‚С‹."
-      roomDescription="РќРѕРјРµСЂ РґРѕР±Р°РІР»СЏРµС‚СЃСЏ РѕС‚РґРµР»СЊРЅРѕ Рё Р±СѓРґРµС‚ РґРѕСЃС‚СѓРїРµРЅ РіРѕСЃС‚СЋ РєР°Рє РєРѕРЅРєСЂРµС‚РЅС‹Р№ РІР°СЂРёР°РЅС‚."
+      propertyDescription="Владелец может добавлять только свои объекты."
+      roomDescription="Номер добавляется отдельно и будет доступен гостю как конкретный вариант."
       success={success}
       error={error}
     />

@@ -46,17 +46,17 @@ export function CollectionCreateSection({
         <form action={action} className="br-owner-editor br-owner-editor--muted">
           <div className="br-owner-editor__header">
             <div>
-              <strong>РќРѕРІР°СЏ РєРѕР»Р»РµРєС†РёСЏ</strong>
-              <p>РќР°Р·РІР°РЅРёРµ РјРѕР¶РЅРѕ СЃСЂР°Р·Сѓ Р·Р°РґР°С‚СЊ РїРѕРґ РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ РіРѕСЃС‚СЏ.</p>
+              <strong>Новая коллекция</strong>
+              <p>Название можно сразу задать под конкретного гостя.</p>
             </div>
             <Link href={backHref} className="br-button br-button--secondary">
-              Рљ СЃРїРёСЃРєСѓ РєРѕР»Р»РµРєС†РёР№
+              К списку коллекций
             </Link>
           </div>
           <div className="br-form-grid br-form-grid--single-action">
-            <Input id="collection-title" name="title" label="РќР°Р·РІР°РЅРёРµ РєРѕР»Р»РµРєС†РёРё" placeholder={fieldPlaceholder} />
+            <Input id="collection-title" name="title" label="Название коллекции" placeholder={fieldPlaceholder} />
             <div className="br-owner-actions br-owner-actions--end">
-              <Button type="submit">РЎРѕР·РґР°С‚СЊ РєРѕР»Р»РµРєС†РёСЋ</Button>
+              <Button type="submit">Создать коллекцию</Button>
             </div>
           </div>
         </form>
