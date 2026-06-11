@@ -20,6 +20,29 @@ export function getAppUrl() {
   return process.env.NEXT_PUBLIC_APP_URL;
 }
 
+function normalizeAppUrl(value: string) {
+  return value.trim().replace(/\/+$/, "");
+}
+
+export function getCanonicalAppUrl() {
+  const value = getAppUrl();
+  if (!value) {
+    return undefined;
+  }
+
+  return normalizeAppUrl(value);
+}
+
+export function requireAppUrl() {
+  const value = getCanonicalAppUrl();
+
+  if (!value) {
+    throw new Error("Missing NEXT_PUBLIC_APP_URL. Set the canonical app URL for invites, auth redirects, and notifications.");
+  }
+
+  return value;
+}
+
 export function getVapidPublicKey() {
   return process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 }

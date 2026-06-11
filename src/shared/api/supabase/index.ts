@@ -1,5 +1,6 @@
 export {
   getAppUrl,
+  getCanonicalAppUrl,
   getDemoPropertySlug,
   getSupabaseAnonKey,
   getSupabaseServiceRoleKey,
@@ -13,6 +14,7 @@ export {
   hasConfiguredTelegramBot,
   hasConfiguredWebPush,
   hasSupabaseServerEnv,
+  requireAppUrl,
 } from "@/shared/api/supabase/env";
 export { createSupabaseAdminClient, canUseSupabase } from "@/shared/api/supabase/server";
 export { createSupabaseBrowserClient } from "@/shared/api/supabase/browser";

@@ -1,8 +1,8 @@
 import {
   createSupabaseAdminClient,
-  getAppUrl,
   getTelegramBotToken,
   hasConfiguredTelegramBot,
+  requireAppUrl,
   type SupabaseNotificationRow,
   type SupabaseNotificationSettingsRow,
   type SupabaseTelegramNotificationConnectionRow,
@@ -17,7 +17,7 @@ type TelegramDeliveryStatus =
   | "failed";
 
 function getBaseUrl() {
-  return getAppUrl() || "http://localhost:3000";
+  return requireAppUrl();
 }
 
 function getNotificationUrl(notification: Pick<SupabaseNotificationRow, "payload">) {

@@ -1,5 +1,5 @@
 import type { AuthProfile } from "@/shared/api/supabase";
-import { createSupabaseAdminClient, getAppUrl } from "@/shared/api/supabase";
+import { createSupabaseAdminClient, requireAppUrl } from "@/shared/api/supabase";
 import type {
   SupabaseReferralInviteRow,
   SupabaseReferralRewardRow,
@@ -19,7 +19,7 @@ import type {
 } from "../model/types";
 
 function getBaseUrl() {
-  return getAppUrl() ?? "http://localhost:3000";
+  return requireAppUrl();
 }
 
 function buildInviteUrl(token: string) {

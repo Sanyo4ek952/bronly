@@ -1,9 +1,9 @@
 import {
   createSupabaseAdminClient,
-  getAppUrl,
   getVapidPrivateKey,
   getVapidSubject,
   hasConfiguredWebPush,
+  requireAppUrl,
   type SupabaseNotificationSettingsRow,
   type SupabaseNotificationRow,
   type SupabasePushSubscriptionRow,
@@ -32,7 +32,7 @@ type PushPayload = {
 };
 
 function getBaseUrl() {
-  return getAppUrl() || "http://localhost:3000";
+  return requireAppUrl();
 }
 
 function toAbsoluteUrl(path: string) {

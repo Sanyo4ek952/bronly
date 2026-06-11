@@ -6,11 +6,11 @@ import { redirect } from "next/navigation";
 
 import {
   createSupabaseServerClient,
-  getAppUrl,
   getAuthUserEmailStatus,
   getCurrentAuthProfile,
   getPostLoginRedirect,
   getPostSignupRedirect,
+  requireAppUrl,
 } from "@/shared/api/supabase";
 import { createTelegramLinkSession } from "@/entities/notification";
 
@@ -54,7 +54,7 @@ async function getAuthOrigin() {
     return `${forwardedProto}://${forwardedHost}`;
   }
 
-  return headerStore.get("origin") ?? getAppUrl() ?? "http://localhost:3000";
+  return headerStore.get("origin") ?? requireAppUrl();
 }
 
 function buildEmailConfirmRedirectTo(origin: string, nextPath: string) {
