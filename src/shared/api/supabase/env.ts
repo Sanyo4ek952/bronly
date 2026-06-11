@@ -21,13 +21,43 @@ export function getAppUrl() {
 }
 
 function normalizeAppUrl(value: string) {
-  return value.trim().replace(/\/+$/, "");
+  const trimmed = value.trim().replace(/\/+$/, "");
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("localhost") || trimmed.startsWith("127.0.0.1") || trimmed.startsWith("[::1]")) {
+    return `http://${trimmed}`;
+  }
+
+  return `https://${trimmed}`;
+}
+
+function getVercelAppUrl() {
+  const productionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+
+  if (productionUrl) {
+    return normalizeAppUrl(productionUrl);
+  }
+
+  const deploymentUrl = process.env.VERCEL_URL;
+
+  if (deploymentUrl) {
+    return normalizeAppUrl(deploymentUrl);
+  }
+
+  return undefined;
 }
 
 export function getCanonicalAppUrl() {
   const value = getAppUrl();
   if (!value) {
-    return undefined;
+    return getVercelAppUrl();
   }
 
   return normalizeAppUrl(value);
@@ -37,7 +67,9 @@ export function requireAppUrl() {
   const value = getCanonicalAppUrl();
 
   if (!value) {
-    throw new Error("Missing NEXT_PUBLIC_APP_URL. Set the canonical app URL for invites, auth redirects, and notifications.");
+    throw new Error(
+      "Missing app URL configuration. Set NEXT_PUBLIC_APP_URL or provide the Vercel deployment URL for invites, auth redirects, and notifications.",
+    );
   }
 
   return value;

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { unstable_rethrow } from "next/navigation";
 
 import { ensureAuthUserProfile } from "@/shared/api/supabase/ensure-profile";
 import { logAuthDiagnostic } from "@/shared/api/supabase/auth-diagnostics";
@@ -147,6 +148,7 @@ export async function getCurrentAuthProfile(): Promise<AuthProfile | null> {
       roles: (roleRows ?? []).map((row) => row.role as AuthRole),
     };
   } catch (error) {
+    unstable_rethrow(error);
     logAuthDiagnostic("error", "get_current_auth_profile_failed", {
       errorMessage: error instanceof Error ? error.message : "Unknown error",
     });

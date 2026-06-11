@@ -164,6 +164,16 @@ export async function signUpAction(formData: FormData) {
   });
 
   if (error) {
+    const context = await getAuthDiagnosticContext();
+    logAuthDiagnostic("warn", "sign_up_failed", {
+      ...context,
+      email: redactAuthEmail(email),
+      errorCode: error.code ?? null,
+      errorMessage: error.message,
+      emailRedirectTo,
+      role,
+      hasInvite: Boolean(inviteToken),
+    });
     redirect("/register?error=signup");
   }
 
@@ -206,6 +216,16 @@ export async function resendConfirmationEmailAction(formData: FormData) {
 
   const query = `email=${encodeURIComponent(email)}&role=${role}${inviteToken ? `&invite=${encodeURIComponent(inviteToken)}` : ""}`;
   if (error) {
+    const context = await getAuthDiagnosticContext();
+    logAuthDiagnostic("warn", "confirmation_resend_failed", {
+      ...context,
+      email: redactAuthEmail(email),
+      errorCode: error.code ?? null,
+      errorMessage: error.message,
+      emailRedirectTo,
+      role,
+      hasInvite: Boolean(inviteToken),
+    });
     redirect(`/check-email?${query}&error=resend`);
   }
 
