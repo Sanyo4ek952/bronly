@@ -49,6 +49,11 @@
   overflow: hidden;
 }
 
+.br-owner-property-card > *,
+.br-owner-room-card > * {
+  min-width: 0;
+}
+
 .br-owner-property-card--selected {
   box-shadow: 0 0 0 1px rgb(7 154 145 / 24%), 0 18px 34px rgb(7 154 145 / 10%);
 }
@@ -366,6 +371,18 @@
   color: rgba(15, 23, 42, 0.66);
 }
 
+.br-owner-property-card__header > div,
+.br-owner-property-card__meta,
+.br-owner-property-card__topbar,
+.br-dashboard-block__header > div,
+.br-room-page__actions > *,
+.br-owner-room-card__header > div,
+.br-owner-room-card__content,
+.br-owner-room-card__meta,
+.br-owner-room-card__aside {
+  min-width: 0;
+}
+
 .br-owner-property-card__media,
 .br-owner-property-card__header,
 .br-owner-property-card__meta,
@@ -530,6 +547,7 @@
   color: var(--color-muted);
   font-size: 14px;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .br-owner-grid-2 {
@@ -3336,6 +3354,7 @@ ul {
   color: var(--color-muted);
   font-size: 14px;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .br-owner-room-card__meta,
@@ -6079,7 +6098,92 @@ button.br-calendar-range-card {
   .br-request-modal,
   .br-public-selected-room,
   .br-collection-public-section {
-    padding: 14px;
+    padding: 12px;
+  }
+
+  .br-owner-stack,
+  .br-owner-property-list,
+  .br-owner-room-grid {
+    gap: 12px;
+  }
+
+  .br-dashboard-block__header,
+  .br-owner-property-card__header,
+  .br-owner-room-card__header,
+  .br-owner-actions,
+  .br-room-page__actions,
+  .br-room-page-hero__header {
+    gap: 10px;
+  }
+
+  .br-owner-property-card,
+  .br-owner-editor,
+  .br-owner-room-card,
+  .br-quick-card {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .br-owner-property-card__media {
+    min-height: 148px;
+    border-radius: 16px;
+  }
+
+  .br-owner-property-card__meta,
+  .br-selected-room-meta {
+    gap: 10px;
+  }
+
+  .br-selected-room-meta {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+
+  .br-owner-actions,
+  .br-room-page__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .br-owner-actions .br-button,
+  .br-owner-actions .br-link-button,
+  .br-room-page__actions .br-button,
+  .br-owner-room-card__settings {
+    width: 100%;
+  }
+
+  .br-owner-room-card {
+    border-radius: 20px;
+  }
+
+  .br-owner-room-card__main {
+    gap: 12px;
+  }
+
+  .br-owner-room-card__thumb,
+  .br-owner-room-card__placeholder {
+    min-height: 124px;
+    border-radius: 16px;
+  }
+
+  .br-owner-room-card__content {
+    gap: 8px;
+  }
+
+  .br-owner-room-card__meta span,
+  .br-room-amenity-chip {
+    min-height: 28px;
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+
+  .br-owner-room-card__aside {
+    gap: 10px;
+  }
+
+  .br-owner-room-card__price,
+  .br-room-page__price {
+    font-size: 20px;
   }
 
   .br-owner-bottom-nav {
