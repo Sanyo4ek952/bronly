@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createOwnerRoom } from "@/app/dashboard/properties/actions";
 import { getRoomCreateNotice } from "@/app/dashboard/properties/page-helpers";
 import { RoomAmenitiesField } from "@/features/property/edit-room/ui/room-amenities-field";
+import { RoomDateRangeField } from "@/features/property/edit-room/ui/room-date-range-field";
 import { RoomFormSection } from "@/features/property/edit-room/ui/room-form-section";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
@@ -71,18 +72,13 @@ export default async function StandaloneRoomCreatePage({ searchParams }: Standal
             <RoomAmenitiesField initialAmenities={[]} />
           </RoomFormSection>
 
-          <RoomFormSection title="Контакты и заезд" description="Как с вами связаться и когда можно заехать.">
+          <RoomFormSection title="Контакты и занятые даты" description="Оставьте контакты и, если нужно, сразу отметьте занятый диапазон.">
             <div className="br-owner-stack">
               <div className="br-inline-fields">
                 <Input id="room-phone-new" name="phone" label="Телефон" />
-                <Input id="room-whatsapp-new" name="whatsapp" label="WhatsApp" />
                 <Input id="room-telegram-new" name="telegram" label="Telegram" />
               </div>
-
-              <div className="br-inline-fields">
-                <Input id="room-check-in-new" name="checkInTime" label="Заезд" />
-                <Input id="room-check-out-new" name="checkOutTime" label="Выезд" />
-              </div>
+              <RoomDateRangeField />
             </div>
           </RoomFormSection>
 

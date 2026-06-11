@@ -49,13 +49,24 @@ function getStandaloneRoomPayload(formData: FormData) {
     short_description: getString(formData, "shortDescription") || null,
     full_description: getString(formData, "fullDescription") || null,
     phone: getString(formData, "phone") || null,
-    whatsapp: getString(formData, "whatsapp") || null,
+    whatsapp: null,
     telegram: getString(formData, "telegram") || null,
-    check_in_time: getString(formData, "checkInTime") || null,
-    check_out_time: getString(formData, "checkOutTime") || null,
+    check_in_time: null,
+    check_out_time: null,
     allow_agent_inquiries: getCheckbox(formData, "allowAgentInquiries"),
     allow_owner_contact_sharing: getCheckbox(formData, "allowOwnerContactSharing"),
   };
+}
+
+function getNormalizedBusyRange(formData: FormData) {
+  const startsOn = getString(formData, "startsOn");
+  const endsOn = getString(formData, "endsOn");
+
+  if (!startsOn || !endsOn) {
+    return null;
+  }
+
+  return startsOn <= endsOn ? { startsOn, endsOn } : { startsOn: endsOn, endsOn: startsOn };
 }
 
 function validateStandaloneRoom(formData: FormData) {
@@ -112,6 +123,19 @@ export async function createOwnerRoom(formData: FormData) {
   }
 
   await replaceRoomAmenities(data.id as string, getString(formData, "amenities"));
+
+  const initialBusyRange = getNormalizedBusyRange(formData);
+
+  if (initialBusyRange) {
+    await supabase.from("room_busy_ranges").insert({
+      room_id: data.id,
+      starts_on: initialBusyRange.startsOn,
+      ends_on: initialBusyRange.endsOn,
+      source: "manual",
+      label: null,
+      note: null,
+    });
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/properties");

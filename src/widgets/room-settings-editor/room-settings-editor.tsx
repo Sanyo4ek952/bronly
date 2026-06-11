@@ -116,12 +116,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
               />
               <div className="br-inline-fields">
                 <Input id={`room-phone-${room.id}`} name="phone" label="Телефон" defaultValue={location.phone} />
-                <Input id={`room-whatsapp-${room.id}`} name="whatsapp" label="WhatsApp" defaultValue={location.whatsapp} />
                 <Input id={`room-telegram-${room.id}`} name="telegram" label="Telegram" defaultValue={location.telegram} />
-              </div>
-              <div className="br-inline-fields">
-                <Input id={`room-check-in-${room.id}`} name="checkInTime" label="Заезд" defaultValue={location.checkInTime} />
-                <Input id={`room-check-out-${room.id}`} name="checkOutTime" label="Выезд" defaultValue={location.checkOutTime} />
               </div>
             </div>
           </RoomFormSection>
