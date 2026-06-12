@@ -13,7 +13,7 @@ export const dashboardStats: OwnerDashboardSummary = {
   subscriptionStatus: "active",
   subscriptionStatusLabel: "Активна",
   subscriptionPlan: "Плюс",
-  subscriptionValidUntil: "24 мая 2025",
+  subscriptionValidUntil: "Без даты",
   subscriptionWarningText: null,
   isCabinetRestricted: false,
   isMutationAllowed: true,

@@ -43,6 +43,12 @@ async function resolveUniqueAgentPublicId(admin: ReturnType<typeof createSupabas
   }
 }
 
+function addDays(baseDate: Date, days: number) {
+  const nextDate = new Date(baseDate);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
+}
+
 export async function ensureAuthUserProfile(user: User): Promise<boolean> {
   const admin = createSupabaseAdminClient();
   const { data: existing } = await admin.from("profiles").select("id").eq("auth_user_id", user.id).maybeSingle();
@@ -98,6 +104,26 @@ export async function ensureAuthUserProfile(user: User): Promise<boolean> {
   );
 
   if (roleError) {
+    return false;
+  }
+
+  const now = new Date();
+  const { error: subscriptionError } = await admin.from("subscriptions").upsert(
+    {
+      profile_id: profile.id,
+      role_context: role,
+      status: "trial",
+      plan_name: "Старт",
+      active_room_limit: 3,
+      trial_ends_at: addDays(now, 14).toISOString(),
+      grace_ends_at: addDays(now, 17).toISOString(),
+      paid_until: null,
+      updated_at: now.toISOString(),
+    },
+    { onConflict: "profile_id,role_context" },
+  );
+
+  if (subscriptionError) {
     return false;
   }
 

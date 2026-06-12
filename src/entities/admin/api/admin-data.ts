@@ -147,6 +147,7 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
       profileId: profile.id,
       displayName: profile.display_name,
       slug: profile.slug ?? "",
+      createdAt: profile.created_at,
       phone: profile.phone ?? profile.telegram ?? profile.whatsapp ?? "",
       roles,
       isPublicHiddenByAdmin: profile.is_public_hidden_by_admin,
@@ -157,14 +158,32 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
     };
   });
 
-  const subscriptionTargets: Array<{ profileId: string; displayName: string; roleContext: "owner" | "agent" }> = [];
+  const subscriptionTargets: Array<{
+    profileId: string;
+    displayName: string;
+    slug: string;
+    createdAt: string;
+    roleContext: "owner" | "agent";
+  }> = [];
   for (const profile of safeProfiles) {
     const roles = rolesByProfile.get(profile.id) ?? [];
     if (roles.includes("owner")) {
-      subscriptionTargets.push({ profileId: profile.id, displayName: profile.display_name, roleContext: "owner" });
+      subscriptionTargets.push({
+        profileId: profile.id,
+        displayName: profile.display_name,
+        slug: profile.slug ?? "",
+        createdAt: profile.created_at,
+        roleContext: "owner",
+      });
     }
     if (roles.includes("agent")) {
-      subscriptionTargets.push({ profileId: profile.id, displayName: profile.display_name, roleContext: "agent" });
+      subscriptionTargets.push({
+        profileId: profile.id,
+        displayName: profile.display_name,
+        slug: profile.slug ?? "",
+        createdAt: profile.created_at,
+        roleContext: "agent",
+      });
     }
   }
 
@@ -185,6 +204,8 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
     return {
       profileId: state.profileId,
       displayName: target?.displayName ?? "Пользователь",
+      slug: target?.slug ?? "",
+      createdAt: target?.createdAt ?? "",
       roleContext: state.roleContext,
       status: state.status,
       statusLabel: state.statusLabel,

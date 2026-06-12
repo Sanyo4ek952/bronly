@@ -5,6 +5,7 @@ export type AdminUserItem = {
   profileId: string;
   displayName: string;
   slug: string;
+  createdAt: string;
   phone: string;
   roles: string[];
   isPublicHiddenByAdmin: boolean;
@@ -17,6 +18,8 @@ export type AdminUserItem = {
 export type AdminSubscriptionItem = {
   profileId: string;
   displayName: string;
+  slug: string;
+  createdAt: string;
   roleContext: SubscriptionRoleContext;
   status: SubscriptionStatus;
   statusLabel: string;

@@ -31,6 +31,24 @@ function formatDateInputValue(value: string | null) {
   return new Date(value).toISOString().slice(0, 10);
 }
 
+function formatDateTimeLabel(value: string | null) {
+  if (!value) {
+    return "Не задано";
+  }
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function getShortProfileId(profileId: string) {
+  return profileId.slice(0, 8);
+}
+
 function renderPublicLinks(links: string[]) {
   return links.map((link, index) => (
     <span key={link}>
@@ -181,7 +199,15 @@ export function AdminDashboard({ data, message }: AdminDashboardProps) {
               </div>
               {data.users.map((row) => (
                 <div key={row.profileId} className="br-table__row">
-                  <span>{row.displayName}</span>
+                  <span>
+                    {row.displayName}
+                    <br />
+                    <small>
+                      id {getShortProfileId(row.profileId)}
+                      {row.slug ? ` · slug ${row.slug}` : ""}
+                      {row.createdAt ? ` · создан ${formatDateTimeLabel(row.createdAt)}` : ""}
+                    </small>
+                  </span>
                   <span>{row.phone || row.slug || "Не указан"}</span>
                   <span>
                     {row.publicPageUrls.length ? (
@@ -235,6 +261,12 @@ export function AdminDashboard({ data, message }: AdminDashboardProps) {
                   <div className="br-form-field">
                     <label className="br-label">Пользователь</label>
                     <input className="br-field" value={row.displayName} disabled />
+                    <small className="br-owner-muted">
+                      id {getShortProfileId(row.profileId)}
+                      {row.slug ? ` · slug ${row.slug}` : ""}
+                      {row.createdAt ? ` · создан ${formatDateTimeLabel(row.createdAt)}` : ""}
+                      {!row.hasSubscriptionRow ? " · подписка еще не создана" : ""}
+                    </small>
                   </div>
                   <div className="br-form-field">
                     <label className="br-label">Контекст</label>

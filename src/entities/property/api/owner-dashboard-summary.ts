@@ -224,9 +224,7 @@ export const getOwnerDashboardSummary = cache(async (): Promise<OwnerDashboardSu
       subscriptionStatus: subscription.status,
       subscriptionStatusLabel: subscription.statusLabel,
       subscriptionPlan: subscription.planName,
-      subscriptionValidUntil: subscription.validUntil
-        ? formatDateLabel(subscription.validUntil)
-        : dashboardStats.subscriptionValidUntil,
+      subscriptionValidUntil: subscription.validUntil ? formatDateLabel(subscription.validUntil) : "Без даты",
       subscriptionWarningText: getSubscriptionWarningText(subscription),
       isCabinetRestricted: subscription.isCabinetRestricted,
       isMutationAllowed: subscription.isMutationAllowed,
