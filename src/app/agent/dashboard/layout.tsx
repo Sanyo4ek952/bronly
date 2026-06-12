@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 
 import { getUnreadNotificationCount } from "@/entities/notification";
 import { getCurrentAuthProfile, getPrimaryRole } from "@/shared/api/supabase";
-import { DashboardTopbar } from "@/widgets/dashboard-topbar";
 import { OwnerShell } from "@/widgets/owner-shell";
 
 export default async function AgentDashboardLayout({
@@ -29,14 +28,12 @@ export default async function AgentDashboardLayout({
           userName={profile.displayName}
           roleLabel="Агент"
           roleKind="agent"
-          topbar={(
-            <DashboardTopbar
-              title={`Добро пожаловать, ${profile.displayName}`}
-              description="Держите под рукой витрину, активные связи и заявки по вашим ссылкам."
-              notificationsHref="/agent/dashboard/notifications"
-              unreadNotificationsCount={unreadNotificationsCount}
-            />
-          )}
+          topbar={{
+            title: `Добро пожаловать, ${profile.displayName}`,
+            description: "Держите под рукой витрину, активные связи и заявки по вашим ссылкам.",
+            notificationsHref: "/agent/dashboard/notifications",
+            unreadNotificationsCount,
+          }}
         >
           {children}
         </OwnerShell>

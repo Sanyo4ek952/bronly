@@ -1,1 +1,1 @@
-export { DashboardTopbar } from "@/widgets/dashboard-topbar/dashboard-topbar";
+export { DashboardTopbar, type DashboardTopbarProps } from "@/widgets/dashboard-topbar/dashboard-topbar";

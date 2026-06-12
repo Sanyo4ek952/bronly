@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 
 import { signOutAction } from "@/app/auth/actions";
 import { AppIcon, Button, type AppIconComponent, BrandLogo, IconButton, InlineNotice } from "@/shared/ui";
+import { DashboardTopbar, type DashboardTopbarProps } from "@/widgets/dashboard-topbar";
 
 type NavigationItem = {
   href: string;
@@ -95,7 +96,7 @@ type OwnerShellProps = {
   userName: string;
   roleLabel: string;
   roleKind?: "owner" | "agent";
-  topbar?: React.ReactNode;
+  topbar?: DashboardTopbarProps | null;
   notice?: {
     title: string;
     text: string;
@@ -175,7 +176,7 @@ export function OwnerShell({
       </aside>
 
       <div className="br-owner__content">
-        {pathname === dashboardRootPath ? topbar : null}
+        {pathname === dashboardRootPath && topbar ? <DashboardTopbar {...topbar} /> : null}
 
         {notice ? (
           <InlineNotice title={notice.title} aria-live="polite">

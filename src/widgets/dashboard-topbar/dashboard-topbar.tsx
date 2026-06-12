@@ -1,10 +1,12 @@
+"use client";
+
 import { Bell, LogOut } from "lucide-react";
 import Link from "next/link";
 
 import { signOutAction } from "@/app/auth/actions";
 import { AppIcon, IconButton } from "@/shared/ui";
 
-type DashboardTopbarProps = {
+export type DashboardTopbarProps = {
   title: string;
   description: string;
   notificationsHref: string;
