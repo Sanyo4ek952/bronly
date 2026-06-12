@@ -1,4 +1,4 @@
-import { CalendarDays, ExternalLink, HousePlus, Inbox, Plus } from "lucide-react";
+import { CalendarDays, ExternalLink, Inbox, Plus } from "lucide-react";
 import Link from "next/link";
 
 import type { OwnerDashboardSummary } from "@/entities/property";
@@ -32,7 +32,7 @@ const quickActions = [
 const emptyStates = [
   {
     id: "no-properties",
-    icon: HousePlus,
+    iconId: "house-plus",
     title: "Нет объектов",
     text: "Добавьте первый объект, чтобы перейти к номерам, ценам и календарю занятости.",
     action: "Добавить объект",
@@ -40,7 +40,7 @@ const emptyStates = [
   },
   {
     id: "no-rooms",
-    icon: Plus,
+    iconId: "plus",
     title: "Нет номеров",
     text: "В объектах пока нет номеров. Добавьте первый номер, чтобы гости могли оставить заявку.",
     action: "Открыть объекты",
@@ -48,7 +48,7 @@ const emptyStates = [
   },
 ] satisfies Array<{
   id: "no-properties" | "no-rooms";
-  icon: AppIconComponent;
+  iconId: "house-plus" | "plus";
   title: string;
   text: string;
   action: string;

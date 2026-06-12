@@ -1,15 +1,20 @@
 "use client";
 
-import { Check, ChevronDown, ChevronUp, ListChecks, RotateCcw, X } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, HousePlus, ListChecks, Plus, RotateCcw, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import type { OwnerDashboardSummary } from "@/entities/property";
-import { AppIcon, type AppIconComponent } from "@/shared/ui";
+import { AppIcon } from "@/shared/ui";
+
+const emptyStateIcons = {
+  "house-plus": HousePlus,
+  plus: Plus,
+} as const;
 
 type EmptyState = {
   id: "no-properties" | "no-rooms";
-  icon: AppIconComponent;
+  iconId: keyof typeof emptyStateIcons;
   title: string;
   text: string;
   action: string;
@@ -70,18 +75,22 @@ export function OwnerDashboardOnboarding({ onboarding, emptyStates }: OwnerDashb
     <>
       {emptyStates.length ? (
         <section className="br-dashboard-inline-empty">
-          {emptyStates.map((state) => (
-            <article key={state.id} className="br-empty-card br-card">
-              <div className="br-empty-card__art" aria-hidden="true">
-                <AppIcon icon={state.icon} />
-              </div>
-              <strong>{state.title}</strong>
-              <p>{state.text}</p>
-              <Link href={state.href} className="br-button br-button--primary br-button--full">
-                {state.action}
-              </Link>
-            </article>
-          ))}
+          {emptyStates.map((state) => {
+            const Icon = emptyStateIcons[state.iconId];
+
+            return (
+              <article key={state.id} className="br-empty-card br-card">
+                <div className="br-empty-card__art" aria-hidden="true">
+                  <AppIcon icon={Icon} />
+                </div>
+                <strong>{state.title}</strong>
+                <p>{state.text}</p>
+                <Link href={state.href} className="br-button br-button--primary br-button--full">
+                  {state.action}
+                </Link>
+              </article>
+            );
+          })}
         </section>
       ) : null}
 
