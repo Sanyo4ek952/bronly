@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { getPublicAgentPageData } from "@/entities/collaboration";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
+import { encodePublicPathSegment } from "@/shared/lib/public-links";
 import { AppIcon, ButtonLink, Panel } from "@/shared/ui";
 
 type AgentRequestSuccessPageProps = {
@@ -37,7 +38,7 @@ export default async function AgentRequestSuccessPage({ params, searchParams }: 
     }
 
     const suffix = redirectQuery.toString();
-    redirect(`/a/${pageData.agent.publicId}/request/success${suffix ? `?${suffix}` : ""}`);
+    redirect(`/a/${encodePublicPathSegment(pageData.agent.publicId)}/request/success${suffix ? `?${suffix}` : ""}`);
   }
 
   if (pageData.publicUnavailableReason || !pageData.agent) {

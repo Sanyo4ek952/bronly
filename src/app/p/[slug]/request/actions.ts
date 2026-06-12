@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { createGuestRequest } from "@/entities/request";
+import { encodePublicPathSegment } from "@/shared/lib/public-links";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -12,13 +13,13 @@ function getString(formData: FormData, key: string) {
 function buildRequestPath(publicSlug: string, state: Record<string, string>) {
   const params = new URLSearchParams(state);
   const query = params.toString();
-  return `/p/${publicSlug}/request${query ? `?${query}` : ""}`;
+  return `/p/${encodePublicPathSegment(publicSlug)}/request${query ? `?${query}` : ""}`;
 }
 
 function buildSuccessPath(publicSlug: string, state: Record<string, string>) {
   const params = new URLSearchParams(state);
   const query = params.toString();
-  return `/p/${publicSlug}/request/success${query ? `?${query}` : ""}`;
+  return `/p/${encodePublicPathSegment(publicSlug)}/request/success${query ? `?${query}` : ""}`;
 }
 
 export async function submitGuestRequestAction(formData: FormData) {

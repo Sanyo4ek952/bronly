@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { getCollectionRequestContext } from "@/entities/collection";
 import { createGuestRequest } from "@/entities/request";
+import { encodePublicPathSegment } from "@/shared/lib/public-links";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -18,7 +19,7 @@ function buildRequestPath(collectionSlug: string, state: Record<string, string>)
     }
   }
   const query = params.toString();
-  return `/c/${collectionSlug}/request${query ? `?${query}` : ""}`;
+  return `/c/${encodePublicPathSegment(collectionSlug)}/request${query ? `?${query}` : ""}`;
 }
 
 function buildSuccessPath(collectionSlug: string, state: Record<string, string>) {
@@ -29,7 +30,7 @@ function buildSuccessPath(collectionSlug: string, state: Record<string, string>)
     }
   }
   const query = params.toString();
-  return `/c/${collectionSlug}/request/success${query ? `?${query}` : ""}`;
+  return `/c/${encodePublicPathSegment(collectionSlug)}/request/success${query ? `?${query}` : ""}`;
 }
 
 export async function submitCollectionGuestRequestAction(formData: FormData) {

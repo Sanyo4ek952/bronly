@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getPublicAgentPageData } from "@/entities/collaboration";
 import { GuestRequestForm } from "@/features/request/submit-request";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
+import { encodePublicPathSegment } from "@/shared/lib/public-links";
 import { ButtonLink, Panel } from "@/shared/ui";
 
 import { submitAgentGuestRequestAction } from "./actions";
@@ -60,7 +61,7 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
     }
 
     const suffix = redirectQuery.toString();
-    redirect(`/a/${pageData.agent.publicId}/request${suffix ? `?${suffix}` : ""}`);
+    redirect(`/a/${encodePublicPathSegment(pageData.agent.publicId)}/request${suffix ? `?${suffix}` : ""}`);
   }
 
   if (pageData.publicUnavailableReason || !pageData.agent) {

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { getPublicPropertyPageData, resolveOwnerPublicSlug } from "@/entities/property";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
+import { encodePublicPathSegment } from "@/shared/lib/public-links";
 import { AppIcon, ButtonLink, Panel } from "@/shared/ui";
 
 type PublicRequestSuccessPageProps = {
@@ -33,7 +34,9 @@ export default async function PublicRequestSuccessPage({ params, searchParams }:
       }
     }
 
-    redirect(`/p/${resolvedSlug.ownerSlug}/request/success${redirectQuery.size ? `?${redirectQuery.toString()}` : ""}`);
+    redirect(
+      `/p/${encodePublicPathSegment(resolvedSlug.ownerSlug)}/request/success${redirectQuery.size ? `?${redirectQuery.toString()}` : ""}`,
+    );
   }
 
   const pageData = await getPublicPropertyPageData(resolvedSlug.ownerSlug);

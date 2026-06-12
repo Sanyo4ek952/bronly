@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getOwnerPropertySectionBySlug, getPublicPropertyPageData, resolveOwnerPublicSlug } from "@/entities/property";
 import { GuestRequestForm } from "@/features/request/submit-request";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
+import { encodePublicPathSegment } from "@/shared/lib/public-links";
 import { ButtonLink, Panel } from "@/shared/ui";
 
 import { submitGuestRequestAction } from "./actions";
@@ -53,7 +54,7 @@ function buildOwnerRequestRedirectHref(
   }
 
   const search = params.toString();
-  return `/p/${ownerSlug}/request${search ? `?${search}` : ""}`;
+  return `/p/${encodePublicPathSegment(ownerSlug)}/request${search ? `?${search}` : ""}`;
 }
 
 export default async function PublicRequestPage({ params, searchParams }: PublicRequestPageProps) {

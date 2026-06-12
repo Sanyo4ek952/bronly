@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { getAgentRequestContext } from "@/entities/collaboration";
 import { createGuestRequest } from "@/entities/request";
+import { encodePublicPathSegment } from "@/shared/lib/public-links";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -20,7 +21,7 @@ function buildRequestPath(agentPublicId: string, state: Record<string, string>) 
   }
 
   const query = params.toString();
-  return `/a/${agentPublicId}/request${query ? `?${query}` : ""}`;
+  return `/a/${encodePublicPathSegment(agentPublicId)}/request${query ? `?${query}` : ""}`;
 }
 
 function buildSuccessPath(agentPublicId: string, state: Record<string, string>) {
@@ -33,7 +34,7 @@ function buildSuccessPath(agentPublicId: string, state: Record<string, string>) 
   }
 
   const query = params.toString();
-  return `/a/${agentPublicId}/request/success${query ? `?${query}` : ""}`;
+  return `/a/${encodePublicPathSegment(agentPublicId)}/request/success${query ? `?${query}` : ""}`;
 }
 
 export async function submitAgentGuestRequestAction(formData: FormData) {
