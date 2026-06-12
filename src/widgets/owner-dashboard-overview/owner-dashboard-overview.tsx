@@ -103,7 +103,7 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
       rows: [
         {
           label: "Адрес",
-          value: dashboardStats.publicUrl ?? "Заполните slug владельца в настройках",
+          value: hasPublicUrl ? "Публичная страница владельца" : "Заполните slug владельца в настройках",
           href: dashboardStats.publicUrl ?? undefined,
         },
         {
