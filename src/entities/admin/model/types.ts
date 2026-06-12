@@ -67,3 +67,48 @@ export type AdminDashboardData = {
   properties: AdminPropertyItem[];
   pendingReferralRewards: ReferralQueueItem[];
 };
+
+export type AdminOverviewData = {
+  userCount: number;
+  ownerCount: number;
+  agentCount: number;
+  dualRoleCount: number;
+  propertyCount: number;
+  roomCount: number;
+  requestCount: number;
+  ownerRequestCount: number;
+  agentRequestCount: number;
+  transferredRequestCount: number;
+  completedRequestCount: number;
+  collectionCount: number;
+  paidUserCount: number;
+  activeSubscriptionCount: number;
+  expiringSoonCount: number;
+  frozenPropertyCount: number;
+  hiddenProfileCount: number;
+  pendingReferralCount: number;
+  expiringSubscriptions: AdminSubscriptionItem[];
+  frozenProperties: AdminPropertyItem[];
+  hiddenUsers: AdminUserItem[];
+  pendingReferralRewards: ReferralQueueItem[];
+};
+
+export type AdminUsersPageData = {
+  users: AdminUserItem[];
+  hiddenProfileCount: number;
+};
+
+export type AdminSubscriptionsPageData = {
+  subscriptions: AdminSubscriptionItem[];
+  expiringSoonCount: number;
+  activeSubscriptionCount: number;
+};
+
+export type AdminPropertiesPageData = {
+  properties: AdminPropertyItem[];
+  frozenPropertyCount: number;
+};
+
+export type AdminReviewsPageData = {
+  pendingReferralRewards: ReferralQueueItem[];
+};

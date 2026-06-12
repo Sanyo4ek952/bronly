@@ -1,7 +1,7 @@
-import { getAdminOverviewData } from "@/entities/admin";
-import { AdminOverview, getAdminFeedbackMessage } from "@/widgets/admin-dashboard";
+import { getAdminUsersPageData } from "@/entities/admin";
+import { AdminUsersPage, getAdminFeedbackMessage } from "@/widgets/admin-dashboard";
 
-type AdminPageProps = {
+type AdminUsersRouteProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
@@ -10,13 +10,13 @@ function getSearchString(params: Record<string, string | string[] | undefined>, 
   return typeof value === "string" ? value : "";
 }
 
-export default async function AdminPage({ searchParams }: AdminPageProps) {
+export default async function AdminUsersRoute({ searchParams }: AdminUsersRouteProps) {
   const fallbackParams: Record<string, string | string[] | undefined> = {};
   const params = await (searchParams ?? Promise.resolve(fallbackParams));
   const success = getSearchString(params, "success");
   const error = getSearchString(params, "error");
-  const data = await getAdminOverviewData();
+  const data = await getAdminUsersPageData();
   const message = getAdminFeedbackMessage({ success, error });
 
-  return <AdminOverview data={data} message={message} />;
+  return <AdminUsersPage data={data} message={message} />;
 }

@@ -2,7 +2,17 @@ import { cache } from "react";
 
 import { getPendingReferralQueue } from "@/entities/referral";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
-import type { AdminDashboardData, AdminPropertyItem, AdminSubscriptionItem, AdminUserItem } from "@/entities/admin/model/types";
+import type {
+  AdminDashboardData,
+  AdminOverviewData,
+  AdminPropertiesPageData,
+  AdminPropertyItem,
+  AdminReviewsPageData,
+  AdminSubscriptionItem,
+  AdminUsersPageData,
+  AdminUserItem,
+  AdminSubscriptionsPageData,
+} from "@/entities/admin/model/types";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase";
 import { buildAgentPublicPath, buildOwnerPublicPath } from "@/shared/lib";
 import type {
@@ -27,32 +37,27 @@ function isExpiringSoon(value: string | null) {
   return date >= now && date <= nextWeek;
 }
 
-export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData> => {
-  if (!canUseSupabase()) {
-    return {
-      userCount: 0,
-      ownerCount: 0,
-      agentCount: 0,
-      dualRoleCount: 0,
-      propertyCount: 0,
-      roomCount: 0,
-      requestCount: 0,
-      ownerRequestCount: 0,
-      agentRequestCount: 0,
-      transferredRequestCount: 0,
-      completedRequestCount: 0,
-      collectionCount: 0,
-      paidUserCount: 0,
-      activeSubscriptionCount: 0,
-      expiringSoonCount: 0,
-      frozenPropertyCount: 0,
-      users: [],
-      subscriptions: [],
-      properties: [],
-      pendingReferralRewards: [],
-    };
-  }
+type AdminRecords = {
+  profiles: SupabaseProfileRow[];
+  roles: SupabaseUserRoleRow[];
+  properties: SupabasePropertyRow[];
+  rooms: SupabaseRoomRow[];
+  subscriptions: SupabaseSubscriptionRow[];
+  guestRequests: SupabaseGuestRequestRow[];
+  collections: SupabaseCollectionRow[];
+  pendingReferralRewards: Awaited<ReturnType<typeof getPendingReferralQueue>>;
+};
 
+type AdminSnapshot = {
+  dashboardData: AdminDashboardData;
+  overviewData: AdminOverviewData;
+  usersPageData: AdminUsersPageData;
+  subscriptionsPageData: AdminSubscriptionsPageData;
+  propertiesPageData: AdminPropertiesPageData;
+  reviewsPageData: AdminReviewsPageData;
+};
+
+async function getAdminRecords(): Promise<AdminRecords> {
   const admin = createSupabaseAdminClient();
   const [
     { data: profileRows },
@@ -63,28 +68,92 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
     { data: guestRequestRows },
     { data: collectionRows },
     pendingReferralRewards,
-  ] =
-    await Promise.all([
-      admin.from("profiles").select("*").order("created_at", { ascending: true }),
-      admin.from("user_roles").select("*"),
-      admin.from("properties").select("*").order("created_at", { ascending: false }),
-      admin.from("rooms").select("*"),
-      admin.from("subscriptions").select("*").order("updated_at", { ascending: false }),
-      admin.from("guest_requests").select("*").order("created_at", { ascending: false }),
-      admin.from("collections").select("*"),
-      getPendingReferralQueue(),
-    ]);
+  ] = await Promise.all([
+    admin.from("profiles").select("*").order("created_at", { ascending: true }),
+    admin.from("user_roles").select("*"),
+    admin.from("properties").select("*").order("created_at", { ascending: false }),
+    admin.from("rooms").select("*"),
+    admin.from("subscriptions").select("*").order("updated_at", { ascending: false }),
+    admin.from("guest_requests").select("*").order("created_at", { ascending: false }),
+    admin.from("collections").select("*"),
+    getPendingReferralQueue(),
+  ]);
 
-  const safeProfiles = (profileRows ?? []) as SupabaseProfileRow[];
-  const safeRoles = (roleRows ?? []) as SupabaseUserRoleRow[];
-  const safeProperties = (propertyRows ?? []) as SupabasePropertyRow[];
-  const safeRooms = (roomRows ?? []) as SupabaseRoomRow[];
-  const safeSubscriptions = (subscriptionRows ?? []) as SupabaseSubscriptionRow[];
-  const safeGuestRequests = (guestRequestRows ?? []) as SupabaseGuestRequestRow[];
-  const safeCollections = (collectionRows ?? []) as SupabaseCollectionRow[];
+  return {
+    profiles: (profileRows ?? []) as SupabaseProfileRow[],
+    roles: (roleRows ?? []) as SupabaseUserRoleRow[],
+    properties: (propertyRows ?? []) as SupabasePropertyRow[],
+    rooms: (roomRows ?? []) as SupabaseRoomRow[],
+    subscriptions: (subscriptionRows ?? []) as SupabaseSubscriptionRow[],
+    guestRequests: (guestRequestRows ?? []) as SupabaseGuestRequestRow[],
+    collections: (collectionRows ?? []) as SupabaseCollectionRow[],
+    pendingReferralRewards,
+  };
+}
 
+function getEmptySnapshot(): AdminSnapshot {
+  const emptyDashboardData: AdminDashboardData = {
+    userCount: 0,
+    ownerCount: 0,
+    agentCount: 0,
+    dualRoleCount: 0,
+    propertyCount: 0,
+    roomCount: 0,
+    requestCount: 0,
+    ownerRequestCount: 0,
+    agentRequestCount: 0,
+    transferredRequestCount: 0,
+    completedRequestCount: 0,
+    collectionCount: 0,
+    paidUserCount: 0,
+    activeSubscriptionCount: 0,
+    expiringSoonCount: 0,
+    frozenPropertyCount: 0,
+    users: [],
+    subscriptions: [],
+    properties: [],
+    pendingReferralRewards: [],
+  };
+
+  return {
+    dashboardData: emptyDashboardData,
+    overviewData: {
+      ...emptyDashboardData,
+      hiddenProfileCount: 0,
+      pendingReferralCount: 0,
+      expiringSubscriptions: [],
+      frozenProperties: [],
+      hiddenUsers: [],
+      pendingReferralRewards: [],
+    },
+    usersPageData: {
+      users: [],
+      hiddenProfileCount: 0,
+    },
+    subscriptionsPageData: {
+      subscriptions: [],
+      expiringSoonCount: 0,
+      activeSubscriptionCount: 0,
+    },
+    propertiesPageData: {
+      properties: [],
+      frozenPropertyCount: 0,
+    },
+    reviewsPageData: {
+      pendingReferralRewards: [],
+    },
+  };
+}
+
+const getAdminSnapshot = cache(async (): Promise<AdminSnapshot> => {
+  if (!canUseSupabase()) {
+    return getEmptySnapshot();
+  }
+
+  const records = await getAdminRecords();
   const rolesByProfile = new Map<string, string[]>();
-  for (const role of safeRoles) {
+
+  for (const role of records.roles) {
     const current = rolesByProfile.get(role.profile_id) ?? [];
     if (!current.includes(role.role)) {
       current.push(role.role);
@@ -92,24 +161,26 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
     rolesByProfile.set(role.profile_id, current);
   }
 
-  const ownerProfiles = safeProfiles.filter((profile) => (rolesByProfile.get(profile.id) ?? []).includes("owner"));
-  const agentProfiles = safeProfiles.filter((profile) => (rolesByProfile.get(profile.id) ?? []).includes("agent"));
-  const dualRoleCount = safeProfiles.filter((profile) => {
+  const ownerProfiles = records.profiles.filter((profile) => (rolesByProfile.get(profile.id) ?? []).includes("owner"));
+  const agentProfiles = records.profiles.filter((profile) => (rolesByProfile.get(profile.id) ?? []).includes("agent"));
+  const dualRoleCount = records.profiles.filter((profile) => {
     const roles = rolesByProfile.get(profile.id) ?? [];
     return roles.includes("owner") && roles.includes("agent");
   }).length;
+
   const propertiesByOwner = new Map<string, SupabasePropertyRow[]>();
-  for (const property of safeProperties) {
+  for (const property of records.properties) {
     const current = propertiesByOwner.get(property.owner_id) ?? [];
     current.push(property);
     propertiesByOwner.set(property.owner_id, current);
   }
 
   const roomStatsByProperty = new Map<string, { totalRoomCount: number; activeRoomCount: number }>();
-  for (const room of safeRooms) {
+  for (const room of records.rooms) {
     if (!room.property_id) {
       continue;
     }
+
     const current = roomStatsByProperty.get(room.property_id) ?? { totalRoomCount: 0, activeRoomCount: 0 };
     current.totalRoomCount += 1;
     if (room.is_active) {
@@ -119,7 +190,7 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
   }
 
   const requestIdsByProfile = new Map<string, Set<string>>();
-  for (const request of safeGuestRequests) {
+  for (const request of records.guestRequests) {
     const relatedProfiles = [request.owner_id, request.agent_id].filter((value): value is string => Boolean(value));
     for (const profileId of relatedProfiles) {
       const current = requestIdsByProfile.get(profileId) ?? new Set<string>();
@@ -128,19 +199,27 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
     }
   }
 
-  const ownerRuntimeStates = await Promise.all(ownerProfiles.map((profile) => getSubscriptionRuntimeState(profile.id, "owner")));
+  const ownerRuntimeStates = await Promise.all(
+    ownerProfiles.map((profile) => getSubscriptionRuntimeState(profile.id, "owner")),
+  );
   const ownerStateByProfile = new Map(ownerRuntimeStates.map((item) => [item.profileId, item]));
 
-  const users: AdminUserItem[] = safeProfiles.map((profile) => {
+  const users: AdminUserItem[] = records.profiles.map((profile) => {
     const roles = rolesByProfile.get(profile.id) ?? [];
     const publicPageUrls: string[] = [];
 
-    if (profile.slug && roles.includes("owner")) {
-      publicPageUrls.push(buildOwnerPublicPath(profile.slug) as string);
+    if (roles.includes("owner")) {
+      const ownerPublicPath = buildOwnerPublicPath(profile.slug);
+      if (ownerPublicPath) {
+        publicPageUrls.push(ownerPublicPath);
+      }
     }
 
-    if (profile.agent_public_id && roles.includes("agent")) {
-      publicPageUrls.push(buildAgentPublicPath(profile.agent_public_id) as string);
+    if (roles.includes("agent")) {
+      const agentPublicPath = buildAgentPublicPath(profile.agent_public_id);
+      if (agentPublicPath) {
+        publicPageUrls.push(agentPublicPath);
+      }
     }
 
     return {
@@ -165,8 +244,10 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
     createdAt: string;
     roleContext: "owner" | "agent";
   }> = [];
-  for (const profile of safeProfiles) {
+
+  for (const profile of records.profiles) {
     const roles = rolesByProfile.get(profile.id) ?? [];
+
     if (roles.includes("owner")) {
       subscriptionTargets.push({
         profileId: profile.id,
@@ -176,6 +257,7 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
         roleContext: "owner",
       });
     }
+
     if (roles.includes("agent")) {
       subscriptionTargets.push({
         profileId: profile.id,
@@ -192,7 +274,7 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
   );
 
   const subscriptionRowLookup = new Map(
-    safeSubscriptions.map((row) => [`${row.profile_id}:${row.role_context}`, row] satisfies [string, SupabaseSubscriptionRow]),
+    records.subscriptions.map((row) => [`${row.profile_id}:${row.role_context}`, row] satisfies [string, SupabaseSubscriptionRow]),
   );
 
   const subscriptions: AdminSubscriptionItem[] = runtimeStates.map((state) => {
@@ -219,9 +301,9 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
     };
   });
 
-  const profileNameById = new Map(safeProfiles.map((profile) => [profile.id, profile.display_name]));
-  const profileSlugById = new Map(safeProfiles.map((profile) => [profile.id, profile.slug ?? null]));
-  const properties: AdminPropertyItem[] = safeProperties.map((property) => {
+  const profileNameById = new Map(records.profiles.map((profile) => [profile.id, profile.display_name]));
+  const profileSlugById = new Map(records.profiles.map((profile) => [profile.id, profile.slug ?? null]));
+  const properties: AdminPropertyItem[] = records.properties.map((property) => {
     const roomStats = roomStatsByProperty.get(property.id) ?? { totalRoomCount: 0, activeRoomCount: 0 };
 
     return {
@@ -238,32 +320,97 @@ export const getAdminDashboardData = cache(async (): Promise<AdminDashboardData>
     };
   });
 
+  const activeSubscriptionCount = subscriptions.filter(
+    (item) => item.status === "active" || item.status === "manual",
+  ).length;
   const paidUserCount = new Set(
     subscriptions
       .filter((item) => item.status === "active" || item.status === "manual")
       .map((item) => item.profileId),
   ).size;
+  const expiringSubscriptions = subscriptions.filter((item) => isExpiringSoon(item.validUntil));
+  const frozenProperties = properties.filter((item) => item.isFrozen);
+  const hiddenUsers = users.filter((item) => item.isPublicHiddenByAdmin);
 
-  return {
-    userCount: safeProfiles.length,
+  const dashboardData: AdminDashboardData = {
+    userCount: records.profiles.length,
     ownerCount: ownerProfiles.length,
     agentCount: agentProfiles.length,
     dualRoleCount,
-    propertyCount: safeProperties.length,
-    roomCount: safeRooms.length,
-    requestCount: safeGuestRequests.length,
-    ownerRequestCount: safeGuestRequests.filter((item) => item.source === "owner").length,
-    agentRequestCount: safeGuestRequests.filter((item) => item.source === "agent").length,
-    transferredRequestCount: safeGuestRequests.filter((item) => item.transferred_to_owner_at != null).length,
-    completedRequestCount: safeGuestRequests.filter((item) => item.status === "completed").length,
-    collectionCount: safeCollections.length,
+    propertyCount: records.properties.length,
+    roomCount: records.rooms.length,
+    requestCount: records.guestRequests.length,
+    ownerRequestCount: records.guestRequests.filter((item) => item.source === "owner").length,
+    agentRequestCount: records.guestRequests.filter((item) => item.source === "agent").length,
+    transferredRequestCount: records.guestRequests.filter((item) => item.transferred_to_owner_at != null).length,
+    completedRequestCount: records.guestRequests.filter((item) => item.status === "completed").length,
+    collectionCount: records.collections.length,
     paidUserCount,
-    activeSubscriptionCount: subscriptions.filter((item) => item.status === "active" || item.status === "manual").length,
-    expiringSoonCount: subscriptions.filter((item) => isExpiringSoon(item.validUntil)).length,
-    frozenPropertyCount: properties.filter((item) => item.isFrozen).length,
+    activeSubscriptionCount,
+    expiringSoonCount: expiringSubscriptions.length,
+    frozenPropertyCount: frozenProperties.length,
     users,
     subscriptions,
     properties,
-    pendingReferralRewards,
+    pendingReferralRewards: records.pendingReferralRewards,
+  };
+
+  return {
+    dashboardData,
+    overviewData: {
+      ...dashboardData,
+      hiddenProfileCount: hiddenUsers.length,
+      pendingReferralCount: records.pendingReferralRewards.length,
+      expiringSubscriptions: expiringSubscriptions.slice(0, 4),
+      frozenProperties: frozenProperties.slice(0, 4),
+      hiddenUsers: hiddenUsers.slice(0, 4),
+      pendingReferralRewards: records.pendingReferralRewards.slice(0, 4),
+    },
+    usersPageData: {
+      users,
+      hiddenProfileCount: hiddenUsers.length,
+    },
+    subscriptionsPageData: {
+      subscriptions,
+      expiringSoonCount: expiringSubscriptions.length,
+      activeSubscriptionCount,
+    },
+    propertiesPageData: {
+      properties,
+      frozenPropertyCount: frozenProperties.length,
+    },
+    reviewsPageData: {
+      pendingReferralRewards: records.pendingReferralRewards,
+    },
   };
 });
+
+export async function getAdminDashboardData(): Promise<AdminDashboardData> {
+  const snapshot = await getAdminSnapshot();
+  return snapshot.dashboardData;
+}
+
+export async function getAdminOverviewData(): Promise<AdminOverviewData> {
+  const snapshot = await getAdminSnapshot();
+  return snapshot.overviewData;
+}
+
+export async function getAdminUsersPageData(): Promise<AdminUsersPageData> {
+  const snapshot = await getAdminSnapshot();
+  return snapshot.usersPageData;
+}
+
+export async function getAdminSubscriptionsPageData(): Promise<AdminSubscriptionsPageData> {
+  const snapshot = await getAdminSnapshot();
+  return snapshot.subscriptionsPageData;
+}
+
+export async function getAdminPropertiesPageData(): Promise<AdminPropertiesPageData> {
+  const snapshot = await getAdminSnapshot();
+  return snapshot.propertiesPageData;
+}
+
+export async function getAdminReviewsPageData(): Promise<AdminReviewsPageData> {
+  const snapshot = await getAdminSnapshot();
+  return snapshot.reviewsPageData;
+}
