@@ -24,7 +24,7 @@ export default async function StandaloneRoomCalendarPage({ params, searchParams 
   const error = typeof resolvedSearchParams.error === "string" ? resolvedSearchParams.error : "";
   const success = typeof resolvedSearchParams.success === "string" ? resolvedSearchParams.success : "";
   const notice = getCalendarNotice(error, success);
-  const roomViewHref = `/dashboard/properties?roomId=${encodeURIComponent(room.id)}#standalone-room-detail`;
+  const roomViewHref = `/dashboard/rooms/${room.id}`;
 
   return (
     <section className="br-owner-stack">

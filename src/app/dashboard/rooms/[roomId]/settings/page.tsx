@@ -24,7 +24,7 @@ export default async function StandaloneRoomSettingsPage({ params, searchParams 
   const error = typeof resolvedSearchParams.error === "string" ? resolvedSearchParams.error : "";
   const success = typeof resolvedSearchParams.success === "string" ? resolvedSearchParams.success : "";
   const notice = getRoomsNotice(error, success);
-  const roomViewHref = `/dashboard/properties?roomId=${encodeURIComponent(room.id)}#standalone-room-detail`;
+  const roomViewHref = `/dashboard/rooms/${room.id}`;
   const redirectTo = `/dashboard/rooms/${room.id}/settings`;
 
   return (
@@ -46,7 +46,9 @@ export default async function StandaloneRoomSettingsPage({ params, searchParams 
             <p>Здесь можно обновить данные номера, сезонные цены и фотографии.</p>
           </div>
           <div className="br-room-page__actions">
-            <ButtonLink href="/dashboard/properties" variant="secondary">К общему списку</ButtonLink>
+            <ButtonLink href={roomViewHref} variant="secondary">
+              К странице номера
+            </ButtonLink>
           </div>
         </div>
         {notice ? <div className="br-inline-notice">{notice}</div> : null}

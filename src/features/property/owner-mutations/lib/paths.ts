@@ -19,7 +19,7 @@ export function buildStandaloneRoomCreatePath() {
 }
 
 export function buildStandaloneRoomPath(roomId: string) {
-  return `/dashboard/properties?roomId=${encodeURIComponent(roomId)}`;
+  return `/dashboard/rooms/${roomId}`;
 }
 
 export function buildStandaloneRoomSettingsPath(roomId: string) {
