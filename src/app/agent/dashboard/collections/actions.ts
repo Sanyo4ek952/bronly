@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { ensureAgentSubscriptionMutationAllowed } from "@/app/agent/dashboard/subscription-guard";
 import {
   addPropertyToCollection,
   addRoomToCollection,
@@ -51,6 +52,8 @@ function revalidateAgentCollectionPaths(collectionId?: string) {
 }
 
 export async function createAgentCollectionAction(formData: FormData) {
+  await ensureAgentSubscriptionMutationAllowed("/agent/dashboard/collections/new");
+
   const result = await createCollection({
     role: "agent",
     title: getString(formData, "title"),
@@ -68,6 +71,8 @@ export async function createAgentCollectionAction(formData: FormData) {
 
 export async function renameAgentCollectionAction(formData: FormData) {
   const collectionId = getString(formData, "collectionId");
+  await ensureAgentSubscriptionMutationAllowed(collectionId ? `/agent/dashboard/collections/${collectionId}` : "/agent/dashboard/collections");
+
   const result = await renameCollection({
     role: "agent",
     collectionId,
@@ -84,6 +89,8 @@ export async function renameAgentCollectionAction(formData: FormData) {
 
 export async function archiveAgentCollectionAction(formData: FormData) {
   const collectionId = getString(formData, "collectionId");
+  await ensureAgentSubscriptionMutationAllowed(collectionId ? `/agent/dashboard/collections/${collectionId}` : "/agent/dashboard/collections");
+
   const result = await archiveCollection({
     role: "agent",
     collectionId,
@@ -99,6 +106,8 @@ export async function archiveAgentCollectionAction(formData: FormData) {
 
 export async function addAgentPropertyToCollectionAction(formData: FormData) {
   const collectionId = getString(formData, "collectionId");
+  await ensureAgentSubscriptionMutationAllowed(collectionId ? `/agent/dashboard/collections/${collectionId}` : "/agent/dashboard/collections");
+
   const result = await addPropertyToCollection({
     role: "agent",
     collectionId,
@@ -115,6 +124,8 @@ export async function addAgentPropertyToCollectionAction(formData: FormData) {
 
 export async function addAgentRoomToCollectionAction(formData: FormData) {
   const collectionId = getString(formData, "collectionId");
+  await ensureAgentSubscriptionMutationAllowed(collectionId ? `/agent/dashboard/collections/${collectionId}` : "/agent/dashboard/collections");
+
   const result = await addRoomToCollection({
     role: "agent",
     collectionId,
@@ -131,6 +142,8 @@ export async function addAgentRoomToCollectionAction(formData: FormData) {
 
 export async function removeAgentCollectionItemAction(formData: FormData) {
   const collectionId = getString(formData, "collectionId");
+  await ensureAgentSubscriptionMutationAllowed(collectionId ? `/agent/dashboard/collections/${collectionId}` : "/agent/dashboard/collections");
+
   const result = await removeCollectionItem({
     role: "agent",
     collectionId,

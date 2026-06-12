@@ -93,6 +93,10 @@ function toPublicRestrictionMode(status: SubscriptionStatus): PublicRestrictionM
   return "none";
 }
 
+function getSubscriptionLinkPath(roleContext: SubscriptionRoleContext) {
+  return roleContext === "agent" ? "/agent/dashboard/subscription" : "/dashboard/subscription";
+}
+
 function resolveEffectiveStatus(
   row: SupabaseSubscriptionRow | null,
   now: Date,
@@ -197,7 +201,7 @@ async function maybeSyncRuntimeSubscriptionState(
       payload: {
         subscriptionStatus: resolved.status,
         roleContext,
-        linkPath: roleContext === "agent" ? "/agent/dashboard" : "/dashboard",
+        linkPath: getSubscriptionLinkPath(roleContext),
       },
     });
 
@@ -208,7 +212,7 @@ async function maybeSyncRuntimeSubscriptionState(
         payload: {
           subscriptionStatus: "grace",
           roleContext,
-          linkPath: roleContext === "agent" ? "/agent/dashboard" : "/dashboard",
+          linkPath: getSubscriptionLinkPath(roleContext),
         },
       });
     }
@@ -230,38 +234,62 @@ async function countOwnerActiveRooms(profileId: string) {
 
 async function countAgentActiveRooms(profileId: string) {
   const admin = createSupabaseAdminClient();
-  const { data: linkRows } = await admin
-    .from("agent_property_links")
-    .select("property_id")
-    .eq("agent_id", profileId)
-    .eq("status", "active");
+  const [{ data: ownRoomRows }, { data: propertyLinkRows }, { data: roomLinkRows }] = await Promise.all([
+    admin.from("rooms").select("id").eq("owner_id", profileId).eq("is_active", true),
+    admin
+      .from("agent_property_links")
+      .select("property_id")
+      .eq("agent_id", profileId)
+      .eq("status", "active"),
+    admin.from("agent_room_links").select("room_id").eq("agent_id", profileId).eq("status", "active"),
+  ]);
 
-  const propertyIds = (linkRows ?? []).map((row) => row.property_id as string);
+  const activeRoomIds = new Set<string>();
 
-  if (!propertyIds.length) {
-    return 0;
+  for (const row of ownRoomRows ?? []) {
+    activeRoomIds.add(row.id as string);
   }
 
-  const { data: visiblePropertyRows } = await admin
-    .from("properties")
-    .select("id")
-    .in("id", propertyIds)
-    .eq("published", true)
-    .eq("is_frozen", false);
+  const propertyIds = (propertyLinkRows ?? []).map((row) => row.property_id as string);
 
-  const visiblePropertyIds = (visiblePropertyRows ?? []).map((row) => row.id as string);
+  if (propertyIds.length) {
+    const { data: visiblePropertyRows } = await admin
+      .from("properties")
+      .select("id")
+      .in("id", propertyIds)
+      .eq("published", true)
+      .eq("is_frozen", false);
 
-  if (!visiblePropertyIds.length) {
-    return 0;
+    const visiblePropertyIds = (visiblePropertyRows ?? []).map((row) => row.id as string);
+
+    if (visiblePropertyIds.length) {
+      const { data: linkedPropertyRoomRows } = await admin
+        .from("rooms")
+        .select("id")
+        .in("property_id", visiblePropertyIds)
+        .eq("is_active", true);
+
+      for (const row of linkedPropertyRoomRows ?? []) {
+        activeRoomIds.add(row.id as string);
+      }
+    }
   }
 
-  const { count } = await admin
-    .from("rooms")
-    .select("*", { count: "exact", head: true })
-    .in("property_id", visiblePropertyIds)
-    .eq("is_active", true);
+  const standaloneRoomIds = (roomLinkRows ?? []).map((row) => row.room_id as string);
 
-  return count ?? 0;
+  if (standaloneRoomIds.length) {
+    const { data: linkedStandaloneRoomRows } = await admin
+      .from("rooms")
+      .select("id")
+      .in("id", standaloneRoomIds)
+      .eq("is_active", true);
+
+    for (const row of linkedStandaloneRoomRows ?? []) {
+      activeRoomIds.add(row.id as string);
+    }
+  }
+
+  return activeRoomIds.size;
 }
 
 async function countActiveRooms(profileId: string, roleContext: SubscriptionRoleContext) {

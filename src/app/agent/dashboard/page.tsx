@@ -2,8 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getAgentDashboardSummary } from "@/entities/collaboration";
+import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { ButtonLink } from "@/shared/ui";
+import { SubscriptionOverviewCard } from "@/widgets/subscription-status-card";
 
 export default async function AgentDashboardPage() {
   const profile = await getCurrentAuthProfile();
@@ -12,7 +14,10 @@ export default async function AgentDashboardPage() {
     redirect("/login");
   }
 
-  const summary = await getAgentDashboardSummary(profile);
+  const [summary, subscription] = await Promise.all([
+    getAgentDashboardSummary(profile),
+    getSubscriptionRuntimeState(profile.id, "agent"),
+  ]);
 
   return (
     <>
@@ -64,6 +69,7 @@ export default async function AgentDashboardPage() {
             Открыть сделки
           </Link>
         </article>
+        <SubscriptionOverviewCard subscription={subscription} href="/agent/dashboard/subscription" />
       </section>
 
       <section className="br-dashboard-block br-card">

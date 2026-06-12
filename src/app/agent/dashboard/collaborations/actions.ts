@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { ensureAgentSubscriptionMutationAllowed } from "@/app/agent/dashboard/subscription-guard";
 import { upsertAgentRoomMarkup } from "@/entities/collaboration";
 import { getNumber, getString } from "@/shared/lib/form-data";
 
@@ -25,6 +26,8 @@ function buildCollaborationsPath(state?: Record<string, string>) {
 export async function saveAgentRoomMarkupAction(formData: FormData) {
   const roomId = getString(formData, "roomId");
   const markupPercent = getNumber(formData, "markupPercent", 0);
+
+  await ensureAgentSubscriptionMutationAllowed("/agent/dashboard/collaborations");
 
   const result = await upsertAgentRoomMarkup({
     roomId,

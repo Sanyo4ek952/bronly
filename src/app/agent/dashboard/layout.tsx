@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 
 import { getUnreadNotificationCount } from "@/entities/notification";
+import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile, getPrimaryRole } from "@/shared/api/supabase";
+import { formatDateLabel } from "@/shared/lib/date";
 import { OwnerShell } from "@/widgets/owner-shell";
 
 export default async function AgentDashboardLayout({
@@ -19,7 +21,24 @@ export default async function AgentDashboardLayout({
     redirect("/dashboard");
   }
 
-  const unreadNotificationsCount = await getUnreadNotificationCount();
+  const [subscription, unreadNotificationsCount] = await Promise.all([
+    getSubscriptionRuntimeState(profile.id, "agent"),
+    getUnreadNotificationCount(),
+  ]);
+
+  const notice = subscription.status === "expired"
+    ? {
+        title: "Агентская витрина и новые заявки ограничены",
+        text: "Подписка не продлена. Кабинет остается доступным для просмотра, но изменения данных временно остановлены, пока администратор не продлит доступ.",
+      }
+    : subscription.showGraceWarning
+      ? {
+          title: "Подписку нужно продлить",
+          text: subscription.graceEndsAt
+            ? `Grace period действует до ${formatDateLabel(subscription.graceEndsAt)}. До этой даты агентская витрина и новые заявки еще доступны.`
+            : "Grace period уже начался. Пока он не закончился, агентская витрина и новые заявки еще доступны.",
+        }
+      : null;
 
   return (
     <main className="br-page br-page--dashboard">
@@ -34,6 +53,7 @@ export default async function AgentDashboardLayout({
             notificationsHref: "/agent/dashboard/notifications",
             unreadNotificationsCount,
           }}
+          notice={notice}
         >
           {children}
         </OwnerShell>

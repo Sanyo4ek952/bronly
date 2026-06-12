@@ -13,7 +13,7 @@ import {
 import { RoomAmenitiesField } from "@/features/property/edit-room/ui/room-amenities-field";
 import { RoomFormSection } from "@/features/property/edit-room/ui/room-form-section";
 import type { OwnerRoomDetail } from "@/entities/room/model/types";
-import { Button, Input, Textarea } from "@/shared/ui";
+import { Button, Input, SubmitButton, Textarea } from "@/shared/ui";
 
 type RoomSettingsEditorProps = {
   propertyId?: string | null;
@@ -168,7 +168,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
             description="Можно выбрать до 10 фото за раз. JPG, PNG, WebP или GIF, до 5 МБ каждое."
             wrapperClassName="br-owner-photo-upload__field"
           />
-          <Button type="submit">Загрузить фото</Button>
+          <SubmitButton pendingLabel="Загрузка фото">Загрузить фото</SubmitButton>
         </form>
 
         {room.photos.length ? (

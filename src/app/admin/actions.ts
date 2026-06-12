@@ -51,6 +51,42 @@ async function requireAdmin() {
   return profile;
 }
 
+async function revalidateSubscriptionSurfaces(input: {
+  profileId: string;
+  roleContext: "owner" | "agent";
+}) {
+  const admin = createSupabaseAdminClient();
+  const { data: profileData } = await admin
+    .from("profiles")
+    .select("slug, agent_public_id")
+    .eq("id", input.profileId)
+    .maybeSingle();
+
+  revalidatePath("/admin");
+
+  if (input.roleContext === "agent") {
+    revalidatePath("/agent/dashboard");
+    revalidatePath("/agent/dashboard/subscription");
+
+    if (profileData?.agent_public_id) {
+      revalidatePath(`/a/${profileData.agent_public_id}`);
+    }
+
+    return;
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/subscription");
+
+  if (profileData?.slug) {
+    revalidatePath(`/p/${profileData.slug}`);
+  }
+}
+
+function getSubscriptionLinkPath(roleContext: "owner" | "agent") {
+  return roleContext === "agent" ? "/agent/dashboard/subscription" : "/dashboard/subscription";
+}
+
 export async function saveSubscriptionAction(formData: FormData) {
   await requireAdmin();
 
@@ -139,7 +175,7 @@ export async function saveSubscriptionAction(formData: FormData) {
       payload: {
         subscriptionStatus: status as "trial" | "active" | "grace" | "expired" | "manual",
         roleContext: roleContext as "owner" | "agent",
-        linkPath: roleContext === "agent" ? "/agent/dashboard" : "/dashboard",
+        linkPath: getSubscriptionLinkPath(roleContext as "owner" | "agent"),
       },
     });
 
@@ -150,13 +186,16 @@ export async function saveSubscriptionAction(formData: FormData) {
         payload: {
           subscriptionStatus: "grace",
           roleContext: roleContext as "owner" | "agent",
-          linkPath: roleContext === "agent" ? "/agent/dashboard" : "/dashboard",
+          linkPath: getSubscriptionLinkPath(roleContext as "owner" | "agent"),
         },
       });
     }
   }
 
-  revalidatePath("/admin");
+  await revalidateSubscriptionSurfaces({
+    profileId,
+    roleContext: roleContext as "owner" | "agent",
+  });
   redirect("/admin?success=subscription-saved");
 }
 
@@ -217,12 +256,15 @@ export async function extendSubscriptionAction(formData: FormData) {
       payload: {
         subscriptionStatus: "active",
         roleContext: roleContext as "owner" | "agent",
-        linkPath: roleContext === "agent" ? "/agent/dashboard" : "/dashboard",
+        linkPath: getSubscriptionLinkPath(roleContext as "owner" | "agent"),
       },
     });
   }
 
-  revalidatePath("/admin");
+  await revalidateSubscriptionSurfaces({
+    profileId,
+    roleContext: roleContext as "owner" | "agent",
+  });
   redirect("/admin?success=subscription-extended");
 }
 

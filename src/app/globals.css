@@ -4896,6 +4896,26 @@ body {
   transform: none;
 }
 
+.br-button--loading {
+  min-width: 40px;
+  pointer-events: none;
+}
+
+.br-button__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: br-button-spin 0.7s linear infinite;
+}
+
+@keyframes br-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .br-button--sm {
   min-height: 34px;
   padding-inline: 12px;

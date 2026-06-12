@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { ensureAgentSubscriptionMutationAllowed } from "@/app/agent/dashboard/subscription-guard";
 import { requestAgentCompletion, transferAgentRequestToOwner } from "@/entities/request";
 
 function getRequestId(formData: FormData) {
@@ -10,6 +11,8 @@ function getRequestId(formData: FormData) {
 }
 
 export async function transferAgentRequestAction(formData: FormData) {
+  await ensureAgentSubscriptionMutationAllowed("/agent/dashboard/requests");
+
   const result = await transferAgentRequestToOwner({ requestId: getRequestId(formData) });
 
   if (result.ok) {
@@ -20,6 +23,8 @@ export async function transferAgentRequestAction(formData: FormData) {
 }
 
 export async function requestAgentCompletionAction(formData: FormData) {
+  await ensureAgentSubscriptionMutationAllowed("/agent/dashboard/requests");
+
   const result = await requestAgentCompletion({ requestId: getRequestId(formData) });
 
   if (result.ok) {

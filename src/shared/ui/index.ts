@@ -10,4 +10,5 @@ export { Panel } from "@/shared/ui/panel";
 export { SectionHeader } from "@/shared/ui/section-header";
 export { StatCard } from "@/shared/ui/stat-card";
 export { StatusPill } from "@/shared/ui/status-pill";
+export { SubmitButton } from "@/shared/ui/submit-button";
 export { Tabs } from "@/shared/ui/tabs";

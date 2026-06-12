@@ -16,6 +16,7 @@ import {
   requireAppUrl,
 } from "@/shared/api/supabase";
 import { createTelegramLinkSession } from "@/entities/notification";
+import { getSubscriptionRuntimeState } from "@/entities/subscription";
 
 type RegisterRole = "owner" | "agent";
 
@@ -300,6 +301,14 @@ export async function updateProfileAction(formData: FormData) {
 
   if (!profile || !displayName) {
     redirect(`${getSettingsTargetPath(role)}?error=validation`);
+  }
+
+  if (role === "owner" || role === "agent") {
+    const subscription = await getSubscriptionRuntimeState(profile.id, role);
+
+    if (!subscription.isMutationAllowed) {
+      redirect(`${getSettingsTargetPath(role)}?error=subscription`);
+    }
   }
 
   const payload: {

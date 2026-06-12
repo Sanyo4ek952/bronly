@@ -55,6 +55,7 @@ const agentNavigationItems: NavigationItem[] = [
   { href: "/agent/dashboard/opportunities", label: "К сотрудничеству", icon: Search },
   { href: "/agent/dashboard/collaborations", label: "Связи", icon: Link2 },
   { href: "/agent/dashboard/calendar", label: "Календарь", icon: CalendarDays },
+  { href: "/agent/dashboard/subscription", label: "Подписка", icon: CreditCard },
   { href: "/agent/dashboard/requests", label: "Заявки", icon: Inbox },
   { href: "/agent/dashboard/deals", label: "Сделки", icon: BadgeCheck },
   { href: "/agent/dashboard/settings", label: "Настройки", icon: Settings },

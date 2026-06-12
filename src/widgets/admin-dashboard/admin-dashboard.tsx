@@ -132,7 +132,9 @@ export function AdminDashboard({ data, message }: AdminDashboardProps) {
                     <span>{row.milestoneLabel}</span>
                     <span>+{row.rewardDays} дней</span>
                     <span>
-                      <a href={`#subscription-${row.inviterProfileId}`}>К подпискам</a>
+                      <a href={`#subscription-${row.inviterProfileId}-${row.inviterRoles.includes("owner") ? "owner" : "agent"}`}>
+                        К подпискам
+                      </a>
                     </span>
                     <span>
                       <div className="br-owner-actions">
@@ -224,7 +226,7 @@ export function AdminDashboard({ data, message }: AdminDashboardProps) {
               {data.subscriptions.map((row) => (
                 <form
                   key={`${row.profileId}-${row.roleContext}`}
-                  id={`subscription-${row.profileId}`}
+                  id={`subscription-${row.profileId}-${row.roleContext}`}
                   action={saveSubscriptionAction}
                   className="br-owner-inline-form"
                 >

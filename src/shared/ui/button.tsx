@@ -19,6 +19,8 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
   className?: string;
   fullWidth?: boolean;
+  loading?: boolean;
+  loadingLabel?: string;
   variant?: ButtonVariant;
   size?: ButtonSize;
 };
@@ -48,25 +50,33 @@ function getSizeClass(size: ButtonSize) {
 export function Button({
   children,
   className,
+  disabled,
   fullWidth = false,
+  loading = false,
+  loadingLabel = "Загрузка",
   variant = "primary",
   size = "md",
   type = "button",
+  "aria-label": ariaLabel,
   ...props
 }: ButtonProps) {
   return (
     <button
       type={type}
+      aria-busy={loading || undefined}
+      aria-label={loading ? loadingLabel : ariaLabel}
       className={cn(
         "br-button",
         getVariantClass(variant),
         getSizeClass(size),
         fullWidth && "br-button--full",
+        loading && "br-button--loading",
         className,
       )}
+      disabled={disabled || loading}
       {...props}
     >
-      {children}
+      {loading ? <span className="br-button__spinner" aria-hidden="true" /> : children}
     </button>
   );
 }
