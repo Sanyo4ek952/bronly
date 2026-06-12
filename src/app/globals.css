@@ -3204,6 +3204,31 @@ ul {
   margin-top: 0;
 }
 
+.br-referral-switcher,
+.br-referral-card,
+.br-referral-card__copy {
+  min-width: 0;
+}
+
+.br-referral-card__copy {
+  overflow: hidden;
+}
+
+.br-referral-card__value {
+  max-width: 100%;
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.br-referral-card__value--url {
+  color: var(--color-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+}
+
 .br-room-list,
 .br-requests-list,
 .br-calendar-sidebar {

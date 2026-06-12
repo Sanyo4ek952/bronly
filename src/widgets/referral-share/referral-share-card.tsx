@@ -42,7 +42,7 @@ export function ReferralShareCard({ invite, title, description }: ReferralShareC
   }
 
   return (
-    <section className="br-dashboard-block br-card">
+    <section className="br-dashboard-block br-card br-referral-card">
       <div className="br-dashboard-block__header">
         <div>
           <h2>{title}</h2>
@@ -53,13 +53,13 @@ export function ReferralShareCard({ invite, title, description }: ReferralShareC
       {notice ? <div className="br-inline-notice">{notice}</div> : null}
 
       <div className="br-owner-stack">
-        <div className="br-owner-editor br-owner-editor--muted">
+        <div className="br-owner-editor br-owner-editor--muted br-referral-card__copy">
           <strong>Текст приглашения</strong>
-          <p>{invite.shareMessage}</p>
+          <p className="br-referral-card__value">{invite.shareMessage}</p>
         </div>
-        <div className="br-owner-editor br-owner-editor--muted">
+        <div className="br-owner-editor br-owner-editor--muted br-referral-card__copy">
           <strong>Ссылка</strong>
-          <p>{invite.inviteUrl}</p>
+          <p className="br-referral-card__value br-referral-card__value--url">{invite.inviteUrl}</p>
         </div>
         <div className="br-owner-actions">
           <Button type="button" onClick={shareInvite} size="sm">
