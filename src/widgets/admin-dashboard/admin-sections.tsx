@@ -186,7 +186,7 @@ function AdminPageHeader({
 }) {
   return (
     <section className="br-admin-page-header">
-      <div>
+      <div className="br-admin-page-header__copy">
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
@@ -206,9 +206,9 @@ function AdminSummaryCard({
 }) {
   return (
     <article className="br-admin-summary-card br-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{hint}</small>
+      <span className="br-admin-summary-card__label">{label}</span>
+      <strong className="br-admin-summary-card__value">{value}</strong>
+      <small className="br-admin-summary-card__hint">{hint}</small>
     </article>
   );
 }
@@ -229,9 +229,9 @@ function AdminPreviewCard({
   return (
     <article className="br-admin-preview-card br-card">
       <div className="br-admin-preview-card__header">
-        <div>
-          <strong>{title}</strong>
-          <p>{description}</p>
+        <div className="br-admin-preview-card__copy">
+          <strong className="br-admin-preview-card__title">{title}</strong>
+          <p className="br-admin-preview-card__description">{description}</p>
         </div>
         <AdminBadge tone={count > 0 ? "attention" : "neutral"}>{count}</AdminBadge>
       </div>
@@ -279,9 +279,9 @@ function AdminPreviewList({
     <div className="br-admin-preview-list">
       {items.map((item) => (
         <article key={`${item.title}-${item.subtitle}`} className="br-admin-preview-list__item">
-          <div>
-            <strong>{item.title}</strong>
-            <span>{item.subtitle}</span>
+          <div className="br-admin-preview-list__copy">
+            <strong className="br-admin-preview-list__title">{item.title}</strong>
+            <span className="br-admin-preview-list__subtitle">{item.subtitle}</span>
           </div>
           {item.badge ? <AdminBadge tone={item.badge.tone}>{item.badge.label}</AdminBadge> : null}
         </article>
