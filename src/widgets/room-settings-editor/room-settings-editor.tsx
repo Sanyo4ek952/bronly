@@ -160,10 +160,12 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
           <input type="hidden" name="redirectTo" value={redirectTo} />
           <Input
             id={`room-photo-upload-${room.id}`}
-            name="photo"
+            name="photos"
             type="file"
             accept="image/*"
+            multiple
             label="Добавить фото номера"
+            description="Можно выбрать до 10 фото за раз. JPG, PNG, WebP или GIF, до 5 МБ каждое."
             wrapperClassName="br-owner-photo-upload__field"
           />
           <Button type="submit">Загрузить фото</Button>

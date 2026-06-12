@@ -95,7 +95,7 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
           </div>
         </div>
 
-        <form action={createOwnerRoom} className="br-owner-editor br-owner-editor--muted br-room-form">
+        <form action={createOwnerRoom} className="br-owner-editor br-owner-editor--muted br-room-form" encType="multipart/form-data">
           <input type="hidden" name="propertyId" value={property.id} />
 
           <RoomFormSection title="Основное" description="Короткая карточка номера без лишнего шума.">
@@ -115,6 +115,18 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
 
           <RoomFormSection title="Удобства номера" description="Главные удобства сразу, дополнительные по раскрытию.">
             <RoomAmenitiesField initialAmenities={[]} />
+          </RoomFormSection>
+
+          <RoomFormSection title="Фото номера" description="Можно выбрать до 10 фото сразу. Первое фото станет главным.">
+            <Input
+              id="room-photos-new"
+              name="photos"
+              type="file"
+              accept="image/*"
+              multiple
+              label="Фотографии номера"
+              description="JPG, PNG, WebP или GIF, до 5 МБ каждое."
+            />
           </RoomFormSection>
 
           <RoomFormSection title="Настройки" description="Оставьте только то, что важно для публикации.">

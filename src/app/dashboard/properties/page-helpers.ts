@@ -49,6 +49,9 @@ export function getRoomsNotice(error: string, success: string) {
   if (success === "room-created") {
     return "Номер добавлен.";
   }
+  if (success === "room-created-photo-upload") {
+    return "Номер добавлен, но фото не загрузились. Попробуйте добавить их еще раз.";
+  }
   if (success === "room-saved") {
     return "Номер обновлён.";
   }
@@ -97,6 +100,8 @@ export function getRoomsNotice(error: string, success: string) {
       return "Для номера поддерживаются только JPG, PNG, WebP и GIF.";
     case "room-photo-size":
       return "Размер фото номера должен быть не больше 5 МБ.";
+    case "room-photo-count":
+      return "За один раз можно загрузить до 10 фото номера.";
     case "room-photo-upload":
       return "Не удалось загрузить фото номера.";
     case "room-photo-delete":
@@ -118,6 +123,12 @@ export function getRoomCreateNotice(error: string) {
       return "Подписка не продлена. Добавление номера временно недоступно.";
     case "room-limit":
       return "Лимит активных номеров исчерпан. Можно сохранить номер как неактивный или сначала освободить место в лимите.";
+    case "room-photo-type":
+      return "Для номера поддерживаются только JPG, PNG, WebP и GIF.";
+    case "room-photo-size":
+      return "Размер фото номера должен быть не больше 5 МБ.";
+    case "room-photo-count":
+      return "За один раз можно загрузить до 10 фото номера.";
     case "save":
       return "Не удалось создать номер.";
     default:

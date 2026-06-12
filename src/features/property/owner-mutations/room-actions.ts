@@ -21,6 +21,7 @@ import {
   buildStandaloneRoomSettingsPath,
 } from "./lib/paths";
 import { generateUniqueRoomSlug } from "./lib/slugs";
+import { getUploadedRoomPhotoFiles, uploadRoomPhotoFiles, validateRoomPhotoFiles } from "./room-photo-upload";
 
 const DEFAULT_TIMEZONE = "(UTC+03:00) Москва";
 const DEFAULT_STANDALONE_ROOM_TYPE = "Отдельный номер";
@@ -81,6 +82,8 @@ export async function createOwnerRoom(formData: FormData) {
   const profile = await requireOwnerMutationAccess(propertyId ? buildPropertyRoomCreatePath(propertyId) : buildStandaloneRoomCreatePath());
   const title = getString(formData, "title");
   const isActive = getCheckbox(formData, "isActive");
+  const roomPhotoFiles = getUploadedRoomPhotoFiles(formData);
+  const roomPhotoError = validateRoomPhotoFiles(roomPhotoFiles);
 
   if (!title || (!propertyId && !validateStandaloneRoom(formData))) {
     if (!propertyId) {
@@ -88,6 +91,14 @@ export async function createOwnerRoom(formData: FormData) {
     }
 
     redirect(`${buildPropertyRoomCreatePath(propertyId)}?error=validation`);
+  }
+
+  if (roomPhotoError) {
+    if (!propertyId) {
+      redirect(`${buildStandaloneRoomCreatePath()}?error=${roomPhotoError}`);
+    }
+
+    redirect(`${buildPropertyRoomCreatePath(propertyId)}?error=${roomPhotoError}`);
   }
 
   if (isActive) {
@@ -124,6 +135,7 @@ export async function createOwnerRoom(formData: FormData) {
   }
 
   await replaceRoomAmenities(data.id as string, getString(formData, "amenities"));
+  const photoUploadError = await uploadRoomPhotoFiles(supabase, profile.id, data.id as string, roomPhotoFiles);
 
   const initialBusyRange = getNormalizedBusyRange(formData);
 
@@ -145,11 +157,11 @@ export async function createOwnerRoom(formData: FormData) {
   revalidatePath("/dashboard/rooms");
 
   if (!propertyId) {
-    redirect(`${buildStandaloneRoomPath(data.id as string)}&success=room-created`);
+    redirect(`${buildStandaloneRoomPath(data.id as string)}&success=${photoUploadError ? "room-created-photo-upload" : "room-created"}`);
   }
 
   revalidatePath(buildPropertyPath(propertyId));
-  redirect(buildPropertyPathWithState(propertyId, "rooms", { success: "room-created" }));
+  redirect(buildPropertyPathWithState(propertyId, "rooms", { success: photoUploadError ? "room-created-photo-upload" : "room-created" }));
 }
 
 export async function updateOwnerRoom(formData: FormData) {

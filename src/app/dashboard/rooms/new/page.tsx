@@ -43,7 +43,7 @@ export default async function StandaloneRoomCreatePage({ searchParams }: Standal
       </section>
 
       <section className="br-dashboard-block br-card">
-        <form action={createOwnerRoom} className="br-owner-stack br-room-form">
+        <form action={createOwnerRoom} className="br-owner-stack br-room-form" encType="multipart/form-data">
           <RoomFormSection title="Основное" description="Как называется номер и где он находится.">
             <div className="br-property-form__grid">
               <Input id="room-title-new" name="title" label="Название номера" />
@@ -70,6 +70,18 @@ export default async function StandaloneRoomCreatePage({ searchParams }: Standal
 
           <RoomFormSection title="Удобства номера" description="Главное держим перед глазами, остальное раскрывается по тапу.">
             <RoomAmenitiesField initialAmenities={[]} />
+          </RoomFormSection>
+
+          <RoomFormSection title="Фото номера" description="Можно выбрать до 10 фото сразу. Первое фото станет главным.">
+            <Input
+              id="room-photos-new"
+              name="photos"
+              type="file"
+              accept="image/*"
+              multiple
+              label="Фотографии номера"
+              description="JPG, PNG, WebP или GIF, до 5 МБ каждое."
+            />
           </RoomFormSection>
 
           <RoomFormSection title="Контакты и занятые даты" description="Оставьте контакты и, если нужно, сразу отметьте занятый диапазон.">

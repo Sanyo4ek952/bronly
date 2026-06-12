@@ -15,6 +15,7 @@ import {
   buildStandaloneRoomPath,
   buildStandaloneRoomSettingsPath,
 } from "./lib/paths";
+import { getUploadedRoomPhotoFiles, uploadRoomPhotoFiles, validateRoomPhotoFiles } from "./room-photo-upload";
 
 const PHOTO_BUCKET = "property-media";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -331,16 +332,16 @@ export async function uploadRoomPhoto(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
   const roomId = getString(formData, "roomId");
   const profile = await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId));
-  const file = getUploadedFile(formData, "photo");
+  const files = getUploadedRoomPhotoFiles(formData);
 
-  if (!roomId || !file) {
+  if (!roomId || !files.length) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "room-photo-validation" }));
   }
 
-  const fileError = validateImageFile(file);
+  const fileError = validateRoomPhotoFiles(files);
 
   if (fileError) {
-    redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: fileError === "photo-type" ? "room-photo-type" : "room-photo-size" }));
+    redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: fileError }));
   }
 
   const { supabase, room } = await loadOwnedRoom(roomId, propertyId || undefined);
@@ -350,36 +351,10 @@ export async function uploadRoomPhoto(formData: FormData) {
   }
 
   const ownerPublicSlug = propertyId ? await getOwnerPublicSlug(supabase, propertyId) : "";
-  const { data: photoRows } = await supabase
-    .from("room_photos")
-    .select("sort_order")
-    .eq("room_id", roomId)
-    .order("sort_order", { ascending: false })
-    .limit(1);
-  const nextSortOrder = Number(photoRows?.[0]?.sort_order ?? -1) + 1;
+  const uploadError = await uploadRoomPhotoFiles(supabase, profile.id, roomId, files);
 
-  const admin = createSupabaseAdminClient();
-  const storagePath = buildStoragePath(profile.id, "rooms", roomId, file.name);
-  const uploadResult = await admin.storage.from(PHOTO_BUCKET).upload(storagePath, await file.arrayBuffer(), {
-    contentType: file.type,
-    upsert: false,
-  });
-
-  if (uploadResult.error) {
-    redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "room-photo-upload" }));
-  }
-
-  const { data: publicUrlData } = admin.storage.from(PHOTO_BUCKET).getPublicUrl(storagePath);
-  const { error } = await supabase.from("room_photos").insert({
-    room_id: roomId,
-    storage_path: storagePath,
-    public_url: publicUrlData.publicUrl,
-    sort_order: nextSortOrder,
-  });
-
-  if (error) {
-    await admin.storage.from(PHOTO_BUCKET).remove([storagePath]);
-    redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "room-photo-upload" }));
+  if (uploadError) {
+    redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: uploadError }));
   }
 
   revalidateRoomMedia(propertyId, roomId, ownerPublicSlug);
