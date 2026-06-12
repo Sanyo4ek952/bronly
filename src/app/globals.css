@@ -1697,6 +1697,7 @@ ul {
 
 .br-owner-nav__item .br-ui-icon,
 .br-owner-bottom-nav__item .br-ui-icon,
+.br-icon-button .br-ui-icon,
 .br-icon-link .br-ui-icon,
 .br-owner-property-card__settings .br-ui-icon {
   width: 18px;
@@ -1802,6 +1803,19 @@ ul {
   transition: background-color var(--transition), color var(--transition);
 }
 
+.br-owner-mobile-sheet__form {
+  margin: 0;
+}
+
+.br-owner-mobile-sheet__item--button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
 .br-owner-mobile-sheet__item:hover {
   background: var(--color-primary-pale);
   color: var(--color-primary-hover);
@@ -1887,6 +1901,10 @@ ul {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.br-owner-topbar__signout {
+  margin: 0;
 }
 
 .br-owner-topbar__chip,

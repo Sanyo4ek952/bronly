@@ -1,7 +1,8 @@
-import { Bell } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 import Link from "next/link";
 
-import { AppIcon } from "@/shared/ui";
+import { signOutAction } from "@/app/auth/actions";
+import { AppIcon, IconButton } from "@/shared/ui";
 
 type DashboardTopbarProps = {
   title: string;
@@ -30,6 +31,11 @@ export function DashboardTopbar({
           <AppIcon icon={Bell} aria-hidden="true" />
           {unreadNotificationsCount > 0 ? <span className="br-icon-link__badge">{badgeLabel}</span> : null}
         </Link>
+        <form action={signOutAction} className="br-owner-topbar__signout">
+          <IconButton type="submit" aria-label="Выйти">
+            <AppIcon icon={LogOut} aria-hidden="true" />
+          </IconButton>
+        </form>
       </div>
     </header>
   );

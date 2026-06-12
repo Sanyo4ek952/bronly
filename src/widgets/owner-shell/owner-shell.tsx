@@ -11,6 +11,7 @@ import {
   Inbox,
   Layers3,
   Link2,
+  LogOut,
   Menu,
   Search,
   Settings,
@@ -259,6 +260,15 @@ export function OwnerShell({
                     </Link>
                   );
                 })}
+                <form action={signOutAction} className="br-owner-mobile-sheet__form">
+                  <button
+                    type="submit"
+                    className="br-owner-mobile-sheet__item br-owner-mobile-sheet__item--button"
+                  >
+                    <AppIcon icon={LogOut} aria-hidden="true" />
+                    <span>Выйти</span>
+                  </button>
+                </form>
               </div>
             </div>
           </div>
