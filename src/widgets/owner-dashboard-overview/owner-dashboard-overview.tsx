@@ -2,8 +2,9 @@ import { CalendarDays, ExternalLink, Inbox, Plus } from "lucide-react";
 import Link from "next/link";
 
 import type { OwnerDashboardSummary } from "@/entities/property";
-import { AppIcon, ButtonLink, type AppIconComponent } from "@/shared/ui";
+import { AppIcon, ButtonLink, SectionHeader, type AppIconComponent } from "@/shared/ui";
 
+import { OwnerDashboardActionSection } from "./owner-dashboard-action-section";
 import { OwnerDashboardOnboarding } from "./owner-dashboard-onboarding";
 
 const quickActions = [
@@ -129,28 +130,20 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
   return (
     <>
       {dashboardStats.isCabinetRestricted ? (
-        <section className="br-dashboard-block br-card">
-          <div className="br-dashboard-block__header">
-            <div>
-              <h2>Продление доступа</h2>
-              <p>
-                Публичные страницы и новые заявки временно недоступны. Доступ восстановится после ручного продления
-                подписки.
-              </p>
-            </div>
-          </div>
+        <OwnerDashboardActionSection
+          title="Продление доступа"
+          description="Публичные страницы и новые заявки временно недоступны. Доступ восстановится после ручного продления подписки."
+          href="/dashboard/subscription"
+          actionLabel="Открыть подписку"
+          buttonVariant="secondary"
+        >
           <div className="br-summary-card__rows">
             <div className="br-summary-card__row">
               <span>Как продлить</span>
               <strong>Свяжитесь с администратором и подтвердите оплату</strong>
             </div>
           </div>
-          <div className="br-owner-actions">
-            <ButtonLink href="/dashboard/subscription" variant="secondary">
-              Открыть подписку
-            </ButtonLink>
-          </div>
-        </section>
+        </OwnerDashboardActionSection>
       ) : null}
 
       {dashboardStats.subscriptionWarningText ? <div className="br-inline-notice">{dashboardStats.subscriptionWarningText}</div> : null}
@@ -184,12 +177,11 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
       </section>
 
       <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Быстрые действия</h2>
-            <p>Собрали частые сценарии владельца в одном месте, чтобы быстрее переходить к работе.</p>
-          </div>
-        </div>
+        <SectionHeader
+          title="Быстрые действия"
+          description="Собрали частые сценарии владельца в одном месте, чтобы быстрее переходить к работе."
+          className="br-dashboard-block__header"
+        />
         <div className="br-quick-grid">
           {quickActions.map((action) => (
             <article key={action.title} className="br-quick-card">
@@ -203,19 +195,13 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
         </div>
       </section>
 
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Приглашения</h2>
-            <p>Подготовьте персональную ссылку для владельца или агента. Роль выбирается на следующем экране.</p>
-          </div>
-        </div>
-        <div className="br-owner-actions">
-          <ButtonLink href="/dashboard/referrals" size="sm">
-            Пригласить
-          </ButtonLink>
-        </div>
-      </section>
+      <OwnerDashboardActionSection
+        title="Приглашения"
+        description="Подготовьте персональную ссылку для владельца или агента. Роль выбирается на следующем экране."
+        href="/dashboard/referrals"
+        actionLabel="Пригласить"
+        buttonSize="sm"
+      />
 
       <OwnerDashboardOnboarding onboarding={dashboardStats.onboarding} emptyStates={emptyStatesToShow} />
     </>
