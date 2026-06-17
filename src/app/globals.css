@@ -2049,6 +2049,10 @@ ul {
   padding: 24px;
 }
 
+.br-owner-dashboard-action-section .br-owner-actions {
+  margin-top: 16px;
+}
+
 .br-dashboard-block__header h2,
 .br-active-step__copy h3 {
   font-size: 24px;
@@ -2308,9 +2312,10 @@ ul {
   z-index: 21;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
   min-height: 54px;
-  padding: 0 18px;
+  width: 54px;
+  padding: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
   background: rgb(255 255 255 / 0.94);
@@ -6115,7 +6120,7 @@ button.br-calendar-range-card {
     right: 12px;
     bottom: calc(86px + var(--safe-area-bottom));
     min-height: 50px;
-    padding-inline: 16px;
+    width: 50px;
     font-size: 13px;
   }
 
@@ -6362,8 +6367,8 @@ button.br-calendar-range-card {
     right: 10px;
     left: auto;
     bottom: calc(84px + var(--safe-area-bottom));
-    max-width: calc(100vw - 20px);
-    padding-inline: 14px;
+    width: 48px;
+    max-width: 48px;
   }
 
   .br-floating-onboarding {

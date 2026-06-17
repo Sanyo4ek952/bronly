@@ -201,6 +201,7 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
         href="/dashboard/referrals"
         actionLabel="Пригласить"
         buttonSize="sm"
+        actionPlacement="header"
       />
 
       <OwnerDashboardOnboarding onboarding={dashboardStats.onboarding} emptyStates={emptyStatesToShow} />

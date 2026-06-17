@@ -98,6 +98,7 @@ export function OwnerDashboardOnboarding({ onboarding, emptyStates }: OwnerDashb
         ref={launcherRef}
         type="button"
         className="br-floating-onboarding-launcher"
+        aria-label="Чеклист запуска"
         aria-expanded={isOpen}
         aria-controls={dialogId}
         onClick={() => {
@@ -106,7 +107,6 @@ export function OwnerDashboardOnboarding({ onboarding, emptyStates }: OwnerDashb
         }}
       >
         <AppIcon icon={ListChecks} aria-hidden="true" />
-        <span>Чеклист запуска</span>
       </button>
 
       {isOpen ? (

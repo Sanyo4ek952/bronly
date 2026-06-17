@@ -6,6 +6,7 @@ import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { ButtonLink } from "@/shared/ui";
 import { SubscriptionOverviewCard } from "@/widgets/subscription-status-card";
+import { OwnerDashboardActionSection } from "@/widgets/owner-dashboard-overview/owner-dashboard-action-section";
 
 export default async function AgentDashboardPage() {
   const profile = await getCurrentAuthProfile();
@@ -97,17 +98,13 @@ export default async function AgentDashboardPage() {
         </div>
       </section>
 
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Приглашения</h2>
-            <p>Подготовьте персональную ссылку для владельца или агента. Роль выбирается на следующем экране.</p>
-          </div>
-        </div>
-        <ButtonLink href="/agent/dashboard/referrals" size="sm">
-          Пригласить
-        </ButtonLink>
-      </section>
+      <OwnerDashboardActionSection
+        title="Приглашения"
+        description="Подготовьте персональную ссылку для владельца или агента. Роль выбирается на следующем экране."
+        href="/dashboard/referrals"
+        actionLabel="Пригласить"
+        buttonSize="sm"
+      />
     </>
   );
 }

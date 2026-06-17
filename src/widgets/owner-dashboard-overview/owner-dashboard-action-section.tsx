@@ -9,6 +9,7 @@ type OwnerDashboardActionSectionProps = {
   actionLabel: string;
   buttonSize?: "sm" | "md";
   buttonVariant?: "primary" | "secondary";
+  actionPlacement?: "header" | "footer";
   children?: ReactNode;
 };
 
@@ -19,19 +20,27 @@ export function OwnerDashboardActionSection({
   actionLabel,
   buttonSize = "md",
   buttonVariant = "primary",
+  actionPlacement = "footer",
   children,
 }: OwnerDashboardActionSectionProps) {
+  const actionButton = (
+    <ButtonLink href={href} size={buttonSize} variant={buttonVariant}>
+      {actionLabel}
+    </ButtonLink>
+  );
+
   return (
-    <section className="br-dashboard-block br-card">
-      <SectionHeader title={title} description={description} className="br-dashboard-block__header" />
+    <section className="br-dashboard-block br-card br-owner-dashboard-action-section">
+      <SectionHeader
+        title={title}
+        description={description}
+        actions={actionPlacement === "header" ? actionButton : undefined}
+        className="br-dashboard-block__header"
+      />
 
       {children}
 
-      <div className="br-owner-actions">
-        <ButtonLink href={href} size={buttonSize} variant={buttonVariant}>
-          {actionLabel}
-        </ButtonLink>
-      </div>
+      {actionPlacement === "footer" ? <div className="br-owner-actions">{actionButton}</div> : null}
     </section>
   );
 }
