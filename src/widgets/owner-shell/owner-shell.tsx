@@ -177,6 +177,22 @@ export function OwnerShell({
       </aside>
 
       <div className="br-owner__content">
+        <header className="br-owner-compact-header br-card">
+          <div className="br-owner-compact-header__brand">
+            <BrandLogo />
+          </div>
+          <IconButton
+            type="button"
+            className="br-owner-compact-header__menu"
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="br-owner-mobile-menu"
+            aria-label="Открыть навигацию"
+            onClick={() => setIsMobileMenuOpen(true)}
+          >
+            <AppIcon icon={Menu} aria-hidden="true" />
+          </IconButton>
+        </header>
+
         {pathname === dashboardRootPath && topbar ? <DashboardTopbar {...topbar} /> : null}
 
         {notice ? (
