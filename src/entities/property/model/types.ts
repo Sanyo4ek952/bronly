@@ -203,3 +203,32 @@ export type OwnerPropertyDetail = {
   houseRules: string[];
   rooms: OwnerRoomDetail[];
 };
+
+export type OwnerCalendarInventoryRoom = {
+  id: string;
+  kind: "property_room" | "standalone_room";
+  propertyId: string | null;
+  title: string;
+  subtitle: string;
+  pricePerNight: number;
+  busyRanges: OwnerRoomDetail["busyRanges"];
+  calendarHref: string;
+};
+
+export type OwnerCalendarInventoryGroup =
+  | {
+      kind: "property";
+      id: string;
+      title: string;
+      subtitle: string;
+      rooms: OwnerCalendarInventoryRoom[];
+      detailHref: string;
+      calendarHref: string;
+    }
+  | {
+      kind: "standalone";
+      id: "standalone";
+      title: string;
+      subtitle: string;
+      rooms: OwnerCalendarInventoryRoom[];
+    };

@@ -6229,6 +6229,60 @@ button.br-calendar-range-card {
   background: rgb(var(--color-primary-rgb) / 6%);
 }
 
+.br-owner-calendar-overview__stats,
+.br-owner-calendar-overview__filters,
+.br-owner-calendar-overview-group,
+.br-owner-calendar-overview-group__copy {
+  display: grid;
+  gap: 14px;
+}
+
+.br-owner-calendar-overview__stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.br-owner-calendar-overview-group {
+  padding: 16px;
+}
+
+.br-owner-calendar-overview-group__header,
+.br-owner-calendar-overview-group__actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.br-owner-calendar-overview-group__copy {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+
+.br-owner-calendar-overview-group__icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 14px;
+  background: rgb(var(--color-primary-rgb) / 8%);
+  color: var(--accent-strong);
+}
+
+.br-owner-calendar-overview-group__copy p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.br-owner-calendar-overview__room-link {
+  display: inline-flex;
+  width: fit-content;
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 @media (max-width: 1080px) {
   .br-owner {
     grid-template-columns: 1fr;
@@ -6239,6 +6293,10 @@ button.br-calendar-range-card {
   }
 
   .br-dashboard-inline-empty {
+    grid-template-columns: 1fr;
+  }
+
+  .br-owner-calendar-overview__stats {
     grid-template-columns: 1fr;
   }
 
@@ -6529,6 +6587,10 @@ button.br-calendar-range-card {
   .br-calendar-shell__today {
     min-width: 0;
     width: 100%;
+  }
+
+  .br-owner-calendar-overview-group {
+    padding: 12px;
   }
 
   .br-calendar-timeline__grid {

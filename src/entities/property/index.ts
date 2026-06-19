@@ -1,4 +1,5 @@
 export {
+  getOwnerCalendarInventory,
   getOwnerDashboardSummary,
   getOwnerInventory,
   getOwnerProperties,
@@ -10,6 +11,8 @@ export {
 export { dashboardStats } from "@/entities/property/model/dashboard";
 export { property } from "@/entities/property/model/mock";
 export type {
+  OwnerCalendarInventoryGroup,
+  OwnerCalendarInventoryRoom,
   OwnerDashboardSummary,
   OwnerPropertyDetail,
   OwnerInventoryListItem,
