@@ -1,4 +1,5 @@
 export { BrandLogo } from "@/shared/ui/brand-logo";
+export { BottomSheet } from "@/shared/ui/bottom-sheet";
 export { Button, ButtonLink } from "@/shared/ui/button";
 export { DashboardPageNav } from "@/shared/ui/dashboard-page-nav";
 export { Input, Select, Textarea } from "@/shared/ui/field";

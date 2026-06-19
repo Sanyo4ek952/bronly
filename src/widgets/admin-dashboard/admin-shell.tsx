@@ -9,14 +9,13 @@ import {
   Menu,
   ShieldCheck,
   Users,
-  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { signOutAction } from "@/app/auth/actions";
-import { AppIcon, BrandLogo, Button, IconButton, type AppIconComponent } from "@/shared/ui";
+import { AppIcon, BottomSheet, BrandLogo, Button, IconButton, type AppIconComponent } from "@/shared/ui";
 
 type AdminNavigationItem = {
   href: string;
@@ -53,21 +52,6 @@ export function AdminShell({ children, userName }: AdminShellProps) {
     (item) => !mobilePrimaryItems.some((primaryItem) => primaryItem.href === item.href),
   );
   const isOverflowActive = overflowItems.some((item) => isItemActive(pathname, item.href));
-
-  useEffect(() => {
-    if (!isMobileMenuOpen) {
-      return undefined;
-    }
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [isMobileMenuOpen]);
 
   return (
     <div className="br-admin-shell">
@@ -141,59 +125,44 @@ export function AdminShell({ children, userName }: AdminShellProps) {
           </button>
         </nav>
 
-        {isMobileMenuOpen ? (
-          <div className="br-admin-mobile-sheet-backdrop" role="presentation" onClick={() => setIsMobileMenuOpen(false)}>
-            <section
-              id="br-admin-mobile-menu"
-              className="br-admin-mobile-sheet br-card"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="br-admin-mobile-sheet-title"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="br-admin-mobile-sheet__handle" aria-hidden="true" />
-              <div className="br-admin-mobile-sheet__header">
-                <div>
-                  <h2 id="br-admin-mobile-sheet-title">Ещё</h2>
-                  <p>Быстрый доступ к пользователям и объектам.</p>
-                </div>
-                <IconButton
-                  type="button"
-                  className="br-admin-mobile-sheet__close"
-                  aria-label="Закрыть"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <AppIcon icon={X} aria-hidden="true" />
-                </IconButton>
-              </div>
+        <BottomSheet
+          open={isMobileMenuOpen}
+          onOpenChange={setIsMobileMenuOpen}
+          dialogId="br-admin-mobile-menu"
+          titleId="br-admin-mobile-sheet-title"
+          title="Ещё"
+          description="Быстрый доступ к пользователям и объектам."
+          closeLabel="Закрыть"
+          className="br-admin-mobile-sheet"
+          bodyClassName="br-admin-mobile-sheet__list"
+        >
+          {({ close }) => (
+            <>
+              {overflowItems.map((item) => {
+                const isActive = isItemActive(pathname, item.href);
 
-              <div className="br-admin-mobile-sheet__list">
-                {overflowItems.map((item) => {
-                  const isActive = isItemActive(pathname, item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`br-admin-mobile-sheet__item${isActive ? " br-admin-mobile-sheet__item--active" : ""}`}
+                    onClick={close}
+                  >
+                    <AppIcon icon={item.icon} aria-hidden="true" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
 
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`br-admin-mobile-sheet__item${isActive ? " br-admin-mobile-sheet__item--active" : ""}`}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <AppIcon icon={item.icon} aria-hidden="true" />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-
-                <form action={signOutAction}>
-                  <button type="submit" className="br-admin-mobile-sheet__item br-admin-mobile-sheet__item--button">
-                    <AppIcon icon={LogOut} aria-hidden="true" />
-                    <span>Выйти</span>
-                  </button>
-                </form>
-              </div>
-            </section>
-          </div>
-        ) : null}
+              <form action={signOutAction}>
+                <button type="submit" className="br-admin-mobile-sheet__item br-admin-mobile-sheet__item--button">
+                  <AppIcon icon={LogOut} aria-hidden="true" />
+                  <span>Выйти</span>
+                </button>
+              </form>
+            </>
+          )}
+        </BottomSheet>
       </div>
     </div>
   );

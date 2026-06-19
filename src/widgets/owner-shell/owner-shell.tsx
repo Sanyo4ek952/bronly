@@ -15,14 +15,13 @@ import {
   Menu,
   Search,
   Settings,
-  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { signOutAction } from "@/app/auth/actions";
-import { AppIcon, Button, type AppIconComponent, BrandLogo, IconButton, InlineNotice } from "@/shared/ui";
+import { AppIcon, BottomSheet, Button, type AppIconComponent, BrandLogo, IconButton, InlineNotice } from "@/shared/ui";
 import { DashboardTopbar, type DashboardTopbarProps } from "@/widgets/dashboard-topbar";
 
 type NavigationItem = {
@@ -122,21 +121,6 @@ export function OwnerShell({
   );
   const isOverflowActive = mobileOverflowItems.some((item) => isItemActive(pathname, item.href));
 
-  useEffect(() => {
-    if (!isMobileMenuOpen) {
-      return undefined;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isMobileMenuOpen]);
-
   return (
     <div className="br-owner">
       <aside className="br-owner__sidebar br-card">
@@ -232,65 +216,46 @@ export function OwnerShell({
           </button>
         </nav>
 
-        {isMobileMenuOpen ? (
-          <div
-            className="br-owner-mobile-sheet-backdrop"
-            role="presentation"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            <div
-              id="br-owner-mobile-menu"
-              className="br-owner-mobile-sheet br-card"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="br-owner-mobile-sheet-title"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="br-owner-mobile-sheet__handle" aria-hidden="true" />
-              <div className="br-owner-mobile-sheet__header">
-                <div>
-                  <h2 id="br-owner-mobile-sheet-title">Ещё</h2>
-                  <p>Быстрый доступ к остальным разделам кабинета.</p>
-                </div>
-                <IconButton
-                  type="button"
-                  className="br-owner-mobile-sheet__close"
-                  aria-label="Закрыть"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <AppIcon icon={X} aria-hidden="true" />
-                </IconButton>
-              </div>
+        <BottomSheet
+          open={isMobileMenuOpen}
+          onOpenChange={setIsMobileMenuOpen}
+          dialogId="br-owner-mobile-menu"
+          titleId="br-owner-mobile-sheet-title"
+          title="Ещё"
+          description="Быстрый доступ к остальным разделам кабинета."
+          closeLabel="Закрыть"
+          className="br-owner-mobile-sheet"
+          bodyClassName="br-owner-mobile-sheet__list"
+        >
+          {({ close }) => (
+            <>
+              {mobileOverflowItems.map((item) => {
+                const isActive = isItemActive(pathname, item.href);
 
-              <div className="br-owner-mobile-sheet__list">
-                {mobileOverflowItems.map((item) => {
-                  const isActive = isItemActive(pathname, item.href);
-
-                  return (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className={`br-owner-mobile-sheet__item${isActive ? " br-owner-mobile-sheet__item--active" : ""}`}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <AppIcon icon={item.icon} aria-hidden="true" />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-                <form action={signOutAction} className="br-owner-mobile-sheet__form">
-                  <button
-                    type="submit"
-                    className="br-owner-mobile-sheet__item br-owner-mobile-sheet__item--button"
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`br-owner-mobile-sheet__item${isActive ? " br-owner-mobile-sheet__item--active" : ""}`}
+                    onClick={close}
                   >
-                    <AppIcon icon={LogOut} aria-hidden="true" />
-                    <span>Выйти</span>
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        ) : null}
+                    <AppIcon icon={item.icon} aria-hidden="true" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+              <form action={signOutAction} className="br-owner-mobile-sheet__form">
+                <button
+                  type="submit"
+                  className="br-owner-mobile-sheet__item br-owner-mobile-sheet__item--button"
+                >
+                  <AppIcon icon={LogOut} aria-hidden="true" />
+                  <span>Выйти</span>
+                </button>
+              </form>
+            </>
+          )}
+        </BottomSheet>
       </div>
     </div>
   );

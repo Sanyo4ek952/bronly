@@ -2603,6 +2603,103 @@ ul {
   display: none;
 }
 
+.br-bottom-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: stretch;
+  padding-top: 24px;
+  background: rgb(15 23 42 / 0.28);
+  backdrop-filter: blur(12px);
+}
+
+.br-bottom-sheet-backdrop[data-state="opening"],
+.br-bottom-sheet-backdrop[data-state="open"] {
+  animation: br-fade-in 220ms ease forwards;
+}
+
+.br-bottom-sheet-backdrop[data-state="closing"] {
+  animation: br-fade-out 220ms ease forwards;
+}
+
+.br-bottom-sheet {
+  --br-sheet-close-start: 0px;
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  max-width: none;
+  max-height: min(82vh, 720px);
+  margin-top: auto;
+  padding: 16px 16px calc(18px + var(--safe-area-bottom));
+  overflow: hidden;
+  border-radius: 24px 24px 0 0;
+  touch-action: pan-x;
+  transform: translateY(calc(100% + 24px));
+}
+
+.br-bottom-sheet-backdrop[data-state="opening"] .br-bottom-sheet {
+  animation: br-sheet-enter 220ms ease forwards;
+}
+
+.br-bottom-sheet-backdrop[data-state="open"] .br-bottom-sheet {
+  transform: translateY(0);
+}
+
+.br-bottom-sheet-backdrop[data-state="closing"] .br-bottom-sheet {
+  animation: br-sheet-close 220ms ease forwards;
+}
+
+.br-bottom-sheet--dragging {
+  transition: none;
+}
+
+.br-bottom-sheet--settling {
+  transition: transform 200ms ease;
+}
+
+.br-bottom-sheet__gesture-zone {
+  display: grid;
+  gap: 18px;
+}
+
+.br-bottom-sheet__handle {
+  width: 52px;
+  height: 5px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: rgb(17 29 27 / 0.14);
+}
+
+.br-bottom-sheet__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.br-bottom-sheet__header h2 {
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.br-bottom-sheet__header p {
+  margin-top: 6px;
+  color: var(--color-muted);
+}
+
+.br-bottom-sheet__close {
+  flex: none;
+}
+
+.br-bottom-sheet__body {
+  display: grid;
+  gap: 10px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
 @keyframes br-fade-in {
   from {
     opacity: 0;
@@ -2610,6 +2707,36 @@ ul {
 
   to {
     opacity: 1;
+  }
+}
+
+@keyframes br-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes br-sheet-enter {
+  from {
+    transform: translateY(calc(100% + 24px));
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes br-sheet-close {
+  from {
+    transform: translateY(var(--br-sheet-close-start, 0px));
+  }
+
+  to {
+    transform: translateY(calc(100% + 24px));
   }
 }
 
@@ -4544,14 +4671,10 @@ button.br-owner-calendar-day:hover {
     padding: 18px 0;
   }
 
-  .br-header-mobile-sheet-backdrop {
-    padding: 76px 12px 12px;
-  }
-
-  .br-header-mobile-sheet {
+  .br-bottom-sheet {
     max-height: min(82vh, 720px);
     padding-bottom: calc(18px + var(--safe-area-bottom));
-    border-radius: 24px 24px 18px 18px;
+    border-radius: 24px 24px 0 0;
   }
 
   .br-hero {
@@ -4689,17 +4812,6 @@ button.br-owner-calendar-day:hover {
   .br-owner-bottom-nav__item .br-ui-icon {
     width: 16px;
     height: 16px;
-  }
-
-  .br-owner-mobile-sheet-backdrop {
-    padding-right: 12px;
-    padding-left: 12px;
-  }
-
-  .br-owner-mobile-sheet {
-    max-height: min(82vh, 720px);
-    padding-bottom: calc(18px + var(--safe-area-bottom));
-    border-radius: 24px 24px 18px 18px;
   }
 
   .br-inline-fields,
@@ -5521,6 +5633,7 @@ body {
 .br-icon-button,
 .br-icon-link,
 .br-owner-property-card__settings,
+.br-bottom-sheet__close,
 .br-owner-mobile-sheet__close {
   display: grid;
   width: 36px;
@@ -5544,12 +5657,14 @@ body {
   backdrop-filter: blur(14px);
 }
 
+.br-bottom-sheet-backdrop,
 .br-owner-mobile-sheet-backdrop,
 .br-collection-sheet-backdrop {
   background: rgb(15 23 42 / 0.28);
   backdrop-filter: blur(12px);
 }
 
+.br-bottom-sheet,
 .br-owner-mobile-sheet,
 .br-collection-sheet {
   gap: 14px;
@@ -7252,13 +7367,9 @@ button.br-calendar-range-card {
     height: 1.1rem;
   }
 
-  .br-admin-mobile-sheet-backdrop {
-    padding: 10px 10px calc(10px + var(--safe-area-bottom));
-  }
-
-  .br-admin-mobile-sheet {
+  .br-bottom-sheet {
     padding: 12px;
-    border-radius: 22px 22px 16px 16px;
+    border-radius: 22px 22px 0 0;
   }
 
   .br-admin-mobile-sheet__item {
@@ -7315,10 +7426,14 @@ button.br-calendar-range-card {
   .br-admin-preview-card,
   .br-admin-record-card,
   .br-admin-toolbar,
-  .br-admin-empty,
-  .br-admin-mobile-sheet {
+  .br-admin-empty {
     padding: 10px;
     border-radius: 16px;
+  }
+
+  .br-bottom-sheet {
+    padding: 10px;
+    border-radius: 18px 18px 0 0;
   }
 
   .br-admin-summary-card__label {
