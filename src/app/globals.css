@@ -1910,25 +1910,6 @@ ul {
   gap: 20px;
 }
 
-.br-owner-compact-header {
-  display: none;
-  position: sticky;
-  top: 16px;
-  z-index: 15;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 18px;
-}
-
-.br-owner-compact-header__brand {
-  min-width: 0;
-}
-
-.br-owner-compact-header__menu {
-  flex: none;
-}
-
 .br-owner-topbar {
   display: flex;
   align-items: start;
@@ -4606,10 +4587,6 @@ button.br-owner-calendar-day:hover {
     padding-bottom: calc(88px + var(--safe-area-bottom));
   }
 
-  .br-owner-compact-header {
-    display: flex;
-  }
-
   .br-owner-bottom-nav {
     position: fixed;
     right: 12px;
@@ -4794,10 +4771,6 @@ button.br-owner-calendar-day:hover {
   .br-dashboard-block,
   .br-active-step {
     padding: 18px;
-  }
-
-  .br-owner-compact-header {
-    display: none;
   }
 
   .br-owner-topbar,
@@ -5602,12 +5575,6 @@ body {
 
 .br-owner__content {
   gap: 16px;
-}
-
-.br-owner-compact-header {
-  border: 1px solid var(--border);
-  box-shadow: none;
-  background: rgb(255 255 255 / 0.96);
 }
 
 .br-owner-topbar {
