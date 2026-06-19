@@ -5937,6 +5937,38 @@ button.br-owner-calendar-day:hover,
   padding: 12px 0 18px;
 }
 
+.br-calendar-timeline__windowbar,
+.br-calendar-timeline__windowcopy,
+.br-calendar-timeline__windowactions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.br-calendar-timeline__windowbar {
+  justify-content: space-between;
+  padding: 0 20px 10px;
+}
+
+.br-calendar-timeline__windowcopy {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.br-calendar-timeline__windowcopy strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.br-calendar-timeline__windowcopy span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.br-calendar-timeline__windowactions {
+  flex: none;
+}
+
 .br-calendar-timeline__scroll {
   max-height: clamp(340px, 58vh, 720px);
   overflow: auto;
@@ -6628,6 +6660,7 @@ button.br-calendar-range-card {
 
   .br-calendar-shell__header,
   .br-calendar-shell__legend,
+  .br-calendar-timeline__windowbar,
   .br-calendar-timeline__scroll {
     padding-inline: 14px;
   }
@@ -6635,6 +6668,7 @@ button.br-calendar-range-card {
   .br-calendar-shell__actions,
   .br-calendar-shell__header,
   .br-calendar-shell__heading,
+  .br-calendar-timeline__windowbar,
   .br-owner-calendar-month__header {
     align-items: stretch;
   }
@@ -6655,6 +6689,14 @@ button.br-calendar-range-card {
 
   .br-calendar-timeline__scroll {
     max-height: clamp(300px, 52vh, 560px);
+  }
+
+  .br-calendar-timeline__windowactions {
+    justify-content: flex-end;
+  }
+
+  .br-calendar-room-grid__prices {
+    display: none;
   }
 
   .br-calendar-timeline__header,

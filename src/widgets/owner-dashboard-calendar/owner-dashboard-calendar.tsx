@@ -9,11 +9,16 @@ import { formatDateLabel } from "@/shared/lib/date";
 import { AppIcon, Button, ButtonLink, IconButton, StatCard } from "@/shared/ui";
 import {
   addMonths,
+  formatDateKey,
   formatMonthRangeLabel,
   formatShortDateLabel,
   getNearestBusyRange,
   getTimelineBusyRanges,
   getTimelineDays,
+  getTimelineStartIndex,
+  getVisibleTimelineDays,
+  startOfMonth,
+  useTimelineVisibleDayCount,
 } from "@/widgets/calendar/lib/calendar-helpers";
 
 type OwnerDashboardCalendarProps = {
@@ -35,6 +40,14 @@ function getRangeLabel(room: OwnerCalendarInventoryRoom) {
   return room.kind === "standalone_room" ? "Открыть календарь номера" : "Открыть календарь объекта";
 }
 
+function getDefaultTimelineAnchorKey(month: Date) {
+  const today = new Date();
+  const isCurrentMonth =
+    today.getFullYear() === month.getFullYear() && today.getMonth() === month.getMonth();
+
+  return isCurrentMonth ? formatDateKey(today) : formatDateKey(startOfMonth(month));
+}
+
 export function OwnerDashboardCalendar({ groups }: OwnerDashboardCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(() => {
     const today = new Date();
@@ -42,8 +55,18 @@ export function OwnerDashboardCalendar({ groups }: OwnerDashboardCalendarProps) 
   });
   const [groupFilter, setGroupFilter] = useState<GroupFilterKind>("all");
   const [selectedGroupId, setSelectedGroupId] = useState<string>("all");
+  const [timelineAnchorKey, setTimelineAnchorKey] = useState(() => getDefaultTimelineAnchorKey(new Date()));
 
+  const visibleDayCount = useTimelineVisibleDayCount();
   const timelineDays = useMemo(() => getTimelineDays(currentMonth), [currentMonth]);
+  const timelineStartIndex = useMemo(
+    () => getTimelineStartIndex(timelineDays, visibleDayCount, timelineAnchorKey),
+    [timelineAnchorKey, timelineDays, visibleDayCount],
+  );
+  const visibleTimelineDays = useMemo(
+    () => getVisibleTimelineDays(timelineDays, timelineStartIndex, visibleDayCount),
+    [timelineDays, timelineStartIndex, visibleDayCount],
+  );
   const visibleGroups = useMemo(() => {
     const filteredByKind = groups.filter((group) => {
       if (groupFilter === "property") {
@@ -79,6 +102,31 @@ export function OwnerDashboardCalendar({ groups }: OwnerDashboardCalendarProps) 
       timelineDays.some((day) => day.key >= range.startsOn && day.key <= range.endsOn),
     ),
   ).length;
+  const canMoveTimelineBackward = timelineStartIndex > 0;
+  const canMoveTimelineForward = timelineStartIndex + visibleTimelineDays.length < timelineDays.length;
+  const timelineWindowLabel = visibleTimelineDays.length
+    ? `${formatShortDateLabel(visibleTimelineDays[0].key)} - ${formatShortDateLabel(visibleTimelineDays[visibleTimelineDays.length - 1].key)}`
+    : formatMonthRangeLabel(currentMonth);
+
+  function updateMonth(nextMonth: Date) {
+    setCurrentMonth(nextMonth);
+    setTimelineAnchorKey(getDefaultTimelineAnchorKey(nextMonth));
+  }
+
+  function shiftTimelineWindow(direction: -1 | 1) {
+    if (!timelineDays.length) {
+      return;
+    }
+
+    const nextIndex = direction < 0
+      ? Math.max(0, timelineStartIndex - visibleDayCount)
+      : Math.min(Math.max(0, timelineDays.length - visibleDayCount), timelineStartIndex + visibleDayCount);
+    const nextDay = timelineDays[nextIndex];
+
+    if (nextDay) {
+      setTimelineAnchorKey(nextDay.key);
+    }
+  }
 
   return (
     <section className="br-owner-stack">
@@ -98,7 +146,7 @@ export function OwnerDashboardCalendar({ groups }: OwnerDashboardCalendarProps) 
             <IconButton
               aria-label="Предыдущий месяц"
               className="br-calendar-shell__nav"
-              onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}
+              onClick={() => updateMonth(addMonths(currentMonth, -1))}
             >
               <AppIcon icon={ChevronLeft} />
             </IconButton>
@@ -107,7 +155,7 @@ export function OwnerDashboardCalendar({ groups }: OwnerDashboardCalendarProps) 
               className="br-calendar-shell__today"
               onClick={() => {
                 const today = new Date();
-                setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+                updateMonth(new Date(today.getFullYear(), today.getMonth(), 1));
               }}
             >
               Текущий месяц
@@ -115,7 +163,7 @@ export function OwnerDashboardCalendar({ groups }: OwnerDashboardCalendarProps) 
             <IconButton
               aria-label="Следующий месяц"
               className="br-calendar-shell__nav"
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              onClick={() => updateMonth(addMonths(currentMonth, 1))}
             >
               <AppIcon icon={ChevronRight} />
             </IconButton>
@@ -238,16 +286,41 @@ export function OwnerDashboardCalendar({ groups }: OwnerDashboardCalendarProps) 
 
             {group.rooms.length ? (
               <div className="br-calendar-timeline">
+                <div className="br-calendar-timeline__windowbar">
+                  <div className="br-calendar-timeline__windowcopy">
+                    <strong>{timelineWindowLabel}</strong>
+                    <span>{visibleTimelineDays.length} дней в видимом окне</span>
+                  </div>
+                  <div className="br-calendar-timeline__windowactions">
+                    <IconButton
+                      aria-label="Показать предыдущие дни"
+                      className="br-calendar-shell__nav"
+                      disabled={!canMoveTimelineBackward}
+                      onClick={() => shiftTimelineWindow(-1)}
+                    >
+                      <AppIcon icon={ChevronLeft} />
+                    </IconButton>
+                    <IconButton
+                      aria-label="Показать следующие дни"
+                      className="br-calendar-shell__nav"
+                      disabled={!canMoveTimelineForward}
+                      onClick={() => shiftTimelineWindow(1)}
+                    >
+                      <AppIcon icon={ChevronRight} />
+                    </IconButton>
+                  </div>
+                </div>
+
                 <div className="br-calendar-timeline__scroll">
                   <div
                     className="br-calendar-timeline__canvas"
-                    style={{ ["--calendar-columns" as string]: String(timelineDays.length) }}
+                    style={{ ["--calendar-columns" as string]: String(visibleTimelineDays.length) }}
                   >
                     <div className="br-calendar-timeline__header">
                       <div className="br-calendar-timeline__spacer" />
 
                       <div className="br-calendar-timeline__days">
-                        {timelineDays.map((day) => (
+                        {visibleTimelineDays.map((day) => (
                           <div
                             key={day.key}
                             className={`br-calendar-timeline__head${day.isToday ? " br-calendar-timeline__head--today" : ""}`}
@@ -261,7 +334,7 @@ export function OwnerDashboardCalendar({ groups }: OwnerDashboardCalendarProps) 
 
                     <div className="br-calendar-timeline__rows">
                       {group.rooms.map((room, rowIndex) => {
-                        const ranges = getTimelineBusyRanges(room.busyRanges, timelineDays);
+                        const ranges = getTimelineBusyRanges(room.busyRanges, visibleTimelineDays);
 
                         return (
                           <div key={room.id} className="br-calendar-timeline__row">
@@ -280,7 +353,7 @@ export function OwnerDashboardCalendar({ groups }: OwnerDashboardCalendarProps) 
 
                             <div className="br-calendar-room-grid">
                               <div className="br-calendar-room-grid__cells">
-                                {timelineDays.map((day) => {
+                                {visibleTimelineDays.map((day) => {
                                   const dayBusyRange =
                                     room.busyRanges.find((range) => day.key >= range.startsOn && day.key <= range.endsOn) ?? null;
 
@@ -295,7 +368,7 @@ export function OwnerDashboardCalendar({ groups }: OwnerDashboardCalendarProps) 
                               </div>
 
                               <div className="br-calendar-room-grid__prices">
-                                {timelineDays.map((day) => (
+                                {visibleTimelineDays.map((day) => (
                                   <span key={`${room.id}-price-${day.key}`}>{room.pricePerNight.toLocaleString("ru-RU")}</span>
                                 ))}
                               </div>

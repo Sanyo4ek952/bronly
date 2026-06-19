@@ -1,5 +1,7 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
+
 type BusyRangeLike = {
   id: string;
   startsOn: string;
@@ -179,6 +181,83 @@ export function getTimelineDays(month: Date) {
       isToday: currentKey === todayKey,
     };
   });
+}
+
+export function getTimelineVisibleDayCount(viewportWidth: number) {
+  if (viewportWidth < 640) {
+    return 5;
+  }
+
+  if (viewportWidth < 960) {
+    return 10;
+  }
+
+  if (viewportWidth < 1280) {
+    return 14;
+  }
+
+  return 21;
+}
+
+function getViewportWidthSnapshot() {
+  if (typeof window === "undefined") {
+    return 1440;
+  }
+
+  return window.innerWidth;
+}
+
+function subscribeToViewportWidth(onStoreChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  window.addEventListener("resize", onStoreChange);
+  return () => window.removeEventListener("resize", onStoreChange);
+}
+
+export function useTimelineVisibleDayCount() {
+  const viewportWidth = useSyncExternalStore(
+    subscribeToViewportWidth,
+    getViewportWidthSnapshot,
+    () => 1440,
+  );
+
+  return getTimelineVisibleDayCount(viewportWidth);
+}
+
+export function clampTimelineStartIndex(totalDays: number, visibleCount: number, startIndex: number) {
+  if (!totalDays || visibleCount >= totalDays) {
+    return 0;
+  }
+
+  return Math.min(Math.max(startIndex, 0), totalDays - visibleCount);
+}
+
+export function getTimelineStartIndex(days: TimelineDayCell[], visibleCount: number, anchorKey?: string | null) {
+  if (!days.length || visibleCount >= days.length) {
+    return 0;
+  }
+
+  if (!anchorKey) {
+    return 0;
+  }
+
+  const anchorIndex = days.findIndex((day) => day.key === anchorKey);
+  if (anchorIndex < 0) {
+    return 0;
+  }
+
+  return clampTimelineStartIndex(days.length, visibleCount, anchorIndex - Math.floor(visibleCount / 2));
+}
+
+export function getVisibleTimelineDays(days: TimelineDayCell[], startIndex: number, visibleCount: number) {
+  if (!days.length) {
+    return [] as TimelineDayCell[];
+  }
+
+  const nextStartIndex = clampTimelineStartIndex(days.length, visibleCount, startIndex);
+  return days.slice(nextStartIndex, nextStartIndex + visibleCount);
 }
 
 export function getTimelineBusyRanges<TBusyRange extends BusyRangeLike>(

@@ -8,11 +8,16 @@ import { formatDateLabel } from "@/shared/lib/date";
 import { AppIcon, Button, IconButton, StatCard } from "@/shared/ui";
 import {
   addMonths,
+  formatDateKey,
   formatMonthRangeLabel,
   formatShortDateLabel,
   getNearestBusyRange,
   getTimelineBusyRanges,
   getTimelineDays,
+  getTimelineStartIndex,
+  getVisibleTimelineDays,
+  startOfMonth,
+  useTimelineVisibleDayCount,
 } from "@/widgets/calendar/lib/calendar-helpers";
 
 function getRoomSummary(room: AgentCalendarRoomItem) {
@@ -27,22 +32,65 @@ function getRangeLabel(range: AgentCalendarBusyRange) {
   return range.label || "Занято";
 }
 
+function getDefaultTimelineAnchorKey(month: Date) {
+  const today = new Date();
+  const isCurrentMonth =
+    today.getFullYear() === month.getFullYear() && today.getMonth() === month.getMonth();
+
+  return isCurrentMonth ? formatDateKey(today) : formatDateKey(startOfMonth(month));
+}
+
 export function AgentCalendarBrowser({ properties }: { properties: AgentCalendarPropertyItem[] }) {
   const [selectedPropertyId, setSelectedPropertyId] = useState(properties[0]?.id ?? "");
   const [currentMonth, setCurrentMonth] = useState(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
+  const [timelineAnchorKey, setTimelineAnchorKey] = useState(() => getDefaultTimelineAnchorKey(new Date()));
 
   const selectedProperty = useMemo(
     () => properties.find((property) => property.id === selectedPropertyId) ?? properties[0] ?? null,
     [properties, selectedPropertyId],
   );
+  const visibleDayCount = useTimelineVisibleDayCount();
   const timelineDays = useMemo(() => getTimelineDays(currentMonth), [currentMonth]);
+  const timelineStartIndex = useMemo(
+    () => getTimelineStartIndex(timelineDays, visibleDayCount, timelineAnchorKey),
+    [timelineAnchorKey, timelineDays, visibleDayCount],
+  );
+  const visibleTimelineDays = useMemo(
+    () => getVisibleTimelineDays(timelineDays, timelineStartIndex, visibleDayCount),
+    [timelineDays, timelineStartIndex, visibleDayCount],
+  );
   const nearestBusyRange = useMemo(() => {
     const busyRanges = (selectedProperty?.rooms ?? []).flatMap((room) => room.busyRanges);
     return getNearestBusyRange(busyRanges);
   }, [selectedProperty]);
+  const canMoveTimelineBackward = timelineStartIndex > 0;
+  const canMoveTimelineForward = timelineStartIndex + visibleTimelineDays.length < timelineDays.length;
+  const timelineWindowLabel = visibleTimelineDays.length
+    ? `${formatShortDateLabel(visibleTimelineDays[0].key)} - ${formatShortDateLabel(visibleTimelineDays[visibleTimelineDays.length - 1].key)}`
+    : formatMonthRangeLabel(currentMonth);
+
+  function updateMonth(nextMonth: Date) {
+    setCurrentMonth(nextMonth);
+    setTimelineAnchorKey(getDefaultTimelineAnchorKey(nextMonth));
+  }
+
+  function shiftTimelineWindow(direction: -1 | 1) {
+    if (!timelineDays.length) {
+      return;
+    }
+
+    const nextIndex = direction < 0
+      ? Math.max(0, timelineStartIndex - visibleDayCount)
+      : Math.min(Math.max(0, timelineDays.length - visibleDayCount), timelineStartIndex + visibleDayCount);
+    const nextDay = timelineDays[nextIndex];
+
+    if (nextDay) {
+      setTimelineAnchorKey(nextDay.key);
+    }
+  }
 
   return (
     <section className="br-owner-stack">
@@ -62,7 +110,7 @@ export function AgentCalendarBrowser({ properties }: { properties: AgentCalendar
             <IconButton
               aria-label="Предыдущий месяц"
               className="br-calendar-shell__nav"
-              onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}
+              onClick={() => updateMonth(addMonths(currentMonth, -1))}
             >
               <AppIcon icon={ChevronLeft} />
             </IconButton>
@@ -71,7 +119,7 @@ export function AgentCalendarBrowser({ properties }: { properties: AgentCalendar
               className="br-calendar-shell__today"
               onClick={() => {
                 const today = new Date();
-                setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+                updateMonth(new Date(today.getFullYear(), today.getMonth(), 1));
               }}
             >
               Текущий месяц
@@ -79,7 +127,7 @@ export function AgentCalendarBrowser({ properties }: { properties: AgentCalendar
             <IconButton
               aria-label="Следующий месяц"
               className="br-calendar-shell__nav"
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              onClick={() => updateMonth(addMonths(currentMonth, 1))}
             >
               <AppIcon icon={ChevronRight} />
             </IconButton>
@@ -132,16 +180,41 @@ export function AgentCalendarBrowser({ properties }: { properties: AgentCalendar
         </div>
 
         <div className="br-calendar-timeline">
+          <div className="br-calendar-timeline__windowbar">
+            <div className="br-calendar-timeline__windowcopy">
+              <strong>{timelineWindowLabel}</strong>
+              <span>{visibleTimelineDays.length} дней в видимом окне</span>
+            </div>
+            <div className="br-calendar-timeline__windowactions">
+              <IconButton
+                aria-label="Показать предыдущие дни"
+                className="br-calendar-shell__nav"
+                disabled={!canMoveTimelineBackward}
+                onClick={() => shiftTimelineWindow(-1)}
+              >
+                <AppIcon icon={ChevronLeft} />
+              </IconButton>
+              <IconButton
+                aria-label="Показать следующие дни"
+                className="br-calendar-shell__nav"
+                disabled={!canMoveTimelineForward}
+                onClick={() => shiftTimelineWindow(1)}
+              >
+                <AppIcon icon={ChevronRight} />
+              </IconButton>
+            </div>
+          </div>
+
           <div className="br-calendar-timeline__scroll">
             <div
               className="br-calendar-timeline__canvas"
-              style={{ ["--calendar-columns" as string]: String(timelineDays.length) }}
+              style={{ ["--calendar-columns" as string]: String(visibleTimelineDays.length) }}
             >
               <div className="br-calendar-timeline__header">
                 <div className="br-calendar-timeline__spacer" />
 
                 <div className="br-calendar-timeline__days">
-                  {timelineDays.map((day) => (
+                  {visibleTimelineDays.map((day) => (
                     <div
                       key={day.key}
                       className={`br-calendar-timeline__head${day.isToday ? " br-calendar-timeline__head--today" : ""}`}
@@ -155,7 +228,7 @@ export function AgentCalendarBrowser({ properties }: { properties: AgentCalendar
 
               <div className="br-calendar-timeline__rows">
                 {(selectedProperty?.rooms ?? []).map((room, rowIndex) => {
-                  const ranges = getTimelineBusyRanges(room.busyRanges, timelineDays);
+                  const ranges = getTimelineBusyRanges(room.busyRanges, visibleTimelineDays);
 
                   return (
                     <div key={room.id} className="br-calendar-timeline__row">
@@ -171,7 +244,7 @@ export function AgentCalendarBrowser({ properties }: { properties: AgentCalendar
 
                       <div className="br-calendar-room-grid">
                         <div className="br-calendar-room-grid__cells">
-                          {timelineDays.map((day) => {
+                          {visibleTimelineDays.map((day) => {
                             const dayBusyRange =
                               room.busyRanges.find((range) => day.key >= range.startsOn && day.key <= range.endsOn) ?? null;
 

@@ -9,6 +9,7 @@ import { formatDateLabel } from "@/shared/lib/date";
 import { AppIcon, Button, IconButton, Input, StatCard, Textarea } from "@/shared/ui";
 import {
   addMonths,
+  formatDateKey,
   formatMonthLabel,
   formatMonthRangeLabel,
   formatShortDateLabel,
@@ -16,9 +17,13 @@ import {
   getNearestBusyRange,
   getTimelineBusyRanges,
   getTimelineDays,
+  getTimelineStartIndex,
+  getVisibleTimelineDays,
   hasBusyOverlap,
   normalizeDateRange,
   parseDateKey,
+  startOfMonth,
+  useTimelineVisibleDayCount,
   weekDays,
 } from "@/widgets/calendar/lib/calendar-helpers";
 
@@ -85,7 +90,17 @@ function getTimelineRangeLabel(range: OwnerBusyRange) {
 }
 
 function getSelectionNotice(selectionStart: string | null) {
-  return selectionStart ? `Начало диапазона выбрано: ${formatDateLabel(selectionStart)}.` : "Кликните по двум датам, чтобы отметить занятый диапазон.";
+  return selectionStart
+    ? `Начало диапазона выбрано: ${formatDateLabel(selectionStart)}.`
+    : "Кликните по двум датам, чтобы отметить занятый диапазон.";
+}
+
+function getDefaultTimelineAnchorKey(month: Date) {
+  const today = new Date();
+  const isCurrentMonth =
+    today.getFullYear() === month.getFullYear() && today.getMonth() === month.getMonth();
+
+  return isCurrentMonth ? formatDateKey(today) : formatDateKey(startOfMonth(month));
 }
 
 export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = "" }: OwnerCalendarBrowserProps) {
@@ -97,6 +112,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
   const [selectionStart, setSelectionStart] = useState<string | null>(null);
   const [activeEditor, setActiveEditor] = useState<ActiveEditorState | null>(null);
   const [localNotice, setLocalNotice] = useState("");
+  const [timelineAnchorKey, setTimelineAnchorKey] = useState(() => getDefaultTimelineAnchorKey(new Date()));
 
   const selectedRoom = useMemo(
     () => rooms.find((room) => room.id === selectedRoomId) ?? rooms[0] ?? null,
@@ -106,18 +122,26 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
     () => (selectedRoom ? getMonthDays(currentMonth, selectedRoom.busyRanges) : []),
     [currentMonth, selectedRoom],
   );
+  const visibleDayCount = useTimelineVisibleDayCount();
   const timelineDays = useMemo(() => getTimelineDays(currentMonth), [currentMonth]);
+  const timelineStartIndex = useMemo(
+    () => getTimelineStartIndex(timelineDays, visibleDayCount, timelineAnchorKey),
+    [timelineAnchorKey, timelineDays, visibleDayCount],
+  );
+  const visibleTimelineDays = useMemo(
+    () => getVisibleTimelineDays(timelineDays, timelineStartIndex, visibleDayCount),
+    [timelineDays, timelineStartIndex, visibleDayCount],
+  );
   const nearestBusyRange = useMemo(
     () => (selectedRoom ? getNearestBusyRange(selectedRoom.busyRanges) : null),
     [selectedRoom],
   );
   const selectedBusyRangeId = activeEditor?.mode === "edit" ? activeEditor.busyRange.id : null;
-
-  function resetInteractionState() {
-    setSelectionStart(null);
-    setActiveEditor(null);
-    setLocalNotice("");
-  }
+  const canMoveTimelineBackward = timelineStartIndex > 0;
+  const canMoveTimelineForward = timelineStartIndex + visibleTimelineDays.length < timelineDays.length;
+  const timelineWindowLabel = visibleTimelineDays.length
+    ? `${formatShortDateLabel(visibleTimelineDays[0].key)} - ${formatShortDateLabel(visibleTimelineDays[visibleTimelineDays.length - 1].key)}`
+    : formatMonthRangeLabel(currentMonth);
 
   function handleRoomFocus(roomId: string) {
     setSelectedRoomId(roomId);
@@ -176,7 +200,28 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
 
     const visibleMonth = parseDateKey(busyRange.startsOn);
     setCurrentMonth(new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1));
+    setTimelineAnchorKey(busyRange.startsOn);
     setLocalNotice("");
+  }
+
+  function updateMonth(nextMonth: Date) {
+    setCurrentMonth(nextMonth);
+    setTimelineAnchorKey(getDefaultTimelineAnchorKey(nextMonth));
+  }
+
+  function shiftTimelineWindow(direction: -1 | 1) {
+    if (!timelineDays.length) {
+      return;
+    }
+
+    const nextIndex = direction < 0
+      ? Math.max(0, timelineStartIndex - visibleDayCount)
+      : Math.min(Math.max(0, timelineDays.length - visibleDayCount), timelineStartIndex + visibleDayCount);
+    const nextDay = timelineDays[nextIndex];
+
+    if (nextDay) {
+      setTimelineAnchorKey(nextDay.key);
+    }
   }
 
   function renderEditorPanel() {
@@ -304,7 +349,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
             <IconButton
               aria-label="Предыдущий месяц"
               className="br-calendar-shell__nav"
-              onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}
+              onClick={() => updateMonth(addMonths(currentMonth, -1))}
             >
               <AppIcon icon={ChevronLeft} />
             </IconButton>
@@ -313,7 +358,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
               className="br-calendar-shell__today"
               onClick={() => {
                 const today = new Date();
-                setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+                updateMonth(new Date(today.getFullYear(), today.getMonth(), 1));
               }}
             >
               Текущий месяц
@@ -321,7 +366,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
             <IconButton
               aria-label="Следующий месяц"
               className="br-calendar-shell__nav"
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              onClick={() => updateMonth(addMonths(currentMonth, 1))}
             >
               <AppIcon icon={ChevronRight} />
             </IconButton>
@@ -337,96 +382,127 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
         </div>
 
         <div className="br-calendar-timeline">
+          <div className="br-calendar-timeline__windowbar">
+            <div className="br-calendar-timeline__windowcopy">
+              <strong>{timelineWindowLabel}</strong>
+              <span>{visibleTimelineDays.length} дней в видимом окне</span>
+            </div>
+            <div className="br-calendar-timeline__windowactions">
+              <IconButton
+                aria-label="Показать предыдущие дни"
+                className="br-calendar-shell__nav"
+                disabled={!canMoveTimelineBackward}
+                onClick={() => shiftTimelineWindow(-1)}
+              >
+                <AppIcon icon={ChevronLeft} />
+              </IconButton>
+              <IconButton
+                aria-label="Показать следующие дни"
+                className="br-calendar-shell__nav"
+                disabled={!canMoveTimelineForward}
+                onClick={() => shiftTimelineWindow(1)}
+              >
+                <AppIcon icon={ChevronRight} />
+              </IconButton>
+            </div>
+          </div>
+
           <div className="br-calendar-timeline__scroll">
             <div
-              className="br-calendar-timeline__grid"
-              style={{ ["--calendar-columns" as string]: String(timelineDays.length) }}
+              className="br-calendar-timeline__canvas"
+              style={{ ["--calendar-columns" as string]: String(visibleTimelineDays.length) }}
             >
-              <div className="br-calendar-timeline__spacer" />
+              <div className="br-calendar-timeline__header">
+                <div className="br-calendar-timeline__spacer" />
 
-              {timelineDays.map((day) => (
-                <div
-                  key={day.key}
-                  className={`br-calendar-timeline__head${day.isToday ? " br-calendar-timeline__head--today" : ""}`}
-                >
-                  <strong>{day.dayLabel}</strong>
-                  <span>{day.weekDayLabel}</span>
-                </div>
-              ))}
-
-              {rooms.map((room, rowIndex) => {
-                const ranges = getTimelineBusyRanges(room.busyRanges, timelineDays);
-                const isSelectedRoom = room.id === selectedRoom?.id;
-
-                return (
-                  <div key={room.id} className="br-calendar-timeline__row">
-                    <button
-                      type="button"
-                      className={`br-calendar-room-card${isSelectedRoom ? " br-calendar-room-card--active" : ""}`}
-                      onClick={() => handleRoomFocus(room.id)}
+                <div className="br-calendar-timeline__days">
+                  {visibleTimelineDays.map((day) => (
+                    <div
+                      key={day.key}
+                      className={`br-calendar-timeline__head${day.isToday ? " br-calendar-timeline__head--today" : ""}`}
                     >
-                      <span className={`br-calendar-room-card__badge br-calendar-room-card__badge--${(rowIndex % 4) + 1}`}>
-                        {rowIndex + 1}
-                      </span>
-                      <span className="br-calendar-room-card__copy">
-                        <strong>{room.title}</strong>
-                        <small>{getRoomSummary(room)}</small>
-                      </span>
-                    </button>
+                      <strong>{day.dayLabel}</strong>
+                      <span>{day.weekDayLabel}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-                    <div className={`br-calendar-room-grid${isSelectedRoom ? " br-calendar-room-grid--active" : ""}`}>
-                      <div className="br-calendar-room-grid__cells">
-                        {timelineDays.map((day) => {
-                          const dayBusyRange =
-                            room.busyRanges.find((range) => day.key >= range.startsOn && day.key <= range.endsOn) ?? null;
-                          const isSelectionStart = isSelectedRoom && selectionStart === day.key;
-                          const isActiveRange = selectedBusyRangeId ? dayBusyRange?.id === selectedBusyRangeId : false;
+              <div className="br-calendar-timeline__rows">
+                {rooms.map((room, rowIndex) => {
+                  const ranges = getTimelineBusyRanges(room.busyRanges, visibleTimelineDays);
+                  const isSelectedRoom = room.id === selectedRoom?.id;
 
-                          return (
+                  return (
+                    <div key={room.id} className="br-calendar-timeline__row">
+                      <button
+                        type="button"
+                        className={`br-calendar-room-card${isSelectedRoom ? " br-calendar-room-card--active" : ""}`}
+                        onClick={() => handleRoomFocus(room.id)}
+                      >
+                        <span className={`br-calendar-room-card__badge br-calendar-room-card__badge--${(rowIndex % 4) + 1}`}>
+                          {rowIndex + 1}
+                        </span>
+                        <span className="br-calendar-room-card__copy">
+                          <strong>{room.title}</strong>
+                          <small>{getRoomSummary(room)}</small>
+                        </span>
+                      </button>
+
+                      <div className={`br-calendar-room-grid${isSelectedRoom ? " br-calendar-room-grid--active" : ""}`}>
+                        <div className="br-calendar-room-grid__cells">
+                          {visibleTimelineDays.map((day) => {
+                            const dayBusyRange =
+                              room.busyRanges.find((range) => day.key >= range.startsOn && day.key <= range.endsOn) ?? null;
+                            const isSelectionStart = isSelectedRoom && selectionStart === day.key;
+                            const isActiveRange = selectedBusyRangeId ? dayBusyRange?.id === selectedBusyRangeId : false;
+
+                            return (
+                              <button
+                                key={`${room.id}-${day.key}`}
+                                type="button"
+                                className={`br-calendar-room-grid__cell${dayBusyRange ? " br-calendar-room-grid__cell--busy" : ""}${day.isToday ? " br-calendar-room-grid__cell--today" : ""}${isSelectionStart ? " br-calendar-room-grid__cell--selected" : ""}${isActiveRange ? " br-calendar-room-grid__cell--active" : ""}`}
+                                onClick={() => handleTimelineCellClick(room, day.key)}
+                                aria-label={`${room.title}: ${formatDateLabel(day.date)}. ${dayBusyRange ? "Занято" : "Свободно"}.`}
+                              />
+                            );
+                          })}
+                        </div>
+
+                        <div className="br-calendar-room-grid__prices">
+                          {visibleTimelineDays.map((day) => (
+                            <span key={`${room.id}-price-${day.key}`}>{room.pricePerNight.toLocaleString("ru-RU")}</span>
+                          ))}
+                        </div>
+
+                        <div className="br-calendar-room-grid__ranges">
+                          {ranges.map((range) => (
                             <button
-                              key={`${room.id}-${day.key}`}
+                              key={range.busyRange.id}
                               type="button"
-                              className={`br-calendar-room-grid__cell${dayBusyRange ? " br-calendar-room-grid__cell--busy" : ""}${day.isToday ? " br-calendar-room-grid__cell--today" : ""}${isSelectionStart ? " br-calendar-room-grid__cell--selected" : ""}${isActiveRange ? " br-calendar-room-grid__cell--active" : ""}`}
-                              onClick={() => handleTimelineCellClick(room, day.key)}
-                              aria-label={`${room.title}: ${formatDateLabel(day.date)}. ${dayBusyRange ? "Занято" : "Свободно"}.`}
-                            />
-                          );
-                        })}
-                      </div>
-
-                      <div className="br-calendar-room-grid__prices">
-                        {timelineDays.map((day) => (
-                          <span key={`${room.id}-price-${day.key}`}>{room.pricePerNight.toLocaleString("ru-RU")}</span>
-                        ))}
-                      </div>
-
-                      <div className="br-calendar-room-grid__ranges">
-                        {ranges.map((range) => (
-                          <button
-                            key={range.busyRange.id}
-                            type="button"
-                            className={`br-calendar-range-card${selectedBusyRangeId === range.busyRange.id ? " br-calendar-range-card--active" : ""}`}
-                            style={{
-                              gridColumn: `${range.startIndex + 1} / span ${range.span}`,
-                            }}
-                            onClick={() => handleOpenBusyRange(room.id, range.busyRange)}
-                          >
-                            <span className="br-calendar-range-card__label">
-                              {range.clippedStart ? "…" : ""}
-                              {getTimelineRangeLabel(range.busyRange)}
-                              {range.clippedEnd ? "…" : ""}
-                            </span>
-                            <span className="br-calendar-range-card__meta">
-                              {formatShortDateLabel(range.busyRange.startsOn)} - {formatShortDateLabel(range.busyRange.endsOn)}
-                              <AppIcon icon={PencilLine} />
-                            </span>
-                          </button>
-                        ))}
+                              className={`br-calendar-range-card${selectedBusyRangeId === range.busyRange.id ? " br-calendar-range-card--active" : ""}`}
+                              style={{
+                                gridColumn: `${range.startIndex + 1} / span ${range.span}`,
+                              }}
+                              onClick={() => handleOpenBusyRange(room.id, range.busyRange)}
+                            >
+                              <span className="br-calendar-range-card__label">
+                                {range.clippedStart ? "…" : ""}
+                                {getTimelineRangeLabel(range.busyRange)}
+                                {range.clippedEnd ? "…" : ""}
+                              </span>
+                              <span className="br-calendar-range-card__meta">
+                                {formatShortDateLabel(range.busyRange.startsOn)} - {formatShortDateLabel(range.busyRange.endsOn)}
+                                <AppIcon icon={PencilLine} />
+                              </span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
