@@ -240,86 +240,91 @@ export function OwnerDashboardCalendar({ groups }: OwnerDashboardCalendarProps) 
               <div className="br-calendar-timeline">
                 <div className="br-calendar-timeline__scroll">
                   <div
-                    className="br-calendar-timeline__grid"
+                    className="br-calendar-timeline__canvas"
                     style={{ ["--calendar-columns" as string]: String(timelineDays.length) }}
                   >
-                    <div className="br-calendar-timeline__spacer" />
+                    <div className="br-calendar-timeline__header">
+                      <div className="br-calendar-timeline__spacer" />
 
-                    {timelineDays.map((day) => (
-                      <div
-                        key={day.key}
-                        className={`br-calendar-timeline__head${day.isToday ? " br-calendar-timeline__head--today" : ""}`}
-                      >
-                        <strong>{day.dayLabel}</strong>
-                        <span>{day.weekDayLabel}</span>
+                      <div className="br-calendar-timeline__days">
+                        {timelineDays.map((day) => (
+                          <div
+                            key={day.key}
+                            className={`br-calendar-timeline__head${day.isToday ? " br-calendar-timeline__head--today" : ""}`}
+                          >
+                            <strong>{day.dayLabel}</strong>
+                            <span>{day.weekDayLabel}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
 
-                    {group.rooms.map((room, rowIndex) => {
-                      const ranges = getTimelineBusyRanges(room.busyRanges, timelineDays);
+                    <div className="br-calendar-timeline__rows">
+                      {group.rooms.map((room, rowIndex) => {
+                        const ranges = getTimelineBusyRanges(room.busyRanges, timelineDays);
 
-                      return (
-                        <div key={room.id} className="br-calendar-timeline__row">
-                          <div className="br-calendar-room-card">
-                            <span className={`br-calendar-room-card__badge br-calendar-room-card__badge--${(rowIndex % 4) + 1}`}>
-                              {rowIndex + 1}
-                            </span>
-                            <span className="br-calendar-room-card__copy">
-                              <strong>{room.title}</strong>
-                              <small>{getRoomSummary(room)}</small>
-                              <Link href={room.calendarHref} className="br-owner-calendar-overview__room-link">
-                                {getRangeLabel(room)}
-                              </Link>
-                            </span>
-                          </div>
-
-                          <div className="br-calendar-room-grid">
-                            <div className="br-calendar-room-grid__cells">
-                              {timelineDays.map((day) => {
-                                const dayBusyRange =
-                                  room.busyRanges.find((range) => day.key >= range.startsOn && day.key <= range.endsOn) ?? null;
-
-                                return (
-                                  <div
-                                    key={`${room.id}-${day.key}`}
-                                    className={`br-calendar-room-grid__cell${dayBusyRange ? " br-calendar-room-grid__cell--busy" : ""}${day.isToday ? " br-calendar-room-grid__cell--today" : ""}`}
-                                    aria-label={`${room.title}: ${formatDateLabel(day.date)}. ${dayBusyRange ? "Занято" : "Свободно"}.`}
-                                  />
-                                );
-                              })}
-                            </div>
-
-                            <div className="br-calendar-room-grid__prices">
-                              {timelineDays.map((day) => (
-                                <span key={`${room.id}-price-${day.key}`}>{room.pricePerNight.toLocaleString("ru-RU")}</span>
-                              ))}
-                            </div>
-
-                            <div className="br-calendar-room-grid__ranges">
-                              {ranges.map((range) => (
-                                <Link
-                                  key={range.busyRange.id}
-                                  href={room.calendarHref}
-                                  className="br-calendar-range-card br-calendar-range-card--readonly"
-                                  style={{ gridColumn: `${range.startIndex + 1} / span ${range.span}` }}
-                                  aria-label={`${getRangeLabel(room)}: ${room.title}`}
-                                >
-                                  <span className="br-calendar-range-card__label">
-                                    {range.clippedStart ? "…" : ""}
-                                    {range.busyRange.label || "Занято"}
-                                    {range.clippedEnd ? "…" : ""}
-                                  </span>
-                                  <span className="br-calendar-range-card__meta">
-                                    {formatShortDateLabel(range.busyRange.startsOn)} - {formatShortDateLabel(range.busyRange.endsOn)}
-                                  </span>
+                        return (
+                          <div key={room.id} className="br-calendar-timeline__row">
+                            <div className="br-calendar-room-card">
+                              <span className={`br-calendar-room-card__badge br-calendar-room-card__badge--${(rowIndex % 4) + 1}`}>
+                                {rowIndex + 1}
+                              </span>
+                              <span className="br-calendar-room-card__copy">
+                                <strong>{room.title}</strong>
+                                <small>{getRoomSummary(room)}</small>
+                                <Link href={room.calendarHref} className="br-owner-calendar-overview__room-link">
+                                  {getRangeLabel(room)}
                                 </Link>
-                              ))}
+                              </span>
+                            </div>
+
+                            <div className="br-calendar-room-grid">
+                              <div className="br-calendar-room-grid__cells">
+                                {timelineDays.map((day) => {
+                                  const dayBusyRange =
+                                    room.busyRanges.find((range) => day.key >= range.startsOn && day.key <= range.endsOn) ?? null;
+
+                                  return (
+                                    <div
+                                      key={`${room.id}-${day.key}`}
+                                      className={`br-calendar-room-grid__cell${dayBusyRange ? " br-calendar-room-grid__cell--busy" : ""}${day.isToday ? " br-calendar-room-grid__cell--today" : ""}`}
+                                      aria-label={`${room.title}: ${formatDateLabel(day.date)}. ${dayBusyRange ? "Занято" : "Свободно"}.`}
+                                    />
+                                  );
+                                })}
+                              </div>
+
+                              <div className="br-calendar-room-grid__prices">
+                                {timelineDays.map((day) => (
+                                  <span key={`${room.id}-price-${day.key}`}>{room.pricePerNight.toLocaleString("ru-RU")}</span>
+                                ))}
+                              </div>
+
+                              <div className="br-calendar-room-grid__ranges">
+                                {ranges.map((range) => (
+                                  <Link
+                                    key={range.busyRange.id}
+                                    href={room.calendarHref}
+                                    className="br-calendar-range-card br-calendar-range-card--readonly"
+                                    style={{ gridColumn: `${range.startIndex + 1} / span ${range.span}` }}
+                                    aria-label={`${getRangeLabel(room)}: ${room.title}`}
+                                  >
+                                    <span className="br-calendar-range-card__label">
+                                      {range.clippedStart ? "…" : ""}
+                                      {range.busyRange.label || "Занято"}
+                                      {range.clippedEnd ? "…" : ""}
+                                    </span>
+                                    <span className="br-calendar-range-card__meta">
+                                      {formatShortDateLabel(range.busyRange.startsOn)} - {formatShortDateLabel(range.busyRange.endsOn)}
+                                    </span>
+                                  </Link>
+                                ))}
+                              </div>
                             </div>
                           </div>
-
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
