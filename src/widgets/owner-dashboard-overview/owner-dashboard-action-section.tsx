@@ -35,7 +35,7 @@ export function OwnerDashboardActionSection({
         title={title}
         description={description}
         actions={actionPlacement === "header" ? actionButton : undefined}
-        className="br-dashboard-block__header"
+        className="br-dashboard-block__header mb-4"
       />
 
       {children}

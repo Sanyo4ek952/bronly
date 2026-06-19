@@ -2,6 +2,8 @@ import type { HTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/shared/lib/cn";
 
+import { SectionSubtitle } from "@/shared/ui/section-subtitle";
+
 type SectionHeaderProps = HTMLAttributes<HTMLDivElement> & {
   title: ReactNode;
   description?: ReactNode;
@@ -13,7 +15,7 @@ export function SectionHeader({ title, description, actions, className, ...props
     <div className={cn("br-section-header", className)} {...props}>
       <div className="br-section-header__copy">
         <h2>{title}</h2>
-        {description ? <p>{description}</p> : null}
+        {description ? <SectionSubtitle>{description}</SectionSubtitle> : null}
       </div>
       {actions ? <div className="br-section-header__actions">{actions}</div> : null}
     </div>

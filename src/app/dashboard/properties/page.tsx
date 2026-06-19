@@ -1,10 +1,10 @@
-import Image from "next/image";
 import { HousePlus, Settings } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import { getOwnerInventory } from "@/entities/property";
+import { AppIcon, ButtonLink, SectionSubtitle, StatusPill } from "@/shared/ui";
 import { AddInventoryButton } from "@/widgets/add-inventory-button";
-import { AppIcon, ButtonLink, StatusPill } from "@/shared/ui";
 
 import { getPropertyNotice, getRoomsNotice } from "./page-helpers";
 
@@ -61,7 +61,10 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
         <div className="br-dashboard-block__header">
           <div>
             <h2>Объекты и номера</h2>
-            <p>Управляйте объектами и отдельными номерами в одном месте. Карточка номера открывает отдельную страницу со всеми фотографиями и данными.</p>
+            <SectionSubtitle>
+              Управляйте объектами и отдельными номерами в одном месте. Карточка номера открывает отдельную страницу со
+              всеми фотографиями и данными.
+            </SectionSubtitle>
           </div>
           <AddInventoryButton />
         </div>
@@ -75,13 +78,15 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
             <div className="br-dashboard-block__header">
               <div>
                 <h3>Объекты</h3>
-                <p>Карточки объектов ведут к их номерам, календарю занятости и настройкам публикации.</p>
+                <SectionSubtitle>
+                  Карточки объектов ведут к их номерам, календарю занятости и настройкам публикации.
+                </SectionSubtitle>
               </div>
             </div>
 
             {properties.length ? (
               <div className="br-owner-property-list">
-                {properties.map((item) => (
+                {properties.map((item, index) => (
                   <article key={item.id} className="br-owner-property-card">
                     <Link
                       href={`/dashboard/properties/${item.id}/rooms`}
@@ -93,7 +98,9 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                         <Image
                           src={item.coverImageUrl}
                           alt={item.title}
-                          fill
+                          width={960}
+                          height={540}
+                          loading={index === 0 ? "eager" : "lazy"}
                           sizes="(min-width: 1180px) 25vw, (min-width: 700px) 40vw, 100vw"
                           unoptimized
                           className="br-owner-property-card__image"
@@ -113,14 +120,20 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                         <StatusPill variant={item.published && !item.isFrozen ? "active" : "inactive"}>
                           {item.isFrozen ? "Заморожен" : item.published ? "Опубликован" : "Скрыт"}
                         </StatusPill>
-                        <Link href={`/dashboard/properties/${item.id}`} className="br-owner-property-card__settings" aria-label={`Открыть настройки объекта ${item.title}`}>
+                        <Link
+                          href={`/dashboard/properties/${item.id}`}
+                          className="br-owner-property-card__settings"
+                          aria-label={`Открыть настройки объекта ${item.title}`}
+                        >
                           <AppIcon icon={Settings} aria-hidden="true" />
                         </Link>
                       </div>
                     </div>
 
                     <div className="br-owner-property-card__meta">
-                      <p className="br-owner-property-card__address">{item.city}, {item.address}</p>
+                      <p className="br-owner-property-card__address">
+                        {item.city}, {item.address}
+                      </p>
 
                       <div className="br-summary-card__rows">
                         <div className="br-summary-card__row">
@@ -156,28 +169,29 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
             <div className="br-dashboard-block__header">
               <div>
                 <h3>Отдельные номера</h3>
-                <p>Самостоятельные номера без объекта открываются на отдельной странице номера со слайдером фото, описанием и всеми настройками.</p>
+                <SectionSubtitle>
+                  Самостоятельные номера без объекта открываются на отдельной странице номера со слайдером фото,
+                  описанием и всеми настройками.
+                </SectionSubtitle>
               </div>
             </div>
 
             {standaloneRooms.length ? (
               <div className="br-owner-property-list">
-                {standaloneRooms.map((item) => {
+                {standaloneRooms.map((item, index) => {
                   const roomHref = buildStandaloneRoomHref(item.id);
 
                   return (
                     <article key={item.id} className="br-owner-property-card">
-                      <Link
-                        href={roomHref}
-                        className="br-owner-property-card__link"
-                        aria-label={`Открыть карточку номера ${item.title}`}
-                      />
+                      <Link href={roomHref} className="br-owner-property-card__link" aria-label={`Открыть карточку номера ${item.title}`} />
                       <div className="br-owner-property-card__media">
                         {item.coverImageUrl ? (
                           <Image
                             src={item.coverImageUrl}
                             alt={item.title}
-                            fill
+                            width={960}
+                            height={540}
+                            loading={properties.length === 0 && index === 0 ? "eager" : "lazy"}
                             sizes="(min-width: 1180px) 25vw, (min-width: 700px) 40vw, 100vw"
                             unoptimized
                             className="br-owner-property-card__image"
@@ -193,13 +207,19 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                         </div>
                         <div className="br-owner-property-card__topbar">
                           <StatusPill variant={item.isActive ? "active" : "inactive"}>{item.isActive ? "Активен" : "Неактивен"}</StatusPill>
-                          <Link href={`/dashboard/rooms/${item.id}/settings`} className="br-owner-property-card__settings" aria-label={`Открыть настройки номера ${item.title}`}>
+                          <Link
+                            href={`/dashboard/rooms/${item.id}/settings`}
+                            className="br-owner-property-card__settings"
+                            aria-label={`Открыть настройки номера ${item.title}`}
+                          >
                             <AppIcon icon={Settings} aria-hidden="true" />
                           </Link>
                         </div>
                       </div>
                       <div className="br-owner-property-card__meta">
-                        <p className="br-owner-property-card__address">{item.city}, {item.address}</p>
+                        <p className="br-owner-property-card__address">
+                          {item.city}, {item.address}
+                        </p>
                         <div className="br-summary-card__rows">
                           <div className="br-summary-card__row">
                             <span>Город</span>
@@ -215,7 +235,9 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                         <ButtonLink href={roomHref} variant="secondary">
                           Открыть номер
                         </ButtonLink>
-                        <ButtonLink href={`/dashboard/rooms/${item.id}/calendar`} variant="secondary">Календарь</ButtonLink>
+                        <ButtonLink href={`/dashboard/rooms/${item.id}/calendar`} variant="secondary">
+                          Календарь
+                        </ButtonLink>
                       </div>
                     </article>
                   );

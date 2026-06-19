@@ -4,9 +4,9 @@ import { redirect } from "next/navigation";
 import { getAgentDashboardSummary } from "@/entities/collaboration";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
-import { ButtonLink } from "@/shared/ui";
-import { SubscriptionOverviewCard } from "@/widgets/subscription-status-card";
+import { ButtonLink, SectionSubtitle } from "@/shared/ui";
 import { OwnerDashboardActionSection } from "@/widgets/owner-dashboard-overview/owner-dashboard-action-section";
+import { SubscriptionOverviewCard } from "@/widgets/subscription-status-card";
 
 export default async function AgentDashboardPage() {
   const profile = await getCurrentAuthProfile();
@@ -77,7 +77,7 @@ export default async function AgentDashboardPage() {
         <div className="br-dashboard-block__header">
           <div>
             <h2>Ближайшие шаги агента</h2>
-            <p>Рабочая схема MVP без лишнего CRM-слоя.</p>
+            <SectionSubtitle>Рабочая схема MVP без лишнего CRM-слоя.</SectionSubtitle>
           </div>
         </div>
 
