@@ -67,47 +67,62 @@ export function BottomSheet({
     started: false,
   });
   const closeTimerRef = useRef<number | null>(null);
-  const [isRendered, setIsRendered] = useState(open);
   const [phase, setPhase] = useState<SheetPhase>(open ? "open" : "closed");
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isSettling, setIsSettling] = useState(false);
   const [closeStartOffset, setCloseStartOffset] = useState(0);
+  const isRendered = open || phase !== "closed";
 
   useEffect(() => {
+    let frameId: number | null = null;
+    let openFrameId: number | null = null;
+
     if (closeTimerRef.current !== null) {
       window.clearTimeout(closeTimerRef.current);
       closeTimerRef.current = null;
     }
 
     if (open) {
-      setIsRendered(true);
-      setPhase("opening");
-
-      const frameId = window.requestAnimationFrame(() => {
-        setPhase("open");
+      frameId = window.requestAnimationFrame(() => {
+        setPhase("opening");
+        openFrameId = window.requestAnimationFrame(() => {
+          setPhase("open");
+        });
       });
 
-      return () => window.cancelAnimationFrame(frameId);
+      return () => {
+        if (frameId !== null) {
+          window.cancelAnimationFrame(frameId);
+        }
+
+        if (openFrameId !== null) {
+          window.cancelAnimationFrame(openFrameId);
+        }
+      };
     }
 
     if (!isRendered) {
-      setPhase("closed");
       return undefined;
     }
 
-    setPhase("closing");
-    closeTimerRef.current = window.setTimeout(() => {
-      setIsRendered(false);
-      setPhase("closed");
-      setDragOffset(0);
-      setIsDragging(false);
-      setIsSettling(false);
-      setCloseStartOffset(0);
-      closeTimerRef.current = null;
+    frameId = window.requestAnimationFrame(() => {
+      setPhase("closing");
+      closeTimerRef.current = window.setTimeout(() => {
+        setPhase("closed");
+        setDragOffset(0);
+        setIsDragging(false);
+        setIsSettling(false);
+        setCloseStartOffset(0);
+        closeTimerRef.current = null;
+      }, CLOSE_DURATION_MS);
     }, CLOSE_DURATION_MS);
 
     return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+
       if (closeTimerRef.current !== null) {
         window.clearTimeout(closeTimerRef.current);
         closeTimerRef.current = null;
