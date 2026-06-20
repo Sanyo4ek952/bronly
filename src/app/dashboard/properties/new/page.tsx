@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createOwnerProperty } from "@/app/dashboard/properties/actions";
 import { OwnerPropertyFormFields } from "@/features/property/edit-property";
 import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
-import { Button, DashboardPageNav } from "@/shared/ui";
+import { Button, DashboardPageNav, Input } from "@/shared/ui";
 
 type NewPropertyPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -15,6 +15,12 @@ function getMessage(error: string) {
       return "Заполните обязательные поля объекта.";
     case "duplicate":
       return "Не удалось создать объект. Попробуйте изменить название.";
+    case "photo-type":
+      return "Для фото объекта поддерживаются только JPG, PNG, WebP и GIF.";
+    case "photo-size":
+      return "Размер фото объекта должен быть не больше 5 МБ.";
+    case "photo-count":
+      return "За один раз можно загрузить до 10 фото объекта.";
     default:
       return error ? "Не удалось создать объект." : "";
   }
@@ -44,8 +50,18 @@ export default async function NewPropertyPage({ searchParams }: NewPropertyPageP
 
         {message ? <div className="br-inline-notice">{message}</div> : null}
 
-        <form action={createOwnerProperty} className="br-owner-stack">
+        <form action={createOwnerProperty} className="br-owner-stack" encType="multipart/form-data">
           <OwnerPropertyFormFields />
+
+          <Input
+            id="property-photos-new"
+            name="photos"
+            type="file"
+            accept="image/*"
+            multiple
+            label="Фотографии объекта"
+            description="Можно выбрать до 10 фото сразу. JPG, PNG, WebP или GIF, до 5 МБ каждое. Первое фото станет обложкой."
+          />
 
           <div className="br-active-step__actions">
             <Link href="/dashboard/properties" className="br-button br-button--secondary">

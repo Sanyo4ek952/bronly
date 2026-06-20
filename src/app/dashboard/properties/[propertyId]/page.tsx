@@ -99,13 +99,14 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
           <input type="hidden" name="propertyId" value={property.id} />
           <Input
             id="property-photo-upload"
-            name="photo"
+            name="photos"
             type="file"
             accept="image/*"
+            multiple
             label="Добавить фото объекта"
+            description="Можно выбрать до 10 фото за раз. JPG, PNG, WebP или GIF, до 5 МБ каждое."
             wrapperClassName="br-owner-photo-upload__field"
           />
-          <p className="br-owner-muted">Поддерживаются JPG, PNG, WebP и GIF до 5 МБ.</p>
           <Button type="submit">Загрузить фото</Button>
         </form>
 

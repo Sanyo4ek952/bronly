@@ -2,11 +2,14 @@ export function getPropertyNotice(error: string, success: string) {
   if (success === "created") {
     return "Объект создан.";
   }
+  if (success === "created-photo-upload") {
+    return "Объект создан, но фото не загрузились. Попробуйте добавить их еще раз.";
+  }
   if (success === "saved") {
     return "Изменения по объекту сохранены.";
   }
   if (success === "photo-uploaded") {
-    return "Фото объекта добавлено.";
+    return "Фото объекта добавлены.";
   }
   if (success === "photo-deleted") {
     return "Фото объекта удалено.";
@@ -34,6 +37,8 @@ export function getPropertyNotice(error: string, success: string) {
       return "Поддерживаются только JPG, PNG, WebP и GIF.";
     case "photo-size":
       return "Размер файла должен быть не больше 5 МБ.";
+    case "photo-count":
+      return "За один раз можно загрузить до 10 фото объекта.";
     case "photo-upload":
       return "Не удалось загрузить фото объекта.";
     case "photo-delete":

@@ -12,6 +12,7 @@ import { replacePropertyLabels } from "./lib/labels";
 import { requireOwnerMutationAccess } from "./lib/owner-access";
 import { buildPropertyPath, buildPropertyPathWithState } from "./lib/paths";
 import { generateUniquePropertySlug } from "./lib/slugs";
+import { getUploadedPropertyPhotoFiles, uploadPropertyPhotoFiles, validatePropertyPhotoFiles } from "./property-photo-upload";
 
 const DEFAULT_TIMEZONE = "(UTC+03:00) Москва";
 
@@ -22,9 +23,15 @@ export async function createOwnerProperty(formData: FormData) {
   const propertyType = getString(formData, "propertyType");
   const city = getString(formData, "city");
   const address = getString(formData, "address");
+  const propertyPhotoFiles = getUploadedPropertyPhotoFiles(formData);
+  const propertyPhotoError = validatePropertyPhotoFiles(propertyPhotoFiles);
 
   if (!title || !propertyType || !city || !address) {
     redirect("/dashboard/properties/new?error=validation");
+  }
+
+  if (propertyPhotoError) {
+    redirect(`/dashboard/properties/new?error=${propertyPhotoError}`);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -58,11 +65,12 @@ export async function createOwnerProperty(formData: FormData) {
   }
 
   await replacePropertyLabels(data.id as string, getString(formData, "features"), getString(formData, "houseRules"));
+  const photoUploadError = await uploadPropertyPhotoFiles(supabase, profile.id, data.id as string, propertyPhotoFiles);
   await markOwnerReferralMilestone(profile.id);
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/properties");
-  redirect(buildPropertyPathWithState(data.id as string, "property", { success: "created" }));
+  redirect(buildPropertyPathWithState(data.id as string, "property", { success: photoUploadError ? "created-photo-upload" : "created" }));
 }
 
 export async function updateOwnerProperty(formData: FormData) {

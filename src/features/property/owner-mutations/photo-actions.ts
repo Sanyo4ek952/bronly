@@ -15,11 +15,10 @@ import {
   buildStandaloneRoomPath,
   buildStandaloneRoomSettingsPath,
 } from "./lib/paths";
+import { getUploadedPropertyPhotoFiles, uploadPropertyPhotoFiles, validatePropertyPhotoFiles } from "./property-photo-upload";
 import { getUploadedRoomPhotoFiles, uploadRoomPhotoFiles, validateRoomPhotoFiles } from "./room-photo-upload";
 
 const PHOTO_BUCKET = "property-media";
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 type PropertyPhotoRecord = {
   id: string;
@@ -36,38 +35,6 @@ type RoomPhotoRecord = {
   sort_order: number;
   created_at: string;
 };
-
-function sanitizeFileName(name: string) {
-  const trimmed = name.trim().toLowerCase();
-  const safe = trimmed.replace(/[^a-z0-9._-]+/g, "-").replace(/-+/g, "-");
-  return safe || "photo";
-}
-
-function buildStoragePath(profileId: string, scope: "properties" | "rooms", entityId: string, fileName: string) {
-  return `${profileId}/${scope}/${entityId}/${Date.now()}-${crypto.randomUUID()}-${sanitizeFileName(fileName)}`;
-}
-
-function getUploadedFile(formData: FormData, key: string) {
-  const file = formData.get(key);
-
-  if (!(file instanceof File) || file.size === 0) {
-    return null;
-  }
-
-  return file;
-}
-
-function validateImageFile(file: File) {
-  if (!ALLOWED_MIME_TYPES.has(file.type)) {
-    return "photo-type";
-  }
-
-  if (file.size > MAX_FILE_SIZE) {
-    return "photo-size";
-  }
-
-  return "";
-}
 
 async function loadOwnedProperty(propertyId: string) {
   const supabase = await createSupabaseServerClient();
@@ -186,13 +153,13 @@ function buildRoomRedirectTarget(formData: FormData, propertyId: string, roomId:
 export async function uploadPropertyPhoto(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
   const profile = await requireOwnerMutationAccess(buildPropertyPath(propertyId));
-  const file = getUploadedFile(formData, "photo");
+  const files = getUploadedPropertyPhotoFiles(formData);
 
-  if (!propertyId || !file) {
+  if (!propertyId || !files.length) {
     redirect(buildPropertyPathWithState(propertyId, "property", { error: "photo-validation" }));
   }
 
-  const fileError = validateImageFile(file);
+  const fileError = validatePropertyPhotoFiles(files);
 
   if (fileError) {
     redirect(buildPropertyPathWithState(propertyId, "property", { error: fileError }));
@@ -204,35 +171,9 @@ export async function uploadPropertyPhoto(formData: FormData) {
     redirect(buildPropertyPathWithState(propertyId, "property", { error: "photo-upload" }));
   }
 
-  const { data: photoRows } = await supabase
-    .from("property_photos")
-    .select("sort_order")
-    .eq("property_id", propertyId)
-    .order("sort_order", { ascending: false })
-    .limit(1);
-  const nextSortOrder = Number(photoRows?.[0]?.sort_order ?? -1) + 1;
+  const uploadError = await uploadPropertyPhotoFiles(supabase, profile.id, propertyId, files);
 
-  const admin = createSupabaseAdminClient();
-  const storagePath = buildStoragePath(profile.id, "properties", propertyId, file.name);
-  const uploadResult = await admin.storage.from(PHOTO_BUCKET).upload(storagePath, await file.arrayBuffer(), {
-    contentType: file.type,
-    upsert: false,
-  });
-
-  if (uploadResult.error) {
-    redirect(buildPropertyPathWithState(propertyId, "property", { error: "photo-upload" }));
-  }
-
-  const { data: publicUrlData } = admin.storage.from(PHOTO_BUCKET).getPublicUrl(storagePath);
-  const { error } = await supabase.from("property_photos").insert({
-    property_id: propertyId,
-    storage_path: storagePath,
-    public_url: publicUrlData.publicUrl,
-    sort_order: nextSortOrder,
-  });
-
-  if (error) {
-    await admin.storage.from(PHOTO_BUCKET).remove([storagePath]);
+  if (uploadError) {
     redirect(buildPropertyPathWithState(propertyId, "property", { error: "photo-upload" }));
   }
 
