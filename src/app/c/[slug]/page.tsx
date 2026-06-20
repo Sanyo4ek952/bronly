@@ -1,9 +1,11 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getPublicCollectionPageData, recordPublicCollectionOpen } from "@/entities/collection";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
+import { createSeoMetadata } from "@/shared/lib/seo";
 import { ButtonLink } from "@/shared/ui";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
 
@@ -15,6 +17,19 @@ type PublicCollectionPageProps = {
 function getSearchString(params: Record<string, string | string[] | undefined>, key: string) {
   const value = params[key];
   return typeof value === "string" ? value : "";
+}
+
+export async function generateMetadata({ params }: PublicCollectionPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const pageData = await getPublicCollectionPageData(slug);
+  const title = pageData?.collection?.title ? `${pageData.collection.title} — подборка вариантов` : "Подборка вариантов проживания";
+
+  return createSeoMetadata({
+    title,
+    description: "Персональная подборка объектов и номеров по прямой ссылке. Страница доступна для просмотра, но не индексируется в поиске.",
+    path: `/c/${encodeURIComponent(slug)}`,
+    index: false,
+  });
 }
 
 export default async function PublicCollectionPage({ params, searchParams }: PublicCollectionPageProps) {

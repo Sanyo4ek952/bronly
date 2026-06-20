@@ -1,11 +1,20 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { forgotPasswordAction } from "@/app/auth/actions";
+import { createSeoMetadata } from "@/shared/lib/seo";
 import { BrandLogo } from "@/shared/ui";
 
 type ForgotPasswordPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export const metadata: Metadata = createSeoMetadata({
+  title: "Восстановление доступа",
+  description: "Страница восстановления пароля в Bronly.",
+  path: "/forgot-password",
+  index: false,
+});
 
 export default async function ForgotPasswordPage({ searchParams }: ForgotPasswordPageProps) {
   const fallbackParams: Record<string, string | string[] | undefined> = {};

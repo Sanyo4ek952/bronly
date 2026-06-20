@@ -1,9 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getPublicCollectionPageData } from "@/entities/collection";
 import { GuestRequestForm } from "@/features/request/submit-request";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
+import { createSeoMetadata } from "@/shared/lib/seo";
 import { ButtonLink, Panel } from "@/shared/ui";
 
 import { submitCollectionGuestRequestAction } from "./actions";
@@ -12,6 +14,13 @@ type PublicCollectionRequestPageProps = {
   params: Promise<{ slug: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export const metadata: Metadata = createSeoMetadata({
+  title: "Заявка из коллекции",
+  description: "Форма отправки заявки на проживание из коллекции в Bronly.",
+  path: "/c/request",
+  index: false,
+});
 
 function getSearchString(params: Record<string, string | string[] | undefined>, key: string) {
   const value = params[key];

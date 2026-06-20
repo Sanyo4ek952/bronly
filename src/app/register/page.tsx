@@ -1,9 +1,18 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { signUpAction } from "@/app/auth/actions";
 import { getCurrentAuthProfile, getPostLoginRedirect } from "@/shared/api/supabase";
+import { createSeoMetadata } from "@/shared/lib/seo";
 import { BrandLogo } from "@/shared/ui";
+
+export const metadata: Metadata = createSeoMetadata({
+  title: "Регистрация",
+  description: "Страница регистрации в Bronly.",
+  path: "/register",
+  index: false,
+});
 
 type RegisterPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;

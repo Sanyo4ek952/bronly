@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -5,6 +6,7 @@ import { getOwnerPropertySectionBySlug, getPublicPropertyPageData, resolveOwnerP
 import { GuestRequestForm } from "@/features/request/submit-request";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { encodePublicPathSegment } from "@/shared/lib/public-links";
+import { createSeoMetadata } from "@/shared/lib/seo";
 import { ButtonLink, Panel } from "@/shared/ui";
 
 import { submitGuestRequestAction } from "./actions";
@@ -13,6 +15,13 @@ type PublicRequestPageProps = {
   params: Promise<{ slug: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export const metadata: Metadata = createSeoMetadata({
+  title: "Заявка на проживание",
+  description: "Форма отправки заявки на проживание в Bronly.",
+  path: "/p/request",
+  index: false,
+});
 
 function getSearchString(params: Record<string, string | string[] | undefined>, key: string) {
   const value = params[key];

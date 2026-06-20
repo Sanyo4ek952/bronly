@@ -1,12 +1,21 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { updatePasswordAction } from "@/app/auth/actions";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
+import { createSeoMetadata } from "@/shared/lib/seo";
 import { BrandLogo } from "@/shared/ui";
 
 type ResetPasswordPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export const metadata: Metadata = createSeoMetadata({
+  title: "Новый пароль",
+  description: "Страница обновления пароля в Bronly.",
+  path: "/reset-password",
+  index: false,
+});
 
 export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
   const profile = await getCurrentAuthProfile();

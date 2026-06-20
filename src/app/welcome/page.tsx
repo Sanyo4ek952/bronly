@@ -1,12 +1,21 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCurrentAuthProfile, getPostLoginRedirect, getPrimaryRole } from "@/shared/api/supabase";
+import { createSeoMetadata } from "@/shared/lib/seo";
 import { BrandLogo } from "@/shared/ui";
 
 type WelcomePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export const metadata: Metadata = createSeoMetadata({
+  title: "Первый вход",
+  description: "Служебная страница первого входа в Bronly.",
+  path: "/welcome",
+  index: false,
+});
 
 const ownerSteps = [
   "Добавьте объект размещения.",

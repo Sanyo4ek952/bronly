@@ -1,9 +1,11 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { getPublicPropertyPageData, resolveOwnerPublicSlug } from "@/entities/property";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
+import { buildCanonicalUrl, createSeoMetadata, toJsonLd } from "@/shared/lib/seo";
 import { Button, ButtonLink } from "@/shared/ui";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
 
@@ -36,6 +38,51 @@ function buildOwnerRedirectHref(
 
   const search = params.toString();
   return `/p/${ownerSlug}${search ? `?${search}` : ""}`;
+}
+
+function buildOwnerDescription(pageData: NonNullable<Awaited<ReturnType<typeof getPublicPropertyPageData>>>) {
+  const city = pageData.properties[0]?.property.city || pageData.standaloneRooms[0]?.location?.city;
+  const locationPart = city ? ` в ${city}` : "";
+
+  return `Персональная страница владельца${locationPart}: номера, цены, календарь занятости и возможность оставить заявку на проживание.`;
+}
+
+export async function generateMetadata({ params }: PublicPropertyPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const resolvedSlug = await resolveOwnerPublicSlug(slug);
+
+  if (!resolvedSlug) {
+    return createSeoMetadata({
+      title: "Страница владельца не найдена",
+      description: "Публичная страница владельца недоступна.",
+      path: `/p/${encodeURIComponent(slug)}`,
+      index: false,
+      openGraphType: "profile",
+    });
+  }
+
+  const pageData = await getPublicPropertyPageData(resolvedSlug.ownerSlug);
+  const canonicalPath = `/p/${encodeURIComponent(resolvedSlug.ownerSlug)}`;
+
+  if (!pageData?.owner || pageData.publicUnavailableReason) {
+    return createSeoMetadata({
+      title: "Страница владельца временно недоступна",
+      description: "Публичная страница владельца временно недоступна.",
+      path: canonicalPath,
+      index: false,
+      openGraphType: "profile",
+    });
+  }
+
+  const heroPhoto = pageData.properties[0]?.property.photos[0]?.url ?? pageData.standaloneRooms[0]?.photos?.[0]?.url ?? "/icon";
+
+  return createSeoMetadata({
+    title: `${pageData.owner.displayName} — персональная страница владельца`,
+    description: buildOwnerDescription(pageData),
+    path: canonicalPath,
+    imagePath: heroPhoto,
+    openGraphType: "profile",
+  });
 }
 
 export default async function PublicPropertyPage({ params, searchParams }: PublicPropertyPageProps) {
@@ -89,10 +136,23 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
     : standaloneRooms[0]
       ? `/p/${owner.slug}/request?roomId=${encodeURIComponent(standaloneRooms[0].id)}`
       : null;
+  const ownerJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    url: buildCanonicalUrl(`/p/${encodeURIComponent(owner.slug)}`),
+    name: `${owner.displayName} — персональная страница владельца`,
+    description: buildOwnerDescription(pageData),
+    mainEntity: {
+      "@type": "Person",
+      name: owner.displayName,
+    },
+  };
 
   return (
-    <main className="br-page">
-      <div className="br-container">
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: toJsonLd(ownerJsonLd) }} />
+      <main className="br-page">
+        <div className="br-container">
         <header className="br-header br-header--public">
           <BrandSlot />
           <nav className="br-nav" aria-label="Навигация публичной страницы владельца">
@@ -176,8 +236,9 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
             </section>
           ) : null}
         </section>
-      </div>
-    </main>
+        </div>
+      </main>
+    </>
   );
 }
 

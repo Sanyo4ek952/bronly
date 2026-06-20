@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Bronly",
     short_name: "Bronly",
     description:
-      "Bronly — сервис персональных страниц для владельцев жилья с номерами, ценами, календарём занятости и заявками.",
+      "Bronly — сервис персональных страниц для владельцев жилья и агентов: номера, цены, календарь занятости и заявки по прямой ссылке.",
     start_url: "/",
     scope: "/",
     display: "standalone",

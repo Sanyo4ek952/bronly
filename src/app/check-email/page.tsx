@@ -1,12 +1,21 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { resendConfirmationEmailAction } from "@/app/auth/actions";
 import { getAuthUserEmailStatus } from "@/shared/api/supabase";
+import { createSeoMetadata } from "@/shared/lib/seo";
 import { BrandLogo } from "@/shared/ui";
 
 type CheckEmailPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export const metadata: Metadata = createSeoMetadata({
+  title: "Подтверждение email",
+  description: "Страница подтверждения email в Bronly.",
+  path: "/check-email",
+  index: false,
+});
 
 function buildLoginHref(email: string, invite: string) {
   const params = new URLSearchParams({

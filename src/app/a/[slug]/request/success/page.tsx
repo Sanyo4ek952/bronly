@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { CircleCheckBig } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
@@ -5,12 +6,20 @@ import { notFound, redirect } from "next/navigation";
 import { getPublicAgentPageData } from "@/entities/collaboration";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { encodePublicPathSegment } from "@/shared/lib/public-links";
+import { createSeoMetadata } from "@/shared/lib/seo";
 import { AppIcon, ButtonLink, Panel } from "@/shared/ui";
 
 type AgentRequestSuccessPageProps = {
   params: Promise<{ slug: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export const metadata: Metadata = createSeoMetadata({
+  title: "Заявка отправлена",
+  description: "Служебная страница успешной отправки заявки по ссылке агента в Bronly.",
+  path: "/a/request/success",
+  index: false,
+});
 
 function getSearchString(params: Record<string, string | string[] | undefined>, key: string) {
   const value = params[key];

@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { getPublicAgentPageData } from "@/entities/collaboration";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
+import { buildCanonicalUrl, createSeoMetadata, toJsonLd } from "@/shared/lib/seo";
 import { Button, ButtonLink } from "@/shared/ui";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
 
@@ -13,6 +15,51 @@ type PublicAgentPageProps = {
 function getSearchString(params: Record<string, string | string[] | undefined>, key: string) {
   const value = params[key];
   return typeof value === "string" ? value : "";
+}
+
+function buildAgentDescription(pageData: NonNullable<Awaited<ReturnType<typeof getPublicAgentPageData>>>) {
+  const city = pageData.properties[0]?.property.city || pageData.standaloneRooms[0]?.location?.city;
+  const locationPart = city ? ` в ${city}` : "";
+
+  return `Агентская витрина${locationPart}: варианты проживания, цены и возможность оставить заявку по ссылке агента.`;
+}
+
+export async function generateMetadata({ params }: PublicAgentPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const pageData = await getPublicAgentPageData(slug);
+
+  if (!pageData) {
+    return createSeoMetadata({
+      title: "Агентская витрина не найдена",
+      description: "Публичная страница агента недоступна.",
+      path: `/a/${encodeURIComponent(slug)}`,
+      index: false,
+      openGraphType: "profile",
+    });
+  }
+
+  const canonicalId = pageData.agent?.publicId ?? slug;
+  const canonicalPath = `/a/${encodeURIComponent(canonicalId)}`;
+
+  if (!pageData.agent || pageData.publicUnavailableReason) {
+    return createSeoMetadata({
+      title: "Агентская витрина временно недоступна",
+      description: "Публичная страница агента временно недоступна.",
+      path: canonicalPath,
+      index: false,
+      openGraphType: "profile",
+    });
+  }
+
+  const heroPhoto = pageData.properties[0]?.property.photos[0]?.url ?? pageData.standaloneRooms[0]?.photos?.[0]?.url ?? "/icon";
+
+  return createSeoMetadata({
+    title: `${pageData.agent.displayName} — агентская витрина`,
+    description: buildAgentDescription(pageData),
+    path: canonicalPath,
+    imagePath: heroPhoto,
+    openGraphType: "profile",
+  });
 }
 
 export default async function PublicAgentPage({ params, searchParams }: PublicAgentPageProps) {
@@ -54,10 +101,23 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
   }
 
   const { agent, properties, standaloneRooms, filters, publicWarningText } = pageData;
+  const agentJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    url: buildCanonicalUrl(`/a/${encodeURIComponent(agent.publicId)}`),
+    name: `${agent.displayName} — агентская витрина`,
+    description: buildAgentDescription(pageData),
+    mainEntity: {
+      "@type": "Person",
+      name: agent.displayName,
+    },
+  };
 
   return (
-    <main className="br-page">
-      <div className="br-container">
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: toJsonLd(agentJsonLd) }} />
+      <main className="br-page">
+        <div className="br-container">
         <header className="br-header br-header--public">
           <div>
             <h1>{agent.displayName}</h1>
@@ -119,7 +179,8 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
             </div>
           </section>
         )}
-      </div>
-    </main>
+        </div>
+      </main>
+    </>
   );
 }

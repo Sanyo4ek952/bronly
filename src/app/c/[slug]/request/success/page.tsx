@@ -1,14 +1,23 @@
+import type { Metadata } from "next";
 import { CircleCheckBig } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { getPublicCollectionPageData } from "@/entities/collection";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
+import { createSeoMetadata } from "@/shared/lib/seo";
 import { AppIcon, ButtonLink, Panel } from "@/shared/ui";
 
 type CollectionRequestSuccessPageProps = {
   params: Promise<{ slug: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export const metadata: Metadata = createSeoMetadata({
+  title: "Заявка отправлена",
+  description: "Служебная страница успешной отправки заявки из коллекции в Bronly.",
+  path: "/c/request/success",
+  index: false,
+});
 
 function getSearchString(params: Record<string, string | string[] | undefined>, key: string) {
   const value = params[key];

@@ -1,9 +1,18 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { signInAction } from "@/app/auth/actions";
 import { getCurrentAuthProfile, getPostLoginRedirect } from "@/shared/api/supabase";
+import { createSeoMetadata } from "@/shared/lib/seo";
 import { BrandLogo } from "@/shared/ui";
+
+export const metadata: Metadata = createSeoMetadata({
+  title: "Вход",
+  description: "Страница входа в Bronly.",
+  path: "/login",
+  index: false,
+});
 
 type LoginPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;

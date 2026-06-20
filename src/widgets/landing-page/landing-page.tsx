@@ -8,30 +8,30 @@ const capabilityCards = [
   {
     icon: MonitorSmartphone,
     title: "Персональная страница",
-    text: "Покажите объект, номера, цены и удобства в одной чистой витрине без конкурентов.",
+    text: "Покажите объект, номера, цены и удобства по одной ссылке без общего каталога и без конкурентов рядом.",
   },
   {
     icon: Inbox,
     title: "Заявки без посредников",
-    text: "Гость оставляет запрос на проживание на конкретный номер, а владелец связывается с ним напрямую.",
+    text: "Гость оставляет запрос на проживание по конкретному номеру, а владелец или агент связывается с ним напрямую.",
   },
   {
     icon: LayoutDashboard,
     title: "Один кабинет",
-    text: "Календарь занятости, заявки, подписка и управление объектами собраны в одном месте.",
+    text: "Календарь занятости, заявки, подписка и управление объектами собраны в одном mobile-first интерфейсе.",
   },
   {
     icon: Smartphone,
     title: "PWA на телефоне",
-    text: "Сервис работает как мобильное приложение с быстрым доступом и push-уведомлениями.",
+    text: "Сервис работает как приложение на смартфоне: быстрый доступ, push-уведомления и удобная работа с телефона.",
   },
 ] satisfies Array<{ icon: AppIconComponent; title: string; text: string }>;
 
 const workflowSteps = [
-  "Создайте объект и добавьте номера.",
-  "Заполните цены, фото и правила проживания.",
-  "Получите публичную ссылку и отправьте её гостю.",
-  "Получайте заявки и ведите календарь занятости.",
+  "Создайте объект или отдельный номер.",
+  "Добавьте фото, цены и занятые даты.",
+  "Отправьте гостю персональную ссылку.",
+  "Получайте заявки и уточняйте доступность напрямую.",
 ];
 
 const pricingCards = [
@@ -46,8 +46,8 @@ const pricingCards = [
   {
     name: "Базовый",
     price: "790 ₽",
-    text: "Для владельцев, которые уже работают с заявками регулярно.",
-    features: ["Публичная витрина", "Календарь занятости и заявки", "PWA и уведомления"],
+    text: "Для владельцев, которые регулярно работают с заявками.",
+    features: ["Публичная страница", "Календарь занятости и заявки", "PWA и уведомления"],
     cta: "Выбрать тариф",
     featured: true,
   },
@@ -62,10 +62,22 @@ const pricingCards = [
 ];
 
 const faqItems = [
-  "Bronly подтверждает проживание?",
-  "Можно ли принимать оплату проживания через сервис?",
-  "Нужно ли ставить приложение из App Store?",
-  "Можно ли отправить гостю ссылку сразу с выбранными датами?",
+  {
+    question: "Bronly подтверждает проживание?",
+    answer: "Нет. Сервис не подтверждает проживание от своего имени. После заявки владелец или агент связывается с гостем и уточняет доступность.",
+  },
+  {
+    question: "Можно ли принять оплату за проживание через Bronly?",
+    answer: "Нет. В MVP Bronly не принимает оплату за проживание и не выступает стороной сделки.",
+  },
+  {
+    question: "Нужно ли устанавливать приложение из App Store или Google Play?",
+    answer: "Нет. Bronly работает как PWA: страницу можно открыть в браузере и установить на главный экран телефона.",
+  },
+  {
+    question: "Можно ли отправить гостю ссылку сразу с выбранными датами?",
+    answer: "Да, публичные страницы и коллекции поддерживают фильтр по датам, гостям и комнатам, чтобы гость сразу видел релевантные варианты.",
+  },
 ];
 
 export function LandingPage() {
@@ -78,15 +90,15 @@ export function LandingPage() {
       <section className="br-hero">
         <div className="br-container br-hero__grid">
           <div>
-            <span className="br-chip">mobile-first PWA для владельцев жилья</span>
+            <span className="br-chip">mobile-first PWA для владельцев жилья и агентов</span>
             <h1 className="br-hero__title">
-              Создайте страницу
+              Персональная страница
               <br />
-              со своими <span className="br-hero__title-accent">номерами</span>
+              для ваших <span className="br-hero__title-accent">номеров и заявок</span>
             </h1>
             <p className="br-hero__text">
-              Bronly помогает владельцам жилья показать объект, вести календарь занятости и получать заявки по одной
-              персональной ссылке.
+              Bronly помогает владельцам жилья и агентам показать варианты проживания, вести календарь занятости и получать
+              заявки по прямой ссылке без общего каталога.
             </p>
             <div className="br-hero__actions">
               <Link href="/register" className="br-button br-button--primary">
@@ -99,16 +111,16 @@ export function LandingPage() {
 
             <div className="br-hero__highlights">
               <div className="br-highlight">
-                <strong>Без комиссии</strong>
-                <span>и скрытых платежей за проживание</span>
+                <strong>Без оплаты проживания</strong>
+                <span>Сервис не принимает деньги за проживание и не обещает подтверждение от своего имени</span>
               </div>
               <div className="br-highlight">
                 <strong>Быстрый запуск</strong>
-                <span>с опорой на понятные шаблоны</span>
+                <span>Объект, номер, ссылка и первая заявка без перегруженного кабинета</span>
               </div>
               <div className="br-highlight">
-                <strong>На телефоне</strong>
-                <span>как PWA с уведомлениями</span>
+                <strong>Удобно с телефона</strong>
+                <span>PWA, уведомления и сценарии, рассчитанные на mobile-first работу</span>
               </div>
             </div>
           </div>
@@ -124,7 +136,7 @@ export function LandingPage() {
                 <div className="br-phone-preview__image" />
                 <div className="br-phone-preview__content">
                   <strong>Вилла у моря</strong>
-                  <span>г. Геленджик, ул. Набережная, 15</span>
+                  <span>Геленджик, Набережная, 15</span>
                 </div>
               </div>
               <div className="br-phone-preview__stats">
@@ -133,7 +145,7 @@ export function LandingPage() {
                 <span>Вид на море</span>
               </div>
               <button className="br-button br-button--primary br-button--full">Оставить заявку</button>
-              <p className="br-phone-preview__caption">Быстрый ответ владельца и понятный сценарий для гостя.</p>
+              <p className="br-phone-preview__caption">Гость видит понятный сценарий и оставляет запрос на проживание по конкретному номеру.</p>
             </div>
           </div>
         </div>
@@ -143,7 +155,7 @@ export function LandingPage() {
         <div className="br-container">
           <div className="br-section-heading">
             <h2>Возможности Bronly</h2>
-            <p>Стартовый набор для запуска персональной витрины без перегруженного кабинета.</p>
+            <p>Стартовый набор для персональной страницы владельца или агентской витрины в рамках MVP.</p>
           </div>
           <div className="br-features">
             {capabilityCards.map((card) => (
@@ -165,7 +177,7 @@ export function LandingPage() {
             <div>
               <div className="br-section-heading">
                 <h2>Как это работает</h2>
-                <p>Фокус на простом owner-flow: объект, номера, ссылка, заявки.</p>
+                <p>Фокус на простом сценарии: объект, номер, ссылка, заявка и календарь занятости.</p>
               </div>
               <div className="br-step-list">
                 {workflowSteps.map((step, index) => (
@@ -179,7 +191,7 @@ export function LandingPage() {
 
             <aside className="br-card br-dashboard-card">
               <div className="br-dashboard-card__header">
-                <strong>Панель владельца</strong>
+                <strong>Кабинет владельца</strong>
                 <span>Обзор за 30 дней</span>
               </div>
               <div className="br-stat-grid">
@@ -199,11 +211,11 @@ export function LandingPage() {
               <div className="br-dashboard-card__list">
                 <div>
                   <span>Публичная ссылка</span>
-                  <strong>bronly.ru/u/ivanov-villa</strong>
+                  <strong>bronly.app/p/ivanov-villa</strong>
                 </div>
                 <div>
-                  <span>Подписка</span>
-                  <strong>Активна до 24 мая 2025</strong>
+                  <span>Статус</span>
+                  <strong>Календарь и заявки под рукой</strong>
                 </div>
               </div>
             </aside>
@@ -215,14 +227,11 @@ export function LandingPage() {
         <div className="br-container">
           <div className="br-section-heading">
             <h2>Простые тарифы</h2>
-            <p>Без оплаты проживания и без обещаний, которых сервис не должен давать.</p>
+            <p>Подписка на сервис без оплаты проживания и без обещаний гарантированного подтверждения.</p>
           </div>
           <div className="br-pricing-grid">
             {pricingCards.map((card) => (
-              <article
-                key={card.name}
-                className={`br-pricing-card${card.featured ? " br-pricing-card--featured" : ""}`}
-              >
+              <article key={card.name} className={`br-pricing-card${card.featured ? " br-pricing-card--featured" : ""}`}>
                 {card.featured ? <span className="br-pricing-card__badge">Популярный</span> : null}
                 <h3>{card.name}</h3>
                 <div className="br-pricing-card__price">
@@ -248,13 +257,13 @@ export function LandingPage() {
         <div className="br-container">
           <div className="br-section-heading">
             <h2>Частые вопросы</h2>
-            <p>Сразу подстраиваем копирайтинг под продуктовые границы Bronly.</p>
+            <p>Ответы соответствуют границам MVP: Bronly помогает получать заявки, но не заменяет прямое общение с гостем.</p>
           </div>
           <div className="br-faq-list">
             {faqItems.map((item) => (
-              <article key={item} className="br-faq-item">
-                <strong>{item}</strong>
-                <p>Ответ будет уточнен в продуктовых сценариях, но терминология и границы MVP уже зафиксированы в документации проекта.</p>
+              <article key={item.question} className="br-faq-item">
+                <strong>{item.question}</strong>
+                <p>{item.answer}</p>
               </article>
             ))}
           </div>

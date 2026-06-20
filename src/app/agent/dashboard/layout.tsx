@@ -1,10 +1,16 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { getUnreadNotificationCount } from "@/entities/notification";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile, getPrimaryRole } from "@/shared/api/supabase";
 import { formatDateLabel } from "@/shared/lib/date";
+import { createRobots } from "@/shared/lib/seo";
 import { OwnerShell } from "@/widgets/owner-shell";
+
+export const metadata: Metadata = {
+  robots: createRobots(false),
+};
 
 export default async function AgentDashboardLayout({
   children,

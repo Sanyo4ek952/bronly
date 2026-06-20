@@ -1,10 +1,19 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { getReferralInvitePageData } from "@/entities/referral";
+import { createSeoMetadata } from "@/shared/lib/seo";
 
 type InvitePageProps = {
   params: Promise<{ token: string }>;
 };
+
+export const metadata: Metadata = createSeoMetadata({
+  title: "Приглашение",
+  description: "Персональное приглашение в Bronly.",
+  path: "/invite",
+  index: false,
+});
 
 export default async function InvitePage({ params }: InvitePageProps) {
   const { token } = await params;
