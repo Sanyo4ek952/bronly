@@ -5153,6 +5153,7 @@ body {
 }
 
 .br-button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -5192,8 +5193,32 @@ body {
 }
 
 .br-button--loading {
-  min-width: 40px;
   pointer-events: none;
+}
+
+.br-button__content {
+  position: relative;
+  display: inline-grid;
+  width: 100%;
+  place-items: center;
+}
+
+.br-button__label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.br-button__label--hidden {
+  visibility: hidden;
+}
+
+.br-button__spinner-wrap {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
 }
 
 .br-button__spinner {
@@ -5208,6 +5233,48 @@ body {
 @keyframes br-button-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+.br-top-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  width: 100%;
+  height: 2px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.br-top-loading-bar[data-visible="true"] {
+  opacity: 1;
+}
+
+.br-top-loading-bar__progress {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-hover));
+  box-shadow: 0 0 10px rgb(var(--color-primary-rgb) / 24%);
+  transition: transform 180ms ease-out, opacity 160ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .br-button,
+  .br-top-loading-bar,
+  .br-top-loading-bar__progress {
+    transition-duration: 0.01ms;
+  }
+
+  .br-button:hover {
+    transform: none;
+  }
+
+  .br-button__spinner {
+    animation-duration: 1.2s;
   }
 }
 

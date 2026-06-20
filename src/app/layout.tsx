@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Manrope } from "next/font/google";
 
 import { RegisterServiceWorker } from "@/features/pwa/register-service-worker";
 import { createRobots, getSeoBaseUrl } from "@/shared/lib/seo";
+import { TopLoadingBar } from "@/shared/ui/top-loading-bar";
 
 import "./globals.css";
 
@@ -65,6 +67,9 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body className={manrope.variable}>
+        <Suspense fallback={null}>
+          <TopLoadingBar />
+        </Suspense>
         <RegisterServiceWorker />
         {children}
       </body>

@@ -8,6 +8,7 @@ import {
   subscribeBrowserToPush,
   unsubscribeBrowserFromPush,
 } from "@/features/pwa/push-notifications/model/browser-push";
+import { Button } from "@/shared/ui";
 
 type PushNotificationsCardProps = {
   deliveryMode: "enabled" | "foundation_only";
@@ -34,7 +35,7 @@ async function saveSubscription(payload: {
   });
 
   if (!response.ok) {
-    throw new Error("Не удалось сохранить подписку на push-уведомления.");
+    throw new Error("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ РїРѕРґРїРёСЃРєСѓ РЅР° push-СѓРІРµРґРѕРјР»РµРЅРёСЏ.");
   }
 }
 
@@ -48,7 +49,7 @@ async function deleteSubscription(endpoint: string) {
   });
 
   if (!response.ok) {
-    throw new Error("Не удалось отключить push-уведомления.");
+    throw new Error("РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РєР»СЋС‡РёС‚СЊ push-СѓРІРµРґРѕРјР»РµРЅРёСЏ.");
   }
 }
 
@@ -86,7 +87,7 @@ export function PushNotificationsCard({
         if (!vapidPublicKey) {
           setStatusMessage({
             tone: "warning",
-            text: "Push-уведомления пока не настроены для этого окружения.",
+            text: "Push-СѓРІРµРґРѕРјР»РµРЅРёСЏ РїРѕРєР° РЅРµ РЅР°СЃС‚СЂРѕРµРЅС‹ РґР»СЏ СЌС‚РѕРіРѕ РѕРєСЂСѓР¶РµРЅРёСЏ.",
           });
           return;
         }
@@ -104,17 +105,17 @@ export function PushNotificationsCard({
           tone: "muted",
           text:
             deliveryMode === "enabled"
-              ? "Push-уведомления включены для этого устройства."
-              : "Подписка сохранена. Внешняя отправка станет доступна после серверной настройки push.",
+              ? "Push-СѓРІРµРґРѕРјР»РµРЅРёСЏ РІРєР»СЋС‡РµРЅС‹ РґР»СЏ СЌС‚РѕРіРѕ СѓСЃС‚СЂРѕР№СЃС‚РІР°."
+              : "РџРѕРґРїРёСЃРєР° СЃРѕС…СЂР°РЅРµРЅР°. Р’РЅРµС€РЅСЏСЏ РѕС‚РїСЂР°РІРєР° СЃС‚Р°РЅРµС‚ РґРѕСЃС‚СѓРїРЅР° РїРѕСЃР»Рµ СЃРµСЂРІРµСЂРЅРѕР№ РЅР°СЃС‚СЂРѕР№РєРё push.",
         });
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Не удалось включить push-уведомления.";
+        const message = error instanceof Error ? error.message : "РќРµ СѓРґР°Р»РѕСЃСЊ РІРєР»СЋС‡РёС‚СЊ push-СѓРІРµРґРѕРјР»РµРЅРёСЏ.";
         setPermission(Notification.permission);
         setStatusMessage({
           tone: "warning",
           text:
             message === "Push permission denied."
-              ? "Браузер запретил push-уведомления. Разрешение можно изменить в настройках браузера."
+              ? "Р‘СЂР°СѓР·РµСЂ Р·Р°РїСЂРµС‚РёР» push-СѓРІРµРґРѕРјР»РµРЅРёСЏ. Р Р°Р·СЂРµС€РµРЅРёРµ РјРѕР¶РЅРѕ РёР·РјРµРЅРёС‚СЊ РІ РЅР°СЃС‚СЂРѕР№РєР°С… Р±СЂР°СѓР·РµСЂР°."
               : message,
         });
       }
@@ -134,12 +135,12 @@ export function PushNotificationsCard({
         setHasCurrentSubscription(false);
         setStatusMessage({
           tone: "muted",
-          text: "Push-уведомления отключены для этого устройства.",
+          text: "Push-СѓРІРµРґРѕРјР»РµРЅРёСЏ РѕС‚РєР»СЋС‡РµРЅС‹ РґР»СЏ СЌС‚РѕРіРѕ СѓСЃС‚СЂРѕР№СЃС‚РІР°.",
         });
       } catch (error) {
         setStatusMessage({
           tone: "warning",
-          text: error instanceof Error ? error.message : "Не удалось отключить push-уведомления.",
+          text: error instanceof Error ? error.message : "РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РєР»СЋС‡РёС‚СЊ push-СѓРІРµРґРѕРјР»РµРЅРёСЏ.",
         });
       }
     });
@@ -149,27 +150,27 @@ export function PushNotificationsCard({
     <section className="br-dashboard-block br-card">
       <div className="br-dashboard-block__header">
         <div>
-          <h2>Push-уведомления</h2>
-          <p>Получайте ключевые события MVP прямо в PWA на этом устройстве.</p>
+          <h2>Push-СѓРІРµРґРѕРјР»РµРЅРёСЏ</h2>
+          <p>РџРѕР»СѓС‡Р°Р№С‚Рµ РєР»СЋС‡РµРІС‹Рµ СЃРѕР±С‹С‚РёСЏ MVP РїСЂСЏРјРѕ РІ PWA РЅР° СЌС‚РѕРј СѓСЃС‚СЂРѕР№СЃС‚РІРµ.</p>
         </div>
       </div>
 
       <div className="br-owner-stack">
         <p className="br-owner-muted">
           {permission === "unsupported"
-            ? "Этот браузер не поддерживает push-уведомления."
+            ? "Р­С‚РѕС‚ Р±СЂР°СѓР·РµСЂ РЅРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚ push-СѓРІРµРґРѕРјР»РµРЅРёСЏ."
             : permission === "denied"
-              ? "Разрешение на push-уведомления сейчас отключено в браузере."
+              ? "Р Р°Р·СЂРµС€РµРЅРёРµ РЅР° push-СѓРІРµРґРѕРјР»РµРЅРёСЏ СЃРµР№С‡Р°СЃ РѕС‚РєР»СЋС‡РµРЅРѕ РІ Р±СЂР°СѓР·РµСЂРµ."
               : isActive
-                ? "Push-уведомления включены для этого устройства."
+                ? "Push-СѓРІРµРґРѕРјР»РµРЅРёСЏ РІРєР»СЋС‡РµРЅС‹ РґР»СЏ СЌС‚РѕРіРѕ СѓСЃС‚СЂРѕР№СЃС‚РІР°."
                 : hasServerSubscriptions
-                  ? "Для аккаунта уже есть сохраненные push-подписки. На этом устройстве push можно включить отдельно."
-                  : "Push-уведомления пока не включены."}
+                  ? "Р”Р»СЏ Р°РєРєР°СѓРЅС‚Р° СѓР¶Рµ РµСЃС‚СЊ СЃРѕС…СЂР°РЅРµРЅРЅС‹Рµ push-РїРѕРґРїРёСЃРєРё. РќР° СЌС‚РѕРј СѓСЃС‚СЂРѕР№СЃС‚РІРµ push РјРѕР¶РЅРѕ РІРєР»СЋС‡РёС‚СЊ РѕС‚РґРµР»СЊРЅРѕ."
+                  : "Push-СѓРІРµРґРѕРјР»РµРЅРёСЏ РїРѕРєР° РЅРµ РІРєР»СЋС‡РµРЅС‹."}
         </p>
 
         {deliveryMode === "foundation_only" ? (
           <div className="br-inline-notice">
-            Подписка и запись доставок уже работают. Внешняя отправка push будет активирована после настройки серверных VAPID-ключей.
+            РџРѕРґРїРёСЃРєР° Рё Р·Р°РїРёСЃСЊ РґРѕСЃС‚Р°РІРѕРє СѓР¶Рµ СЂР°Р±РѕС‚Р°СЋС‚. Р’РЅРµС€РЅСЏСЏ РѕС‚РїСЂР°РІРєР° push Р±СѓРґРµС‚ Р°РєС‚РёРІРёСЂРѕРІР°РЅР° РїРѕСЃР»Рµ РЅР°СЃС‚СЂРѕР№РєРё СЃРµСЂРІРµСЂРЅС‹С… VAPID-РєР»СЋС‡РµР№.
           </div>
         ) : null}
 
@@ -178,18 +179,15 @@ export function PushNotificationsCard({
         ) : null}
 
         <div className="br-owner-actions">
-          <button
-            className="br-button br-button--primary"
+          <Button
             type="button"
             onClick={isActive ? handleDisable : handleEnable}
-            disabled={isPending || permission === "unsupported"}
+            disabled={permission === "unsupported"}
+            isLoading={isPending}
+            loadingLabel="Сохранение"
           >
-            {isPending
-              ? "Сохраняем..."
-              : isActive
-                ? "Отключить push-уведомления"
-                : "Включить push-уведомления"}
-          </button>
+            {isActive ? "РћС‚РєР»СЋС‡РёС‚СЊ push-СѓРІРµРґРѕРјР»РµРЅРёСЏ" : "Р’РєР»СЋС‡РёС‚СЊ push-СѓРІРµРґРѕРјР»РµРЅРёСЏ"}
+          </Button>
         </div>
       </div>
     </section>

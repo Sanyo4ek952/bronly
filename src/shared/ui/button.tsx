@@ -20,6 +20,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   className?: string;
   fullWidth?: boolean;
   loading?: boolean;
+  isLoading?: boolean;
   loadingLabel?: string;
   variant?: ButtonVariant;
   size?: ButtonSize;
@@ -53,6 +54,7 @@ export function Button({
   disabled,
   fullWidth = false,
   loading = false,
+  isLoading,
   loadingLabel = "Загрузка",
   variant = "primary",
   size = "md",
@@ -60,23 +62,32 @@ export function Button({
   "aria-label": ariaLabel,
   ...props
 }: ButtonProps) {
+  const loadingState = isLoading ?? loading;
+
   return (
     <button
       type={type}
-      aria-busy={loading || undefined}
-      aria-label={loading ? loadingLabel : ariaLabel}
+      aria-busy={loadingState || undefined}
+      aria-label={loadingState ? loadingLabel : ariaLabel}
       className={cn(
         "br-button",
         getVariantClass(variant),
         getSizeClass(size),
         fullWidth && "br-button--full",
-        loading && "br-button--loading",
+        loadingState && "br-button--loading",
         className,
       )}
-      disabled={disabled || loading}
+      disabled={disabled || loadingState}
       {...props}
     >
-      {loading ? <span className="br-button__spinner" aria-hidden="true" /> : children}
+      <span className="br-button__content">
+        <span className={cn("br-button__label", loadingState && "br-button__label--hidden")}>{children}</span>
+        {loadingState ? (
+          <span className="br-button__spinner-wrap" aria-hidden="true">
+            <span className="br-button__spinner" />
+          </span>
+        ) : null}
+      </span>
     </button>
   );
 }

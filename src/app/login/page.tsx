@@ -5,11 +5,11 @@ import { redirect } from "next/navigation";
 import { signInAction } from "@/app/auth/actions";
 import { getCurrentAuthProfile, getPostLoginRedirect } from "@/shared/api/supabase";
 import { createSeoMetadata } from "@/shared/lib/seo";
-import { BrandLogo } from "@/shared/ui";
+import { BrandLogo, SubmitButton } from "@/shared/ui";
 
 export const metadata: Metadata = createSeoMetadata({
-  title: "Вход",
-  description: "Страница входа в Bronly.",
+  title: "Р’С…РѕРґ",
+  description: "РЎС‚СЂР°РЅРёС†Р° РІС…РѕРґР° РІ Bronly.",
   path: "/login",
   index: false,
 });
@@ -56,45 +56,45 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <BrandLogo className="br-auth-shell__logo" />
         <div className="br-auth-shell__grid">
           <div className="br-auth-shell__intro">
-            <span className="br-chip">Вход владельца или агента</span>
-            <h1 className="br-auth-shell__title">Вход в аккаунт</h1>
+            <span className="br-chip">Р’С…РѕРґ РІР»Р°РґРµР»СЊС†Р° РёР»Рё Р°РіРµРЅС‚Р°</span>
+            <h1 className="br-auth-shell__title">Р’С…РѕРґ РІ Р°РєРєР°СѓРЅС‚</h1>
             <p className="br-auth-shell__text">
-              Вернитесь в кабинет, чтобы управлять объектами, календарем занятости и заявками.
+              Р’РµСЂРЅРёС‚РµСЃСЊ РІ РєР°Р±РёРЅРµС‚, С‡С‚РѕР±С‹ СѓРїСЂР°РІР»СЏС‚СЊ РѕР±СЉРµРєС‚Р°РјРё, РєР°Р»РµРЅРґР°СЂРµРј Р·Р°РЅСЏС‚РѕСЃС‚Рё Рё Р·Р°СЏРІРєР°РјРё.
             </p>
           </div>
 
           <div className="br-auth-panel">
             {error === "profile" ? (
               <p className="br-card" style={{ marginBottom: 16 }}>
-                Вход выполнен, но профиль в Bronly не создан. Попробуйте войти еще раз или обратитесь в
-                поддержку.
+                Р’С…РѕРґ РІС‹РїРѕР»РЅРµРЅ, РЅРѕ РїСЂРѕС„РёР»СЊ РІ Bronly РЅРµ СЃРѕР·РґР°РЅ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РІРѕР№С‚Рё РµС‰Рµ СЂР°Р· РёР»Рё РѕР±СЂР°С‚РёС‚РµСЃСЊ РІ
+                РїРѕРґРґРµСЂР¶РєСѓ.
               </p>
             ) : null}
             {error === "session" ? (
               <p className="br-card" style={{ marginBottom: 16 }}>
-                Вход прошел, но сессия не сохранилась. Отключите блокировку cookies для localhost и
-                попробуйте снова.
+                Р’С…РѕРґ РїСЂРѕС€РµР», РЅРѕ СЃРµСЃСЃРёСЏ РЅРµ СЃРѕС…СЂР°РЅРёР»Р°СЃСЊ. РћС‚РєР»СЋС‡РёС‚Рµ Р±Р»РѕРєРёСЂРѕРІРєСѓ cookies РґР»СЏ localhost Рё
+                РїРѕРїСЂРѕР±СѓР№С‚Рµ СЃРЅРѕРІР°.
               </p>
             ) : null}
             {error === "email-not-confirmed" ? (
               <p className="br-card" style={{ marginBottom: 16 }}>
-                Email РµС‰Рµ РЅРµ РїРѕРґС‚РІРµСЂР¶РґРµРЅ. Р—Р°РІРµСЂС€РёС‚Рµ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РёР· РїРёСЃСЊРјР° РёР»Рё РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚Рµ РґРѕСЃС‚СѓРї С‡РµСЂРµР· В«Р—Р°Р±С‹Р»Рё РїР°СЂРѕР»СЊ?В».
+                Email Р ВµРЎвЂ°Р Вµ Р Р…Р Вµ Р С—Р С•Р Т‘РЎвЂљР Р†Р ВµРЎР‚Р В¶Р Т‘Р ВµР Р…. Р вЂ”Р В°Р Р†Р ВµРЎР‚РЎв‚¬Р С‘РЎвЂљР Вµ Р С—Р С•Р Т‘РЎвЂљР Р†Р ВµРЎР‚Р В¶Р Т‘Р ВµР Р…Р С‘Р Вµ Р С‘Р В· Р С—Р С‘РЎРѓРЎРЉР СР В° Р С‘Р В»Р С‘ Р Р†Р С•РЎРѓРЎРѓРЎвЂљР В°Р Р…Р С•Р Р†Р С‘РЎвЂљР Вµ Р Т‘Р С•РЎРѓРЎвЂљРЎС“Р С— РЎвЂЎР ВµРЎР‚Р ВµР В· Р’В«Р вЂ”Р В°Р В±РЎвЂ№Р В»Р С‘ Р С—Р В°РЎР‚Р С•Р В»РЎРЉ?Р’В».
               </p>
             ) : null}
             {error && error !== "profile" && error !== "session" && error !== "email-not-confirmed" ? (
               <p className="br-card" style={{ marginBottom: 16 }}>
-                Не удалось войти. Проверьте email и пароль.
+                РќРµ СѓРґР°Р»РѕСЃСЊ РІРѕР№С‚Рё. РџСЂРѕРІРµСЂСЊС‚Рµ email Рё РїР°СЂРѕР»СЊ.
               </p>
             ) : null}
             {success === "check-email" ? (
               <p className="br-card" style={{ marginBottom: 16 }}>
-                Аккаунт создан. Если в проекте включено подтверждение email, завершите его и затем
-                войдите.
+                РђРєРєР°СѓРЅС‚ СЃРѕР·РґР°РЅ. Р•СЃР»Рё РІ РїСЂРѕРµРєС‚Рµ РІРєР»СЋС‡РµРЅРѕ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ email, Р·Р°РІРµСЂС€РёС‚Рµ РµРіРѕ Рё Р·Р°С‚РµРј
+                РІРѕР№РґРёС‚Рµ.
               </p>
             ) : null}
             {info === "already-confirmed" ? (
               <p className="br-card" style={{ marginBottom: 16 }}>
-                Этот email уже подтвержден. Войдите с паролем или восстановите его через «Забыли пароль?».
+                Р­С‚РѕС‚ email СѓР¶Рµ РїРѕРґС‚РІРµСЂР¶РґРµРЅ. Р’РѕР№РґРёС‚Рµ СЃ РїР°СЂРѕР»РµРј РёР»Рё РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚Рµ РµРіРѕ С‡РµСЂРµР· В«Р—Р°Р±С‹Р»Рё РїР°СЂРѕР»СЊ?В».
               </p>
             ) : null}
 
@@ -117,27 +117,25 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               </div>
               <div className="br-auth-form__field">
                 <label className="br-label" htmlFor="password">
-                  Пароль
+                  РџР°СЂРѕР»СЊ
                 </label>
                 <input
                   id="password"
                   name="password"
                   type="password"
                   className="br-field"
-                  placeholder="Введите пароль"
+                  placeholder="Р’РІРµРґРёС‚Рµ РїР°СЂРѕР»СЊ"
                   required
                 />
               </div>
               <Link href="/forgot-password" className="br-auth-form__forgot">
-                Забыли пароль?
+                Р—Р°Р±С‹Р»Рё РїР°СЂРѕР»СЊ?
               </Link>
-              <button type="submit" className="br-button br-button--primary br-button--full">
-                Войти
-              </button>
+              <SubmitButton fullWidth pendingLabel="Вход">Р’РѕР№С‚Рё</SubmitButton>
             </form>
 
             <p className="br-auth-bottom">
-              Нет аккаунта? <Link href={buildRegisterHref(invite, next)}>Создать аккаунт</Link>
+              РќРµС‚ Р°РєРєР°СѓРЅС‚Р°? <Link href={buildRegisterHref(invite, next)}>РЎРѕР·РґР°С‚СЊ Р°РєРєР°СѓРЅС‚</Link>
             </p>
           </div>
         </div>

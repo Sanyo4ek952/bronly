@@ -5,11 +5,11 @@ import { redirect } from "next/navigation";
 import { signUpAction } from "@/app/auth/actions";
 import { getCurrentAuthProfile, getPostLoginRedirect } from "@/shared/api/supabase";
 import { createSeoMetadata } from "@/shared/lib/seo";
-import { BrandLogo } from "@/shared/ui";
+import { BrandLogo, SubmitButton } from "@/shared/ui";
 
 export const metadata: Metadata = createSeoMetadata({
-  title: "Регистрация",
-  description: "Страница регистрации в Bronly.",
+  title: "Р РµРіРёСЃС‚СЂР°С†РёСЏ",
+  description: "РЎС‚СЂР°РЅРёС†Р° СЂРµРіРёСЃС‚СЂР°С†РёРё РІ Bronly.",
   path: "/register",
   index: false,
 });
@@ -56,18 +56,18 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
         <BrandLogo className="br-auth-shell__logo" />
         <div className="br-auth-shell__grid">
           <div className="br-auth-shell__intro">
-            <span className="br-chip">Старт для владельца или агента</span>
-            <h1 className="br-auth-shell__title">Создайте аккаунт</h1>
+            <span className="br-chip">РЎС‚Р°СЂС‚ РґР»СЏ РІР»Р°РґРµР»СЊС†Р° РёР»Рё Р°РіРµРЅС‚Р°</span>
+            <h1 className="br-auth-shell__title">РЎРѕР·РґР°Р№С‚Рµ Р°РєРєР°СѓРЅС‚</h1>
             <p className="br-auth-shell__text">
-              Запустите свою витрину, добавьте объекты, номера и начните принимать заявки по
-              персональной ссылке.
+              Р—Р°РїСѓСЃС‚РёС‚Рµ СЃРІРѕСЋ РІРёС‚СЂРёРЅСѓ, РґРѕР±Р°РІСЊС‚Рµ РѕР±СЉРµРєС‚С‹, РЅРѕРјРµСЂР° Рё РЅР°С‡РЅРёС‚Рµ РїСЂРёРЅРёРјР°С‚СЊ Р·Р°СЏРІРєРё РїРѕ
+              РїРµСЂСЃРѕРЅР°Р»СЊРЅРѕР№ СЃСЃС‹Р»РєРµ.
             </p>
           </div>
 
           <div className="br-auth-panel">
             {error ? (
               <p className="br-card" style={{ marginBottom: 16 }}>
-                Не удалось создать аккаунт. Проверьте поля и попробуйте еще раз.
+                РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ Р°РєРєР°СѓРЅС‚. РџСЂРѕРІРµСЂСЊС‚Рµ РїРѕР»СЏ Рё РїРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰Рµ СЂР°Р·.
               </p>
             ) : null}
 
@@ -77,24 +77,24 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
 
               <div className="br-auth-form__field">
                 <label className="br-label" htmlFor="display-name">
-                  Имя
+                  РРјСЏ
                 </label>
                 <input
                   id="display-name"
                   name="displayName"
                   type="text"
                   className="br-field"
-                  placeholder="Иван Иванов"
+                  placeholder="РРІР°РЅ РРІР°РЅРѕРІ"
                   required
                 />
               </div>
               <div className="br-auth-form__field">
                 <label className="br-label" htmlFor="role">
-                  Роль
+                  Р РѕР»СЊ
                 </label>
                 <select id="role" name="role" className="br-field" defaultValue={requestedRole}>
-                  <option value="owner">Владелец</option>
-                  <option value="agent">Агент</option>
+                  <option value="owner">Р’Р»Р°РґРµР»РµС†</option>
+                  <option value="agent">РђРіРµРЅС‚</option>
                 </select>
               </div>
               <div className="br-auth-form__field">
@@ -112,7 +112,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
               </div>
               <div className="br-auth-form__field">
                 <label className="br-label" htmlFor="phone">
-                  Телефон
+                  РўРµР»РµС„РѕРЅ
                 </label>
                 <input
                   id="phone"
@@ -124,30 +124,28 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
               </div>
               <div className="br-auth-form__field">
                 <label className="br-label" htmlFor="register-password">
-                  Пароль
+                  РџР°СЂРѕР»СЊ
                 </label>
                 <input
                   id="register-password"
                   name="password"
                   type="password"
                   className="br-field"
-                  placeholder="Минимум 8 символов"
+                  placeholder="РњРёРЅРёРјСѓРј 8 СЃРёРјРІРѕР»РѕРІ"
                   required
                 />
               </div>
               <label className="br-check">
                 <input name="acceptedTerms" type="checkbox" required />
                 <span>
-                  Я принимаю пользовательское соглашение и политику конфиденциальности.
+                  РЇ РїСЂРёРЅРёРјР°СЋ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРѕРµ СЃРѕРіР»Р°С€РµРЅРёРµ Рё РїРѕР»РёС‚РёРєСѓ РєРѕРЅС„РёРґРµРЅС†РёР°Р»СЊРЅРѕСЃС‚Рё.
                 </span>
               </label>
-              <button type="submit" className="br-button br-button--primary br-button--full">
-                Зарегистрироваться
-              </button>
+              <SubmitButton fullWidth pendingLabel="Регистрация">Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ</SubmitButton>
             </form>
 
             <p className="br-auth-bottom">
-              Уже есть аккаунт? <Link href={buildLoginHref(invite, next)}>Войти</Link>
+              РЈР¶Рµ РµСЃС‚СЊ Р°РєРєР°СѓРЅС‚? <Link href={buildLoginHref(invite, next)}>Р’РѕР№С‚Рё</Link>
             </p>
           </div>
         </div>

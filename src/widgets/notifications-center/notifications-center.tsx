@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import type { NotificationListItem } from "@/entities/notification";
+import { SubmitButton } from "@/shared/ui";
 
 type NotificationsCenterProps = {
   items: NotificationListItem[];
@@ -28,9 +29,7 @@ export function NotificationsCenter({
         </div>
         {unreadCount ? (
           <form action={onMarkAllReadAction}>
-            <button className="br-button br-button--secondary" type="submit">
-              Отметить все прочитанными
-            </button>
+            <SubmitButton variant="secondary" pendingLabel="Обновление">РћС‚РјРµС‚РёС‚СЊ РІСЃРµ РїСЂРѕС‡РёС‚Р°РЅРЅС‹РјРё</SubmitButton>
           </form>
         ) : null}
       </div>
@@ -46,7 +45,7 @@ export function NotificationsCenter({
                 <div className="br-notification-card__copy">
                   <div className="br-notification-card__title-row">
                     <strong>{item.title}</strong>
-                    {!item.isRead ? <span className="br-notification-dot" aria-label="Новое уведомление" /> : null}
+                    {!item.isRead ? <span className="br-notification-dot" aria-label="РќРѕРІРѕРµ СѓРІРµРґРѕРјР»РµРЅРёРµ" /> : null}
                   </div>
                   <p>{item.description}</p>
                 </div>
@@ -65,12 +64,10 @@ export function NotificationsCenter({
                 {!item.isRead ? (
                   <form action={onMarkReadAction}>
                     <input type="hidden" name="notificationId" value={item.id} />
-                    <button className="br-button br-button--primary" type="submit">
-                      Отметить прочитанным
-                    </button>
+                    <SubmitButton pendingLabel="Обновление">РћС‚РјРµС‚РёС‚СЊ РїСЂРѕС‡РёС‚Р°РЅРЅС‹Рј</SubmitButton>
                   </form>
                 ) : (
-                  <span className="br-notification-card__read-label">Прочитано</span>
+                  <span className="br-notification-card__read-label">РџСЂРѕС‡РёС‚Р°РЅРѕ</span>
                 )}
               </div>
             </article>
@@ -78,8 +75,8 @@ export function NotificationsCenter({
         </div>
       ) : (
         <div className="br-empty-state">
-          <strong>Пока нет уведомлений</strong>
-          <p className="br-owner-muted">Новые события по заявкам, предложениям и подписке появятся здесь.</p>
+          <strong>РџРѕРєР° РЅРµС‚ СѓРІРµРґРѕРјР»РµРЅРёР№</strong>
+          <p className="br-owner-muted">РќРѕРІС‹Рµ СЃРѕР±С‹С‚РёСЏ РїРѕ Р·Р°СЏРІРєР°Рј, РїСЂРµРґР»РѕР¶РµРЅРёСЏРј Рё РїРѕРґРїРёСЃРєРµ РїРѕСЏРІСЏС‚СЃСЏ Р·РґРµСЃСЊ.</p>
         </div>
       )}
     </section>
