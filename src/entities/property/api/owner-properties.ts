@@ -8,6 +8,7 @@ import { createSupabaseServerClient, getCurrentAuthProfile } from "@/shared/api/
 import type {
   SupabasePropertyPhotoRow,
   SupabasePropertyRow,
+  SupabaseRoomBusyRangeRow,
   SupabaseRoomPhotoRow,
   SupabaseRoomRow,
 } from "@/shared/api/supabase/types";
@@ -15,7 +16,7 @@ import type {
 function mapPropertyListItem(
   row: SupabasePropertyRow,
   ownerPublicSlug: string | null,
-  stats: { roomCount: number; activeRoomCount: number },
+  stats: { roomCount: number; activeRoomCount: number; busyRangeCount: number },
   photoRows: SupabasePropertyPhotoRow[],
 ): OwnerPropertyListItem {
   const photoMap = buildPropertyPhotoMap(photoRows);
@@ -37,6 +38,7 @@ function mapPropertyListItem(
     coverImageUrl: photos[0]?.url ?? row.cover_image_url ?? "",
     roomCount: stats.roomCount,
     activeRoomCount: stats.activeRoomCount,
+    busyRangeCount: stats.busyRangeCount,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -46,6 +48,7 @@ function mapStandaloneRoomListItem(
   row: SupabaseRoomRow,
   ownerPublicSlug: string | null,
   photoRows: SupabaseRoomPhotoRow[],
+  busyRangeCount: number,
 ): OwnerStandaloneRoomListItem {
   const photoMap = buildRoomPhotoMap(photoRows);
   const photos = photoMap.get(row.id) ?? [];
@@ -65,6 +68,7 @@ function mapStandaloneRoomListItem(
     photos,
     coverImageUrl: photos[0]?.url ?? "",
     pricePerNight: Number(row.price_per_night),
+    busyRangeCount,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -104,15 +108,27 @@ export async function getOwnerProperties(): Promise<OwnerPropertyListItem[]> {
       .order("created_at", { ascending: true }),
   ]);
 
-  const roomStats = new Map<string, { roomCount: number; activeRoomCount: number }>();
+  const safeRoomRows = (roomRows ?? []) as Array<{ id: string; property_id: string; is_active: boolean }>;
+  const roomIds = safeRoomRows.map((row) => row.id);
+  const roomStats = new Map<string, { roomCount: number; activeRoomCount: number; busyRangeCount: number }>();
+  const { data: busyRows } = roomIds.length
+    ? await supabase.from("room_busy_ranges").select("room_id").in("room_id", roomIds)
+    : { data: [] };
+  const busyCountByRoom = new Map<string, number>();
 
-  for (const row of (roomRows ?? []) as Array<{ property_id: string; is_active: boolean }>) {
-    const current = roomStats.get(row.property_id) ?? { roomCount: 0, activeRoomCount: 0 };
+  for (const row of (busyRows ?? []) as SupabaseRoomBusyRangeRow[]) {
+    busyCountByRoom.set(row.room_id, (busyCountByRoom.get(row.room_id) ?? 0) + 1);
+  }
+
+  for (const row of safeRoomRows) {
+    const current = roomStats.get(row.property_id) ?? { roomCount: 0, activeRoomCount: 0, busyRangeCount: 0 };
     current.roomCount += 1;
 
     if (row.is_active) {
       current.activeRoomCount += 1;
     }
+
+    current.busyRangeCount += busyCountByRoom.get(row.id) ?? 0;
 
     roomStats.set(row.property_id, current);
   }
@@ -121,7 +137,7 @@ export async function getOwnerProperties(): Promise<OwnerPropertyListItem[]> {
     mapPropertyListItem(
       row,
       profile.slug || null,
-      roomStats.get(row.id) ?? { roomCount: 0, activeRoomCount: 0 },
+      roomStats.get(row.id) ?? { roomCount: 0, activeRoomCount: 0, busyRangeCount: 0 },
       (photoRows ?? []) as SupabasePropertyPhotoRow[],
     ),
   );
@@ -159,23 +175,45 @@ export async function getOwnerInventory(): Promise<OwnerInventoryListItem[]> {
   const safePropertyRows = (propertyRows ?? []) as SupabasePropertyRow[];
   const safeStandaloneRows = (standaloneRows ?? []) as SupabaseRoomRow[];
   const propertyIds = safePropertyRows.map((item) => item.id);
-  const roomStats = new Map<string, { roomCount: number; activeRoomCount: number }>();
+  const roomStats = new Map<string, { roomCount: number; activeRoomCount: number; busyRangeCount: number }>();
+  const standaloneBusyRangeCount = new Map<string, number>();
 
   if (propertyIds.length) {
     const { data: roomRows } = await supabase
       .from("rooms")
-      .select("property_id, is_active")
+      .select("id, property_id, is_active")
       .in("property_id", propertyIds);
+    const safeRoomRows = (roomRows ?? []) as Array<{ id: string; property_id: string; is_active: boolean }>;
+    const roomIds = safeRoomRows.map((row) => row.id);
+    const { data: busyRows } = roomIds.length
+      ? await supabase.from("room_busy_ranges").select("room_id").in("room_id", roomIds)
+      : { data: [] };
+    const busyCountByRoom = new Map<string, number>();
 
-    for (const row of (roomRows ?? []) as Array<{ property_id: string; is_active: boolean }>) {
-      const current = roomStats.get(row.property_id) ?? { roomCount: 0, activeRoomCount: 0 };
+    for (const row of (busyRows ?? []) as SupabaseRoomBusyRangeRow[]) {
+      busyCountByRoom.set(row.room_id, (busyCountByRoom.get(row.room_id) ?? 0) + 1);
+    }
+
+    for (const row of safeRoomRows) {
+      const current = roomStats.get(row.property_id) ?? { roomCount: 0, activeRoomCount: 0, busyRangeCount: 0 };
       current.roomCount += 1;
 
       if (row.is_active) {
         current.activeRoomCount += 1;
       }
 
+      current.busyRangeCount += busyCountByRoom.get(row.id) ?? 0;
+
       roomStats.set(row.property_id, current);
+    }
+  }
+
+  if (safeStandaloneRows.length) {
+    const standaloneIds = safeStandaloneRows.map((row) => row.id);
+    const { data: busyRows } = await supabase.from("room_busy_ranges").select("room_id").in("room_id", standaloneIds);
+
+    for (const row of (busyRows ?? []) as SupabaseRoomBusyRangeRow[]) {
+      standaloneBusyRangeCount.set(row.room_id, (standaloneBusyRangeCount.get(row.room_id) ?? 0) + 1);
     }
   }
 
@@ -183,12 +221,17 @@ export async function getOwnerInventory(): Promise<OwnerInventoryListItem[]> {
     mapPropertyListItem(
       row,
       profile.slug || null,
-      roomStats.get(row.id) ?? { roomCount: 0, activeRoomCount: 0 },
+      roomStats.get(row.id) ?? { roomCount: 0, activeRoomCount: 0, busyRangeCount: 0 },
       (propertyPhotoRows ?? []) as SupabasePropertyPhotoRow[],
     ),
   );
   const standaloneItems = safeStandaloneRows.map((row) =>
-    mapStandaloneRoomListItem(row, profile.slug || null, (roomPhotoRows ?? []) as SupabaseRoomPhotoRow[]),
+    mapStandaloneRoomListItem(
+      row,
+      profile.slug || null,
+      (roomPhotoRows ?? []) as SupabaseRoomPhotoRow[],
+      standaloneBusyRangeCount.get(row.id) ?? 0,
+    ),
   );
 
   return [...propertyItems, ...standaloneItems].sort((left, right) => left.createdAt.localeCompare(right.createdAt));

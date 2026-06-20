@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -13,13 +12,26 @@ import { getPropertyNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerPropertyDetail } from "@/entities/property";
 import { OwnerPropertyFormFields } from "@/features/property/edit-property";
 import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
-import { Button, DashboardPageNav, Input, StatusPill } from "@/shared/ui";
-import { PropertySectionNav } from "@/widgets/property-section-nav";
+import { Button, DashboardPageNav, Input } from "@/shared/ui";
+import {
+  AdminPageHeader,
+  AdminPageLayout,
+  CopyLinkButton,
+  DangerZone,
+  ObjectSummaryCard,
+  ObjectTabs,
+  PhotoManager,
+  StickyActions,
+} from "@/widgets/property-admin";
 
 type PropertyDetailPageProps = {
   params: Promise<{ propertyId: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function getPropertyBusyRangeCount(property: NonNullable<Awaited<ReturnType<typeof getOwnerPropertyDetail>>>) {
+  return property.rooms.reduce((total, room) => total + room.busyRanges.length, 0);
+}
 
 export default async function PropertyDetailPage({ params, searchParams }: PropertyDetailPageProps) {
   const { propertyId } = await params;
@@ -34,6 +46,17 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
   const error = typeof resolvedSearchParams.error === "string" ? resolvedSearchParams.error : "";
   const success = typeof resolvedSearchParams.success === "string" ? resolvedSearchParams.success : "";
   const notice = getPropertyNotice(error, success);
+  const publicHref = property.ownerPublicSlug ? `/p/${property.ownerPublicSlug}` : "/dashboard/settings";
+  const busyRangeCount = getPropertyBusyRangeCount(property);
+  const formId = `property-edit-form-${property.id}`;
+
+  const tabs = [
+    { key: "overview", label: "Обзор", href: `/dashboard/properties/${property.id}#overview` },
+    { key: "rooms", label: "Номера", href: `/dashboard/properties/${property.id}/rooms` },
+    { key: "calendar", label: "Календарь", href: `/dashboard/properties/${property.id}/calendar` },
+    { key: "contacts", label: "Контакты", href: `/dashboard/properties/${property.id}#contacts` },
+    { key: "photos", label: "Фото", href: `/dashboard/properties/${property.id}#photos` },
+  ];
 
   return (
     <section className="br-owner-stack">
@@ -43,140 +66,111 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
         compact
       />
 
-      <div className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>{property.title}</h2>
-            <p>
-              {property.city} • {property.propertyType} • slug объекта: {property.slug}
-            </p>
-          </div>
-          <div className="br-owner-actions">
-            <StatusPill variant={property.published && !property.isFrozen ? "active" : "inactive"}>
-              {property.isFrozen ? "Заморожен" : property.published ? "Опубликован" : "Скрыт"}
-            </StatusPill>
-          </div>
-        </div>
+      <AdminPageHeader
+        compact
+        title={property.title}
+        description={`${[property.city, property.address].filter(Boolean).join(", ")} · ${property.propertyType}`}
+        actions={property.ownerPublicSlug ? <CopyLinkButton path={publicHref} /> : null}
+        notice={notice ? <div className="br-inline-notice">{notice}</div> : null}
+      />
 
-        <PropertySectionNav propertyId={property.id} active="property" />
+      <ObjectSummaryCard
+        property={property}
+        busyRangeCount={busyRangeCount}
+        roomsHref={`/dashboard/properties/${property.id}/rooms`}
+        calendarHref={`/dashboard/properties/${property.id}/calendar`}
+        publicHref={publicHref}
+        compact
+        className="br-object-summary-card--mobile-only"
+      />
 
-        {notice ? <div className="br-inline-notice">{notice}</div> : null}
-      </div>
+      <ObjectTabs active="overview" items={tabs} />
 
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Настройки объекта</h2>
-            <p>Основные данные, контакты, правила проживания и параметры публикации.</p>
-          </div>
-        </div>
+      <AdminPageLayout
+        main={
+          <div className="br-owner-stack">
+            <section className="br-dashboard-block br-card">
+              <div className="br-dashboard-block__header">
+                <div>
+                  <h2>Редактирование объекта</h2>
+                  <p>Данные, контакты, правила проживания и параметры публикации собраны в понятные секции.</p>
+                </div>
+              </div>
 
-        <form action={updateOwnerProperty} className="br-owner-stack">
-          <input type="hidden" name="propertyId" value={property.id} />
-          <OwnerPropertyFormFields property={property} />
+              <form id={formId} action={updateOwnerProperty} className="br-owner-stack">
+                <input type="hidden" name="propertyId" value={property.id} />
+                <OwnerPropertyFormFields property={property} />
+              </form>
+            </section>
 
-          <div className="br-active-step__actions">
-            <Button type="submit">Сохранить объект</Button>
-            <Link
-              href={property.ownerPublicSlug ? `/p/${property.ownerPublicSlug}` : "/dashboard/settings"}
-              className="br-button br-button--secondary"
+            <PhotoManager
+              title="Фото объекта"
+              description="Добавьте несколько фото. Первое фото используется как обложка в кабинете и на публичной странице."
+              emptyText="Фото объекта пока нет. После загрузки первое фото станет обложкой в кабинете и на публичной странице."
+              photos={property.photos}
+              uploadAction={uploadPropertyPhoto}
+              primaryAction={setPropertyPhotoPrimary}
+              deleteAction={deletePropertyPhoto}
+              hiddenFields={[{ name: "propertyId", value: property.id }]}
+              uploadInputId="property-photo-upload"
+              uploadLabel="Добавить фото объекта"
+              uploadDescription="Можно выбрать до 10 фото за раз. JPG, PNG, WebP или GIF, до 5 МБ каждое."
+              entityTitle={property.title}
+            />
+
+            <DangerZone
+              title="Удаление объекта"
+              description="Удаление каскадно удалит номера, сезонные цены, занятые даты и связанные списки."
             >
-              {property.ownerPublicSlug ? "Открыть публичную страницу" : "Заполнить slug владельца"}
-            </Link>
+              <form action={deleteOwnerProperty} className="br-owner-danger">
+                <input type="hidden" name="propertyId" value={property.id} />
+                <Input
+                  id="property-delete-confirmation"
+                  name="confirmation"
+                  label="Введите DELETE для подтверждения"
+                  placeholder="DELETE"
+                />
+                <Button type="submit" variant="danger">
+                  Удалить объект
+                </Button>
+              </form>
+            </DangerZone>
+
+            <StickyActions desktopInline>
+              <Button type="submit" form={formId}>
+                Сохранить объект
+              </Button>
+              <Link href={publicHref} className="br-button br-button--secondary">
+                {property.ownerPublicSlug ? "Открыть публичную страницу" : "Настройки профиля"}
+              </Link>
+            </StickyActions>
           </div>
-        </form>
-      </section>
-
-      <section id="photos" className="br-dashboard-block br-card br-anchor-target">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Фото объекта</h2>
-            <p>Добавьте несколько фото. Первое фото используется как обложка в кабинете и на публичной странице.</p>
+        }
+        aside={
+          <div className="br-owner-stack">
+            <ObjectSummaryCard
+              property={property}
+              busyRangeCount={busyRangeCount}
+              roomsHref={`/dashboard/properties/${property.id}/rooms`}
+              calendarHref={`/dashboard/properties/${property.id}/calendar`}
+              publicHref={publicHref}
+              className="br-object-summary-card--desktop-sticky"
+            />
+            <DangerZone
+              compact
+              title="Удаление объекта"
+              description="Сначала убедитесь, что данные больше не нужны: удаление необратимо."
+            >
+              <div className="br-owner-stack br-owner-stack--compact">
+                <CopyLinkButton path={publicHref} disabled={!property.ownerPublicSlug} />
+                <Link href="#property-delete-confirmation" className="br-button br-button--danger">
+                  Перейти к удалению
+                </Link>
+              </div>
+            </DangerZone>
           </div>
-        </div>
-
-        <form action={uploadPropertyPhoto} className="br-owner-photo-upload" encType="multipart/form-data">
-          <input type="hidden" name="propertyId" value={property.id} />
-          <Input
-            id="property-photo-upload"
-            name="photos"
-            type="file"
-            accept="image/*"
-            multiple
-            label="Добавить фото объекта"
-            description="Можно выбрать до 10 фото за раз. JPG, PNG, WebP или GIF, до 5 МБ каждое."
-            wrapperClassName="br-owner-photo-upload__field"
-          />
-          <Button type="submit">Загрузить фото</Button>
-        </form>
-
-        {property.photos.length ? (
-          <div className="br-photo-grid">
-            {property.photos.map((photo, index) => (
-              <article key={photo.id} className="br-photo-card">
-                <div className="br-photo-card__media">
-                  <Image
-                    src={photo.url}
-                    alt={`${property.title} — фото ${index + 1}`}
-                    width={1200}
-                    height={900}
-                    unoptimized
-                    className="br-photo-card__image"
-                  />
-                </div>
-                <div className="br-photo-card__body">
-                  <div className="br-photo-card__meta">
-                    <strong>{index === 0 ? "Обложка объекта" : `Фото ${index + 1}`}</strong>
-                    <span>{index === 0 ? "Показывается первой" : "Можно сделать обложкой"}</span>
-                  </div>
-                  <div className="br-photo-card__actions">
-                    <form action={setPropertyPhotoPrimary}>
-                      <input type="hidden" name="propertyId" value={property.id} />
-                      <input type="hidden" name="photoId" value={photo.id} />
-                      <Button type="submit" variant="secondary" disabled={index === 0}>
-                        {index === 0 ? "Обложка" : "Сделать обложкой"}
-                      </Button>
-                    </form>
-                    <form action={deletePropertyPhoto}>
-                      <input type="hidden" name="propertyId" value={property.id} />
-                      <input type="hidden" name="photoId" value={photo.id} />
-                      <Button type="submit" variant="danger">
-                        Удалить
-                      </Button>
-                    </form>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p className="br-owner-muted">
-            Фото объекта пока нет. После загрузки первое фото станет обложкой в кабинете и на публичной странице.
-          </p>
-        )}
-      </section>
-
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Удаление объекта</h2>
-            <p>Удаление каскадно удалит номера, сезонные цены, занятые даты и связанные списки.</p>
-          </div>
-        </div>
-
-        <form action={deleteOwnerProperty} className="br-owner-danger">
-          <input type="hidden" name="propertyId" value={property.id} />
-          <Input
-            id="property-delete-confirmation"
-            name="confirmation"
-            label="Введите DELETE для подтверждения"
-            placeholder="DELETE"
-          />
-          <Button type="submit" variant="danger">
-            Удалить объект
-          </Button>
-        </form>
-      </section>
+        }
+      />
     </section>
   );
 }

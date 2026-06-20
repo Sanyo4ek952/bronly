@@ -150,6 +150,7 @@ export type OwnerPropertyListItem = {
   coverImageUrl: string;
   roomCount: number;
   activeRoomCount: number;
+  busyRangeCount: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -169,6 +170,7 @@ export type OwnerStandaloneRoomListItem = {
   photos: PropertyPhoto[];
   coverImageUrl: string;
   pricePerNight: number;
+  busyRangeCount: number;
   createdAt: string;
   updatedAt: string;
 };

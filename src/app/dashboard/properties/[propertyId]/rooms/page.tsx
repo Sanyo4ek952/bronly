@@ -7,8 +7,8 @@ import { getOwnerPropertyDetail } from "@/entities/property";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
-import { ButtonLink, DashboardPageNav, StatusPill } from "@/shared/ui";
-import { PropertyOverviewCard } from "@/widgets/property-overview/property-overview-card";
+import { ButtonLink, DashboardPageNav } from "@/shared/ui";
+import { AdminPageHeader, ObjectSummaryCard, StatusBadge } from "@/widgets/property-admin";
 import { PropertySectionNav } from "@/widgets/property-section-nav";
 
 type PropertyRoomsPageProps = {
@@ -56,22 +56,8 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
   const error = typeof resolvedSearchParams.error === "string" ? resolvedSearchParams.error : "";
   const success = typeof resolvedSearchParams.success === "string" ? resolvedSearchParams.success : "";
   const notice = getRoomsNotice(error, success);
-  const galleryItems = [
-    ...property.photos.map((photo, index) => ({
-      id: `property-${photo.id}`,
-      url: photo.url,
-      alt: `${property.title} — фото объекта ${index + 1}`,
-      label: index === 0 ? "Фото объекта" : `Фото объекта ${index + 1}`,
-    })),
-    ...property.rooms.flatMap((room) =>
-      room.photos.slice(0, 1).map((photo, index) => ({
-        id: `room-${room.id}-${photo.id}`,
-        url: photo.url,
-        alt: `${room.title} — фото номера ${index + 1}`,
-        label: `Номер: ${room.title}`,
-      })),
-    ),
-  ];
+  const publicHref = property.ownerPublicSlug ? `/p/${property.ownerPublicSlug}` : "/dashboard/settings";
+  const busyRangeCount = property.rooms.reduce((total, room) => total + room.busyRanges.length, 0);
 
   return (
     <section className="br-owner-stack">
@@ -84,32 +70,42 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
         compact
       />
 
-      <div className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>{property.title}</h2>
-            <p>Карточка объекта с реальными данными и текущим списком номеров.</p>
-          </div>
-        </div>
+      <AdminPageHeader
+        compact
+        title="Номера объекта"
+        description="Откройте нужный номер, следите за активностью и быстро переходите в календарь или настройки."
+        actions={<ButtonLink href={`/dashboard/properties/${property.id}/rooms/new`}>Добавить номер</ButtonLink>}
+        notice={
+          <>
+            {notice ? <div className="br-inline-notice">{notice}</div> : null}
+            {subscription && roomUsageLabel ? (
+              <div className="br-inline-notice br-inline-notice--soft">
+                Подписка: {roomUsageLabel}
+                {roomLimitHint ? ` — ${roomLimitHint}` : ""}
+              </div>
+            ) : null}
+          </>
+        }
+      />
 
+      <ObjectSummaryCard
+        property={property}
+        busyRangeCount={busyRangeCount}
+        roomsHref={`/dashboard/properties/${property.id}/rooms`}
+        calendarHref={`/dashboard/properties/${property.id}/calendar`}
+        publicHref={publicHref}
+        compact
+      />
+
+      <section className="br-dashboard-block br-card">
         <PropertySectionNav propertyId={property.id} active="rooms" />
-
-        {notice ? <div className="br-inline-notice">{notice}</div> : null}
-        {subscription && roomUsageLabel ? (
-          <div className="br-owner-muted">
-            Подписка: {roomUsageLabel}
-            {roomLimitHint ? ` — ${roomLimitHint}` : ""}
-          </div>
-        ) : null}
-      </div>
-
-      <PropertyOverviewCard property={property} galleryItems={galleryItems} />
+      </section>
 
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
           <div>
             <h2>Номера и цены</h2>
-            <p>Откройте нужный номер, а для редактирования используйте кнопку настроек на карточке.</p>
+            <p>Карточки показывают статус, базовую цену, фото и объём ручной настройки по каждому номеру.</p>
           </div>
           <ButtonLink href={`/dashboard/properties/${property.id}/rooms/new`}>Добавить номер</ButtonLink>
         </div>
@@ -142,9 +138,7 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
                           {room.capacity} гостя • {room.bedrooms} спальни • {room.area} м²
                         </p>
                       </div>
-                      <StatusPill variant={room.isActive ? "active" : "inactive"}>
-                        {room.isActive ? "Активен" : "Неактивен"}
-                      </StatusPill>
+                      <StatusBadge kind="room" isActive={room.isActive} />
                     </div>
                     <div className="br-owner-room-card__meta">
                       <span>Фото: {room.photos.length}</span>
@@ -161,8 +155,7 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
                     variant="secondary"
                     className="br-owner-room-card__settings"
                   >
-                    <span aria-hidden="true">⚙</span>
-                    <span className="br-owner-room-card__settings-label">Настройки</span>
+                    Настройки
                   </ButtonLink>
                 </div>
               </article>
