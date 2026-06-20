@@ -1,8 +1,8 @@
 const DEFAULT_DEMO_PROPERTY_SLUG = "dom-u-morya";
-const CANONICAL_PRODUCTION_HOST = "www.bronly.app";
+const CANONICAL_PRODUCTION_HOST = "bronly.app";
 
 export function isBronlyProductionHost(hostname: string) {
-  return hostname === "bronly.app" || hostname === CANONICAL_PRODUCTION_HOST;
+  return hostname === CANONICAL_PRODUCTION_HOST || hostname === "www.bronly.app";
 }
 
 export function getSupabaseUrl() {
