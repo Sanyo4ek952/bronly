@@ -10,8 +10,8 @@ type ForgotPasswordPageProps = {
 };
 
 export const metadata: Metadata = createSeoMetadata({
-  title: "Р’РѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ РґРѕСЃС‚СѓРїР°",
-  description: "РЎС‚СЂР°РЅРёС†Р° РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёСЏ РїР°СЂРѕР»СЏ РІ Bronly.",
+  title: "Восстановление доступа",
+  description: "Страница восстановления пароля в Bronly.",
   path: "/forgot-password",
   index: false,
 });
@@ -28,22 +28,20 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPasswor
         <BrandLogo className="br-auth-shell__logo" />
         <div className="br-auth-shell__grid">
           <div className="br-auth-shell__intro">
-            <span className="br-chip">РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ РґРѕСЃС‚СѓРїР°</span>
-            <h1 className="br-auth-shell__title">РЎР±СЂРѕСЃ РїР°СЂРѕР»СЏ</h1>
-            <p className="br-auth-shell__text">
-              РћС‚РїСЂР°РІРёРј СЃСЃС‹Р»РєСѓ РґР»СЏ СЃРјРµРЅС‹ РїР°СЂРѕР»СЏ РЅР° РІР°С€ email.
-            </p>
+            <span className="br-chip">восстановление доступа</span>
+            <h1 className="br-auth-shell__title">Сброс пароля</h1>
+            <p className="br-auth-shell__text">Отправим ссылку для смены пароля на ваш email.</p>
           </div>
 
           <div className="br-auth-panel">
             {error ? (
               <p className="br-card" style={{ marginBottom: 16 }}>
-                РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ РїРёСЃСЊРјРѕ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰Рµ СЂР°Р·.
+                Не удалось отправить письмо. Попробуйте еще раз.
               </p>
             ) : null}
             {success === "sent" ? (
               <p className="br-card" style={{ marginBottom: 16 }}>
-                РџРёСЃСЊРјРѕ РѕС‚РїСЂР°РІР»РµРЅРѕ. РџСЂРѕРІРµСЂСЊС‚Рµ РїРѕС‡С‚Сѓ Рё РїРµСЂРµР№РґРёС‚Рµ РїРѕ СЃСЃС‹Р»РєРµ.
+                Письмо отправлено. Проверьте почту и перейдите по ссылке.
               </p>
             ) : null}
 
@@ -54,11 +52,11 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPasswor
                 </label>
                 <input id="email" name="email" type="email" className="br-field" placeholder="name@example.com" required />
               </div>
-              <SubmitButton fullWidth pendingLabel="Отправка">РћС‚РїСЂР°РІРёС‚СЊ СЃСЃС‹Р»РєСѓ</SubmitButton>
+              <SubmitButton fullWidth pendingLabel="Отправка">Отправить ссылку</SubmitButton>
             </form>
 
             <p className="br-auth-bottom">
-              Р’СЃРїРѕРјРЅРёР»Рё РїР°СЂРѕР»СЊ? <Link href="/login">Р’РµСЂРЅСѓС‚СЊСЃСЏ РєРѕ РІС…РѕРґСѓ</Link>
+              Вспомнили пароль? <Link href="/login">Вернуться ко входу</Link>
             </p>
           </div>
         </div>

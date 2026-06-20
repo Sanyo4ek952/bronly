@@ -29,7 +29,7 @@ export function NotificationsCenter({
         </div>
         {unreadCount ? (
           <form action={onMarkAllReadAction}>
-            <SubmitButton variant="secondary" pendingLabel="Обновление">РћС‚РјРµС‚РёС‚СЊ РІСЃРµ РїСЂРѕС‡РёС‚Р°РЅРЅС‹РјРё</SubmitButton>
+            <SubmitButton variant="secondary" pendingLabel="Обновление">Отметить все прочитанными</SubmitButton>
           </form>
         ) : null}
       </div>
@@ -45,7 +45,7 @@ export function NotificationsCenter({
                 <div className="br-notification-card__copy">
                   <div className="br-notification-card__title-row">
                     <strong>{item.title}</strong>
-                    {!item.isRead ? <span className="br-notification-dot" aria-label="РќРѕРІРѕРµ СѓРІРµРґРѕРјР»РµРЅРёРµ" /> : null}
+                    {!item.isRead ? <span className="br-notification-dot" aria-label="Новое уведомление" /> : null}
                   </div>
                   <p>{item.description}</p>
                 </div>
@@ -64,10 +64,10 @@ export function NotificationsCenter({
                 {!item.isRead ? (
                   <form action={onMarkReadAction}>
                     <input type="hidden" name="notificationId" value={item.id} />
-                    <SubmitButton pendingLabel="Обновление">РћС‚РјРµС‚РёС‚СЊ РїСЂРѕС‡РёС‚Р°РЅРЅС‹Рј</SubmitButton>
+                    <SubmitButton pendingLabel="Обновление">Отметить прочитанным</SubmitButton>
                   </form>
                 ) : (
-                  <span className="br-notification-card__read-label">РџСЂРѕС‡РёС‚Р°РЅРѕ</span>
+                  <span className="br-notification-card__read-label">Прочитано</span>
                 )}
               </div>
             </article>
@@ -75,8 +75,8 @@ export function NotificationsCenter({
         </div>
       ) : (
         <div className="br-empty-state">
-          <strong>РџРѕРєР° РЅРµС‚ СѓРІРµРґРѕРјР»РµРЅРёР№</strong>
-          <p className="br-owner-muted">РќРѕРІС‹Рµ СЃРѕР±С‹С‚РёСЏ РїРѕ Р·Р°СЏРІРєР°Рј, РїСЂРµРґР»РѕР¶РµРЅРёСЏРј Рё РїРѕРґРїРёСЃРєРµ РїРѕСЏРІСЏС‚СЃСЏ Р·РґРµСЃСЊ.</p>
+          <strong>Пока нет уведомлений</strong>
+          <p className="br-owner-muted">Новые события по заявкам, предложениям и подписке появятся здесь.</p>
         </div>
       )}
     </section>

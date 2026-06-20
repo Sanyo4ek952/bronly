@@ -11,8 +11,8 @@ type ResetPasswordPageProps = {
 };
 
 export const metadata: Metadata = createSeoMetadata({
-  title: "РќРѕРІС‹Р№ РїР°СЂРѕР»СЊ",
-  description: "РЎС‚СЂР°РЅРёС†Р° РѕР±РЅРѕРІР»РµРЅРёСЏ РїР°СЂРѕР»СЏ РІ Bronly.",
+  title: "Новый пароль",
+  description: "Страница обновления пароля в Bronly.",
   path: "/reset-password",
   index: false,
 });
@@ -34,34 +34,32 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
         <BrandLogo className="br-auth-shell__logo" />
         <div className="br-auth-shell__grid">
           <div className="br-auth-shell__intro">
-            <span className="br-chip">РѕР±РЅРѕРІР»РµРЅРёРµ РїР°СЂРѕР»СЏ</span>
-            <h1 className="br-auth-shell__title">РќРѕРІС‹Р№ РїР°СЂРѕР»СЊ</h1>
-            <p className="br-auth-shell__text">
-              Р—Р°РґР°Р№С‚Рµ РЅРѕРІС‹Р№ РїР°СЂРѕР»СЊ РґР»СЏ Р°РєРєР°СѓРЅС‚Р° Bronly.
-            </p>
+            <span className="br-chip">обновление пароля</span>
+            <h1 className="br-auth-shell__title">Новый пароль</h1>
+            <p className="br-auth-shell__text">Задайте новый пароль для аккаунта Bronly.</p>
           </div>
 
           <div className="br-auth-panel">
             {error ? (
               <p className="br-card" style={{ marginBottom: 16 }}>
-                РќРµ СѓРґР°Р»РѕСЃСЊ РѕР±РЅРѕРІРёС‚СЊ РїР°СЂРѕР»СЊ. РЈР±РµРґРёС‚РµСЃСЊ, С‡С‚Рѕ РїР°СЂРѕР»Рё СЃРѕРІРїР°РґР°СЋС‚ Рё СЃРѕРґРµСЂР¶Р°С‚ РјРёРЅРёРјСѓРј 8 СЃРёРјРІРѕР»РѕРІ.
+                Не удалось обновить пароль. Убедитесь, что пароли совпадают и содержат минимум 8 символов.
               </p>
             ) : null}
 
             <form className="br-auth-form" action={updatePasswordAction}>
               <div className="br-auth-form__field">
                 <label className="br-label" htmlFor="password">
-                  РќРѕРІС‹Р№ РїР°СЂРѕР»СЊ
+                  Новый пароль
                 </label>
-                <input id="password" name="password" type="password" className="br-field" placeholder="РњРёРЅРёРјСѓРј 8 СЃРёРјРІРѕР»РѕРІ" required />
+                <input id="password" name="password" type="password" className="br-field" placeholder="Минимум 8 символов" required />
               </div>
               <div className="br-auth-form__field">
                 <label className="br-label" htmlFor="confirm-password">
-                  РџРѕРІС‚РѕСЂРёС‚Рµ РїР°СЂРѕР»СЊ
+                  Повторите пароль
                 </label>
-                <input id="confirm-password" name="confirmPassword" type="password" className="br-field" placeholder="РџРѕРІС‚РѕСЂРёС‚Рµ РїР°СЂРѕР»СЊ" required />
+                <input id="confirm-password" name="confirmPassword" type="password" className="br-field" placeholder="Повторите пароль" required />
               </div>
-              <SubmitButton fullWidth pendingLabel="Сохранение">РЎРѕС…СЂР°РЅРёС‚СЊ РїР°СЂРѕР»СЊ</SubmitButton>
+              <SubmitButton fullWidth pendingLabel="Сохранение">Сохранить пароль</SubmitButton>
             </form>
           </div>
         </div>
