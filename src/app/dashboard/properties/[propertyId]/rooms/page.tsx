@@ -5,9 +5,10 @@ import { notFound } from "next/navigation";
 import { getRoomsNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerPropertyDetail } from "@/entities/property";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
-import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
+import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
 import { ButtonLink, DashboardPageNav, StatusPill } from "@/shared/ui";
+import { PropertyOverviewCard } from "@/widgets/property-overview/property-overview-card";
 import { PropertySectionNav } from "@/widgets/property-section-nav";
 
 type PropertyRoomsPageProps = {
@@ -55,6 +56,22 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
   const error = typeof resolvedSearchParams.error === "string" ? resolvedSearchParams.error : "";
   const success = typeof resolvedSearchParams.success === "string" ? resolvedSearchParams.success : "";
   const notice = getRoomsNotice(error, success);
+  const galleryItems = [
+    ...property.photos.map((photo, index) => ({
+      id: `property-${photo.id}`,
+      url: photo.url,
+      alt: `${property.title} — фото объекта ${index + 1}`,
+      label: index === 0 ? "Фото объекта" : `Фото объекта ${index + 1}`,
+    })),
+    ...property.rooms.flatMap((room) =>
+      room.photos.slice(0, 1).map((photo, index) => ({
+        id: `room-${room.id}-${photo.id}`,
+        url: photo.url,
+        alt: `${room.title} — фото номера ${index + 1}`,
+        label: `Номер: ${room.title}`,
+      })),
+    ),
+  ];
 
   return (
     <section className="br-owner-stack">
@@ -71,7 +88,7 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
         <div className="br-dashboard-block__header">
           <div>
             <h2>{property.title}</h2>
-            <p>Список существующих номеров объекта и переход к каждому номеру отдельно.</p>
+            <p>Карточка объекта с реальными данными и текущим списком номеров.</p>
           </div>
         </div>
 
@@ -85,6 +102,8 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
           </div>
         ) : null}
       </div>
+
+      <PropertyOverviewCard property={property} galleryItems={galleryItems} />
 
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
@@ -123,7 +142,9 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
                           {room.capacity} гостя • {room.bedrooms} спальни • {room.area} м²
                         </p>
                       </div>
-                      <StatusPill variant={room.isActive ? "active" : "inactive"}>{room.isActive ? "Активен" : "Неактивен"}</StatusPill>
+                      <StatusPill variant={room.isActive ? "active" : "inactive"}>
+                        {room.isActive ? "Активен" : "Неактивен"}
+                      </StatusPill>
                     </div>
                     <div className="br-owner-room-card__meta">
                       <span>Фото: {room.photos.length}</span>
