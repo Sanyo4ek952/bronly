@@ -211,7 +211,7 @@ export function LandingPage() {
               <div className="br-dashboard-card__list">
                 <div>
                   <span>Публичная ссылка</span>
-                  <strong>bronly.app/p/ivanov-villa</strong>
+                  <strong>www.bronly.app/p/ivanov-villa</strong>
                 </div>
                 <div>
                   <span>Статус</span>

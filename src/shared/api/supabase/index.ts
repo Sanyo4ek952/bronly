@@ -5,6 +5,7 @@ export {
   getSupabaseAnonKey,
   getSupabaseServiceRoleKey,
   getSupabaseUrl,
+  isBronlyProductionHost,
   getTelegramBotToken,
   getTelegramBotUsername,
   getTelegramWebhookSecret,

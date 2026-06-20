@@ -1,4 +1,9 @@
 const DEFAULT_DEMO_PROPERTY_SLUG = "dom-u-morya";
+const CANONICAL_PRODUCTION_HOST = "www.bronly.app";
+
+export function isBronlyProductionHost(hostname: string) {
+  return hostname === "bronly.app" || hostname === CANONICAL_PRODUCTION_HOST;
+}
 
 export function getSupabaseUrl() {
   return process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -38,6 +43,21 @@ function normalizeAppUrl(value: string) {
   return `https://${trimmed}`;
 }
 
+function normalizeCanonicalProductionUrl(value: string) {
+  try {
+    const url = new URL(value);
+
+    if (isBronlyProductionHost(url.hostname)) {
+      url.hostname = CANONICAL_PRODUCTION_HOST;
+      return url.toString().replace(/\/+$/, "");
+    }
+  } catch {
+    return value;
+  }
+
+  return value;
+}
+
 function getVercelAppUrl() {
   const productionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
 
@@ -56,11 +76,13 @@ function getVercelAppUrl() {
 
 export function getCanonicalAppUrl() {
   const value = getAppUrl();
-  if (!value) {
-    return getVercelAppUrl();
+  const normalizedValue = value ? normalizeAppUrl(value) : getVercelAppUrl();
+
+  if (!normalizedValue) {
+    return undefined;
   }
 
-  return normalizeAppUrl(value);
+  return normalizeCanonicalProductionUrl(normalizedValue);
 }
 
 export function requireAppUrl() {

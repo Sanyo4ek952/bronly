@@ -12,6 +12,7 @@ import {
   logAuthDiagnostic,
   getPostLoginRedirect,
   getPostSignupRedirect,
+  isBronlyProductionHost,
   redactAuthEmail,
   requireAppUrl,
 } from "@/shared/api/supabase";
@@ -53,12 +54,31 @@ async function getAuthOrigin() {
   const headerStore = await headers();
   const forwardedHost = headerStore.get("x-forwarded-host");
   const forwardedProto = headerStore.get("x-forwarded-proto") ?? "https";
+  const origin = headerStore.get("origin");
 
   if (forwardedHost) {
+    if (isBronlyProductionHost(forwardedHost)) {
+      return requireAppUrl();
+    }
+
     return `${forwardedProto}://${forwardedHost}`;
   }
 
-  return headerStore.get("origin") ?? requireAppUrl();
+  if (origin) {
+    try {
+      const url = new URL(origin);
+
+      if (isBronlyProductionHost(url.hostname)) {
+        return requireAppUrl();
+      }
+    } catch {
+      return origin;
+    }
+
+    return origin;
+  }
+
+  return requireAppUrl();
 }
 
 function buildEmailConfirmRedirectTo(origin: string, nextPath: string) {

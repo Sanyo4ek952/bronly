@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { getCanonicalAppUrl } from "@/shared/api/supabase/env";
 
-const DEFAULT_SEO_URL = "https://bronly.app";
+const DEFAULT_SEO_URL = "https://www.bronly.app";
 const DEFAULT_OG_IMAGE_PATH = "/icon";
 
 function isLocalhostUrl(value: string) {
