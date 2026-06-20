@@ -44,7 +44,7 @@ export default async function NewPropertyPage({ searchParams }: NewPropertyPageP
         <div className="br-dashboard-block__header">
           <div>
             <h2>Новый объект</h2>
-            <p>Создайте объект владельца и сразу подготовьте его к публикации и приёму заявок.</p>
+            <p>Создайте объект владельца и сразу подготовьте его к публикации и приему заявок.</p>
           </div>
         </div>
 
@@ -53,15 +53,22 @@ export default async function NewPropertyPage({ searchParams }: NewPropertyPageP
         <form action={createOwnerProperty} className="br-owner-stack" encType="multipart/form-data">
           <OwnerPropertyFormFields />
 
-          <Input
-            id="property-photos-new"
-            name="photos"
-            type="file"
-            accept="image/*"
-            multiple
-            label="Фотографии объекта"
-            description="Можно выбрать до 10 фото сразу. JPG, PNG, WebP или GIF, до 5 МБ каждое. Первое фото станет обложкой."
-          />
+          <section className="br-owner-photo-section br-owner-photo-section--create">
+            <div className="br-owner-photo-section__copy">
+              <h3>Фотографии объекта</h3>
+              <p>Добавьте фото сразу при создании объекта. Первое фото станет обложкой объекта.</p>
+            </div>
+            <Input
+              id="property-photos-new"
+              name="photos"
+              type="file"
+              accept="image/*"
+              multiple
+              label="Фотографии объекта"
+              description="Можно выбрать до 10 фото сразу. JPG, PNG, WebP или GIF, до 5 МБ каждое."
+              wrapperClassName="br-owner-photo-upload__field"
+            />
+          </section>
 
           <div className="br-active-step__actions">
             <Link href="/dashboard/properties" className="br-button br-button--secondary">

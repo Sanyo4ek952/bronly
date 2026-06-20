@@ -116,7 +116,7 @@ export function BottomSheet({
         setCloseStartOffset(0);
         closeTimerRef.current = null;
       }, CLOSE_DURATION_MS);
-    }, CLOSE_DURATION_MS);
+    });
 
     return () => {
       if (frameId !== null) {

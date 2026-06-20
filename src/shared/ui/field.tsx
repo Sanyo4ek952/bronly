@@ -47,7 +47,7 @@ export function Input({ label, id, className, wrapperClassName, description, err
       description={description}
       error={error}
     >
-      <input id={id} className={cn("br-field", className)} {...props} />
+      <input id={id} className={cn("br-field", props.type === "file" && "br-field--file", className)} {...props} />
     </FieldWrapper>
   );
 }
