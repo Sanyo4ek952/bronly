@@ -42,12 +42,16 @@ function buildCollectionDetailPath(collectionId: string, state?: Record<string, 
   return appendState(`/agent/dashboard/collections/${collectionId}`, state);
 }
 
-function revalidateAgentCollectionPaths(collectionId?: string) {
+function revalidateAgentCollectionPaths(collectionId?: string, collectionSlug?: string) {
   revalidatePath("/agent/dashboard");
   revalidatePath("/agent/dashboard/collections");
 
   if (collectionId) {
     revalidatePath(`/agent/dashboard/collections/${collectionId}`);
+  }
+
+  if (collectionSlug) {
+    revalidatePath(`/c/${collectionSlug}`);
   }
 }
 
@@ -64,8 +68,9 @@ export async function createAgentCollectionAction(formData: FormData) {
   }
 
   const collectionId = result.collectionId ?? "";
+  const collectionSlug = result.collectionSlug ?? "";
 
-  revalidateAgentCollectionPaths(collectionId);
+  revalidateAgentCollectionPaths(collectionId, collectionSlug);
   redirect(buildCollectionDetailPath(collectionId, { success: "created" }));
 }
 
@@ -83,7 +88,7 @@ export async function renameAgentCollectionAction(formData: FormData) {
     redirect(collectionId ? buildCollectionDetailPath(collectionId, { error: result.reason ?? "save_failed" }) : buildCollectionsListPath({ error: result.reason ?? "save_failed" }));
   }
 
-  revalidateAgentCollectionPaths(collectionId);
+  revalidateAgentCollectionPaths(collectionId, result.collectionSlug);
   redirect(buildCollectionDetailPath(collectionId, { success: "saved" }));
 }
 
@@ -100,7 +105,7 @@ export async function archiveAgentCollectionAction(formData: FormData) {
     redirect(collectionId ? buildCollectionDetailPath(collectionId, { error: result.reason ?? "save_failed" }) : buildCollectionsListPath({ error: result.reason ?? "save_failed" }));
   }
 
-  revalidateAgentCollectionPaths(collectionId);
+  revalidateAgentCollectionPaths(collectionId, result.collectionSlug);
   redirect(buildCollectionDetailPath(collectionId, { success: "archived" }));
 }
 
@@ -118,7 +123,7 @@ export async function addAgentPropertyToCollectionAction(formData: FormData) {
     redirect(collectionId ? buildCollectionDetailPath(collectionId, { error: result.reason ?? "save_failed" }) : buildCollectionsListPath({ error: result.reason ?? "save_failed" }));
   }
 
-  revalidateAgentCollectionPaths(collectionId);
+  revalidateAgentCollectionPaths(collectionId, result.collectionSlug);
   redirect(buildCollectionDetailPath(collectionId, { success: "item-added" }));
 }
 
@@ -136,7 +141,7 @@ export async function addAgentRoomToCollectionAction(formData: FormData) {
     redirect(collectionId ? buildCollectionDetailPath(collectionId, { error: result.reason ?? "save_failed" }) : buildCollectionsListPath({ error: result.reason ?? "save_failed" }));
   }
 
-  revalidateAgentCollectionPaths(collectionId);
+  revalidateAgentCollectionPaths(collectionId, result.collectionSlug);
   redirect(buildCollectionDetailPath(collectionId, { success: "item-added" }));
 }
 
@@ -154,6 +159,6 @@ export async function removeAgentCollectionItemAction(formData: FormData) {
     redirect(collectionId ? buildCollectionDetailPath(collectionId, { error: result.reason ?? "save_failed" }) : buildCollectionsListPath({ error: result.reason ?? "save_failed" }));
   }
 
-  revalidateAgentCollectionPaths(collectionId);
+  revalidateAgentCollectionPaths(collectionId, result.collectionSlug);
   redirect(buildCollectionDetailPath(collectionId, { success: "item-removed" }));
 }

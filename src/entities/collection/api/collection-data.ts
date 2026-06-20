@@ -24,6 +24,7 @@ type ResultReason =
 type MutationResult = {
   ok: boolean;
   collectionId?: string;
+  collectionSlug?: string;
   reason?: ResultReason;
 };
 
@@ -622,14 +623,18 @@ export async function createCollection(input: { role: CollectionRole; title: str
       title,
       guest_label: null,
     })
-    .select("id")
+    .select("id, slug")
     .maybeSingle();
 
   if (error || !data?.id) {
     return { ok: false, reason: "save_failed" };
   }
 
-  return { ok: true, collectionId: data.id as string };
+  return {
+    ok: true,
+    collectionId: data.id as string,
+    collectionSlug: data.slug as string,
+  };
 }
 
 export async function renameCollection(input: {
@@ -664,10 +669,15 @@ export async function renameCollection(input: {
     .eq("id", input.collectionId);
 
   if (error) {
-    return { ok: false, reason: "save_failed", collectionId: input.collectionId };
+    return {
+      ok: false,
+      reason: "save_failed",
+      collectionId: input.collectionId,
+      collectionSlug: collection.slug,
+    };
   }
 
-  return { ok: true, collectionId: input.collectionId };
+  return { ok: true, collectionId: input.collectionId, collectionSlug: collection.slug };
 }
 
 export async function archiveCollection(input: {
@@ -700,10 +710,15 @@ export async function archiveCollection(input: {
     .eq("id", input.collectionId);
 
   if (error) {
-    return { ok: false, reason: "save_failed", collectionId: input.collectionId };
+    return {
+      ok: false,
+      reason: "save_failed",
+      collectionId: input.collectionId,
+      collectionSlug: collection.slug,
+    };
   }
 
-  return { ok: true, collectionId: input.collectionId };
+  return { ok: true, collectionId: input.collectionId, collectionSlug: collection.slug };
 }
 
 export async function addPropertyToCollection(input: {
@@ -728,13 +743,23 @@ export async function addPropertyToCollection(input: {
   }
 
   if (collection.is_archived) {
-    return { ok: false, reason: "archived", collectionId: input.collectionId };
+    return {
+      ok: false,
+      reason: "archived",
+      collectionId: input.collectionId,
+      collectionSlug: collection.slug,
+    };
   }
 
   const property = await getAccessibleProperty(profile, input.role, input.propertyId);
 
   if (!property) {
-    return { ok: false, reason: "not_allowed", collectionId: input.collectionId };
+    return {
+      ok: false,
+      reason: "not_allowed",
+      collectionId: input.collectionId,
+      collectionSlug: collection.slug,
+    };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -747,7 +772,12 @@ export async function addPropertyToCollection(input: {
     .maybeSingle();
 
   if (existing?.id) {
-    return { ok: false, reason: "duplicate", collectionId: input.collectionId };
+    return {
+      ok: false,
+      reason: "duplicate",
+      collectionId: input.collectionId,
+      collectionSlug: collection.slug,
+    };
   }
 
   const { error } = await supabase.from("collection_items").insert({
@@ -758,10 +788,15 @@ export async function addPropertyToCollection(input: {
   });
 
   if (error) {
-    return { ok: false, reason: "save_failed", collectionId: input.collectionId };
+    return {
+      ok: false,
+      reason: "save_failed",
+      collectionId: input.collectionId,
+      collectionSlug: collection.slug,
+    };
   }
 
-  return { ok: true, collectionId: input.collectionId };
+  return { ok: true, collectionId: input.collectionId, collectionSlug: collection.slug };
 }
 
 export async function addRoomToCollection(input: {
@@ -786,13 +821,23 @@ export async function addRoomToCollection(input: {
   }
 
   if (collection.is_archived) {
-    return { ok: false, reason: "archived", collectionId: input.collectionId };
+    return {
+      ok: false,
+      reason: "archived",
+      collectionId: input.collectionId,
+      collectionSlug: collection.slug,
+    };
   }
 
   const room = await getAccessibleRoom(profile, input.role, input.roomId);
 
   if (!room) {
-    return { ok: false, reason: "not_allowed", collectionId: input.collectionId };
+    return {
+      ok: false,
+      reason: "not_allowed",
+      collectionId: input.collectionId,
+      collectionSlug: collection.slug,
+    };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -805,7 +850,12 @@ export async function addRoomToCollection(input: {
     .maybeSingle();
 
   if (existing?.id) {
-    return { ok: false, reason: "duplicate", collectionId: input.collectionId };
+    return {
+      ok: false,
+      reason: "duplicate",
+      collectionId: input.collectionId,
+      collectionSlug: collection.slug,
+    };
   }
 
   const { error } = await supabase.from("collection_items").insert({
@@ -816,10 +866,15 @@ export async function addRoomToCollection(input: {
   });
 
   if (error) {
-    return { ok: false, reason: "save_failed", collectionId: input.collectionId };
+    return {
+      ok: false,
+      reason: "save_failed",
+      collectionId: input.collectionId,
+      collectionSlug: collection.slug,
+    };
   }
 
-  return { ok: true, collectionId: input.collectionId };
+  return { ok: true, collectionId: input.collectionId, collectionSlug: collection.slug };
 }
 
 export async function removeCollectionItem(input: {
@@ -851,10 +906,15 @@ export async function removeCollectionItem(input: {
     .eq("collection_id", input.collectionId);
 
   if (error) {
-    return { ok: false, reason: "save_failed", collectionId: input.collectionId };
+    return {
+      ok: false,
+      reason: "save_failed",
+      collectionId: input.collectionId,
+      collectionSlug: collection.slug,
+    };
   }
 
-  return { ok: true, collectionId: input.collectionId };
+  return { ok: true, collectionId: input.collectionId, collectionSlug: collection.slug };
 }
 
 export { buildCollectionSubtitle };
