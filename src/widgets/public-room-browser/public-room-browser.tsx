@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import type { PublicRoom, PublicStayFilters } from "@/entities/room";
-import { Button, ButtonLink, Input, Select, StatCard } from "@/shared/ui";
+import { Button, ButtonLink, Input, SectionSubtitle, SectionTitle, Select, StatCard } from "@/shared/ui";
 
 type PublicRoomBrowserProps = {
   publicBaseHref: string;
@@ -178,8 +178,8 @@ export function PublicRoomBrowser({
       {selectedRoom && showSelectedRoomSummary ? (
         <div className="br-public-selected-room">
           <div className="br-section-heading">
-            <h2>{selectedRoomTitle}</h2>
-            <p>{selectedRoomDescription}</p>
+            <SectionTitle>{selectedRoomTitle}</SectionTitle>
+            <SectionSubtitle>{selectedRoomDescription}</SectionSubtitle>
           </div>
           <div className="br-inline-notice br-inline-notice--soft br-public-selected-room__notice">{selectionHint}</div>
           <div className="br-public-selected-room__grid">
@@ -247,8 +247,8 @@ function RoomGrid({
   return (
     <section className={muted ? "br-public-room-section br-public-room-section--muted" : "br-public-room-section"}>
       <div className="br-section-heading">
-        <h3>{title}</h3>
-        {emptyText && !rooms.length ? <p>{emptyText}</p> : null}
+        <SectionTitle as="h3">{title}</SectionTitle>
+        {emptyText && !rooms.length ? <SectionSubtitle>{emptyText}</SectionSubtitle> : null}
       </div>
       {rooms.length ? (
         <div className="br-public-room-grid">

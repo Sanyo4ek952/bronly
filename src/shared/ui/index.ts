@@ -10,6 +10,7 @@ export { InlineNotice } from "@/shared/ui/inline-notice";
 export { Panel } from "@/shared/ui/panel";
 export { SectionHeader } from "@/shared/ui/section-header";
 export { SectionSubtitle } from "@/shared/ui/section-subtitle";
+export { SectionTitle } from "@/shared/ui/section-title";
 export { StatCard } from "@/shared/ui/stat-card";
 export { StatusPill } from "@/shared/ui/status-pill";
 export { SubmitButton } from "@/shared/ui/submit-button";

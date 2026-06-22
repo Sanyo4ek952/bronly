@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createOwnerProperty } from "@/app/dashboard/properties/actions";
 import { OwnerPropertyFormFields } from "@/features/property/edit-property";
 import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
-import { Button, DashboardPageNav, Input } from "@/shared/ui";
+import { Button, DashboardPageNav, Input, SectionSubtitle, SectionTitle } from "@/shared/ui";
 
 type NewPropertyPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -42,9 +42,9 @@ export default async function NewPropertyPage({ searchParams }: NewPropertyPageP
 
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
-          <div>
-            <h2>Новый объект</h2>
-            <p>Создайте объект владельца и сразу подготовьте его к публикации и приему заявок.</p>
+          <div className="br-section-copy">
+            <SectionTitle>Новый объект</SectionTitle>
+            <SectionSubtitle>Создайте объект владельца и сразу подготовьте его к публикации и приему заявок.</SectionSubtitle>
           </div>
         </div>
 

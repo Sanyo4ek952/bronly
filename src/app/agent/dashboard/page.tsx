@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getAgentDashboardSummary } from "@/entities/collaboration";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
-import { ButtonLink, SectionSubtitle } from "@/shared/ui";
+import { ButtonLink, SectionSubtitle, SectionTitle } from "@/shared/ui";
 import { OwnerDashboardActionSection } from "@/widgets/owner-dashboard-overview/owner-dashboard-action-section";
 import { SubscriptionOverviewCard } from "@/widgets/subscription-status-card";
 
@@ -75,8 +75,8 @@ export default async function AgentDashboardPage() {
 
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
-          <div>
-            <h2>Ближайшие шаги агента</h2>
+          <div className="br-section-copy">
+            <SectionTitle>Ближайшие шаги агента</SectionTitle>
             <SectionSubtitle>Рабочая схема MVP без лишнего CRM-слоя.</SectionSubtitle>
           </div>
         </div>

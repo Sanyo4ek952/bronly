@@ -1,6 +1,7 @@
 import Image from "next/image";
 
 import type { PublicPropertySummary } from "@/entities/property";
+import { SectionSubtitle, SectionTitle } from "@/shared/ui";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
 
 type PublicPropertySectionProps = {
@@ -14,11 +15,7 @@ type PublicPropertySectionProps = {
 };
 
 function PropertyTitle({ as, children }: { as: "h2" | "h3"; children: string }) {
-  if (as === "h2") {
-    return <h2>{children}</h2>;
-  }
-
-  return <h3>{children}</h3>;
+  return <SectionTitle as={as}>{children}</SectionTitle>;
 }
 
 function PublicPropertyGallery({ property }: { property: PublicPropertySummary }) {
@@ -80,9 +77,9 @@ export function PublicPropertySection({
   return (
     <article className="br-card br-collection-public-section">
       <div className="br-dashboard-block__header">
-        <div>
+        <div className="br-section-copy">
           <PropertyTitle as={titleAs}>{property.shortTitle}</PropertyTitle>
-          <p>{addressLine}</p>
+          <SectionSubtitle>{addressLine}</SectionSubtitle>
         </div>
       </div>
 

@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getPublicAgentPageData } from "@/entities/collaboration";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { buildCanonicalUrl, createSeoMetadata, toJsonLd } from "@/shared/lib/seo";
-import { Button, ButtonLink } from "@/shared/ui";
+import { Button, ButtonLink, SectionSubtitle, SectionTitle } from "@/shared/ui";
 import { PublicPropertySection } from "@/widgets/public-property-section";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
 
@@ -152,9 +152,9 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
               {standaloneRooms.length ? (
                 <section className="br-dashboard-block br-card">
                   <div className="br-dashboard-block__header">
-                    <div>
-                      <h2>Отдельные номера</h2>
-                      <p>Самостоятельные варианты размещения без привязки к объекту.</p>
+                    <div className="br-section-copy">
+                      <SectionTitle>Отдельные номера</SectionTitle>
+                      <SectionSubtitle>Самостоятельные варианты размещения без привязки к объекту.</SectionSubtitle>
                     </div>
                   </div>
 
@@ -165,9 +165,9 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
           ) : (
             <section className="br-dashboard-block br-card">
               <div className="br-dashboard-block__header">
-                <div>
-                  <h2>Пока нет доступных вариантов</h2>
-                  <p>Агентская витрина появится после активного сотрудничества с владельцем.</p>
+                <div className="br-section-copy">
+                  <SectionTitle>Пока нет доступных вариантов</SectionTitle>
+                  <SectionSubtitle>Агентская витрина появится после активного сотрудничества с владельцем.</SectionSubtitle>
                 </div>
               </div>
             </section>

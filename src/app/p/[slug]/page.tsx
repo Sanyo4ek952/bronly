@@ -7,7 +7,7 @@ import { getPublicPropertyPageData, resolveOwnerPublicSlug } from "@/entities/pr
 import type { PublicRoom } from "@/entities/room";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { buildCanonicalUrl, createSeoMetadata, toJsonLd } from "@/shared/lib/seo";
-import { ButtonLink } from "@/shared/ui";
+import { ButtonLink, SectionSubtitle, SectionTitle } from "@/shared/ui";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
 
 type PublicPropertyPageProps = {
@@ -263,8 +263,8 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
 
           <section id="owner-filter" className="br-section br-section--public">
             <div className="br-section-heading">
-              <h2>Подберите номер</h2>
-              <p>Фильтр работает по всей витрине владельца. Заявка всегда создаётся на конкретный номер.</p>
+              <SectionTitle>Подберите номер</SectionTitle>
+              <SectionSubtitle>Фильтр работает по всей витрине владельца. Заявка всегда создаётся на конкретный номер.</SectionSubtitle>
             </div>
 
             {allRooms.length ? (
@@ -280,9 +280,9 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
             ) : (
               <section className="br-dashboard-block br-card">
                 <div className="br-dashboard-block__header">
-                  <div>
-                    <h3>Пока нет доступных вариантов</h3>
-                    <p>Владелец ещё не опубликовал объекты или отдельные номера для этой ссылки.</p>
+                  <div className="br-section-copy">
+                    <SectionTitle as="h3">Пока нет доступных вариантов</SectionTitle>
+                    <SectionSubtitle>Владелец ещё не опубликовал объекты или отдельные номера для этой ссылки.</SectionSubtitle>
                   </div>
                 </div>
               </section>
@@ -291,8 +291,8 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
 
           <section id="owner-request-flow" className="br-public-request-flow br-card">
             <div className="br-section-heading">
-              <h2>Как работает заявка</h2>
-              <p>Bronly не подтверждает проживание от имени сервиса. Владелец свяжется с вами напрямую.</p>
+              <SectionTitle>Как работает заявка</SectionTitle>
+              <SectionSubtitle>Bronly не подтверждает проживание от имени сервиса. Владелец свяжется с вами напрямую.</SectionSubtitle>
             </div>
             <ol className="br-public-request-flow__list">
               <li>Выберите конкретный номер по датам, гостям и комнатам.</li>

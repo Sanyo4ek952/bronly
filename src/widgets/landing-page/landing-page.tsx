@@ -1,7 +1,7 @@
 import { Inbox, LayoutDashboard, MonitorSmartphone, Smartphone } from "lucide-react";
 import Link from "next/link";
 
-import { AppIcon, type AppIconComponent } from "@/shared/ui";
+import { AppIcon, SectionSubtitle, SectionTitle, type AppIconComponent } from "@/shared/ui";
 import { SiteHeader } from "@/widgets/site-header";
 
 const capabilityCards = [
@@ -154,8 +154,8 @@ export function LandingPage() {
       <section id="capabilities" className="br-section">
         <div className="br-container">
           <div className="br-section-heading">
-            <h2>Возможности Bronly</h2>
-            <p>Стартовый набор для персональной страницы владельца или агентской витрины в рамках MVP.</p>
+            <SectionTitle>Возможности Bronly</SectionTitle>
+            <SectionSubtitle>Стартовый набор для персональной страницы владельца или агентской витрины в рамках MVP.</SectionSubtitle>
           </div>
           <div className="br-features">
             {capabilityCards.map((card) => (
@@ -176,8 +176,8 @@ export function LandingPage() {
           <div className="br-split">
             <div>
               <div className="br-section-heading">
-                <h2>Как это работает</h2>
-                <p>Фокус на простом сценарии: объект, номер, ссылка, заявка и календарь занятости.</p>
+                <SectionTitle>Как это работает</SectionTitle>
+                <SectionSubtitle>Фокус на простом сценарии: объект, номер, ссылка, заявка и календарь занятости.</SectionSubtitle>
               </div>
               <div className="br-step-list">
                 {workflowSteps.map((step, index) => (
@@ -226,8 +226,8 @@ export function LandingPage() {
       <section id="pricing" className="br-section">
         <div className="br-container">
           <div className="br-section-heading">
-            <h2>Простые тарифы</h2>
-            <p>Подписка на сервис без оплаты проживания и без обещаний гарантированного подтверждения.</p>
+            <SectionTitle>Простые тарифы</SectionTitle>
+            <SectionSubtitle>Подписка на сервис без оплаты проживания и без обещаний гарантированного подтверждения.</SectionSubtitle>
           </div>
           <div className="br-pricing-grid">
             {pricingCards.map((card) => (
@@ -256,8 +256,8 @@ export function LandingPage() {
       <section id="faq" className="br-section br-section--soft">
         <div className="br-container">
           <div className="br-section-heading">
-            <h2>Частые вопросы</h2>
-            <p>Ответы соответствуют границам MVP: Bronly помогает получать заявки, но не заменяет прямое общение с гостем.</p>
+            <SectionTitle>Частые вопросы</SectionTitle>
+            <SectionSubtitle>Ответы соответствуют границам MVP: Bronly помогает получать заявки, но не заменяет прямое общение с гостем.</SectionSubtitle>
           </div>
           <div className="br-faq-list">
             {faqItems.map((item) => (

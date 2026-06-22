@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import type { CollectionSummary } from "@/entities/collection";
 import { buildCollectionSubtitle } from "@/entities/collection";
-import { AppIcon, ButtonLink, StatusPill } from "@/shared/ui";
+import { AppIcon, ButtonLink, SectionSubtitle, SectionTitle, StatusPill } from "@/shared/ui";
 
 type CollectionListSectionProps = {
   title: string;
@@ -27,9 +27,9 @@ export function CollectionListSection({
   return (
     <section className="br-dashboard-block br-card">
       <div className="br-dashboard-block__header">
-        <div>
-          <h2>{title}</h2>
-          <p>{description}</p>
+        <div className="br-section-copy">
+          <SectionTitle>{title}</SectionTitle>
+          <SectionSubtitle>{description}</SectionSubtitle>
         </div>
       </div>
 

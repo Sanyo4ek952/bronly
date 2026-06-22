@@ -735,7 +735,6 @@
 .br-owner-property-card__header > div,
 .br-owner-property-card__meta,
 .br-owner-property-card__topbar,
-.br-dashboard-block__header > div,
 .br-room-page__actions > *,
 .br-owner-room-card__header > div,
 .br-owner-room-card__content,
@@ -1168,19 +1167,6 @@ ul {
 .br-section-heading {
   display: grid;
   gap: 12px;
-}
-
-.br-section-heading h2 {
-  font-size: clamp(30px, 4vw, 42px);
-  line-height: 1.08;
-  letter-spacing: -0.03em;
-}
-
-.br-section-heading p {
-  max-width: 640px;
-  color: var(--color-muted);
-  font-size: 16px;
-  line-height: 1.6;
 }
 
 .br-button {
@@ -2523,7 +2509,7 @@ ul {
   margin-top: 16px;
 }
 
-.br-dashboard-block__header h2,
+.br-dashboard-block__header .br-section-title,
 .br-active-step__copy h3 {
   font-size: 24px;
   line-height: 1.12;
@@ -5920,15 +5906,27 @@ body {
   flex-direction: column;
 }
 
+.br-section-copy,
+.br-section-header__copy,
+.br-dashboard-block__header > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.br-section-title,
 .br-section-heading h2,
+.br-section-heading h3,
 .br-section-header h2,
 .br-dashboard-block__header h2,
+.br-dashboard-block__header h3,
 .br-owner-mobile-sheet__header h2 {
   font-size: var(--section-title-size);
   line-height: 1.12;
   letter-spacing: -0.03em;
 }
 
+.br-section-subtitle,
 .br-section-heading p,
 .br-section-header p,
 .br-dashboard-block__header p {
@@ -5936,15 +5934,7 @@ body {
   color: var(--text-muted);
   font-size: 13px;
   line-height: 1.55;
-}
-
-.br-section-subtitle {
   margin-bottom: 12px;
-}
-
-.br-section-header__copy {
-  display: grid;
-  gap: 6px;
 }
 
 .br-section-header__actions {

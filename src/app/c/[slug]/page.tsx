@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import { getPublicCollectionPageData, recordPublicCollectionOpen } from "@/entities/collection";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { createSeoMetadata } from "@/shared/lib/seo";
-import { ButtonLink } from "@/shared/ui";
+import { ButtonLink, SectionSubtitle, SectionTitle } from "@/shared/ui";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
 
 type PublicCollectionPageProps = {
@@ -180,8 +180,8 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
 
         <section id="collection-rooms" className="br-section br-section--public">
           <div className="br-section-heading">
-            <h2>Варианты в этой подборке</h2>
-            <p>Здесь показаны только выбранные варианты по этой ссылке. Заявка всегда отправляется на конкретный номер, а не на объект целиком.</p>
+            <SectionTitle>Варианты в этой подборке</SectionTitle>
+            <SectionSubtitle>Здесь показаны только выбранные варианты по этой ссылке. Заявка всегда отправляется на конкретный номер, а не на объект целиком.</SectionSubtitle>
           </div>
 
           <form className="br-public-filter br-card" method="get">
@@ -240,11 +240,11 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
               {sections.map((section) => (
                 <article key={section.property.id} className="br-card br-collection-public-section">
                   <div className="br-dashboard-block__header">
-                    <div>
-                      <h3>{section.property.shortTitle}</h3>
-                      <p>
+                    <div className="br-section-copy">
+                      <SectionTitle as="h3">{section.property.shortTitle}</SectionTitle>
+                      <SectionSubtitle>
                         {section.property.city}, {section.property.address}
-                      </p>
+                      </SectionSubtitle>
                     </div>
                     <span className="br-collection-public-badge">
                       {section.sourceKinds.includes("property") ? "Объект в подборке" : "Номер в подборке"}
@@ -274,9 +274,9 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
               {standaloneRooms.length ? (
                 <article className="br-card br-collection-public-section">
                   <div className="br-dashboard-block__header">
-                    <div>
-                      <h3>Отдельные номера в подборке</h3>
-                      <p>Самостоятельные варианты размещения без привязки к объекту.</p>
+                    <div className="br-section-copy">
+                      <SectionTitle as="h3">Отдельные номера в подборке</SectionTitle>
+                      <SectionSubtitle>Самостоятельные варианты размещения без привязки к объекту.</SectionSubtitle>
                     </div>
                     <span className="br-collection-public-badge">Номера в подборке</span>
                   </div>
@@ -299,9 +299,9 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
           ) : (
             <section className="br-dashboard-block br-card" style={{ marginTop: 24 }}>
               <div className="br-dashboard-block__header">
-                <div>
-                  <h3>В этой подборке пока нет доступных номеров</h3>
-                  <p>Попробуйте открыть ссылку позже или уточните даты.</p>
+                <div className="br-section-copy">
+                  <SectionTitle as="h3">В этой подборке пока нет доступных номеров</SectionTitle>
+                  <SectionSubtitle>Попробуйте открыть ссылку позже или уточните даты.</SectionSubtitle>
                 </div>
               </div>
             </section>

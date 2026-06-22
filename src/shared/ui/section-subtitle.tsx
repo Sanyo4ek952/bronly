@@ -8,7 +8,7 @@ type SectionSubtitleProps = HTMLAttributes<HTMLParagraphElement> & {
 
 export function SectionSubtitle({ children, className, ...props }: SectionSubtitleProps) {
   return (
-    <p className={cn("br-section-subtitle mb-10!", className)} {...props}>
+    <p className={cn("br-section-subtitle", className)} {...props}>
       {children}
     </p>
   );

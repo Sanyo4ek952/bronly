@@ -1,4 +1,5 @@
 import { getOwnerCalendarInventory } from "@/entities/property";
+import { SectionSubtitle, SectionTitle } from "@/shared/ui";
 import { OwnerDashboardCalendar } from "@/widgets/owner-dashboard-calendar/owner-dashboard-calendar";
 
 export default async function OwnerCalendarPage() {
@@ -9,9 +10,9 @@ export default async function OwnerCalendarPage() {
     <section className="br-owner-stack">
       <section className="br-dashboard-block br-card">
         <div className="br-dashboard-block__header">
-          <div>
-            <h2>Календарь занятости</h2>
-            <p>Общий календарь кабинета показывает занятость по всем объектам и отдельным номерам владельца.</p>
+          <div className="br-section-copy">
+            <SectionTitle>Календарь занятости</SectionTitle>
+            <SectionSubtitle>Общий календарь кабинета показывает занятость по всем объектам и отдельным номерам владельца.</SectionSubtitle>
           </div>
         </div>
 
