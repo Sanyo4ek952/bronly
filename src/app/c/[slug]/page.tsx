@@ -1,23 +1,17 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getPublicCollectionPageData, recordPublicCollectionOpen } from "@/entities/collection";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
-import { createSeoMetadata } from "@/shared/lib/seo";
-import { ButtonLink, SectionSubtitle, SectionTitle } from "@/shared/ui";
+import { createSeoMetadata, getSearchString, readSearchParams } from "@/shared/lib";
+import { ButtonLink } from "@/shared/ui";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
+import { PublicBrandSlot, PublicHero, PublicPageHeader, PublicUnavailableState } from "@/widgets/public-page";
 
 type PublicCollectionPageProps = {
   params: Promise<{ slug: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
-
-function getSearchString(params: Record<string, string | string[] | undefined>, key: string) {
-  const value = params[key];
-  return typeof value === "string" ? value : "";
-}
 
 function formatCollectionStaySummary(filters: {
   hasDates: boolean;
@@ -50,8 +44,7 @@ export async function generateMetadata({ params }: PublicCollectionPageProps): P
 }
 
 export default async function PublicCollectionPage({ params, searchParams }: PublicCollectionPageProps) {
-  const fallbackParams: Record<string, string | string[] | undefined> = {};
-  const [{ slug }, query] = await Promise.all([params, searchParams ?? Promise.resolve(fallbackParams)]);
+  const [{ slug }, query] = await Promise.all([params, readSearchParams(searchParams)]);
   const pageData = await getPublicCollectionPageData(slug, {
     checkIn: getSearchString(query, "checkIn"),
     checkOut: getSearchString(query, "checkOut"),
@@ -66,21 +59,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
   if (pageData.publicUnavailableReason || !pageData.collection || !pageData.contact) {
     const unavailable = getPublicUnavailableContent("collection", pageData.publicUnavailableReason);
 
-    return (
-      <main className="br-page">
-        <div className="br-container">
-          <section className="br-request-success br-card" style={{ margin: "48px auto" }}>
-            <h1>{unavailable.title}</h1>
-            <p>{unavailable.description}</p>
-            <div className="br-request-success__actions">
-              <ButtonLink href="/" fullWidth>
-                На главную
-              </ButtonLink>
-            </div>
-          </section>
-        </div>
-      </main>
-    );
+    return <PublicUnavailableState title={unavailable.title} description={unavailable.description} />;
   }
 
   await recordPublicCollectionOpen(slug);
@@ -97,33 +76,26 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
   return (
     <main className="br-page">
       <div className="br-container">
-        <header className="br-header br-header--public">
-          <BrandSlot />
-          <nav className="br-nav" aria-label="Навигация коллекции">
-            <a href="#collection-rooms">Варианты</a>
-            <a href="#collection-contact">Контакт</a>
-          </nav>
-          <ButtonLink href={firstRequestHref}>Перейти к заявке</ButtonLink>
-        </header>
+        <PublicPageHeader
+          actions={<ButtonLink href={firstRequestHref}>Перейти к заявке</ButtonLink>}
+          navigation={
+            <nav className="br-nav" aria-label="Навигация коллекции">
+              <a href="#collection-rooms">Варианты</a>
+              <a href="#collection-contact">Контакт</a>
+            </nav>
+          }
+        >
+          <PublicBrandSlot />
+        </PublicPageHeader>
 
-        <section className="br-public-hero br-card">
-          <div className="br-public-hero__media">
-            {heroPhoto ? (
-              <Image
-                src={heroPhoto.url}
-                alt={collection.title}
-                width={1600}
-                height={1000}
-                unoptimized
-                className="br-public-hero__image"
-              />
-            ) : null}
-          </div>
-          <div className="br-public-hero__body">
-            <div className="br-public-hero__copy">
-              <span className="br-public-hero__eyebrow">Персональная подборка</span>
-              <h1>{collection.title}</h1>
-              <p>{collection.guestLabel || "Подборка вариантов по прямой ссылке для конкретного гостя."}</p>
+        <PublicHero
+          imageUrl={heroPhoto?.url}
+          imageAlt={collection.title}
+          eyebrow="Персональная подборка"
+          title={collection.title}
+          description={collection.guestLabel || "Подборка вариантов по прямой ссылке для конкретного гостя."}
+          summary={
+            <>
               <p className="br-collection-public-copy">
                 Эта подборка показывает только выбранные варианты. Перед отправкой заявки нужно выбрать конкретный номер.
               </p>
@@ -140,9 +112,11 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
               <div className="br-inline-notice br-inline-notice--soft br-public-collection-notice">
                 Заявка отправляется по конкретному номеру. Даже если в подборку добавлен объект целиком, перед заявкой всё равно нужно выбрать номер.
               </div>
-            </div>
-            <div id="collection-contact" className="br-public-hero__actions">
-              <div className="br-public-request-flow br-card">
+            </>
+          }
+          actions={
+            <>
+              <div id="collection-contact" className="br-public-request-flow br-card">
                 <strong>Как работает подборка</strong>
                 <ol className="br-public-request-flow__list">
                   <li>Уточните даты, гостей и количество комнат.</li>
@@ -168,9 +142,9 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
                   Telegram
                 </a>
               ) : null}
-            </div>
-          </div>
-        </section>
+            </>
+          }
+        />
 
         {publicWarningText ? (
           <div className="br-inline-notice" style={{ marginTop: 18 }}>
@@ -180,8 +154,8 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
 
         <section id="collection-rooms" className="br-section br-section--public">
           <div className="br-section-heading">
-            <SectionTitle>Варианты в этой подборке</SectionTitle>
-            <SectionSubtitle>Здесь показаны только выбранные варианты по этой ссылке. Заявка всегда отправляется на конкретный номер, а не на объект целиком.</SectionSubtitle>
+            <h2>Варианты в этой подборке</h2>
+            <p>Здесь показаны только выбранные варианты по этой ссылке. Заявка всегда отправляется на конкретный номер, а не на объект целиком.</p>
           </div>
 
           <form className="br-public-filter br-card" method="get">
@@ -223,9 +197,9 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
               <button type="submit" className="br-button br-button--primary br-button--full">
                 Уточнить доступность
               </button>
-              <Link href={`/c/${collection.slug}`} className="br-button br-button--secondary br-button--full">
+              <ButtonLink href={`/c/${collection.slug}`} variant="secondary" fullWidth>
                 Сбросить
-              </Link>
+              </ButtonLink>
             </div>
           </form>
 
@@ -240,11 +214,11 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
               {sections.map((section) => (
                 <article key={section.property.id} className="br-card br-collection-public-section">
                   <div className="br-dashboard-block__header">
-                    <div className="br-section-copy">
-                      <SectionTitle as="h3">{section.property.shortTitle}</SectionTitle>
-                      <SectionSubtitle>
+                    <div>
+                      <h3>{section.property.shortTitle}</h3>
+                      <p>
                         {section.property.city}, {section.property.address}
-                      </SectionSubtitle>
+                      </p>
                     </div>
                     <span className="br-collection-public-badge">
                       {section.sourceKinds.includes("property") ? "Объект в подборке" : "Номер в подборке"}
@@ -274,9 +248,9 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
               {standaloneRooms.length ? (
                 <article className="br-card br-collection-public-section">
                   <div className="br-dashboard-block__header">
-                    <div className="br-section-copy">
-                      <SectionTitle as="h3">Отдельные номера в подборке</SectionTitle>
-                      <SectionSubtitle>Самостоятельные варианты размещения без привязки к объекту.</SectionSubtitle>
+                    <div>
+                      <h3>Отдельные номера в подборке</h3>
+                      <p>Самостоятельные варианты размещения без привязки к объекту.</p>
                     </div>
                     <span className="br-collection-public-badge">Номера в подборке</span>
                   </div>
@@ -299,9 +273,9 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
           ) : (
             <section className="br-dashboard-block br-card" style={{ marginTop: 24 }}>
               <div className="br-dashboard-block__header">
-                <div className="br-section-copy">
-                  <SectionTitle as="h3">В этой подборке пока нет доступных номеров</SectionTitle>
-                  <SectionSubtitle>Попробуйте открыть ссылку позже или уточните даты.</SectionSubtitle>
+                <div>
+                  <h3>В этой подборке пока нет доступных номеров</h3>
+                  <p>Попробуйте открыть ссылку позже или уточните даты.</p>
                 </div>
               </div>
             </section>
@@ -309,18 +283,5 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
         </section>
       </div>
     </main>
-  );
-}
-
-function BrandSlot() {
-  return (
-    <Link href="/" className="br-logo">
-      <span className="br-logo__mark" aria-hidden="true">
-        b
-      </span>
-      <span className="br-logo__wordmark">
-        Bron<span className="br-logo__accent">ly</span>
-      </span>
-    </Link>
   );
 }

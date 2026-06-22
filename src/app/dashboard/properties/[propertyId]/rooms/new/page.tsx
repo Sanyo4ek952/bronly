@@ -4,11 +4,16 @@ import { createOwnerRoom } from "@/app/dashboard/properties/actions";
 import { getRoomCreateNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerPropertyDetail } from "@/entities/property";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
-import { RoomAmenitiesField } from "@/features/property/edit-room/ui/room-amenities-field";
-import { RoomFormSection } from "@/features/property/edit-room/ui/room-form-section";
+import {
+  RoomAmenitiesSection,
+  RoomBaseFields,
+  RoomPhotosField,
+  RoomPricingFields,
+  RoomPublishSettings,
+} from "@/features/property/edit-room/ui/room-form-blocks";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
-import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
-import { Button, DashboardPageNav, Input } from "@/shared/ui";
+import { buildOwnerInventoryBreadcrumbs, getRussianPluralForm, readSearchParams } from "@/shared/lib";
+import { Button, DashboardPageNav } from "@/shared/ui";
 import { PropertySectionNav } from "@/widgets/property-section-nav";
 
 type PropertyRoomCreatePageProps = {
@@ -17,18 +22,7 @@ type PropertyRoomCreatePageProps = {
 };
 
 function getActiveRoomWord(count: number) {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-
-  if (mod10 === 1 && mod100 !== 11) {
-    return "активный номер";
-  }
-
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-    return "активных номера";
-  }
-
-  return "активных номеров";
+  return getRussianPluralForm(count, ["активный номер", "активных номера", "активных номеров"]);
 }
 
 export default async function PropertyRoomCreatePage({ params, searchParams }: PropertyRoomCreatePageProps) {
@@ -51,8 +45,7 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
       ? `Сейчас доступно еще ${subscription.remainingRoomSlots} ${getActiveRoomWord(subscription.remainingRoomSlots)}.`
       : null;
 
-  const fallbackParams: Record<string, string | string[] | undefined> = {};
-  const resolvedSearchParams = await (searchParams ?? Promise.resolve(fallbackParams));
+  const resolvedSearchParams = await readSearchParams(searchParams);
   const error = typeof resolvedSearchParams.error === "string" ? resolvedSearchParams.error : "";
   const notice = getRoomCreateNotice(error);
 
@@ -98,45 +91,19 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
         <form action={createOwnerRoom} className="br-owner-editor br-owner-editor--muted br-room-form">
           <input type="hidden" name="propertyId" value={property.id} />
 
-          <RoomFormSection title="Основное" description="Короткая карточка номера без лишнего шума.">
-            <div className="br-property-form__grid">
-              <Input id="room-title-new" name="title" label="Название номера" />
-            </div>
-          </RoomFormSection>
+          <RoomBaseFields title="Основное" description="Короткая карточка номера без лишнего шума." />
 
-          <RoomFormSection title="Вместимость и цена" description="То, что чаще всего правят с телефона.">
-            <div className="br-property-form__grid br-room-form__grid--compact">
-              <Input id="room-capacity-new" name="capacity" type="number" min="1" label="Гостей" defaultValue="2" />
-              <Input id="room-bedrooms-new" name="bedrooms" type="number" min="1" label="Спален" defaultValue="1" />
-              <Input id="room-area-new" name="area" type="number" min="0" label="Площадь, м²" defaultValue="0" />
-              <Input id="room-price-new" name="pricePerNight" type="number" min="0" step="0.01" label="Базовая цена за ночь" defaultValue="0" />
-            </div>
-          </RoomFormSection>
+          <RoomPricingFields title="Вместимость и цена" description="То, что чаще всего правят с телефона." />
 
-          <RoomFormSection title="Удобства номера" description="Главные удобства сразу, дополнительные по раскрытию.">
-            <RoomAmenitiesField initialAmenities={[]} />
-          </RoomFormSection>
+          <RoomAmenitiesSection
+            title="Удобства номера"
+            description="Главные удобства сразу, дополнительные по раскрытию."
+            amenities={[]}
+          />
 
-          <RoomFormSection title="Фото номера" description="Можно выбрать до 10 фото сразу. Первое фото станет главным.">
-            <Input
-              id="room-photos-new"
-              name="photos"
-              type="file"
-              accept="image/*"
-              multiple
-              label="Фотографии номера"
-              description="JPG, PNG, WebP или GIF, до 5 МБ каждое."
-            />
-          </RoomFormSection>
+          <RoomPhotosField title="Фото номера" description="Можно выбрать до 10 фото сразу. Первое фото станет главным." />
 
-          <RoomFormSection title="Настройки" description="Оставьте только то, что важно для публикации.">
-            <div className="br-toggle-list br-room-form__toggles">
-              <label className="br-toggle">
-                <span>Номер активен</span>
-                <input type="checkbox" name="isActive" defaultChecked />
-              </label>
-            </div>
-          </RoomFormSection>
+          <RoomPublishSettings title="Настройки" description="Оставьте только то, что важно для публикации." />
 
           <div className="br-active-step__actions br-room-form__actions">
             <Button type="submit">Сохранить номер</Button>

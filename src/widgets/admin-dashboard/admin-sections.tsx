@@ -18,6 +18,7 @@ import type { ReferralQueueItem } from "@/entities/referral";
 import { formatDateLabel, formatDateTimeLabel } from "@/shared/lib/date";
 import { cn } from "@/shared/lib/cn";
 import { AppIcon, Button, InlineNotice, Input, Select } from "@/shared/ui";
+import { AdminPageHeader } from "@/widgets/property-admin";
 
 import {
   extendSubscriptionAction,
@@ -175,26 +176,6 @@ function AdminFilterChips<T extends string>({
   );
 }
 
-function AdminPageHeader({
-  title,
-  description,
-  actions = null,
-}: {
-  title: string;
-  description: string;
-  actions?: React.ReactNode;
-}) {
-  return (
-    <section className="br-admin-page-header">
-      <div className="br-admin-page-header__copy">
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </div>
-      {actions ? <div className="br-admin-page-header__actions">{actions}</div> : null}
-    </section>
-  );
-}
-
 function AdminSummaryCard({
   label,
   value,
@@ -315,6 +296,7 @@ export function AdminOverview({ data, message }: { data: AdminOverviewData; mess
   return (
     <section className="br-admin-page">
       <AdminPageHeader
+        variant="plain"
         title="Админка Bronly"
         description="Мобильная сводка по пользователям, подпискам и внутренним проверкам."
         actions={
@@ -440,6 +422,7 @@ export function AdminReviewsPage({ data, message }: { data: AdminReviewsPageData
   return (
     <section className="br-admin-page">
       <AdminPageHeader
+        variant="plain"
         title="Проверки"
         description="Решения по referral-продлениям и быстрый переход к нужной подписке."
       />
@@ -564,6 +547,7 @@ export function AdminUsersPage({ data, message }: { data: AdminUsersPageData; me
   return (
     <section className="br-admin-page">
       <AdminPageHeader
+        variant="plain"
         title="Пользователи"
         description="Роли, контакты, публичные ссылки и ручное скрытие страниц."
       />
@@ -728,6 +712,7 @@ export function AdminSubscriptionsPage({
   return (
     <section className="br-admin-page">
       <AdminPageHeader
+        variant="plain"
         title="Подписки"
         description="Главный рабочий экран для продления доступа и ручной корректировки статусов."
       />
@@ -944,6 +929,7 @@ export function AdminPropertiesPage({ data, message }: { data: AdminPropertiesPa
   return (
     <section className="br-admin-page">
       <AdminPageHeader
+        variant="plain"
         title="Объекты"
         description="Ручная заморозка и проверка статуса публикации на мобильном экране."
       />

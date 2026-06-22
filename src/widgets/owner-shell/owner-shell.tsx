@@ -91,7 +91,7 @@ function getNavigationConfig(roleKind: "owner" | "agent"): NavigationConfig {
   };
 }
 
-type OwnerShellProps = {
+export type OwnerShellProps = {
   children: React.ReactNode;
   userName: string;
   roleLabel: string;

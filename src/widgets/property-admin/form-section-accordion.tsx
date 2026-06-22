@@ -1,8 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+
+import { FormSection } from "@/shared/ui";
 
 type FormSectionAccordionProps = {
   id?: string;
@@ -19,25 +19,9 @@ export function FormSectionAccordion({
   children,
   defaultOpen = true,
 }: FormSectionAccordionProps) {
-  const [open, setOpen] = useState(defaultOpen);
-
   return (
-    <section id={id} className="br-form-section-card br-form-section-card--accordion br-card br-anchor-target" data-open={open}>
-      <button
-        type="button"
-        className="br-form-section-card__trigger"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-      >
-        <div className="br-form-section-card__header">
-          <div>
-            <h3>{title}</h3>
-            {description ? <p>{description}</p> : null}
-          </div>
-        </div>
-        <ChevronDown className="br-form-section-card__chevron" aria-hidden="true" />
-      </button>
-      {open ? <div className="br-form-section-card__body">{children}</div> : null}
-    </section>
+    <FormSection id={id} title={title} description={description} variant="accordion" defaultOpen={defaultOpen}>
+      {children}
+    </FormSection>
   );
 }

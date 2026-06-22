@@ -1,6 +1,7 @@
 import { HousePlus } from "lucide-react";
 
 import { getOwnerInventory } from "@/entities/property";
+import { readFeedbackSearchParams, readSearchParams } from "@/shared/lib";
 import { AppIcon, ButtonLink } from "@/shared/ui";
 import { AddInventoryButton } from "@/widgets/add-inventory-button";
 import { AdminPageHeader, PropertyInventoryBrowser } from "@/widgets/property-admin";
@@ -11,11 +12,6 @@ type PropertiesPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-function getSearchString(params: Record<string, string | string[] | undefined>, key: string) {
-  const value = params[key];
-  return typeof value === "string" ? value : "";
-}
-
 function getMessage(error: string, success: string) {
   if (success === "deleted") {
     return "Объект удалён.";
@@ -25,10 +21,8 @@ function getMessage(error: string, success: string) {
 }
 
 export default async function PropertiesPage({ searchParams }: PropertiesPageProps) {
-  const fallbackParams: Record<string, string | string[] | undefined> = {};
-  const params = await (searchParams ?? Promise.resolve(fallbackParams));
-  const error = getSearchString(params, "error");
-  const success = getSearchString(params, "success");
+  const params = await readSearchParams(searchParams);
+  const { error, success } = readFeedbackSearchParams(params);
   const inventory = await getOwnerInventory();
 
   const properties = inventory.filter((item) => item.kind !== "standalone_room");

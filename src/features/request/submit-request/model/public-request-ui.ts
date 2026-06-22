@@ -24,6 +24,14 @@ export type PublicRequestSuccessStep = {
   description: string;
 };
 
+export type ResolvedRequestRoomSelection = {
+  activeRooms: PublicRoom[];
+  defaultRoomId: string;
+  selectedRoom: PublicRoom | null;
+  error: string;
+  requestedRoomIsValid: boolean;
+};
+
 function formatMoney(value: number) {
   return `${Math.round(value).toLocaleString("ru-RU")} ₽`;
 }
@@ -106,6 +114,29 @@ export function buildPublicRequestSummary(
 
 export function findRequestRoom(rooms: PublicRoom[], roomId: string) {
   return rooms.find((room) => room.id === roomId) ?? null;
+}
+
+export function resolveRequestRoomSelection(
+  rooms: PublicRoom[],
+  requestedRoomId: string,
+  requestedError = "",
+): ResolvedRequestRoomSelection {
+  const activeRooms = rooms.filter((room) => room.status === "active");
+  const hasRequestedRoom = Boolean(requestedRoomId);
+  const requestedRoomIsValid = hasRequestedRoom ? activeRooms.some((room) => room.id === requestedRoomId) : true;
+  const defaultRoomId =
+    (requestedRoomIsValid ? activeRooms.find((room) => room.id === requestedRoomId)?.id : undefined) ??
+    activeRooms.find((room) => room.isAvailableForFilter)?.id ??
+    activeRooms[0]?.id ??
+    "";
+
+  return {
+    activeRooms,
+    defaultRoomId,
+    selectedRoom: findRequestRoom(rooms, defaultRoomId),
+    error: requestedError || (!requestedRoomIsValid ? "room" : ""),
+    requestedRoomIsValid,
+  };
 }
 
 export function getPublicRequestSuccessSteps(kind: PublicRequestContextKind, contactPhone?: string | null): PublicRequestSuccessStep[] {

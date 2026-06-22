@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { getPublicAgentPageData } from "@/entities/collaboration";
 import { GuestRequestForm } from "@/features/request/submit-request";
 import {
-  findRequestRoom,
   getPublicRequestContextMessage,
   getPublicRequestErrorText,
+  resolveRequestRoomSelection,
 } from "@/features/request/submit-request/model/public-request-ui";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { encodePublicPathSegment } from "@/shared/lib/public-links";
-import { createSeoMetadata } from "@/shared/lib/seo";
-import { ButtonLink, Panel } from "@/shared/ui";
+import { buildSearchParams, createSeoMetadata, getSearchString, readSearchParams } from "@/shared/lib";
+import { PublicUnavailableState } from "@/widgets/public-page";
+import { PublicRequestPageFrame } from "@/widgets/public-request";
 
 import { submitAgentGuestRequestAction } from "./actions";
 
@@ -28,14 +28,8 @@ export const metadata: Metadata = createSeoMetadata({
   index: false,
 });
 
-function getSearchString(params: Record<string, string | string[] | undefined>, key: string) {
-  const value = params[key];
-  return typeof value === "string" ? value : "";
-}
-
 export default async function AgentRequestPage({ params, searchParams }: AgentRequestPageProps) {
-  const fallbackParams: Record<string, string | string[] | undefined> = {};
-  const [{ slug }, query] = await Promise.all([params, searchParams ?? Promise.resolve(fallbackParams)]);
+  const [{ slug }, query] = await Promise.all([params, readSearchParams(searchParams)]);
   const propertySlug = getSearchString(query, "propertySlug");
   const pageData = await getPublicAgentPageData(slug, {
     checkIn: getSearchString(query, "checkIn"),
@@ -49,14 +43,7 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
   }
 
   if (pageData.shouldRedirectToCanonical && pageData.agent?.publicId) {
-    const redirectQuery = new URLSearchParams();
-
-    for (const [key, value] of Object.entries(query)) {
-      if (typeof value === "string" && value) {
-        redirectQuery.set(key, value);
-      }
-    }
-
+    const redirectQuery = buildSearchParams(query);
     const suffix = redirectQuery.toString();
     redirect(`/a/${encodePublicPathSegment(pageData.agent.publicId)}/request${suffix ? `?${suffix}` : ""}`);
   }
@@ -64,19 +51,7 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
   if (pageData.publicUnavailableReason || !pageData.agent) {
     const unavailable = getPublicUnavailableContent("agent", pageData.publicUnavailableReason);
 
-    return (
-      <main className="br-auth-page">
-        <Panel className="br-request-success" as="section">
-          <h1>{unavailable.title}</h1>
-          <p>{unavailable.description}</p>
-          <div className="br-request-success__actions">
-            <ButtonLink href="/" fullWidth>
-              На главную
-            </ButtonLink>
-          </div>
-        </Panel>
-      </main>
-    );
+    return <PublicUnavailableState title={unavailable.title} description={unavailable.description} inAuthLayout />;
   }
 
   const requestedError = getSearchString(query, "error");
@@ -84,62 +59,41 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
   const selectedSection =
     pageData.properties.find((property) => property.property.slug === propertySlug) ??
     (propertySlug ? null : pageData.properties[0] ?? null);
-  const standaloneActiveRooms = pageData.standaloneRooms.filter((room) => room.status === "active");
-  const propertyActiveRooms = selectedSection?.rooms.filter((room) => room.status === "active") ?? [];
-  const activeRooms = propertySlug ? propertyActiveRooms : standaloneActiveRooms;
-  const hasRequestedRoom = Boolean(requestedRoomId);
-  const requestedRoomIsValid = hasRequestedRoom ? activeRooms.some((room) => room.id === requestedRoomId) : true;
-  const defaultRoomId =
-    (requestedRoomIsValid ? activeRooms.find((room) => room.id === requestedRoomId)?.id : undefined) ??
-    activeRooms.find((room) => room.isAvailableForFilter)?.id ??
-    activeRooms[0]?.id ??
-    "";
-  const error = requestedError || (!requestedRoomIsValid ? "room" : "");
-  const selectedRoom = findRequestRoom(activeRooms, defaultRoomId);
+  const scopedRooms = propertySlug
+    ? selectedSection?.rooms ?? []
+    : pageData.standaloneRooms;
+  const selection = resolveRequestRoomSelection(scopedRooms, requestedRoomId, requestedError);
 
-  if (!activeRooms.length) {
+  if (!selection.activeRooms.length) {
     return (
-      <main className="br-auth-page">
-        <Panel className="br-request-success" as="section">
-          <h1>Сейчас нет доступных номеров</h1>
-          <p>По этой витрине сейчас нельзя оставить заявку. Вернитесь и выберите другой вариант.</p>
-          <div className="br-request-success__actions">
-            <ButtonLink href={`/a/${pageData.agent.publicId}`} fullWidth>
-              Вернуться к витрине
-            </ButtonLink>
-          </div>
-        </Panel>
-      </main>
+      <PublicUnavailableState
+        title="Сейчас нет доступных номеров"
+        description="По этой витрине сейчас нельзя оставить заявку. Вернитесь и выберите другой вариант."
+        homeHref={`/a/${pageData.agent.publicId}`}
+        homeLabel="Вернуться к витрине"
+        inAuthLayout
+      />
     );
   }
 
   return (
-    <main className="br-auth-page">
-      <Panel className="br-request-modal" as="section">
-        <div className="br-request-modal__header">
-          <div>
-            <h1>Оставить заявку</h1>
-            <p>Заполните короткую форму, чтобы отправить заявку на конкретный номер.</p>
-          </div>
-          <Link href={`/a/${pageData.agent.publicId}`} className="br-request-modal__close" aria-label="Закрыть">
-            x
-          </Link>
-        </div>
-
-        {pageData.publicWarningText ? <p className="br-inline-notice">{pageData.publicWarningText}</p> : null}
-
-        <GuestRequestForm
-          propertySlug={selectedSection?.property.slug}
-          rooms={activeRooms}
-          defaultRoomId={defaultRoomId}
-          filters={pageData.filters}
-          action={submitAgentGuestRequestAction}
-          hiddenFields={[{ name: "agentPublicId", value: pageData.agent.publicId }]}
-          contextMessage={getPublicRequestContextMessage("agent")}
-          errorMessage={error ? getPublicRequestErrorText("agent", error) : undefined}
-          propertyTitle={selectedRoom?.propertyTitle ?? selectedSection?.property.shortTitle}
-        />
-      </Panel>
-    </main>
+    <PublicRequestPageFrame
+      title="Оставить заявку"
+      description="Заполните короткую форму, чтобы отправить заявку на конкретный номер."
+      closeHref={`/a/${pageData.agent.publicId}`}
+      warningText={pageData.publicWarningText}
+    >
+      <GuestRequestForm
+        propertySlug={selectedSection?.property.slug}
+        rooms={selection.activeRooms}
+        defaultRoomId={selection.defaultRoomId}
+        filters={pageData.filters}
+        action={submitAgentGuestRequestAction}
+        hiddenFields={[{ name: "agentPublicId", value: pageData.agent.publicId }]}
+        contextMessage={getPublicRequestContextMessage("agent")}
+        errorMessage={selection.error ? getPublicRequestErrorText("agent", selection.error) : undefined}
+        propertyTitle={selection.selectedRoom?.propertyTitle ?? selectedSection?.property.shortTitle}
+      />
+    </PublicRequestPageFrame>
   );
 }

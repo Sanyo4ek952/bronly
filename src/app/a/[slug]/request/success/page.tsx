@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { CircleCheckBig } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 import { getPublicAgentPageData } from "@/entities/collaboration";
@@ -9,8 +8,10 @@ import {
 } from "@/features/request/submit-request/model/public-request-ui";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { encodePublicPathSegment } from "@/shared/lib/public-links";
-import { createSeoMetadata } from "@/shared/lib/seo";
-import { AppIcon, ButtonLink, Panel } from "@/shared/ui";
+import { buildSearchParams, createSeoMetadata, getSearchString, readSearchParams } from "@/shared/lib";
+import { ButtonLink } from "@/shared/ui";
+import { PublicUnavailableState } from "@/widgets/public-page";
+import { PublicRequestSuccessScreen } from "@/widgets/public-request";
 
 type AgentRequestSuccessPageProps = {
   params: Promise<{ slug: string }>;
@@ -24,14 +25,8 @@ export const metadata: Metadata = createSeoMetadata({
   index: false,
 });
 
-function getSearchString(params: Record<string, string | string[] | undefined>, key: string) {
-  const value = params[key];
-  return typeof value === "string" ? value : "";
-}
-
 export default async function AgentRequestSuccessPage({ params, searchParams }: AgentRequestSuccessPageProps) {
-  const fallbackParams: Record<string, string | string[] | undefined> = {};
-  const [{ slug }, query] = await Promise.all([params, searchParams ?? Promise.resolve(fallbackParams)]);
+  const [{ slug }, query] = await Promise.all([params, readSearchParams(searchParams)]);
   const filters = {
     checkIn: getSearchString(query, "checkIn"),
     checkOut: getSearchString(query, "checkOut"),
@@ -47,14 +42,7 @@ export default async function AgentRequestSuccessPage({ params, searchParams }: 
   }
 
   if (pageData.shouldRedirectToCanonical && pageData.agent?.publicId) {
-    const redirectQuery = new URLSearchParams();
-
-    for (const [key, value] of Object.entries(query)) {
-      if (typeof value === "string" && value) {
-        redirectQuery.set(key, value);
-      }
-    }
-
+    const redirectQuery = buildSearchParams(query);
     const suffix = redirectQuery.toString();
     redirect(`/a/${encodePublicPathSegment(pageData.agent.publicId)}/request/success${suffix ? `?${suffix}` : ""}`);
   }
@@ -62,19 +50,7 @@ export default async function AgentRequestSuccessPage({ params, searchParams }: 
   if (pageData.publicUnavailableReason || !pageData.agent) {
     const unavailable = getPublicUnavailableContent("agent", pageData.publicUnavailableReason);
 
-    return (
-      <main className="br-auth-page">
-        <Panel className="br-request-success" as="section">
-          <h1>{unavailable.title}</h1>
-          <p>{unavailable.description}</p>
-          <div className="br-request-success__actions">
-            <ButtonLink href="/" fullWidth>
-              На главную
-            </ButtonLink>
-          </div>
-        </Panel>
-      </main>
-    );
+    return <PublicUnavailableState title={unavailable.title} description={unavailable.description} inAuthLayout />;
   }
 
   const selectedSection = propertySlug
@@ -86,63 +62,22 @@ export default async function AgentRequestSuccessPage({ params, searchParams }: 
     null;
   const summary = selectedRoom ? buildPublicRequestSummary(selectedRoom, pageData.filters, selectedSection?.property.shortTitle) : null;
   const steps = getPublicRequestSuccessSteps("agent", pageData.agent.phone);
+  const introText = summary
+    ? `Заявка на номер «${summary.roomTitle}» отправлена. Агент получит её и свяжется с вами, чтобы уточнить детали.`
+    : "Заявка отправлена. Агент получит её и свяжется с вами, чтобы уточнить детали.";
 
   return (
-    <main className="br-auth-page">
-      <Panel className="br-request-success" as="section">
-        <div className="br-request-success__icon" aria-hidden="true">
-          <AppIcon icon={CircleCheckBig} />
-        </div>
-        <h1>Заявка отправлена</h1>
-        <p>
-          {summary
-            ? `Заявка на номер «${summary.roomTitle}» отправлена. Агент получит её и свяжется с вами, чтобы уточнить детали.`
-            : "Заявка отправлена. Агент получит её и свяжется с вами, чтобы уточнить детали."}
-        </p>
-
-        {summary ? (
-          <section className="br-request-success__summary">
-            <div>
-              <span>Номер</span>
-              <strong>{summary.roomTitle}</strong>
-              {summary.propertyTitle ? <small>{summary.propertyTitle}</small> : null}
-            </div>
-            <div>
-              <span>Даты</span>
-              <strong>{summary.checkIn && summary.checkOut ? `${summary.checkIn} - ${summary.checkOut}` : "Уточняются"}</strong>
-              <small>
-                {summary.guestsLabel} • {summary.roomsLabel}
-              </small>
-            </div>
-            <div>
-              <span>Цена</span>
-              <strong>{summary.priceLabel}</strong>
-              <small>{summary.priceCaption}</small>
-            </div>
-          </section>
-        ) : null}
-
-        <section className="br-request-success__steps">
-          <h2>Что дальше</h2>
-          <ol>
-            {steps.map((step) => (
-              <li key={step.title}>
-                <strong>{step.title}</strong>
-                <span>{step.description}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <div className="br-request-success__actions">
-          <ButtonLink href={`/a/${pageData.agent.publicId}`} fullWidth>
-            Вернуться к витрине
-          </ButtonLink>
-          <ButtonLink href="/" variant="secondary" fullWidth>
-            На главную
-          </ButtonLink>
-        </div>
-      </Panel>
-    </main>
+    <PublicRequestSuccessScreen
+      introText={introText}
+      summary={summary}
+      steps={steps}
+      returnHref={`/a/${pageData.agent.publicId}`}
+      returnLabel="Вернуться к витрине"
+      secondaryAction={
+        <ButtonLink href="/" variant="secondary" fullWidth>
+          На главную
+        </ButtonLink>
+      }
+    />
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import type { OwnerRequestItem } from "@/entities/request";
+import { toPhoneHref, toWhatsAppHref } from "@/shared/lib";
 import { BottomSheet, Button, Select, StatusPill, Tabs } from "@/shared/ui";
 
 type RequestsBrowserProps = {
@@ -85,16 +86,6 @@ function getPropertyLabel(propertyTitle: string) {
 function getInitial(value: string) {
   const trimmed = value.trim();
   return trimmed ? trimmed[0]?.toUpperCase() ?? "?" : "?";
-}
-
-function toTelHref(phone: string) {
-  const digits = phone.replace(/[^\d+]/g, "");
-  return digits ? `tel:${digits}` : undefined;
-}
-
-function toWhatsAppHref(phone: string) {
-  const digits = phone.replace(/\D/g, "");
-  return digits ? `https://wa.me/${digits}` : undefined;
 }
 
 function RequestStatusActions({
@@ -296,7 +287,7 @@ export function RequestsBrowser({
         <div className="br-requests-layout">
           <div className="br-request-cards">
             {filteredRequests.map((item) => {
-              const telHref = toTelHref(item.phone);
+              const telHref = toPhoneHref(item.phone);
               const whatsappHref = toWhatsAppHref(item.phone);
 
               return (

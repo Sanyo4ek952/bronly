@@ -4,9 +4,8 @@ import { redirect } from "next/navigation";
 import { getUnreadNotificationCount } from "@/entities/notification";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile, getPrimaryRole } from "@/shared/api/supabase";
-import { formatDateLabel } from "@/shared/lib/date";
 import { createRobots } from "@/shared/lib/seo";
-import { OwnerShell } from "@/widgets/owner-shell";
+import { buildDashboardShellData, DashboardShell } from "@/widgets/dashboard-shell";
 
 export const metadata: Metadata = {
   robots: createRobots(false),
@@ -32,42 +31,27 @@ export default async function DashboardLayout({
     getUnreadNotificationCount(),
   ]);
 
-  const roleLabel = profile.roles.includes("agent") && !profile.roles.includes("owner")
-    ? "Агент"
-    : profile.roles.includes("admin")
-      ? "Администратор"
-      : "Владелец";
-
-  const notice = subscription.status === "expired"
-    ? {
-        title: "Публичные страницы и новые заявки ограничены",
-        text: "Подписка не продлена. Кабинет остается доступным для просмотра, но изменения данных временно остановлены, пока администратор не продлит доступ.",
-      }
-    : subscription.showGraceWarning
-      ? {
-          title: "Подписку нужно продлить",
-          text: subscription.graceEndsAt
-            ? `Grace period действует до ${formatDateLabel(subscription.graceEndsAt)}. До этой даты публичные страницы и новые заявки еще доступны.`
-            : "Grace period уже начался. Пока он не закончился, публичные страницы и новые заявки еще доступны.",
-        }
-      : null;
+  const shellData = buildDashboardShellData({
+    role: "owner",
+    displayName: profile.displayName,
+    unreadNotificationsCount,
+    subscription,
+    hasAdminRole: profile.roles.includes("admin"),
+    hasOwnerRole: profile.roles.includes("owner"),
+  });
 
   return (
     <main className="br-page br-page--dashboard">
       <div className="br-container br-dashboard-layout">
-        <OwnerShell
+        <DashboardShell
           userName={profile.displayName}
-          roleLabel={roleLabel}
-          topbar={{
-            title: `Добро пожаловать, ${profile.displayName}`,
-            description: "Следите за объектами, календарём занятости и заявками в одном месте.",
-            notificationsHref: "/dashboard/notifications",
-            unreadNotificationsCount,
-          }}
-          notice={notice}
+          roleLabel={shellData.roleLabel}
+          roleKind={shellData.roleKind}
+          topbar={shellData.topbar}
+          notice={shellData.notice}
         >
           {children}
-        </OwnerShell>
+        </DashboardShell>
       </div>
     </main>
   );

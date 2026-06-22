@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { getOwnerPropertySectionBySlug, getPublicPropertyPageData, resolveOwnerPublicSlug } from "@/entities/property";
 import { GuestRequestForm } from "@/features/request/submit-request";
 import {
-  findRequestRoom,
   getPublicRequestContextMessage,
   getPublicRequestErrorText,
+  resolveRequestRoomSelection,
 } from "@/features/request/submit-request/model/public-request-ui";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { encodePublicPathSegment } from "@/shared/lib/public-links";
-import { createSeoMetadata } from "@/shared/lib/seo";
-import { ButtonLink, Panel } from "@/shared/ui";
+import { buildSearchParams, createSeoMetadata, getSearchString, readSearchParams } from "@/shared/lib";
+import { PublicUnavailableState } from "@/widgets/public-page";
+import { PublicRequestPageFrame } from "@/widgets/public-request";
 
 import { submitGuestRequestAction } from "./actions";
 
@@ -28,23 +28,12 @@ export const metadata: Metadata = createSeoMetadata({
   index: false,
 });
 
-function getSearchString(params: Record<string, string | string[] | undefined>, key: string) {
-  const value = params[key];
-  return typeof value === "string" ? value : "";
-}
-
 function buildOwnerRequestRedirectHref(
   ownerSlug: string,
   query: Record<string, string | string[] | undefined>,
   matchedPropertySlug: string | null,
 ) {
-  const params = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(query)) {
-    if (typeof value === "string") {
-      params.set(key, value);
-    }
-  }
+  const params = buildSearchParams(query);
 
   if (matchedPropertySlug && !params.get("propertySlug")) {
     params.set("propertySlug", matchedPropertySlug);
@@ -55,8 +44,7 @@ function buildOwnerRequestRedirectHref(
 }
 
 export default async function PublicRequestPage({ params, searchParams }: PublicRequestPageProps) {
-  const fallbackParams: Record<string, string | string[] | undefined> = {};
-  const [{ slug }, query] = await Promise.all([params, searchParams ?? Promise.resolve(fallbackParams)]);
+  const [{ slug }, query] = await Promise.all([params, readSearchParams(searchParams)]);
   const resolvedSlug = await resolveOwnerPublicSlug(slug);
 
   if (!resolvedSlug) {
@@ -82,22 +70,12 @@ export default async function PublicRequestPage({ params, searchParams }: Public
     const unavailable = getPublicUnavailableContent("ownerRequest", pageData.publicUnavailableReason);
 
     return (
-      <main className="br-auth-page">
-        <Panel className="br-request-success" as="section">
-          <h1>{unavailable.title}</h1>
-          <p>{unavailable.description}</p>
-          <div className="br-request-success__actions">
-            <ButtonLink href="/" fullWidth>
-              На главную
-            </ButtonLink>
-            {unavailable.showLogin ? (
-              <ButtonLink href="/login" variant="secondary" fullWidth>
-                Войти в кабинет
-              </ButtonLink>
-            ) : null}
-          </div>
-        </Panel>
-      </main>
+      <PublicUnavailableState
+        title={unavailable.title}
+        description={unavailable.description}
+        showLogin={unavailable.showLogin}
+        inAuthLayout
+      />
     );
   }
 
@@ -110,60 +88,38 @@ export default async function PublicRequestPage({ params, searchParams }: Public
     : pageData.standaloneRooms.length
       ? pageData.standaloneRooms
       : pageData.properties[0]?.rooms ?? [];
-  const activeRooms = scopedRooms.filter((room) => room.status === "active");
-  const hasRequestedRoom = Boolean(requestedRoomId);
-  const requestedRoomIsValid = hasRequestedRoom ? activeRooms.some((room) => room.id === requestedRoomId) : true;
-  const defaultRoomId =
-    (requestedRoomIsValid ? activeRooms.find((room) => room.id === requestedRoomId)?.id : undefined) ??
-    activeRooms.find((room) => room.isAvailableForFilter)?.id ??
-    activeRooms[0]?.id ??
-    "";
-  const error = requestedError || (!requestedRoomIsValid ? "room" : "");
-  const selectedRoom = findRequestRoom(scopedRooms, defaultRoomId);
+  const selection = resolveRequestRoomSelection(scopedRooms, requestedRoomId, requestedError);
 
-  if (!activeRooms.length) {
+  if (!selection.activeRooms.length) {
     return (
-      <main className="br-auth-page">
-        <Panel className="br-request-success" as="section">
-          <h1>Заявка временно недоступна</h1>
-          <p>По выбранному варианту сейчас нет активных номеров для запроса на проживание.</p>
-          <div className="br-request-success__actions">
-            <ButtonLink href={`/p/${pageData.owner.slug}`} fullWidth>
-              Вернуться на страницу владельца
-            </ButtonLink>
-          </div>
-        </Panel>
-      </main>
+      <PublicUnavailableState
+        title="Заявка временно недоступна"
+        description="По выбранному варианту сейчас нет активных номеров для запроса на проживание."
+        homeHref={`/p/${pageData.owner.slug}`}
+        homeLabel="Вернуться на страницу владельца"
+        inAuthLayout
+      />
     );
   }
 
   return (
-    <main className="br-auth-page">
-      <Panel className="br-request-modal" as="section">
-        <div className="br-request-modal__header">
-          <div>
-            <h1>Оставить заявку</h1>
-            <p>Заполните короткую форму, чтобы отправить заявку на конкретный номер.</p>
-          </div>
-          <Link href={`/p/${pageData.owner.slug}`} className="br-request-modal__close" aria-label="Закрыть">
-            x
-          </Link>
-        </div>
-
-        {pageData.publicWarningText ? <p className="br-inline-notice">{pageData.publicWarningText}</p> : null}
-
-        <GuestRequestForm
-          publicSlug={pageData.owner.slug}
-          propertySlug={selectedSection?.property.slug}
-          rooms={scopedRooms}
-          defaultRoomId={defaultRoomId}
-          filters={pageData.filters}
-          action={submitGuestRequestAction}
-          contextMessage={getPublicRequestContextMessage("owner")}
-          errorMessage={error ? getPublicRequestErrorText("owner", error) : undefined}
-          propertyTitle={selectedRoom?.propertyTitle ?? selectedSection?.property.shortTitle}
-        />
-      </Panel>
-    </main>
+    <PublicRequestPageFrame
+      title="Оставить заявку"
+      description="Заполните короткую форму, чтобы отправить заявку на конкретный номер."
+      closeHref={`/p/${pageData.owner.slug}`}
+      warningText={pageData.publicWarningText}
+    >
+      <GuestRequestForm
+        publicSlug={pageData.owner.slug}
+        propertySlug={selectedSection?.property.slug}
+        rooms={scopedRooms}
+        defaultRoomId={selection.defaultRoomId}
+        filters={pageData.filters}
+        action={submitGuestRequestAction}
+        contextMessage={getPublicRequestContextMessage("owner")}
+        errorMessage={selection.error ? getPublicRequestErrorText("owner", selection.error) : undefined}
+        propertyTitle={selection.selectedRoom?.propertyTitle ?? selectedSection?.property.shortTitle}
+      />
+    </PublicRequestPageFrame>
   );
 }
