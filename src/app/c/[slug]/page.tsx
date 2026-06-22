@@ -19,6 +19,23 @@ function getSearchString(params: Record<string, string | string[] | undefined>, 
   return typeof value === "string" ? value : "";
 }
 
+function formatCollectionStaySummary(filters: {
+  hasDates: boolean;
+  checkIn: string;
+  checkOut: string;
+  adults: number;
+  rooms: number;
+}) {
+  const guestsLabel = `${filters.adults} ${filters.adults === 1 ? "гость" : filters.adults < 5 ? "гостя" : "гостей"}`;
+  const roomsLabel = `${filters.rooms} ${filters.rooms === 1 ? "комната" : filters.rooms < 5 ? "комнаты" : "комнат"}`;
+
+  if (!filters.hasDates) {
+    return `${guestsLabel} • ${roomsLabel}`;
+  }
+
+  return `${filters.checkIn} - ${filters.checkOut} • ${guestsLabel} • ${roomsLabel}`;
+}
+
 export async function generateMetadata({ params }: PublicCollectionPageProps): Promise<Metadata> {
   const { slug } = await params;
   const pageData = await getPublicCollectionPageData(slug);
@@ -70,6 +87,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
 
   const { collection, contact, sections, standaloneRooms, filters, publicWarningText } = pageData;
   const heroPhoto = sections[0]?.property.photos[0];
+  const staySummary = formatCollectionStaySummary(filters);
   const firstRequestHref = sections[0]
     ? `/c/${collection.slug}/request?propertySlug=${encodeURIComponent(sections[0].property.slug)}`
     : standaloneRooms[0]
@@ -82,10 +100,10 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
         <header className="br-header br-header--public">
           <BrandSlot />
           <nav className="br-nav" aria-label="Навигация коллекции">
-            <a href="#collection-rooms">Номера и цены</a>
+            <a href="#collection-rooms">Варианты</a>
             <a href="#collection-contact">Контакт</a>
           </nav>
-          <ButtonLink href={firstRequestHref}>Оставить заявку</ButtonLink>
+          <ButtonLink href={firstRequestHref}>Перейти к заявке</ButtonLink>
         </header>
 
         <section className="br-public-hero br-card">
@@ -102,14 +120,36 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
             ) : null}
           </div>
           <div className="br-public-hero__body">
-            <div>
+            <div className="br-public-hero__copy">
+              <span className="br-public-hero__eyebrow">Персональная подборка</span>
               <h1>{collection.title}</h1>
-              <p>{collection.guestLabel || "Подборка объектов и номеров по конкретной ссылке."}</p>
+              <p>{collection.guestLabel || "Подборка вариантов по прямой ссылке для конкретного гостя."}</p>
               <p className="br-collection-public-copy">
-                Выберите конкретный номер и отправьте заявку. Bronly не подтверждает проживание от имени сервиса.
+                Эта подборка показывает только выбранные варианты. Перед отправкой заявки нужно выбрать конкретный номер.
               </p>
+              <div className="br-public-collection-summary">
+                <div className="br-public-collection-summary__item">
+                  <span>Подборка</span>
+                  <strong>{collection.title}</strong>
+                </div>
+                <div className="br-public-collection-summary__item">
+                  <span>{filters.hasDates ? "Даты, гости и комнаты" : "Текущие параметры"}</span>
+                  <strong>{staySummary}</strong>
+                </div>
+              </div>
+              <div className="br-inline-notice br-inline-notice--soft br-public-collection-notice">
+                Заявка отправляется по конкретному номеру. Даже если в подборку добавлен объект целиком, перед заявкой всё равно нужно выбрать номер.
+              </div>
             </div>
             <div id="collection-contact" className="br-public-hero__actions">
+              <div className="br-public-request-flow br-card">
+                <strong>Как работает подборка</strong>
+                <ol className="br-public-request-flow__list">
+                  <li>Уточните даты, гостей и количество комнат.</li>
+                  <li>Выберите конкретный номер из этой подборки.</li>
+                  <li>Отправьте заявку по выбранному номеру.</li>
+                </ol>
+              </div>
               {contact.phone ? (
                 <a href={`tel:${contact.phone}`} className="br-button br-button--secondary">
                   {contact.phone}
@@ -140,10 +180,8 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
 
         <section id="collection-rooms" className="br-section br-section--public">
           <div className="br-section-heading">
-            <h2>Номера и цены</h2>
-            <p>
-              Коллекция показывает только добавленные объекты и номера. Заявка всегда отправляется на конкретный номер.
-            </p>
+            <h2>Варианты в этой подборке</h2>
+            <p>Здесь показаны только выбранные варианты по этой ссылке. Заявка всегда отправляется на конкретный номер, а не на объект целиком.</p>
           </div>
 
           <form className="br-public-filter br-card" method="get">
@@ -169,7 +207,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
               </select>
             </label>
             <label className="br-form-field">
-              <span className="br-label">Комнат</span>
+              <span className="br-label">Комнаты</span>
               <select id="collection-rooms-filter" name="rooms" className="br-field" defaultValue={String(filters.rooms)}>
                 {Array.from({ length: 5 }, (_, index) => {
                   const value = String(index + 1);
@@ -209,9 +247,14 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
                       </p>
                     </div>
                     <span className="br-collection-public-badge">
-                      {section.sourceKinds.includes("property") ? "Объект в коллекции" : "Номер в коллекции"}
+                      {section.sourceKinds.includes("property") ? "Объект в подборке" : "Номер в подборке"}
                     </span>
                   </div>
+                  <p className="br-collection-public-section__hint">
+                    {section.sourceKinds.includes("property")
+                      ? "Объект добавлен в подборку целиком, но перед заявкой гость всё равно выбирает конкретный номер."
+                      : "В этом блоке подборки заявка отправляется только по конкретному номеру."}
+                  </p>
 
                   <PublicRoomBrowser
                     publicBaseHref={`/c/${collection.slug}`}
@@ -219,6 +262,11 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
                     rooms={section.rooms}
                     filters={filters}
                     showFilter={false}
+                    showStickyCta
+                    selectedRoomTitle="Выбранный номер из подборки"
+                    selectedRoomDescription="Эта заявка будет создана на конкретный номер из персональной подборки."
+                    selectionHint="Сначала выберите номер из подборки, затем переходите к заявке по нему."
+                    cardActionLabel="Перейти к заявке по номеру"
                   />
                 </article>
               ))}
@@ -227,17 +275,23 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
                 <article className="br-card br-collection-public-section">
                   <div className="br-dashboard-block__header">
                     <div>
-                      <h3>Отдельные номера</h3>
+                      <h3>Отдельные номера в подборке</h3>
                       <p>Самостоятельные варианты размещения без привязки к объекту.</p>
                     </div>
-                    <span className="br-collection-public-badge">Номера в коллекции</span>
+                    <span className="br-collection-public-badge">Номера в подборке</span>
                   </div>
+                  <p className="br-collection-public-section__hint">Для каждого варианта заявка отправляется только по конкретному номеру.</p>
 
                   <PublicRoomBrowser
                     publicBaseHref={`/c/${collection.slug}`}
                     rooms={standaloneRooms.map((item) => item.room)}
                     filters={filters}
                     showFilter={false}
+                    showStickyCta
+                    selectedRoomTitle="Выбранный номер из подборки"
+                    selectedRoomDescription="Эта заявка будет создана на конкретный номер из персональной подборки."
+                    selectionHint="Выберите номер из подборки и переходите к заявке только по нему."
+                    cardActionLabel="Перейти к заявке по номеру"
                   />
                 </article>
               ) : null}
@@ -246,7 +300,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
             <section className="br-dashboard-block br-card" style={{ marginTop: 24 }}>
               <div className="br-dashboard-block__header">
                 <div>
-                  <h3>В этой коллекции пока нет доступных номеров</h3>
+                  <h3>В этой подборке пока нет доступных номеров</h3>
                   <p>Попробуйте открыть ссылку позже или уточните даты.</p>
                 </div>
               </div>

@@ -20,6 +20,8 @@ type GuestRequestFormProps = {
   contextMessage: string;
   errorMessage?: string;
   propertyTitle?: string;
+  roomFieldHint?: string;
+  headingEyebrow?: string;
 };
 
 export function GuestRequestForm({
@@ -33,6 +35,8 @@ export function GuestRequestForm({
   contextMessage,
   errorMessage,
   propertyTitle,
+  roomFieldHint = "Заявка будет отправлена только по выбранному номеру.",
+  headingEyebrow = "Выбранный номер",
 }: GuestRequestFormProps) {
   const activeRooms = useMemo(() => rooms.filter((room) => room.status === "active"), [rooms]);
   const [selectedRoomId, setSelectedRoomId] = useState(defaultRoomId);
@@ -76,7 +80,7 @@ export function GuestRequestForm({
               )}
             </div>
             <div className="br-request-summary__body">
-              <span className="br-request-summary__eyebrow">Выбранный номер</span>
+              <span className="br-request-summary__eyebrow">{headingEyebrow}</span>
               <div className="br-request-summary__heading">
                 <div>
                   <h2>{summary.roomTitle}</h2>
@@ -135,6 +139,7 @@ export function GuestRequestForm({
         }))}
         required
       />
+      <p className="br-request-form__hint">{roomFieldHint}</p>
 
       <div className="br-inline-fields">
         <Input
@@ -190,9 +195,7 @@ export function GuestRequestForm({
 
       <label className="br-check">
         <input type="checkbox" required />
-        <span>
-          Я согласен на обработку персональных данных и понимаю, что заявка передаётся для уточнения доступности.
-        </span>
+        <span>Я согласен на обработку персональных данных и понимаю, что заявка передаётся для уточнения доступности.</span>
       </label>
 
       <SubmitButton fullWidth pendingLabel="Отправляем заявку">Отправить заявку</SubmitButton>

@@ -95,7 +95,7 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
           </div>
         </div>
 
-        <form action={createOwnerRoom} className="br-owner-editor br-owner-editor--muted br-room-form" encType="multipart/form-data">
+        <form action={createOwnerRoom} className="br-owner-editor br-owner-editor--muted br-room-form">
           <input type="hidden" name="propertyId" value={property.id} />
 
           <RoomFormSection title="Основное" description="Короткая карточка номера без лишнего шума.">

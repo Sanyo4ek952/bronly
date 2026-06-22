@@ -81,7 +81,7 @@ export default async function CollectionRequestSuccessPage({ params, searchParam
         <h1>Заявка отправлена</h1>
         <p>
           {summary
-            ? `Заявка на номер «${summary.roomTitle}» отправлена. ${
+            ? `Заявка на номер «${summary.roomTitle}» из подборки отправлена. ${
                 contextKind === "collection-agent"
                   ? "Агент получит её и при необходимости передаст владельцу для уточнения доступности."
                   : "Владелец свяжется с вами, чтобы уточнить доступность."
@@ -125,7 +125,7 @@ export default async function CollectionRequestSuccessPage({ params, searchParam
 
         <div className="br-request-success__actions">
           <ButtonLink href={`/c/${pageData.collection.slug}`} fullWidth>
-            Вернуться к коллекции
+            Вернуться к подборке
           </ButtonLink>
           <ButtonLink href="/" variant="secondary" fullWidth>
             На главную

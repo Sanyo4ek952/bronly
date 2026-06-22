@@ -67,9 +67,7 @@ export default async function PublicCollectionRequestPage({ params, searchParams
   const propertySlug = getSearchString(query, "propertySlug");
   const requestedError = getSearchString(query, "error");
   const requestedRoomId = getSearchString(query, "roomId");
-  const selectedSection = propertySlug
-    ? pageData.sections.find((section) => section.property.slug === propertySlug) ?? null
-    : null;
+  const selectedSection = propertySlug ? pageData.sections.find((section) => section.property.slug === propertySlug) ?? null : null;
   const standaloneActiveRooms = pageData.standaloneRooms.map((item) => item.room).filter((room) => room.status === "active");
   const propertyActiveRooms = selectedSection?.rooms.filter((room) => room.status === "active") ?? [];
   const activeRooms = propertySlug ? propertyActiveRooms : standaloneActiveRooms;
@@ -92,7 +90,7 @@ export default async function PublicCollectionRequestPage({ params, searchParams
           <p>По этой подборке сейчас нет активных номеров для запроса на проживание.</p>
           <div className="br-request-success__actions">
             <ButtonLink href={`/c/${pageData.collection.slug}`} fullWidth>
-              Вернуться к коллекции
+              Вернуться к подборке
             </ButtonLink>
           </div>
         </Panel>
@@ -105,8 +103,8 @@ export default async function PublicCollectionRequestPage({ params, searchParams
       <Panel className="br-request-modal" as="section">
         <div className="br-request-modal__header">
           <div>
-            <h1>Оставить заявку</h1>
-            <p>Заполните короткую форму, чтобы отправить заявку на конкретный номер.</p>
+            <h1>Оставить заявку по номеру из подборки</h1>
+            <p>Заполните короткую форму, чтобы отправить заявку по выбранному конкретному номеру из этой подборки.</p>
           </div>
           <Link href={`/c/${pageData.collection.slug}`} className="br-request-modal__close" aria-label="Закрыть">
             x
@@ -114,6 +112,9 @@ export default async function PublicCollectionRequestPage({ params, searchParams
         </div>
 
         {pageData.publicWarningText ? <p className="br-inline-notice">{pageData.publicWarningText}</p> : null}
+        <p className="br-inline-notice br-inline-notice--soft">
+          Подборка помогает выбрать вариант, но заявка всегда отправляется только по конкретному номеру.
+        </p>
 
         <GuestRequestForm
           propertySlug={selectedSection?.property.slug}
@@ -125,6 +126,8 @@ export default async function PublicCollectionRequestPage({ params, searchParams
           contextMessage={getPublicRequestContextMessage(contextKind)}
           errorMessage={error ? getPublicRequestErrorText("collection", error) : undefined}
           propertyTitle={selectedRoom?.propertyTitle ?? selectedSection?.property.shortTitle}
+          roomFieldHint="Выберите конкретный номер из подборки. Заявка будет отправлена только по нему."
+          headingEyebrow="Номер из подборки"
         />
       </Panel>
     </main>

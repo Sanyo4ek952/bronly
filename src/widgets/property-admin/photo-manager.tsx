@@ -55,7 +55,7 @@ export function PhotoManager({
       </div>
 
       <div className="br-form-section-card__body">
-        <form action={uploadAction} className="br-owner-photo-upload" encType="multipart/form-data">
+        <form action={uploadAction} className="br-owner-photo-upload">
           {hiddenFields.map((field) => (
             <input key={field.name} type="hidden" name={field.name} value={field.value} />
           ))}

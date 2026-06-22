@@ -43,7 +43,7 @@ export default async function StandaloneRoomCreatePage({ searchParams }: Standal
       </section>
 
       <section className="br-dashboard-block br-card">
-        <form action={createOwnerRoom} className="br-owner-stack br-room-form" encType="multipart/form-data">
+        <form action={createOwnerRoom} className="br-owner-stack br-room-form">
           <RoomFormSection title="Основное" description="Как называется номер и где он находится.">
             <div className="br-property-form__grid">
               <Input id="room-title-new" name="title" label="Название номера" />

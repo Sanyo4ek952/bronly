@@ -50,7 +50,7 @@ export default async function NewPropertyPage({ searchParams }: NewPropertyPageP
 
         {message ? <div className="br-inline-notice">{message}</div> : null}
 
-        <form action={createOwnerProperty} className="br-owner-stack" encType="multipart/form-data">
+        <form action={createOwnerProperty} className="br-owner-stack">
           <OwnerPropertyFormFields />
 
           <section className="br-owner-photo-section br-owner-photo-section--create">
