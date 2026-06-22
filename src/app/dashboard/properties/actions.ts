@@ -12,6 +12,7 @@ import {
   deleteRoomBusyRange as deleteRoomBusyRangeAction,
   deleteRoomSeasonalPrice as deleteRoomSeasonalPriceAction,
   setPropertyPhotoPrimary as setPropertyPhotoPrimaryAction,
+  toggleOwnerInventoryAgentInquiries as toggleOwnerInventoryAgentInquiriesAction,
   setRoomPhotoPrimary as setRoomPhotoPrimaryAction,
   uploadPropertyPhoto as uploadPropertyPhotoAction,
   uploadRoomPhoto as uploadRoomPhotoAction,
@@ -27,6 +28,10 @@ export async function createOwnerProperty(formData: FormData) {
 
 export async function updateOwnerProperty(formData: FormData) {
   return updateOwnerPropertyAction(formData);
+}
+
+export async function toggleOwnerInventoryAgentInquiries(formData: FormData) {
+  return toggleOwnerInventoryAgentInquiriesAction(formData);
 }
 
 export async function deleteOwnerProperty(formData: FormData) {

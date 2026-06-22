@@ -1,5 +1,6 @@
 export { getOwnerDashboardSummary } from "@/entities/property/api/owner-dashboard-summary";
 export { getOwnerCalendarInventory } from "@/entities/property/api/owner-calendar-inventory";
+export { getOwnerInventoryDashboardData } from "@/entities/property/api/owner-inventory-dashboard";
 export { getOwnerInventory, getOwnerProperties } from "@/entities/property/api/owner-properties";
 export { getOwnerPropertyDetail } from "@/entities/property/api/owner-property-detail";
 export {

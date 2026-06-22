@@ -1,4 +1,9 @@
-export { createOwnerProperty, deleteOwnerProperty, updateOwnerProperty } from "./property-actions";
+export {
+  createOwnerProperty,
+  deleteOwnerProperty,
+  toggleOwnerInventoryAgentInquiries,
+  updateOwnerProperty,
+} from "./property-actions";
 export { createOwnerRoom, deleteOwnerRoom, updateOwnerRoom } from "./room-actions";
 export {
   deletePropertyPhoto,

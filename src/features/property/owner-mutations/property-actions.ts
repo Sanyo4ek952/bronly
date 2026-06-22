@@ -143,3 +143,69 @@ export async function deleteOwnerProperty(formData: FormData) {
   revalidatePath("/dashboard/properties");
   redirect("/dashboard/properties?success=deleted");
 }
+
+export async function toggleOwnerInventoryAgentInquiries(formData: FormData) {
+  const targetId = getString(formData, "targetId");
+  const targetKind = getString(formData, "targetKind");
+  const nextValue = getCheckbox(formData, "allowAgentInquiries");
+
+  if (!targetId || (targetKind !== "property" && targetKind !== "standalone_room")) {
+    return { ok: false as const, reason: "validation" as const };
+  }
+
+  const profile = await requireOwnerMutationAccess("/dashboard/properties");
+  const supabase = await createSupabaseServerClient();
+
+  if (targetKind === "property") {
+    const { data: property } = await supabase
+      .from("properties")
+      .select("id")
+      .eq("id", targetId)
+      .eq("owner_id", profile.id)
+      .maybeSingle();
+
+    if (!property) {
+      return { ok: false as const, reason: "not_found" as const };
+    }
+
+    const { error } = await supabase
+      .from("properties")
+      .update({
+        allow_agent_inquiries: nextValue,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", targetId);
+
+    if (error) {
+      return { ok: false as const, reason: "save" as const };
+    }
+  } else {
+    const { data: room } = await supabase
+      .from("rooms")
+      .select("id")
+      .eq("id", targetId)
+      .eq("owner_id", profile.id)
+      .eq("room_kind", "standalone_room")
+      .maybeSingle();
+
+    if (!room) {
+      return { ok: false as const, reason: "not_found" as const };
+    }
+
+    const { error } = await supabase
+      .from("rooms")
+      .update({
+        allow_agent_inquiries: nextValue,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", targetId);
+
+    if (error) {
+      return { ok: false as const, reason: "save" as const };
+    }
+  }
+
+  revalidatePath("/dashboard/properties");
+
+  return { ok: true as const };
+}

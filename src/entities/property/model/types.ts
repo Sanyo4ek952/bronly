@@ -182,6 +182,62 @@ export type OwnerStandaloneRoomListItem = {
 
 export type OwnerInventoryListItem = OwnerPropertyListItem | OwnerStandaloneRoomListItem;
 
+export type OwnerInventoryDashboardStatus = "published" | "draft" | "archived";
+
+export type OwnerInventoryDashboardItem = {
+  id: string;
+  kind: "property" | "standalone_room";
+  ownerPublicSlug: string | null;
+  title: string;
+  shortTitle: string;
+  propertyType: string;
+  city: string;
+  address: string;
+  coverImageUrl: string;
+  publicHref: string | null;
+  publicLabel: string | null;
+  status: OwnerInventoryDashboardStatus;
+  statusLabel: string;
+  roomCount: number;
+  activeRoomCount: number;
+  newRequestsCount: number;
+  minPrice: number | null;
+  activeCollaborationsCount: number;
+  allowAgentInquiries: boolean;
+  completenessPercent: number;
+  activityScore: number;
+  completionBreakdown: {
+    hasDescriptionAndPhotos: boolean;
+    hasAmenitiesAndServices: boolean;
+    hasPricesAndRooms: boolean;
+  };
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OwnerInventoryDashboardSummary = {
+  totalCount: number;
+  publishedCount: number;
+  draftCount: number;
+  archivedCount: number;
+  newRequestsCount: number;
+};
+
+export type OwnerInventoryDashboardRightPanel = {
+  averageCompletenessPercent: number;
+  completionBreakdown: {
+    descriptionAndPhotos: { complete: number; total: number };
+    amenitiesAndServices: { complete: number; total: number };
+    pricesAndRooms: { complete: number; total: number };
+  };
+};
+
+export type OwnerInventoryDashboardData = {
+  items: OwnerInventoryDashboardItem[];
+  summary: OwnerInventoryDashboardSummary;
+  rightPanel: OwnerInventoryDashboardRightPanel;
+};
+
 export type OwnerPropertyDetail = {
   id: string;
   ownerId: string;
