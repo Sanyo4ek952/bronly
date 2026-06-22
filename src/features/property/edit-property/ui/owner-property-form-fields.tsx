@@ -20,7 +20,6 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
       >
         <div className="br-property-form__grid">
           <Input id="property-title" name="title" label="Название объекта" defaultValue={property?.title ?? ""} />
-          <Input id="property-short-title" name="shortTitle" label="Короткое название" defaultValue={property?.shortTitle ?? ""} />
           <Input id="property-type" name="propertyType" label="Тип объекта" defaultValue={property?.propertyType ?? ""} />
           <Input id="property-city" name="city" label="Город" defaultValue={property?.city ?? ""} />
           <Input
@@ -56,7 +55,6 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
       >
         <div className="br-inline-fields">
           <Input id="property-phone" name="phone" label="Телефон" defaultValue={property?.phone ?? ""} />
-          <Input id="property-whatsapp" name="whatsapp" label="WhatsApp" defaultValue={property?.whatsapp ?? ""} />
           <Input id="property-telegram" name="telegram" label="Telegram" defaultValue={property?.telegram ?? ""} />
         </div>
       </FormSectionAccordion>
