@@ -3,6 +3,10 @@ import { CircleCheckBig } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 import { getPublicPropertyPageData, resolveOwnerPublicSlug } from "@/entities/property";
+import {
+  buildPublicRequestSummary,
+  getPublicRequestSuccessSteps,
+} from "@/features/request/submit-request/model/public-request-ui";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { encodePublicPathSegment } from "@/shared/lib/public-links";
 import { createSeoMetadata } from "@/shared/lib/seo";
@@ -48,7 +52,13 @@ export default async function PublicRequestSuccessPage({ params, searchParams }:
     );
   }
 
-  const pageData = await getPublicPropertyPageData(resolvedSlug.ownerSlug);
+  const filters = {
+    checkIn: getSearchString(query, "checkIn"),
+    checkOut: getSearchString(query, "checkOut"),
+    adults: getSearchString(query, "adults"),
+    rooms: getSearchString(query, "rooms"),
+  };
+  const pageData = await getPublicPropertyPageData(resolvedSlug.ownerSlug, filters);
 
   if (!pageData) {
     notFound();
@@ -63,8 +73,14 @@ export default async function PublicRequestSuccessPage({ params, searchParams }:
           <h1>{unavailable.title}</h1>
           <p>{unavailable.description}</p>
           <div className="br-request-success__actions">
-            {unavailable.showLogin ? <ButtonLink href="/login" fullWidth>Войти в кабинет</ButtonLink> : null}
-            <ButtonLink href="/" variant="secondary" fullWidth>На главную</ButtonLink>
+            {unavailable.showLogin ? (
+              <ButtonLink href="/login" fullWidth>
+                Войти в кабинет
+              </ButtonLink>
+            ) : null}
+            <ButtonLink href="/" variant="secondary" fullWidth>
+              На главную
+            </ButtonLink>
           </div>
         </Panel>
       </main>
@@ -74,10 +90,10 @@ export default async function PublicRequestSuccessPage({ params, searchParams }:
   const propertySlug = getSearchString(query, "propertySlug");
   const roomId = getSearchString(query, "roomId");
   const selectedSection = propertySlug ? pageData.properties.find((section) => section.property.slug === propertySlug) ?? null : null;
-  const selectedRoom = selectedSection?.rooms.find((room) => room.id === roomId) ?? pageData.standaloneRooms.find((room) => room.id === roomId) ?? null;
-  const roomSummary = selectedSection && selectedRoom
-    ? `${selectedSection.property.shortTitle} - ${selectedRoom.title}`
-    : selectedRoom?.title ?? "выбранный номер";
+  const selectedRoom =
+    selectedSection?.rooms.find((room) => room.id === roomId) ?? pageData.standaloneRooms.find((room) => room.id === roomId) ?? null;
+  const summary = selectedRoom ? buildPublicRequestSummary(selectedRoom, pageData.filters, selectedSection?.property.shortTitle) : null;
+  const steps = getPublicRequestSuccessSteps("owner", pageData.owner.phone);
 
   return (
     <main className="br-auth-page">
@@ -87,12 +103,52 @@ export default async function PublicRequestSuccessPage({ params, searchParams }:
         </div>
         <h1>Заявка отправлена</h1>
         <p>
-          Заявка на {roomSummary} отправлена. Владелец получил ваш запрос на проживание и свяжется с вами, чтобы уточнить доступность.
-          {pageData.owner.phone ? ` Рекомендуем сохранить номер ${pageData.owner.phone}.` : ""}
+          {summary
+            ? `Заявка на номер «${summary.roomTitle}» отправлена. Владелец свяжется с вами, чтобы уточнить доступность.`
+            : "Заявка отправлена. Владелец свяжется с вами, чтобы уточнить доступность."}
         </p>
+
+        {summary ? (
+          <section className="br-request-success__summary">
+            <div>
+              <span>Номер</span>
+              <strong>{summary.roomTitle}</strong>
+              {summary.propertyTitle ? <small>{summary.propertyTitle}</small> : null}
+            </div>
+            <div>
+              <span>Даты</span>
+              <strong>{summary.checkIn && summary.checkOut ? `${summary.checkIn} - ${summary.checkOut}` : "Уточняются"}</strong>
+              <small>
+                {summary.guestsLabel} • {summary.roomsLabel}
+              </small>
+            </div>
+            <div>
+              <span>Цена</span>
+              <strong>{summary.priceLabel}</strong>
+              <small>{summary.priceCaption}</small>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="br-request-success__steps">
+          <h2>Что дальше</h2>
+          <ol>
+            {steps.map((step) => (
+              <li key={step.title}>
+                <strong>{step.title}</strong>
+                <span>{step.description}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+
         <div className="br-request-success__actions">
-          <ButtonLink href={`/p/${pageData.owner.slug}`} fullWidth>Вернуться к странице</ButtonLink>
-          <ButtonLink href="/" variant="secondary" fullWidth>На главную</ButtonLink>
+          <ButtonLink href={`/p/${pageData.owner.slug}`} fullWidth>
+            Вернуться к странице
+          </ButtonLink>
+          <ButtonLink href="/" variant="secondary" fullWidth>
+            На главную
+          </ButtonLink>
         </div>
       </Panel>
     </main>

@@ -4,6 +4,11 @@ import { notFound, redirect } from "next/navigation";
 
 import { getPublicAgentPageData } from "@/entities/collaboration";
 import { GuestRequestForm } from "@/features/request/submit-request";
+import {
+  findRequestRoom,
+  getPublicRequestContextMessage,
+  getPublicRequestErrorText,
+} from "@/features/request/submit-request/model/public-request-ui";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { encodePublicPathSegment } from "@/shared/lib/public-links";
 import { createSeoMetadata } from "@/shared/lib/seo";
@@ -26,23 +31,6 @@ export const metadata: Metadata = createSeoMetadata({
 function getSearchString(params: Record<string, string | string[] | undefined>, key: string) {
   const value = params[key];
   return typeof value === "string" ? value : "";
-}
-
-function getErrorText(error: string) {
-  switch (error) {
-    case "room":
-      return "Выбранный номер больше не доступен. Проверьте номер и попробуйте снова.";
-    case "availability":
-      return "На выбранные даты у номера есть занятые даты. Выберите другой период или номер.";
-    case "property":
-      return "Объект больше не доступен по этой ссылке.";
-    case "subscription":
-      return "Доступ к агентской витрине временно ограничен. Новые заявки сейчас не принимаются.";
-    case "validation":
-      return "Проверьте имя, телефон, номер и даты проживания.";
-    default:
-      return "Не удалось отправить заявку. Проверьте поля и попробуйте еще раз.";
-  }
 }
 
 export default async function AgentRequestPage({ params, searchParams }: AgentRequestPageProps) {
@@ -107,6 +95,7 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
     activeRooms[0]?.id ??
     "";
   const error = requestedError || (!requestedRoomIsValid ? "room" : "");
+  const selectedRoom = findRequestRoom(activeRooms, defaultRoomId);
 
   if (!activeRooms.length) {
     return (
@@ -130,18 +119,12 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
         <div className="br-request-modal__header">
           <div>
             <h1>Оставить заявку</h1>
-            <p>Агент получит ваш запрос и вручную передаст его владельцу для уточнения доступности.</p>
+            <p>Заполните короткую форму, чтобы отправить заявку на конкретный номер.</p>
           </div>
           <Link href={`/a/${pageData.agent.publicId}`} className="br-request-modal__close" aria-label="Закрыть">
             x
           </Link>
         </div>
-
-        {error ? (
-          <p className="br-card" style={{ marginBottom: 16, padding: 16 }}>
-            {getErrorText(error)}
-          </p>
-        ) : null}
 
         {pageData.publicWarningText ? <p className="br-inline-notice">{pageData.publicWarningText}</p> : null}
 
@@ -152,6 +135,9 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
           filters={pageData.filters}
           action={submitAgentGuestRequestAction}
           hiddenFields={[{ name: "agentPublicId", value: pageData.agent.publicId }]}
+          contextMessage={getPublicRequestContextMessage("agent")}
+          errorMessage={error ? getPublicRequestErrorText("agent", error) : undefined}
+          propertyTitle={selectedRoom?.propertyTitle ?? selectedSection?.property.shortTitle}
         />
       </Panel>
     </main>

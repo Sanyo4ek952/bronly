@@ -4,6 +4,11 @@ import { notFound } from "next/navigation";
 
 import { getPublicCollectionPageData } from "@/entities/collection";
 import { GuestRequestForm } from "@/features/request/submit-request";
+import {
+  findRequestRoom,
+  getPublicRequestContextMessage,
+  getPublicRequestErrorText,
+} from "@/features/request/submit-request/model/public-request-ui";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { createSeoMetadata } from "@/shared/lib/seo";
 import { ButtonLink, Panel } from "@/shared/ui";
@@ -25,23 +30,6 @@ export const metadata: Metadata = createSeoMetadata({
 function getSearchString(params: Record<string, string | string[] | undefined>, key: string) {
   const value = params[key];
   return typeof value === "string" ? value : "";
-}
-
-function getErrorText(error: string) {
-  switch (error) {
-    case "room":
-      return "Выбранный номер больше недоступен в этой коллекции. Проверьте выбор и попробуйте снова.";
-    case "availability":
-      return "На выбранные даты у номера есть занятые даты. Выберите другой период или номер.";
-    case "property":
-      return "Объект больше недоступен в этой коллекции.";
-    case "subscription":
-      return "Новые заявки по этой ссылке сейчас не принимаются.";
-    case "validation":
-      return "Проверьте имя, телефон, номер и даты проживания.";
-    default:
-      return "Не удалось отправить заявку. Попробуйте еще раз.";
-  }
 }
 
 export default async function PublicCollectionRequestPage({ params, searchParams }: PublicCollectionRequestPageProps) {
@@ -93,6 +81,8 @@ export default async function PublicCollectionRequestPage({ params, searchParams
     activeRooms[0]?.id ??
     "";
   const error = requestedError || (!requestedRoomIsValid ? "room" : "");
+  const selectedRoom = findRequestRoom(activeRooms, defaultRoomId);
+  const contextKind = pageData.collection.creatorRole === "agent" ? "collection-agent" : "collection-owner";
 
   if (!activeRooms.length) {
     return (
@@ -116,18 +106,12 @@ export default async function PublicCollectionRequestPage({ params, searchParams
         <div className="br-request-modal__header">
           <div>
             <h1>Оставить заявку</h1>
-            <p>Заявка будет отправлена на конкретный номер и владелец свяжется с вами для уточнения доступности.</p>
+            <p>Заполните короткую форму, чтобы отправить заявку на конкретный номер.</p>
           </div>
           <Link href={`/c/${pageData.collection.slug}`} className="br-request-modal__close" aria-label="Закрыть">
             x
           </Link>
         </div>
-
-        {error ? (
-          <p className="br-card" style={{ marginBottom: 16, padding: 16 }}>
-            {getErrorText(error)}
-          </p>
-        ) : null}
 
         {pageData.publicWarningText ? <p className="br-inline-notice">{pageData.publicWarningText}</p> : null}
 
@@ -138,6 +122,9 @@ export default async function PublicCollectionRequestPage({ params, searchParams
           filters={pageData.filters}
           action={submitCollectionGuestRequestAction}
           hiddenFields={[{ name: "collectionSlug", value: pageData.collection.slug }]}
+          contextMessage={getPublicRequestContextMessage(contextKind)}
+          errorMessage={error ? getPublicRequestErrorText("collection", error) : undefined}
+          propertyTitle={selectedRoom?.propertyTitle ?? selectedSection?.property.shortTitle}
         />
       </Panel>
     </main>

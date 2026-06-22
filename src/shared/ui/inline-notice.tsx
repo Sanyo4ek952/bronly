@@ -4,7 +4,7 @@ import { cn } from "@/shared/lib/cn";
 
 type InlineNoticeProps = HTMLAttributes<HTMLElement> & {
   title?: ReactNode;
-  tone?: "default" | "soft";
+  tone?: "default" | "soft" | "warning";
   children: ReactNode;
 };
 
@@ -17,7 +17,12 @@ export function InlineNotice({
 }: InlineNoticeProps) {
   return (
     <section
-      className={cn("br-inline-notice", tone === "soft" && "br-inline-notice--soft", className)}
+      className={cn(
+        "br-inline-notice",
+        tone === "soft" && "br-inline-notice--soft",
+        tone === "warning" && "br-inline-notice--warning",
+        className,
+      )}
       {...props}
     >
       {title ? <strong className="br-inline-notice__title">{title}</strong> : null}

@@ -23,6 +23,16 @@
   color: var(--color-primary-hover);
 }
 
+.br-inline-notice--warning {
+  background: rgb(217 154 43 / 0.14);
+  color: var(--color-warning-ink);
+}
+
+.br-inline-notice__title {
+  display: block;
+  margin-bottom: 6px;
+}
+
 .br-admin-page-header-card,
 .br-search-filter-bar,
 .br-form-section-card,
@@ -4870,7 +4880,7 @@ button.br-owner-calendar-day:hover {
 
 .br-request-modal,
 .br-request-success {
-  width: min(100%, 520px);
+  width: min(100%, 620px);
   padding: 24px;
 }
 
@@ -4914,6 +4924,126 @@ button.br-owner-calendar-day:hover {
   margin-top: 20px;
 }
 
+.br-request-form__notice {
+  margin-bottom: 4px;
+}
+
+.br-request-summary,
+.br-request-summary__card,
+.br-request-summary__body,
+.br-request-summary__facts,
+.br-request-success__summary,
+.br-request-success__steps,
+.br-request-success__steps ol {
+  display: grid;
+  gap: 16px;
+}
+
+.br-request-summary {
+  margin-bottom: 4px;
+}
+
+.br-request-summary__card,
+.br-request-success__summary,
+.br-request-success__steps {
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: rgb(255 255 255 / 0.82);
+}
+
+.br-request-summary__card {
+  gap: 0;
+  overflow: hidden;
+}
+
+.br-request-summary__media {
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(17 29 27 / 0.08)),
+    linear-gradient(135deg, #e3dccf 0%, #c4d4c7 52%, #f1e7d8 100%);
+}
+
+.br-request-summary__image,
+.br-request-summary__placeholder {
+  width: 100%;
+  height: 100%;
+}
+
+.br-request-summary__image {
+  object-fit: cover;
+}
+
+.br-request-summary__body {
+  padding-top: 16px;
+}
+
+.br-request-summary__eyebrow {
+  color: var(--color-primary-hover);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.br-request-summary__heading {
+  display: grid;
+  gap: 12px;
+}
+
+.br-request-summary__heading h2,
+.br-request-success__steps h2 {
+  font-size: 22px;
+  line-height: 1.12;
+}
+
+.br-request-summary__heading p,
+.br-request-summary__meta,
+.br-request-summary__fact span,
+.br-request-summary__price span,
+.br-request-summary__request-label,
+.br-request-success__summary span,
+.br-request-success__summary small,
+.br-request-success__steps li span {
+  color: var(--color-muted);
+}
+
+.br-request-summary__price {
+  display: grid;
+  gap: 4px;
+}
+
+.br-request-summary__price strong,
+.br-request-success__summary strong {
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.br-request-summary__facts,
+.br-request-success__summary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.br-request-summary__fact,
+.br-request-success__summary div {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgb(248 250 252 / 0.9);
+}
+
+.br-request-summary__request-label {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.br-request-summary__notice {
+  margin-bottom: 0;
+}
+
 .br-request-success {
   display: grid;
   gap: 18px;
@@ -4939,6 +5069,65 @@ button.br-owner-calendar-day:hover {
 .br-request-success__actions {
   display: grid;
   gap: 12px;
+}
+
+.br-request-success__summary {
+  text-align: left;
+}
+
+.br-request-success__steps {
+  text-align: left;
+}
+
+.br-request-success__steps ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: request-steps;
+}
+
+.br-request-success__steps li {
+  display: grid;
+  gap: 4px;
+  padding-left: 36px;
+  position: relative;
+}
+
+.br-request-success__steps li::before {
+  counter-increment: request-steps;
+  content: counter(request-steps);
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+@media (min-width: 721px) {
+  .br-request-summary__heading {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+}
+
+@media (max-width: 560px) {
+  .br-request-modal,
+  .br-request-success {
+    width: min(100%, 100%);
+    padding: 18px;
+  }
+
+  .br-request-summary__facts,
+  .br-request-success__summary {
+    grid-template-columns: 1fr;
+  }
 }
 
 .br-admin-header {

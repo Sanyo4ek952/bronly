@@ -4,6 +4,11 @@ import { notFound, redirect } from "next/navigation";
 
 import { getOwnerPropertySectionBySlug, getPublicPropertyPageData, resolveOwnerPublicSlug } from "@/entities/property";
 import { GuestRequestForm } from "@/features/request/submit-request";
+import {
+  findRequestRoom,
+  getPublicRequestContextMessage,
+  getPublicRequestErrorText,
+} from "@/features/request/submit-request/model/public-request-ui";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { encodePublicPathSegment } from "@/shared/lib/public-links";
 import { createSeoMetadata } from "@/shared/lib/seo";
@@ -26,23 +31,6 @@ export const metadata: Metadata = createSeoMetadata({
 function getSearchString(params: Record<string, string | string[] | undefined>, key: string) {
   const value = params[key];
   return typeof value === "string" ? value : "";
-}
-
-function getErrorText(error: string) {
-  switch (error) {
-    case "room":
-      return "Выбранный номер больше недоступен. Проверьте номер и попробуйте снова.";
-    case "availability":
-      return "На выбранные даты у номера есть занятые даты. Выберите другой период или номер.";
-    case "property":
-      return "Объект больше недоступен по этой ссылке.";
-    case "subscription":
-      return "Владелец ещё не продлил доступ к сервису. Новые заявки по этой ссылке сейчас не принимаются.";
-    case "validation":
-      return "Проверьте имя, телефон, номер и даты проживания.";
-    default:
-      return "Не удалось отправить заявку. Проверьте поля и попробуйте ещё раз.";
-  }
 }
 
 function buildOwnerRequestRedirectHref(
@@ -99,8 +87,14 @@ export default async function PublicRequestPage({ params, searchParams }: Public
           <h1>{unavailable.title}</h1>
           <p>{unavailable.description}</p>
           <div className="br-request-success__actions">
-            <ButtonLink href="/" fullWidth>На главную</ButtonLink>
-            {unavailable.showLogin ? <ButtonLink href="/login" variant="secondary" fullWidth>Войти в кабинет</ButtonLink> : null}
+            <ButtonLink href="/" fullWidth>
+              На главную
+            </ButtonLink>
+            {unavailable.showLogin ? (
+              <ButtonLink href="/login" variant="secondary" fullWidth>
+                Войти в кабинет
+              </ButtonLink>
+            ) : null}
           </div>
         </Panel>
       </main>
@@ -111,7 +105,11 @@ export default async function PublicRequestPage({ params, searchParams }: Public
   const requestedError = getSearchString(query, "error");
   const requestedRoomId = getSearchString(query, "roomId");
   const selectedSection = propertySlug ? getOwnerPropertySectionBySlug(pageData, propertySlug) : null;
-  const scopedRooms = selectedSection ? selectedSection.rooms : pageData.standaloneRooms.length ? pageData.standaloneRooms : pageData.properties[0]?.rooms ?? [];
+  const scopedRooms = selectedSection
+    ? selectedSection.rooms
+    : pageData.standaloneRooms.length
+      ? pageData.standaloneRooms
+      : pageData.properties[0]?.rooms ?? [];
   const activeRooms = scopedRooms.filter((room) => room.status === "active");
   const hasRequestedRoom = Boolean(requestedRoomId);
   const requestedRoomIsValid = hasRequestedRoom ? activeRooms.some((room) => room.id === requestedRoomId) : true;
@@ -121,6 +119,7 @@ export default async function PublicRequestPage({ params, searchParams }: Public
     activeRooms[0]?.id ??
     "";
   const error = requestedError || (!requestedRoomIsValid ? "room" : "");
+  const selectedRoom = findRequestRoom(scopedRooms, defaultRoomId);
 
   if (!activeRooms.length) {
     return (
@@ -129,7 +128,9 @@ export default async function PublicRequestPage({ params, searchParams }: Public
           <h1>Заявка временно недоступна</h1>
           <p>По выбранному варианту сейчас нет активных номеров для запроса на проживание.</p>
           <div className="br-request-success__actions">
-            <ButtonLink href={`/p/${pageData.owner.slug}`} fullWidth>Вернуться на страницу владельца</ButtonLink>
+            <ButtonLink href={`/p/${pageData.owner.slug}`} fullWidth>
+              Вернуться на страницу владельца
+            </ButtonLink>
           </div>
         </Panel>
       </main>
@@ -142,14 +143,13 @@ export default async function PublicRequestPage({ params, searchParams }: Public
         <div className="br-request-modal__header">
           <div>
             <h1>Оставить заявку</h1>
-            <p>Заявка будет отправлена на конкретный номер. Владелец свяжется с вами и уточнит доступность.</p>
+            <p>Заполните короткую форму, чтобы отправить заявку на конкретный номер.</p>
           </div>
           <Link href={`/p/${pageData.owner.slug}`} className="br-request-modal__close" aria-label="Закрыть">
             x
           </Link>
         </div>
 
-        {error ? <p className="br-card" style={{ marginBottom: 16, padding: 16 }}>{getErrorText(error)}</p> : null}
         {pageData.publicWarningText ? <p className="br-inline-notice">{pageData.publicWarningText}</p> : null}
 
         <GuestRequestForm
@@ -159,6 +159,9 @@ export default async function PublicRequestPage({ params, searchParams }: Public
           defaultRoomId={defaultRoomId}
           filters={pageData.filters}
           action={submitGuestRequestAction}
+          contextMessage={getPublicRequestContextMessage("owner")}
+          errorMessage={error ? getPublicRequestErrorText("owner", error) : undefined}
+          propertyTitle={selectedRoom?.propertyTitle ?? selectedSection?.property.shortTitle}
         />
       </Panel>
     </main>
