@@ -1,6 +1,7 @@
 import { cache } from "react";
 
 import { buildPropertyPhotoMap, buildRoomPhotoMap, withLegacyPropertyCover } from "@/entities/property/api/photo-utils";
+import { aggregateRoomAmenities, resolvePublicPropertyDetailMode } from "@/entities/property/model/public-property";
 import { property as mockProperty } from "@/entities/property/model/mock";
 import type {
   OwnerPublicProfile,
@@ -67,6 +68,7 @@ function mapPublicProperty(row: SupabasePropertyRow, photos: PublicPropertySumma
     shortTitle: row.short_title,
     slug: row.slug,
     propertyType: row.property_type,
+    detailMode: resolvePublicPropertyDetailMode(row.property_type),
     city: row.city,
     address: row.address,
     timezone: row.timezone,
@@ -79,6 +81,7 @@ function mapPublicProperty(row: SupabasePropertyRow, photos: PublicPropertySumma
     checkOutTime: row.check_out_time ?? "",
     photos,
     features,
+    aggregatedAmenities: [],
     houseRules,
   } satisfies PublicPropertySummary;
 }
@@ -143,6 +146,7 @@ function toPublicFallbackData(filters: PublicStayFilters): PublicPropertyPageDat
           shortTitle: mockProperty.shortTitle,
           slug: mockProperty.slug,
           propertyType: mockProperty.propertyType,
+          detailMode: resolvePublicPropertyDetailMode(mockProperty.propertyType),
           city: mockProperty.city,
           address: mockProperty.address,
           timezone: mockProperty.timezone,
@@ -155,6 +159,7 @@ function toPublicFallbackData(filters: PublicStayFilters): PublicPropertyPageDat
           checkOutTime: mockProperty.checkOutTime,
           photos: mockProperty.photos,
           features: mockProperty.features,
+          aggregatedAmenities: aggregateRoomAmenities(mockRooms),
           houseRules: mockProperty.houseRules,
         },
         rooms: mockRooms
@@ -460,17 +465,16 @@ export const getPublicPropertyPageData = cache(
 
       const properties: PublicPropertySection[] = safePropertyRows.map((property) => {
         const photos = withLegacyPropertyCover(propertyPhotoMap.get(property.id) ?? [], property.cover_image_url);
+        const propertyRooms = (roomsByProperty.get(property.id) ?? []).sort(
+          (a, b) => Number(Boolean(b.isAvailableForFilter)) - Number(Boolean(a.isAvailableForFilter)),
+        );
 
         return {
-          property: mapPublicProperty(
-            property,
-            photos,
-            featureMap.get(property.id) ?? [],
-            ruleMap.get(property.id) ?? [],
-          ),
-          rooms: (roomsByProperty.get(property.id) ?? []).sort(
-            (a, b) => Number(Boolean(b.isAvailableForFilter)) - Number(Boolean(a.isAvailableForFilter)),
-          ),
+          property: {
+            ...mapPublicProperty(property, photos, featureMap.get(property.id) ?? [], ruleMap.get(property.id) ?? []),
+            aggregatedAmenities: aggregateRoomAmenities(propertyRooms),
+          },
+          rooms: propertyRooms,
         };
       });
 

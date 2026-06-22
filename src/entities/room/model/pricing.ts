@@ -122,6 +122,7 @@ export function calculateRoomPricing(room: PricingRoom, checkIn: string, checkOu
 
 export function buildPublicRoomQuote(room: PublicRoom, filters: PublicStayFilters): PublicRoom {
   const capacityMismatch = room.capacity < filters.adults;
+  const roomsMismatch = room.bedrooms < filters.rooms;
   const datesMismatch = filters.hasDates && !isRoomAvailableForDates(room, filters.checkIn, filters.checkOut);
   const pricing = filters.hasDates
     ? calculateRoomPricing(room, filters.checkIn, filters.checkOut)
@@ -134,15 +135,19 @@ export function buildPublicRoomQuote(room: PublicRoom, filters: PublicStayFilter
 
   let unavailableReason = "";
 
-  if (capacityMismatch) {
-    unavailableReason = `Подходит до ${room.capacity} гостя(ей)`;
-  } else if (datesMismatch) {
-    unavailableReason = "На выбранные даты есть занятые даты";
+  if (datesMismatch) {
+    unavailableReason = "Занято на выбранные даты";
+  } else if (capacityMismatch) {
+    unavailableReason = "Меньше гостей, чем в вашем запросе";
+  } else if (roomsMismatch) {
+    unavailableReason = "Меньше комнат, чем в вашем запросе";
+  } else if (filters.hasDates) {
+    unavailableReason = "Уточнить доступность";
   }
 
   return {
     ...room,
-    isAvailableForFilter: !capacityMismatch && !datesMismatch,
+    isAvailableForFilter: !capacityMismatch && !roomsMismatch && !datesMismatch,
     unavailableReason,
     nights: pricing.nights,
     displayPricePerNight: pricing.displayPricePerNight,

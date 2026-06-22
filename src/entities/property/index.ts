@@ -10,6 +10,7 @@ export {
 } from "@/entities/property/api/property-data";
 export { dashboardStats } from "@/entities/property/model/dashboard";
 export { property } from "@/entities/property/model/mock";
+export { aggregateRoomAmenities, resolvePublicPropertyDetailMode } from "@/entities/property/model/public-property";
 export type {
   OwnerCalendarInventoryGroup,
   OwnerCalendarInventoryRoom,
@@ -24,3 +25,4 @@ export type {
   PublicPropertySection,
   PublicPropertySummary,
 } from "@/entities/property/model/types";
+export type { PublicPropertyDetailMode } from "@/entities/property/model/public-property";

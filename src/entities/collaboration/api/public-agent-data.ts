@@ -2,6 +2,7 @@ import { cache } from "react";
 
 import type { PublicAgentPageData, PublicAgentPropertySection } from "@/entities/collaboration/model/types";
 import { buildPropertyPhotoMap, buildRoomPhotoMap, withLegacyPropertyCover } from "@/entities/property/api/photo-utils";
+import { aggregateRoomAmenities, resolvePublicPropertyDetailMode } from "@/entities/property/model/public-property";
 import { buildPublicRoomQuote, normalizePublicStayFilters } from "@/entities/room";
 import { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
 import type { OwnerBusyRange, OwnerSeasonalPrice, PublicRoom, RoomPhoto } from "@/entities/room/model/types";
@@ -53,6 +54,7 @@ function getSingleRow<T>(value: T | T[] | null): T | null {
 function mapRoomRow(
   room: SupabaseRoomRow,
   photos: RoomPhoto[],
+  amenities: string[],
   seasonalPrices: OwnerSeasonalPrice[],
   busyRanges: OwnerBusyRange[],
   agentMarkupPercent: number,
@@ -70,7 +72,7 @@ function mapRoomRow(
     pricePerNight: Number(room.price_per_night),
     status: room.is_active ? "active" : "inactive",
     photos,
-    amenities: [],
+    amenities,
     seasonalPrices,
     busyRanges,
     agentMarkupPercent,
@@ -277,7 +279,7 @@ export const getPublicAgentPageData = cache(
 
       const propertyIds = safeProperties.map((property) => property.id);
       const allRoomIds = safeStandaloneRooms.map((room) => room.id);
-      const [{ data: propertyRoomRows }, { data: propertyPhotoRows }] = await Promise.all([
+      const [{ data: propertyRoomRows }, { data: propertyPhotoRows }, { data: featureRows }, { data: ruleRows }] = await Promise.all([
         propertyIds.length
           ? supabase.from("rooms").select("*").in("property_id", propertyIds).eq("is_active", true).order("title", { ascending: true })
           : Promise.resolve({ data: [] }),
@@ -289,12 +291,31 @@ export const getPublicAgentPageData = cache(
               .order("sort_order", { ascending: true })
               .order("created_at", { ascending: true })
           : Promise.resolve({ data: [] }),
+        propertyIds.length
+          ? supabase
+              .from("property_features")
+              .select("property_id, label, sort_order")
+              .in("property_id", propertyIds)
+              .order("sort_order", { ascending: true })
+          : Promise.resolve({ data: [] }),
+        propertyIds.length
+          ? supabase
+              .from("property_rules")
+              .select("property_id, label, sort_order")
+              .in("property_id", propertyIds)
+              .order("sort_order", { ascending: true })
+          : Promise.resolve({ data: [] }),
       ]);
       const safePropertyRoomRows = (propertyRoomRows ?? []) as SupabaseRoomRow[];
       const roomIds = [...safePropertyRoomRows.map((room) => room.id), ...allRoomIds];
 
-      const [seasonalResult, busyResult, markupResult, roomPhotosResult] = roomIds.length
+      const [amenitiesResult, seasonalResult, busyResult, markupResult, roomPhotosResult] = roomIds.length
         ? await Promise.all([
+            supabase
+              .from("room_amenities")
+              .select("room_id, label, sort_order")
+              .in("room_id", roomIds)
+              .order("sort_order", { ascending: true }),
             supabase
               .from("room_seasonal_prices")
               .select("*")
@@ -310,11 +331,32 @@ export const getPublicAgentPageData = cache(
               .order("sort_order", { ascending: true })
               .order("created_at", { ascending: true }),
           ])
-        : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
+        : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
 
+      const featureMap = new Map<string, string[]>();
+      const ruleMap = new Map<string, string[]>();
+      const amenityMap = new Map<string, string[]>();
       const seasonalMap = new Map<string, OwnerSeasonalPrice[]>();
       const busyMap = new Map<string, OwnerBusyRange[]>();
       const markupMap = new Map<string, number>();
+
+      for (const item of featureRows ?? []) {
+        const existing = featureMap.get(item.property_id as string) ?? [];
+        existing.push(item.label as string);
+        featureMap.set(item.property_id as string, existing);
+      }
+
+      for (const item of ruleRows ?? []) {
+        const existing = ruleMap.get(item.property_id as string) ?? [];
+        existing.push(item.label as string);
+        ruleMap.set(item.property_id as string, existing);
+      }
+
+      for (const item of amenitiesResult.data ?? []) {
+        const existing = amenityMap.get(item.room_id as string) ?? [];
+        existing.push(item.label as string);
+        amenityMap.set(item.room_id as string, existing);
+      }
 
       for (const item of (seasonalResult.data ?? []) as SupabaseRoomSeasonalPriceRow[]) {
         const existing = seasonalMap.get(item.room_id) ?? [];
@@ -345,6 +387,7 @@ export const getPublicAgentPageData = cache(
           mapRoomRow(
             room,
             roomPhotoMap.get(room.id) ?? [],
+            amenityMap.get(room.id) ?? [],
             seasonalMap.get(room.id) ?? [],
             busyMap.get(room.id) ?? [],
             markupMap.get(room.id) ?? 0,
@@ -357,20 +400,37 @@ export const getPublicAgentPageData = cache(
       }
 
       const properties: PublicAgentPropertySection[] = safeProperties
-        .map((property) => ({
-          property: {
-            id: property.id,
-            slug: property.slug,
-            title: property.title,
-            shortTitle: property.short_title,
-            city: property.city,
-            address: property.address,
-            photos: withLegacyPropertyCover(propertyPhotoMap.get(property.id) ?? [], property.cover_image_url),
-          },
-          rooms: (roomsByProperty.get(property.id) ?? []).sort(
+        .map((property) => {
+          const propertyRooms = (roomsByProperty.get(property.id) ?? []).sort(
             (a, b) => Number(Boolean(b.isAvailableForFilter)) - Number(Boolean(a.isAvailableForFilter)),
-          ),
-        }))
+          );
+
+          return {
+            property: {
+              id: property.id,
+              title: property.title,
+              shortTitle: property.short_title,
+              slug: property.slug,
+              propertyType: property.property_type,
+              detailMode: resolvePublicPropertyDetailMode(property.property_type),
+              city: property.city,
+              address: property.address,
+              timezone: property.timezone,
+              shortDescription: property.short_description ?? "",
+              fullDescription: property.full_description ?? "",
+              phone: property.phone ?? "",
+              whatsapp: property.whatsapp ?? "",
+              telegram: property.telegram ?? "",
+              checkInTime: property.check_in_time ?? "",
+              checkOutTime: property.check_out_time ?? "",
+              photos: withLegacyPropertyCover(propertyPhotoMap.get(property.id) ?? [], property.cover_image_url),
+              features: featureMap.get(property.id) ?? [],
+              aggregatedAmenities: aggregateRoomAmenities(propertyRooms),
+              houseRules: ruleMap.get(property.id) ?? [],
+            },
+            rooms: propertyRooms,
+          };
+        })
         .filter((item) => item.rooms.length > 0);
 
       const standaloneRooms = safeStandaloneRooms
@@ -379,6 +439,7 @@ export const getPublicAgentPageData = cache(
             mapRoomRow(
               room,
               roomPhotoMap.get(room.id) ?? [],
+              amenityMap.get(room.id) ?? [],
               seasonalMap.get(room.id) ?? [],
               busyMap.get(room.id) ?? [],
               markupMap.get(room.id) ?? 0,

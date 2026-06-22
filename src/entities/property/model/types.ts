@@ -1,6 +1,7 @@
 import type { OwnerRoomDetail, PublicRoom } from "@/entities/room/model/types";
 import type { PublicStayFilters } from "@/entities/room/model/pricing";
 import type { PublicUnavailableReason } from "@/shared/lib/public-page-visibility";
+import type { PublicPropertyDetailMode } from "@/entities/property/model/public-property";
 
 export type PropertyPhoto = {
   id: string;
@@ -24,6 +25,7 @@ export type PublicPropertyPageData = {
       shortTitle: string;
       slug: string;
       propertyType: string;
+      detailMode: PublicPropertyDetailMode;
       city: string;
       address: string;
       timezone: string;
@@ -36,6 +38,7 @@ export type PublicPropertyPageData = {
       checkOutTime: string;
       photos: PropertyPhoto[];
       features: string[];
+      aggregatedAmenities: string[];
       houseRules: string[];
     };
     rooms: PublicRoom[];
@@ -54,6 +57,7 @@ export type PublicPropertySummary = {
   shortTitle: string;
   slug: string;
   propertyType: string;
+  detailMode: PublicPropertyDetailMode;
   city: string;
   address: string;
   timezone: string;
@@ -66,6 +70,7 @@ export type PublicPropertySummary = {
   checkOutTime: string;
   photos: PropertyPhoto[];
   features: string[];
+  aggregatedAmenities: string[];
   houseRules: string[];
 };
 

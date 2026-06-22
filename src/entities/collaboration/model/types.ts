@@ -1,5 +1,5 @@
-import type { PublicRoom } from "@/entities/room";
-import type { PublicStayFilters } from "@/entities/room";
+import type { PublicPropertySummary } from "@/entities/property";
+import type { PublicRoom, PublicStayFilters } from "@/entities/room";
 import type { PublicUnavailableReason } from "@/shared/lib/public-page-visibility";
 
 export type AgentDashboardSummary = {
@@ -114,15 +114,7 @@ export type OwnerActiveCollaborationItem = {
 };
 
 export type PublicAgentPropertySection = {
-  property: {
-    id: string;
-    slug: string;
-    title: string;
-    shortTitle: string;
-    city: string;
-    address: string;
-    photos: import("@/entities/property").PropertyPhoto[];
-  };
+  property: PublicPropertySummary;
   rooms: PublicRoom[];
 };
 

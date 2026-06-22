@@ -5,6 +5,7 @@ import { getPublicAgentPageData } from "@/entities/collaboration";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { buildCanonicalUrl, createSeoMetadata, toJsonLd } from "@/shared/lib/seo";
 import { Button, ButtonLink } from "@/shared/ui";
+import { PublicPropertySection } from "@/widgets/public-property-section";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
 
 type PublicAgentPageProps = {
@@ -118,67 +119,59 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: toJsonLd(agentJsonLd) }} />
       <main className="br-page">
         <div className="br-container">
-        <header className="br-header br-header--public">
-          <div>
-            <h1>{agent.displayName}</h1>
-            <p>Агентская витрина Bronly. Агент принимает заявку и вручную передает ее владельцу для уточнения доступности.</p>
+          <header className="br-header br-header--public">
+            <div>
+              <h1>{agent.displayName}</h1>
+              <p>Агентская витрина Bronly. Агент принимает заявку и вручную передает ее владельцу для уточнения доступности.</p>
+            </div>
+            <div className="br-public-hero__actions">
+              {agent.phone ? <Button variant="secondary">{agent.phone}</Button> : null}
+              {agent.telegram ? <Button variant="secondary">{agent.telegram}</Button> : null}
+            </div>
+          </header>
+
+          {publicWarningText ? <div className="br-inline-notice">{publicWarningText}</div> : null}
+          <div className="br-inline-notice br-inline-notice--soft">
+            В агентской витрине показана итоговая цена агента. Базовую цену владельца агент не меняет.
           </div>
-          <div className="br-public-hero__actions">
-            {agent.phone ? <Button variant="secondary">{agent.phone}</Button> : null}
-            {agent.telegram ? <Button variant="secondary">{agent.telegram}</Button> : null}
-          </div>
-        </header>
 
-        {publicWarningText ? <div className="br-inline-notice">{publicWarningText}</div> : null}
-        <div className="br-inline-notice br-inline-notice--soft">
-          В агентской витрине показана итоговая цена агента. Базовую цену владельца агент не меняет.
-        </div>
-
-        {properties.length || standaloneRooms.length ? (
-          <div className="br-owner-stack">
-            {properties.map((section) => (
-              <section key={section.property.id} className="br-dashboard-block br-card">
-                <div className="br-dashboard-block__header">
-                  <div>
-                    <h2>{section.property.shortTitle}</h2>
-                    <p>
-                      {section.property.city}, {section.property.address}
-                    </p>
-                  </div>
-                </div>
-
-                <PublicRoomBrowser
+          {properties.length || standaloneRooms.length ? (
+            <div className="br-owner-stack">
+              {properties.map((section) => (
+                <PublicPropertySection
+                  key={section.property.id}
                   publicBaseHref={`/a/${agent.publicId}`}
-                  propertySlug={section.property.slug}
+                  property={section.property}
                   rooms={section.rooms}
                   filters={filters}
+                  showFilter
+                  titleAs="h2"
                 />
-              </section>
-            ))}
+              ))}
 
-            {standaloneRooms.length ? (
-              <section className="br-dashboard-block br-card">
-                <div className="br-dashboard-block__header">
-                  <div>
-                    <h2>Отдельные номера</h2>
-                    <p>Самостоятельные варианты размещения без привязки к объекту.</p>
+              {standaloneRooms.length ? (
+                <section className="br-dashboard-block br-card">
+                  <div className="br-dashboard-block__header">
+                    <div>
+                      <h2>Отдельные номера</h2>
+                      <p>Самостоятельные варианты размещения без привязки к объекту.</p>
+                    </div>
                   </div>
-                </div>
 
-                <PublicRoomBrowser publicBaseHref={`/a/${agent.publicId}`} rooms={standaloneRooms} filters={filters} />
-              </section>
-            ) : null}
-          </div>
-        ) : (
-          <section className="br-dashboard-block br-card">
-            <div className="br-dashboard-block__header">
-              <div>
-                <h2>Пока нет доступных вариантов</h2>
-                <p>Агентская витрина появится после активного сотрудничества с владельцем.</p>
-              </div>
+                  <PublicRoomBrowser publicBaseHref={`/a/${agent.publicId}`} rooms={standaloneRooms} filters={filters} />
+                </section>
+              ) : null}
             </div>
-          </section>
-        )}
+          ) : (
+            <section className="br-dashboard-block br-card">
+              <div className="br-dashboard-block__header">
+                <div>
+                  <h2>Пока нет доступных вариантов</h2>
+                  <p>Агентская витрина появится после активного сотрудничества с владельцем.</p>
+                </div>
+              </div>
+            </section>
+          )}
         </div>
       </main>
     </>
