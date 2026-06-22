@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MutableRefObject, type SetStateAction } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 const INITIAL_PROGRESS = 0.08;
@@ -34,11 +34,65 @@ export function TopLoadingBar() {
   const searchParams = useSearchParams();
   const [isVisible, setIsVisible] = useState(false);
   const [progress, setProgress] = useState(0);
+  const isMountedRef = useRef(false);
   const reducedMotionRef = useRef(false);
   const isActiveRef = useRef(false);
   const trickleTimerRef = useRef<number | null>(null);
   const completeTimerRef = useRef<number | null>(null);
   const failsafeTimerRef = useRef<number | null>(null);
+  const startTaskRef = useRef<number | null>(null);
+  const hideTaskRef = useRef<number | null>(null);
+
+  function clearScheduledTasks() {
+    if (startTaskRef.current !== null) {
+      window.clearTimeout(startTaskRef.current);
+      startTaskRef.current = null;
+    }
+
+    if (hideTaskRef.current !== null) {
+      window.clearTimeout(hideTaskRef.current);
+      hideTaskRef.current = null;
+    }
+  }
+
+  function setVisibilitySafely(nextValue: boolean) {
+    if (!isMountedRef.current) {
+      return;
+    }
+
+    setIsVisible(nextValue);
+  }
+
+  function setProgressSafely(nextValue: SetStateAction<number>) {
+    if (!isMountedRef.current) {
+      return;
+    }
+
+    setProgress(nextValue);
+  }
+
+  function scheduleTask(timerRef: MutableRefObject<number | null>, callback: () => void) {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+    }
+
+    timerRef.current = window.setTimeout(() => {
+      timerRef.current = null;
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      callback();
+    }, 0);
+  }
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -57,6 +111,8 @@ export function TopLoadingBar() {
 
   useEffect(() => {
     function clearTimers() {
+      clearScheduledTasks();
+
       if (trickleTimerRef.current !== null) {
         window.clearInterval(trickleTimerRef.current);
         trickleTimerRef.current = null;
@@ -80,40 +136,45 @@ export function TopLoadingBar() {
 
       isActiveRef.current = false;
       clearTimers();
-      setProgress(1);
+      setProgressSafely(1);
 
-      completeTimerRef.current = window.setTimeout(() => {
-        setIsVisible(false);
-        setProgress(0);
-        completeTimerRef.current = null;
-      }, COMPLETE_HIDE_DELAY_MS);
+      scheduleTask(hideTaskRef, () => {
+        completeTimerRef.current = window.setTimeout(() => {
+          completeTimerRef.current = null;
+          setVisibilitySafely(false);
+          setProgressSafely(0);
+        }, COMPLETE_HIDE_DELAY_MS);
+      });
     }
 
-    function start() {
+    function requestStart() {
       if (typeof document !== "undefined" && document.visibilityState === "hidden") {
         return;
       }
 
       clearTimers();
       isActiveRef.current = true;
-      setIsVisible(true);
-      setProgress(reducedMotionRef.current ? REDUCED_MOTION_PROGRESS : INITIAL_PROGRESS);
 
-      if (!reducedMotionRef.current) {
-        trickleTimerRef.current = window.setInterval(() => {
-          setProgress((current) => {
-            if (!isActiveRef.current || current >= 0.9) {
-              return current;
-            }
+      scheduleTask(startTaskRef, () => {
+        setVisibilitySafely(true);
+        setProgressSafely(reducedMotionRef.current ? REDUCED_MOTION_PROGRESS : INITIAL_PROGRESS);
 
-            return Math.min(current + (1 - current) * 0.14, 0.9);
-          });
-        }, TRICKLE_INTERVAL_MS);
-      }
+        if (!reducedMotionRef.current) {
+          trickleTimerRef.current = window.setInterval(() => {
+            setProgressSafely((current) => {
+              if (!isActiveRef.current || current >= 0.9) {
+                return current;
+              }
 
-      failsafeTimerRef.current = window.setTimeout(() => {
-        finish();
-      }, FAILSAFE_TIMEOUT_MS);
+              return Math.min(current + (1 - current) * 0.14, 0.9);
+            });
+          }, TRICKLE_INTERVAL_MS);
+        }
+
+        failsafeTimerRef.current = window.setTimeout(() => {
+          finish();
+        }, FAILSAFE_TIMEOUT_MS);
+      });
     }
 
     const handleDocumentClick = (event: MouseEvent) => {
@@ -145,7 +206,7 @@ export function TopLoadingBar() {
         const url = new URL(anchor.href, window.location.href);
 
         if (shouldStartForUrl(url)) {
-          start();
+          requestStart();
         }
       } catch {
         // Ignore malformed href values.
@@ -153,7 +214,7 @@ export function TopLoadingBar() {
     };
 
     const handlePopState = () => {
-      start();
+      requestStart();
     };
 
     const handleVisibilityChange = () => {
@@ -172,7 +233,7 @@ export function TopLoadingBar() {
             const nextUrl = new URL(String(url), window.location.href);
 
             if (shouldStartForUrl(nextUrl)) {
-              start();
+              requestStart();
             }
           } catch {
             // Ignore malformed history targets.
@@ -204,7 +265,7 @@ export function TopLoadingBar() {
       return;
     }
 
-    setProgress((current) => (current < 0.94 ? 0.94 : current));
+    setProgressSafely((current) => (current < 0.94 ? 0.94 : current));
 
     if (completeTimerRef.current !== null) {
       window.clearTimeout(completeTimerRef.current);
@@ -222,12 +283,15 @@ export function TopLoadingBar() {
         failsafeTimerRef.current = null;
       }
 
-      setProgress(1);
+      setProgressSafely(1);
 
-      window.setTimeout(() => {
-        setIsVisible(false);
-        setProgress(0);
-      }, COMPLETE_HIDE_DELAY_MS);
+      scheduleTask(hideTaskRef, () => {
+        completeTimerRef.current = window.setTimeout(() => {
+          completeTimerRef.current = null;
+          setVisibilitySafely(false);
+          setProgressSafely(0);
+        }, COMPLETE_HIDE_DELAY_MS);
+      });
     }, 0);
   }, [pathname, searchParams]);
 
