@@ -3,10 +3,17 @@ import { notFound } from "next/navigation";
 
 import { getPublicCollectionPageData, recordPublicCollectionOpen } from "@/entities/collection";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
-import { createSeoMetadata, getSearchString, readSearchParams } from "@/shared/lib";
+import {
+  createSeoMetadata,
+  getSearchString,
+  readSearchParams,
+  toPhoneHref,
+  toTelegramHref,
+  toWhatsAppHref,
+} from "@/shared/lib";
 import { ButtonLink } from "@/shared/ui";
-import { PublicRoomBrowser } from "@/widgets/public-room-browser";
 import { PublicBrandSlot, PublicHero, PublicPageHeader, PublicUnavailableState } from "@/widgets/public-page";
+import { PublicRoomBrowser } from "@/widgets/public-room-browser";
 
 type PublicCollectionPageProps = {
   params: Promise<{ slug: string }>;
@@ -81,7 +88,8 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
           navigation={
             <nav className="br-nav" aria-label="Навигация коллекции">
               <a href="#collection-rooms">Варианты</a>
-              <a href="#collection-contact">Контакт</a>
+              <a href="#collection-contact">Контакты</a>
+              <a href="#collection-request-flow">Как работает заявка</a>
             </nav>
           }
         >
@@ -109,39 +117,33 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
                   <strong>{staySummary}</strong>
                 </div>
               </div>
-              <div className="br-inline-notice br-inline-notice--soft br-public-collection-notice">
-                Заявка отправляется по конкретному номеру. Даже если в подборку добавлен объект целиком, перед заявкой всё равно нужно выбрать номер.
-              </div>
             </>
+          }
+          notice={
+            <div className="br-inline-notice br-inline-notice--soft br-public-collection-notice">
+              Заявка отправляется по конкретному номеру. Даже если в подборку добавлен объект целиком, перед заявкой всё равно нужно выбрать номер.
+            </div>
           }
           actions={
             <>
-              <div id="collection-contact" className="br-public-request-flow br-card">
-                <strong>Как работает подборка</strong>
-                <ol className="br-public-request-flow__list">
-                  <li>Уточните даты, гостей и количество комнат.</li>
-                  <li>Выберите конкретный номер из этой подборки.</li>
-                  <li>Отправьте заявку по выбранному номеру.</li>
-                </ol>
+              <div id="collection-contact" className="br-public-contact-chips">
+                {contact.phone ? (
+                  <a href={toPhoneHref(contact.phone)} className="br-public-contact-chip">
+                    {contact.phone}
+                  </a>
+                ) : null}
+                {contact.whatsapp ? (
+                  <a href={toWhatsAppHref(contact.whatsapp)} className="br-public-contact-chip" target="_blank" rel="noreferrer">
+                    WhatsApp
+                  </a>
+                ) : null}
+                {contact.telegram ? (
+                  <a href={toTelegramHref(contact.telegram)} className="br-public-contact-chip" target="_blank" rel="noreferrer">
+                    Telegram
+                  </a>
+                ) : null}
               </div>
-              {contact.phone ? (
-                <a href={`tel:${contact.phone}`} className="br-button br-button--secondary">
-                  {contact.phone}
-                </a>
-              ) : null}
-              {contact.whatsapp ? (
-                <a href={contact.whatsapp} className="br-button br-button--secondary">
-                  WhatsApp
-                </a>
-              ) : null}
-              {contact.telegram ? (
-                <a
-                  href={contact.telegram.startsWith("http") ? contact.telegram : `https://t.me/${contact.telegram.replace(/^@/, "")}`}
-                  className="br-button br-button--secondary"
-                >
-                  Telegram
-                </a>
-              ) : null}
+              <ButtonLink href={firstRequestHref}>Перейти к заявке</ButtonLink>
             </>
           }
         />
@@ -212,7 +214,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
           {sections.length || standaloneRooms.length ? (
             <div className="br-owner-stack" style={{ marginTop: 24 }}>
               {sections.map((section) => (
-                <article key={section.property.id} className="br-card br-collection-public-section">
+                <article key={section.property.id} className="br-card br-collection-public-section br-card--raised">
                   <div className="br-dashboard-block__header">
                     <div>
                       <h3>{section.property.shortTitle}</h3>
@@ -246,7 +248,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
               ))}
 
               {standaloneRooms.length ? (
-                <article className="br-card br-collection-public-section">
+                <article className="br-card br-collection-public-section br-card--raised">
                   <div className="br-dashboard-block__header">
                     <div>
                       <h3>Отдельные номера в подборке</h3>
@@ -280,6 +282,18 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
               </div>
             </section>
           )}
+        </section>
+
+        <section id="collection-request-flow" className="br-public-request-flow br-card">
+          <div className="br-section-heading">
+            <h2>Как работает заявка</h2>
+            <p>Подборка помогает выбрать вариант, но Bronly не подтверждает проживание от имени сервиса.</p>
+          </div>
+          <ol className="br-public-request-flow__list">
+            <li>Уточните даты, гостей и количество комнат.</li>
+            <li>Выберите конкретный номер из этой подборки.</li>
+            <li>Отправьте заявку по выбранному номеру, и с вами свяжутся для уточнения доступности.</li>
+          </ol>
         </section>
       </div>
     </main>

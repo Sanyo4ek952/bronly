@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { getPublicAgentPageData } from "@/entities/collaboration";
+import type { PublicRoom } from "@/entities/room";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import {
   buildCanonicalUrl,
@@ -9,11 +10,13 @@ import {
   getSearchString,
   readSearchParams,
   toJsonLd,
+  toPhoneHref,
+  toTelegramHref,
 } from "@/shared/lib";
-import { Button, ButtonLink } from "@/shared/ui";
+import { ButtonLink } from "@/shared/ui";
+import { PublicPageHeader, PublicBrandSlot, PublicHero, PublicUnavailableState } from "@/widgets/public-page";
 import { PublicPropertySection } from "@/widgets/public-property-section";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
-import { PublicPageHeader, PublicUnavailableState } from "@/widgets/public-page";
 
 type PublicAgentPageProps = {
   params: Promise<{ slug: string }>;
@@ -25,6 +28,38 @@ function buildAgentDescription(pageData: NonNullable<Awaited<ReturnType<typeof g
   const locationPart = city ? ` в ${city}` : "";
 
   return `Агентская витрина${locationPart}: варианты проживания, цены и возможность оставить заявку по ссылке агента.`;
+}
+
+function buildAgentHeroDescription(agentName: string, rooms: PublicRoom[]) {
+  const firstRoom = rooms[0];
+  const city = firstRoom?.location?.city?.trim();
+  const propertyTitle = firstRoom?.propertyTitle?.trim();
+  const locationPart = city ? `в ${city}` : "по этой ссылке";
+  const roomPart = propertyTitle ? `${propertyTitle} и другие варианты` : "варианты проживания";
+
+  return `${agentName} показывает ${roomPart} ${locationPart}. Выберите конкретный номер и оставьте заявку, а агент вручную сопровождает следующий шаг.`;
+}
+
+function buildAgentRequestHref(
+  agentPublicId: string,
+  room: PublicRoom,
+  filters: { checkIn: string; checkOut: string; adults: number; rooms: number; hasDates: boolean },
+) {
+  const params = new URLSearchParams({ roomId: room.id });
+
+  if (room.propertySlug) {
+    params.set("propertySlug", room.propertySlug);
+  }
+
+  if (filters.hasDates) {
+    params.set("checkIn", filters.checkIn);
+    params.set("checkOut", filters.checkOut);
+  }
+
+  params.set("adults", String(filters.adults));
+  params.set("rooms", String(filters.rooms));
+
+  return `/a/${agentPublicId}/request?${params.toString()}`;
 }
 
 export async function generateMetadata({ params }: PublicAgentPageProps): Promise<Metadata> {
@@ -89,6 +124,18 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
   }
 
   const { agent, properties, standaloneRooms, filters, publicWarningText } = pageData;
+  const allRooms = [
+    ...properties.flatMap((section) =>
+      section.rooms.map((room) => ({
+        ...room,
+        propertyTitle: room.propertyTitle ?? section.property.shortTitle,
+        propertySlug: room.propertySlug ?? section.property.slug,
+      })),
+    ),
+    ...standaloneRooms,
+  ];
+  const heroPhoto = properties[0]?.property.photos[0] ?? standaloneRooms[0]?.photos?.[0];
+  const firstRequestHref = allRooms[0] ? buildAgentRequestHref(agent.publicId, allRooms[0], filters) : null;
   const agentJsonLd = {
     "@context": "https://schema.org",
     "@type": "ProfilePage",
@@ -107,51 +154,84 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
       <main className="br-page">
         <div className="br-container">
           <PublicPageHeader
-            actions={
-              <div className="br-public-hero__actions">
-                {agent.phone ? <Button variant="secondary">{agent.phone}</Button> : null}
-                {agent.telegram ? <Button variant="secondary">{agent.telegram}</Button> : null}
-              </div>
+            actions={firstRequestHref ? <ButtonLink href={firstRequestHref}>Оставить заявку</ButtonLink> : null}
+            navigation={
+              <nav className="br-nav" aria-label="Навигация агентской витрины">
+                <a href="#agent-rooms">Варианты</a>
+                <a href="#agent-contact">Контакты</a>
+                <a href="#agent-request-flow">Как работает заявка</a>
+              </nav>
             }
           >
-            <div>
-              <h1>{agent.displayName}</h1>
-              <p>Агентская витрина Bronly. Агент принимает заявку и вручную передает её владельцу для уточнения доступности.</p>
-            </div>
+            <PublicBrandSlot />
           </PublicPageHeader>
 
           {publicWarningText ? <div className="br-inline-notice">{publicWarningText}</div> : null}
-          <div className="br-inline-notice br-inline-notice--soft">
-            В агентской витрине показана итоговая цена агента. Базовую цену владельца агент не меняет.
-          </div>
+
+          <PublicHero
+            imageUrl={heroPhoto?.url}
+            imageAlt={agent.displayName}
+            eyebrow="Агентская витрина"
+            title={agent.displayName}
+            description={buildAgentHeroDescription(agent.displayName, allRooms)}
+            notice={
+              <div className="br-inline-notice br-inline-notice--soft">
+                В агентской витрине показана итоговая цена агента. Базовую цену владельца агент не меняет.
+              </div>
+            }
+            actions={
+              <>
+                <div id="agent-contact" className="br-public-contact-chips">
+                  {agent.phone ? (
+                    <a className="br-public-contact-chip" href={toPhoneHref(agent.phone)}>
+                      {agent.phone}
+                    </a>
+                  ) : null}
+                  {agent.telegram ? (
+                    <a className="br-public-contact-chip" href={toTelegramHref(agent.telegram)} target="_blank" rel="noreferrer">
+                      {agent.telegram}
+                    </a>
+                  ) : null}
+                </div>
+                {firstRequestHref ? <ButtonLink href={firstRequestHref}>Оставить заявку на номер</ButtonLink> : null}
+              </>
+            }
+          />
 
           {properties.length || standaloneRooms.length ? (
-            <div className="br-owner-stack">
-              {properties.map((section) => (
-                <PublicPropertySection
-                  key={section.property.id}
-                  publicBaseHref={`/a/${agent.publicId}`}
-                  property={section.property}
-                  rooms={section.rooms}
-                  filters={filters}
-                  showFilter
-                  titleAs="h2"
-                />
-              ))}
+            <section id="agent-rooms" className="br-section br-section--public">
+              <div className="br-section-heading">
+                <h2>Подберите номер</h2>
+                <p>Гость выбирает конкретный номер и оставляет заявку по нему. Агент получает заявку и вручную сопровождает связь с владельцем.</p>
+              </div>
 
-              {standaloneRooms.length ? (
-                <section className="br-dashboard-block br-card">
-                  <div className="br-dashboard-block__header">
-                    <div>
-                      <h2>Отдельные номера</h2>
-                      <p>Самостоятельные варианты размещения без привязки к объекту.</p>
+              <div className="br-owner-stack">
+                {properties.map((section) => (
+                  <PublicPropertySection
+                    key={section.property.id}
+                    publicBaseHref={`/a/${agent.publicId}`}
+                    property={section.property}
+                    rooms={section.rooms}
+                    filters={filters}
+                    showFilter
+                    titleAs="h2"
+                  />
+                ))}
+
+                {standaloneRooms.length ? (
+                  <section className="br-dashboard-block br-card">
+                    <div className="br-dashboard-block__header">
+                      <div>
+                        <h2>Отдельные номера</h2>
+                        <p>Самостоятельные варианты размещения без привязки к объекту.</p>
+                      </div>
                     </div>
-                  </div>
 
-                  <PublicRoomBrowser publicBaseHref={`/a/${agent.publicId}`} rooms={standaloneRooms} filters={filters} />
-                </section>
-              ) : null}
-            </div>
+                    <PublicRoomBrowser publicBaseHref={`/a/${agent.publicId}`} rooms={standaloneRooms} filters={filters} />
+                  </section>
+                ) : null}
+              </div>
+            </section>
           ) : (
             <section className="br-dashboard-block br-card">
               <div className="br-dashboard-block__header">
@@ -162,6 +242,18 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
               </div>
             </section>
           )}
+
+          <section id="agent-request-flow" className="br-public-request-flow br-card">
+            <div className="br-section-heading">
+              <h2>Как работает заявка</h2>
+              <p>Bronly не подтверждает проживание от имени сервиса. Агент получает заявку и вручную сопровождает следующий шаг.</p>
+            </div>
+            <ol className="br-public-request-flow__list">
+              <li>Выберите конкретный номер по датам, гостям и комнатам.</li>
+              <li>Оставьте заявку по выбранному номеру.</li>
+              <li>Агент свяжется с вами и при необходимости передаст заявку владельцу для уточнения доступности.</li>
+            </ol>
+          </section>
         </div>
       </main>
     </>

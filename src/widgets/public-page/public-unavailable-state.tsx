@@ -1,4 +1,5 @@
 import { ButtonLink } from "@/shared/ui";
+import { PublicBrandSlot } from "@/widgets/public-page";
 
 type PublicUnavailableStateProps = {
   title: string;
@@ -22,7 +23,8 @@ export function PublicUnavailableState({
   inAuthLayout = false,
 }: PublicUnavailableStateProps) {
   const content = (
-    <section className="br-request-success br-card" style={inAuthLayout ? undefined : { margin: "48px auto" }}>
+    <section className="br-public-unavailable br-request-success br-card br-card--raised">
+      <span className="br-request-success__eyebrow">Публичная страница</span>
       <h1>{title}</h1>
       <p>{description}</p>
       <div className="br-request-success__actions">
@@ -39,12 +41,23 @@ export function PublicUnavailableState({
   );
 
   if (inAuthLayout) {
-    return <main className="br-auth-page">{content}</main>;
+    return (
+      <main className="br-auth-page br-auth-page--public">
+        <div className="br-public-flow-shell">
+          <div className="br-public-flow-shell__header">
+            <PublicBrandSlot href={homeHref} />
+          </div>
+          {content}
+        </div>
+      </main>
+    );
   }
 
   return (
     <main className="br-page">
-      <div className="br-container">{content}</div>
+      <div className="br-container">
+        <div className="br-public-unavailable-shell">{content}</div>
+      </div>
     </main>
   );
 }

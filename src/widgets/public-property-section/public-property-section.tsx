@@ -75,7 +75,7 @@ export function PublicPropertySection({
   const hasFullDescription = Boolean(property.fullDescription.trim());
 
   return (
-    <article className="br-card br-collection-public-section">
+    <article className="br-public-property-section br-card br-card--raised">
       <div className="br-dashboard-block__header">
         <div className="br-section-copy">
           <PropertyTitle as={titleAs}>{property.shortTitle}</PropertyTitle>
@@ -117,7 +117,7 @@ export function PublicPropertySection({
           showFilter={showFilter}
         />
       ) : (
-        <div className="br-card" style={{ marginTop: 16, padding: 16 }}>
+        <div className="br-public-property-section__empty br-card br-card--subtle">
           {emptyRoomsText}
         </div>
       )}

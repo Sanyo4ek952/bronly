@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
+import { cn } from "@/shared/lib";
 
 type PublicHeroProps = {
   imageUrl?: string | null;
@@ -10,6 +11,7 @@ type PublicHeroProps = {
   summary?: ReactNode;
   notice?: ReactNode;
   actions?: ReactNode;
+  className?: string;
 };
 
 export function PublicHero({
@@ -21,9 +23,10 @@ export function PublicHero({
   summary,
   notice,
   actions,
+  className,
 }: PublicHeroProps) {
   return (
-    <section className="br-public-hero br-card">
+    <section className={cn("br-public-hero br-card br-card--raised br-card--padding-none", className)}>
       <div className="br-public-hero__media">
         {imageUrl ? (
           <Image src={imageUrl} alt={imageAlt} width={1600} height={1000} unoptimized className="br-public-hero__image" />
@@ -34,8 +37,8 @@ export function PublicHero({
           {eyebrow ? <span className="br-public-hero__eyebrow">{eyebrow}</span> : null}
           <h1>{title}</h1>
           {description ? <p>{description}</p> : null}
-          {summary}
-          {notice}
+          {summary ? <div className="br-public-hero__summary">{summary}</div> : null}
+          {notice ? <div className="br-public-hero__notice">{notice}</div> : null}
         </div>
         {actions ? <div className="br-public-hero__actions">{actions}</div> : null}
       </div>

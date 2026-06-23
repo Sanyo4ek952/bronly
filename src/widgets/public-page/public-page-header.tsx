@@ -8,10 +8,12 @@ type PublicPageHeaderProps = {
 
 export function PublicPageHeader({ children, actions, navigation }: PublicPageHeaderProps) {
   return (
-    <header className="br-header br-header--public">
-      {children}
-      {navigation}
-      {actions}
+    <header className="br-public-page-header br-card br-card--raised br-card--padding-none">
+      <div className="br-public-page-header__top">
+        <div className="br-public-page-header__brand">{children}</div>
+        {actions ? <div className="br-public-page-header__actions">{actions}</div> : null}
+      </div>
+      {navigation ? <div className="br-public-page-header__nav">{navigation}</div> : null}
     </header>
   );
 }

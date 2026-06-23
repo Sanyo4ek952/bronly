@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Panel } from "@/shared/ui";
+import { PublicBrandSlot } from "@/widgets/public-page";
 
 type PublicRequestPageFrameProps = {
   title: string;
@@ -23,22 +24,30 @@ export function PublicRequestPageFrame({
   children,
 }: PublicRequestPageFrameProps) {
   return (
-    <main className="br-auth-page">
-      <Panel className="br-request-modal" as="section">
-        <div className="br-request-modal__header">
-          <div>
-            <h1>{title}</h1>
-            <p>{description}</p>
-          </div>
-          <Link href={closeHref} className="br-request-modal__close" aria-label={closeLabel}>
-            x
+    <main className="br-auth-page br-auth-page--public">
+      <div className="br-public-flow-shell">
+        <div className="br-public-flow-shell__header">
+          <PublicBrandSlot href={closeHref} />
+          <Link href={closeHref} className="br-public-flow-shell__back">
+            {closeLabel}
           </Link>
         </div>
+        <Panel className="br-request-modal br-card--raised" as="section">
+          <div className="br-request-modal__header">
+            <div>
+              <h1>{title}</h1>
+              <p>{description}</p>
+            </div>
+            <Link href={closeHref} className="br-request-modal__close" aria-label={closeLabel}>
+              x
+            </Link>
+          </div>
 
-        {warningText ? <p className="br-inline-notice">{warningText}</p> : null}
-        {notice}
-        {children}
-      </Panel>
+          {warningText ? <p className="br-inline-notice">{warningText}</p> : null}
+          {notice}
+          {children}
+        </Panel>
+      </div>
     </main>
   );
 }
