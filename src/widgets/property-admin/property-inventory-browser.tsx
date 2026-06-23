@@ -4,8 +4,9 @@ import {
   Archive,
   Building2,
   CheckCircle2,
-  Filter,
-  FolderKanban,
+  FileText,
+  Home,
+  Mail,
   Plus,
   Search,
   SlidersHorizontal,
@@ -67,11 +68,11 @@ function sortItems(items: OwnerInventoryDashboardItem[], sort: SortMode) {
 
 function getStatusCards(data: OwnerInventoryDashboardData["summary"]) {
   return [
-    { key: "total", label: "Всего объектов", value: data.totalCount, icon: Building2 },
-    { key: "published", label: "Опубликовано", value: data.publishedCount, icon: CheckCircle2 },
-    { key: "draft", label: "Черновики", value: data.draftCount, icon: FolderKanban },
-    { key: "archived", label: "Архив", value: data.archivedCount, icon: Archive },
-    { key: "requests", label: "Новые заявки", value: data.newRequestsCount, icon: Filter },
+    { key: "total", label: "Всего объектов", value: data.totalCount, icon: Home, tone: "blue" },
+    { key: "published", label: "Опубликовано", value: data.publishedCount, icon: CheckCircle2, tone: "green" },
+    { key: "draft", label: "Черновики", value: data.draftCount, icon: FileText, tone: "amber" },
+    { key: "archived", label: "Архив", value: data.archivedCount, icon: Archive, tone: "slate" },
+    { key: "requests", label: "Новые заявки", value: data.newRequestsCount, icon: Mail, tone: "blue" },
   ];
 }
 
@@ -199,7 +200,12 @@ export function PropertyInventoryBrowser({ data, feedback = null }: PropertyInve
 
       <div className="br-property-hub-stats">
         {statusCards.map((card) => (
-          <Panel key={card.key} as="article" className="br-property-hub-stat-card" padding="md">
+          <Panel
+            key={card.key}
+            as="article"
+            className={`br-property-hub-stat-card br-property-hub-stat-card--${card.tone}`}
+            padding="md"
+          >
             <div className="br-property-hub-stat-card__icon">
               <card.icon aria-hidden="true" />
             </div>

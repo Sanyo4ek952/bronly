@@ -9218,43 +9218,70 @@ button.br-calendar-range-card {
 .br-property-hub-stats {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 
 .br-property-hub-stat-card {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-columns: 40px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
-  min-height: 96px;
-  padding: 16px;
-  border-radius: 22px;
-  background: rgb(255 255 255 / 0.94);
+  min-height: 78px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .br-property-hub-stat-card__icon {
   display: grid;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   place-items: center;
-  border-radius: 16px;
-  background: var(--color-primary-soft);
-  color: var(--color-primary-hover);
+  border-radius: 12px;
+  background: rgb(37 99 235 / 0.12);
+  color: rgb(29 78 216);
+}
+
+.br-property-hub-stat-card__icon svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
 }
 
 .br-property-hub-stat-card__copy {
   display: grid;
-  gap: 4px;
+  gap: 6px;
+  min-width: 0;
 }
 
 .br-property-hub-stat-card__copy span {
-  color: var(--color-muted);
-  font-size: 13px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
 }
 
 .br-property-hub-stat-card__copy strong {
-  font-size: 30px;
+  color: var(--text);
+  font-size: 26px;
   line-height: 1;
+}
+
+.br-property-hub-stat-card--green .br-property-hub-stat-card__icon {
+  background: rgb(34 197 94 / 0.12);
+  color: rgb(22 163 74);
+}
+
+.br-property-hub-stat-card--amber .br-property-hub-stat-card__icon {
+  background: rgb(245 158 11 / 0.13);
+  color: rgb(217 119 6);
+}
+
+.br-property-hub-stat-card--slate .br-property-hub-stat-card__icon {
+  background: rgb(148 163 184 / 0.14);
+  color: rgb(100 116 139);
 }
 
 .br-property-hub-layout {
@@ -9959,6 +9986,26 @@ button.br-calendar-range-card {
   .br-property-hub-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+  }
+
+  .br-property-hub-stat-card {
+    grid-template-columns: 36px minmax(0, 1fr);
+    min-height: 74px;
+    padding: 12px;
+  }
+
+  .br-property-hub-stat-card__icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .br-property-hub-stat-card__icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .br-property-hub-stat-card__copy strong {
+    font-size: 24px;
   }
 
   .br-property-hub-stat-card:last-child {
