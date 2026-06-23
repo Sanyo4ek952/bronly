@@ -1,4 +1,4 @@
-﻿# Границы MVP Bronly
+# Границы MVP Bronly
 
 Этот документ — короткая operational-выжимка из `docs/product/prd.md`. При расхождении приоритет у `prd.md`, если `decision-log.md` не фиксирует более новое решение.
 

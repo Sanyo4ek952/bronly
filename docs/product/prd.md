@@ -1,4 +1,4 @@
-﻿# Product Spec Metadata
+# Product Spec Metadata
 
 - Назначение: полный продуктовый документ Bronly для MVP.
 - Статус: `source of truth`.

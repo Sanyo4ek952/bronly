@@ -1,0 +1,15 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{md,ts,tsx,js,jsx,mjs,cjs,json,css,scss,sass,html,svg,yml,yaml}]
+charset = utf-8
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{sh,ps1}]
+charset = utf-8

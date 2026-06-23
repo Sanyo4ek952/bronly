@@ -1,4 +1,4 @@
-﻿# Bronly Project Instructions for Claude
+# Bronly Project Instructions for Claude
 
 ## Source of truth
 
