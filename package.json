@@ -8,6 +8,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "graphify:src": "graphify extract ./src",
+    "graphify:app": "graphify extract ./src/app",
+    "graphify:components": "graphify extract ./src/components",
+    "graphify:shared": "graphify extract ./src/shared",
+    "graphify:report": "graphify query \"What are the main architecture areas in this codebase?\" --graph ./src/graphify-out/graph.json",
+    "graphify:check": "graphify --help",
     "supabase:push": "npx supabase db push",
     "supabase:types": "npx supabase gen types typescript --linked"
   },
