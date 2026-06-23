@@ -15,7 +15,8 @@ export function PropertyStatusBadge({ status, label }: PropertyStatusBadgeProps)
         status === "archived" && "br-property-hub-status-badge--archived",
       )}
     >
-      {label}
+      <span className="br-property-hub-status-badge__dot" aria-hidden="true" />
+      <span>{label}</span>
     </span>
   );
 }

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bronly Screenshot UI Replica"
+  short_description: "Recreate Bronly UI from screenshots"
+  default_prompt: "Use $bronly-screenshot-ui-replica to reproduce a screenshot as closely as possible in the specified Bronly page or component."

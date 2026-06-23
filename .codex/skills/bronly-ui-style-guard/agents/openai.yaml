@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bronly UI Style Guard"
+  short_description: "Safe UI edits in Bronly style"
+  default_prompt: "Use $bronly-ui-style-guard to make a UI change without breaking Bronly's design language."

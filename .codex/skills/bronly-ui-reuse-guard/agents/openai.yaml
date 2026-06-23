@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bronly UI Reuse Guard"
+  short_description: "Prefer existing UI before creating new"
+  default_prompt: "Use $bronly-ui-reuse-guard to check existing UI components before creating or extending Bronly UI."

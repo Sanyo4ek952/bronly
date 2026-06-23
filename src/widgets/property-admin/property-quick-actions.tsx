@@ -45,7 +45,7 @@ export function PropertyQuickActions({ item }: PropertyQuickActionsProps) {
 
       <Link
         href={getOpenHref(item)}
-        className="br-property-hub-action-chip"
+        className="br-property-hub-action-chip br-property-hub-action-chip--open"
         target={item.publicHref ? "_blank" : undefined}
         rel={item.publicHref ? "noreferrer" : undefined}
       >
