@@ -83,7 +83,6 @@ export function PropertyCard({ item }: PropertyCardProps) {
         <div className="br-property-hub-card__heading">
           <div className="br-property-hub-card__title-row">
             <strong>{item.title}</strong>
-            <PropertyStatusBadge status={item.status} label={item.statusLabel} />
           </div>
           <div className="br-property-hub-card__subline">
             <span>{metaLabel}</span>
@@ -95,6 +94,7 @@ export function PropertyCard({ item }: PropertyCardProps) {
             ) : null}
           </div>
         </div>
+        <PropertyStatusBadge status={item.status} label={item.statusLabel} />
       </div>
 
       <div className="br-property-hub-card__stats">

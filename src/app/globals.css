@@ -9319,6 +9319,7 @@ button.br-calendar-range-card {
 
 .br-property-hub-card__heading {
   display: grid;
+  flex: 1 1 auto;
   gap: 10px;
   min-width: 0;
 }
@@ -9557,6 +9558,8 @@ button.br-calendar-range-card {
 .br-property-hub-status-badge {
   display: inline-flex;
   align-items: center;
+  align-self: flex-start;
+  flex: 0 0 auto;
   justify-content: center;
   gap: 7px;
   min-height: 34px;
