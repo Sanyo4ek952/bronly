@@ -180,9 +180,11 @@ export function OwnerShell({
                 key={item.label}
                 href={item.href}
                 className={`br-owner-bottom-nav__item${isActive ? " br-owner-bottom-nav__item--active" : ""}`}
+                aria-label={item.label}
+                aria-current={isActive ? "page" : undefined}
               >
                 <AppIcon icon={item.icon} aria-hidden="true" />
-                <span>{item.label}</span>
+                <span className="br-visually-hidden">{item.label}</span>
               </Link>
             );
           })}
@@ -196,7 +198,7 @@ export function OwnerShell({
             onClick={() => setIsMobileMenuOpen(true)}
           >
             <AppIcon icon={Menu} aria-hidden="true" />
-            <span>Ещё</span>
+            <span className="br-visually-hidden">Ещё</span>
           </button>
         </nav>
 
