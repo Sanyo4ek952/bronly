@@ -66,7 +66,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body className={manrope.variable}>
+      <body className={`${manrope.variable} antialiased`}>
         <Suspense fallback={null}>
           <TopLoadingBar />
         </Suspense>
