@@ -3,11 +3,19 @@ import Link from "next/link";
 import { createOwnerProperty } from "@/app/dashboard/properties/actions";
 import { OwnerPropertyFormFields } from "@/features/property/edit-property";
 import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
-import { Button, DashboardPageNav, Input, SectionSubtitle, SectionTitle } from "@/shared/ui";
+import { Button, DashboardPageNav, InlineNotice, Input } from "@/shared/ui";
 
 type NewPropertyPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+const pageStackClass = "grid gap-4";
+const sectionCardClass =
+  "grid gap-4 rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
+const sectionHeaderClass = "flex flex-wrap items-start justify-between gap-3";
+const photoSectionClass =
+  "grid gap-4 rounded-[20px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.96),rgb(243_248_247_/_0.86))] p-[18px] max-[720px]:rounded-[18px] max-[720px]:p-4";
+const formActionsClass = "grid gap-3 md:grid-cols-2";
 
 function getMessage(error: string) {
   switch (error) {
@@ -33,30 +41,36 @@ export default async function NewPropertyPage({ searchParams }: NewPropertyPageP
   const message = getMessage(error);
 
   return (
-    <section className="br-owner-stack">
+    <section className={pageStackClass}>
       <DashboardPageNav
         backHref="/dashboard/properties"
         breadcrumbs={buildOwnerInventoryBreadcrumbs([{ label: "Новый объект" }])}
         compact
       />
 
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div className="br-section-copy">
-            <SectionTitle>Новый объект</SectionTitle>
-            <SectionSubtitle>Создайте объект владельца и сразу подготовьте его к публикации и приему заявок.</SectionSubtitle>
+      <section className={sectionCardClass}>
+        <div className={sectionHeaderClass}>
+          <div className="grid gap-2">
+            <h1 className="text-[clamp(24px,3vw,32px)] font-bold leading-[1.05] tracking-[-0.04em] text-[var(--color-text)]">
+              Новый объект
+            </h1>
+            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
+              Создайте объект владельца и сразу подготовьте его к публикации и приему заявок.
+            </p>
           </div>
         </div>
 
-        {message ? <div className="br-inline-notice">{message}</div> : null}
+        {message ? <InlineNotice>{message}</InlineNotice> : null}
 
-        <form action={createOwnerProperty} className="br-owner-stack">
+        <form action={createOwnerProperty} className={pageStackClass}>
           <OwnerPropertyFormFields />
 
-          <section className="br-owner-photo-section br-owner-photo-section--create">
-            <div className="br-owner-photo-section__copy">
-              <h3>Фотографии объекта</h3>
-              <p>Добавьте фото сразу при создании объекта. Первое фото станет обложкой объекта.</p>
+          <section className={photoSectionClass}>
+            <div className="grid gap-1.5">
+              <h3 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Фотографии объекта</h3>
+              <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
+                Добавьте фото сразу при создании объекта. Первое фото станет обложкой объекта.
+              </p>
             </div>
             <Input
               id="property-photos-new"
@@ -66,15 +80,20 @@ export default async function NewPropertyPage({ searchParams }: NewPropertyPageP
               multiple
               label="Фотографии объекта"
               description="Можно выбрать до 10 фото сразу. JPG, PNG, WebP или GIF, до 5 МБ каждое."
-              wrapperClassName="br-owner-photo-upload__field"
+              wrapperClassName="grid max-w-[420px] gap-1.5"
             />
           </section>
 
-          <div className="br-active-step__actions">
-            <Link href="/dashboard/properties" className="br-button br-button--secondary">
+          <div className={formActionsClass}>
+            <Link
+              href="/dashboard/properties"
+              className="inline-flex min-h-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-4 text-[13px] font-bold leading-none text-[var(--text)] transition-[background-color,border-color,color,transform,box-shadow] duration-[180ms] hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.24)] hover:bg-[var(--color-primary-pale)]"
+            >
               К списку объектов
             </Link>
-            <Button type="submit">Создать объект</Button>
+            <Button type="submit" fullWidth>
+              Создать объект
+            </Button>
           </div>
         </form>
       </section>

@@ -13,6 +13,7 @@ import {
 import { RoomAmenitiesField } from "@/features/property/edit-room/ui/room-amenities-field";
 import { RoomFormSection } from "@/features/property/edit-room/ui/room-form-section";
 import type { OwnerRoomDetail } from "@/entities/room/model/types";
+import { cn } from "@/shared/lib/cn";
 import { Button, Input, SubmitButton, Textarea } from "@/shared/ui";
 import { DangerZone, PhotoManager, StatusBadge } from "@/widgets/property-admin";
 
@@ -22,39 +23,61 @@ type RoomSettingsEditorProps = {
   room: OwnerRoomDetail;
 };
 
+const pageStackClass = "grid gap-4";
+const sectionCardClass =
+  "grid gap-4 rounded-[24px] border border-[rgb(15_23_42_/_0.08)] bg-[rgb(255_255_255_/_0.94)] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
+const sectionHeaderClass = "flex flex-wrap items-start justify-between gap-3";
+const propertyFormGridClass = "grid gap-4 md:grid-cols-2";
+const compactPricingGridClass = "grid gap-4 md:grid-cols-2 xl:grid-cols-4";
+const inlineFieldsClass = "grid gap-4 md:grid-cols-2";
+const toggleListClass = "grid gap-3";
+const toggleRowClass = cn(
+  "flex min-h-14 items-start justify-between gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-[14px] text-sm text-[var(--color-text)]",
+  "max-[640px]:min-h-[52px]",
+);
+const seasonalFormClass =
+  "grid gap-4 rounded-[20px] border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.94)] p-4 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto] xl:items-end";
+
 export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSettingsEditorProps) {
   const isStandalone = room.kind === "standalone_room";
   const location = room.location;
 
   return (
-    <article className="br-owner-stack">
-      <section className="br-owner-editor br-card">
-        <div className="br-owner-editor__header">
-          <div>
-            <strong>{room.title}</strong>
-            <p>
+    <article className={pageStackClass}>
+      <section className={sectionCardClass}>
+        <div className={sectionHeaderClass}>
+          <div className="grid gap-1.5">
+            <strong className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">{room.title}</strong>
+            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
               {room.capacity} гостя • {room.bedrooms} спальни • {room.area} м²
             </p>
           </div>
           <StatusBadge kind="room" isActive={room.isActive} />
         </div>
 
-        <div className="br-room-photo-preview">
-          {room.photos[0] ? (
-            <Image
-              src={room.photos[0].url}
-              alt={`${room.title} — главное фото`}
-              width={1200}
-              height={700}
-              unoptimized
-              className="br-room-photo-preview__image"
-            />
-          ) : (
-            <div className="br-room-photo-preview__placeholder" aria-hidden="true" />
-          )}
-          <div className="br-room-photo-preview__copy">
-            <strong>{room.photos[0] ? "Главное фото номера" : "Фото номера пока нет"}</strong>
-            <span>
+        <div className="grid gap-4 rounded-[20px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.96),rgb(243_248_247_/_0.86))] p-4">
+          <div className="min-h-[180px] overflow-hidden rounded-[18px] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.10),rgb(17_29_27_/_0.08)),linear-gradient(135deg,#b8dbe2_0%,#88bdd0_45%,#d6e3d5_78%,#cab69d_100%)]">
+            {room.photos[0] ? (
+              <Image
+                src={room.photos[0].url}
+                alt={`${room.title} — главное фото`}
+                width={1200}
+                height={700}
+                unoptimized
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div
+                className="h-full w-full bg-[radial-gradient(circle_at_30%_30%,rgb(255_255_255_/_0.45)_0_18px,transparent_19px),linear-gradient(135deg,#dfeceb_0%,#b8dbe2_50%,#d7c3aa_100%)]"
+                aria-hidden="true"
+              />
+            )}
+          </div>
+          <div className="grid gap-2.5">
+            <strong className="text-base font-semibold leading-[1.2] text-[var(--color-text)]">
+              {room.photos[0] ? "Главное фото номера" : "Фото номера пока нет"}
+            </strong>
+            <span className="text-sm leading-[1.55] text-[var(--color-muted)]">
               {room.photos[0]
                 ? `Всего фото: ${room.photos.length}. Первое фото показывается в публичной карточке номера.`
                 : "Добавьте первое фото, чтобы оно появилось в карточке номера и на публичных страницах."}
@@ -62,13 +85,13 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
           </div>
         </div>
 
-        <form action={updateOwnerRoom} className="br-owner-stack br-room-form">
+        <form action={updateOwnerRoom} className={pageStackClass}>
           <input type="hidden" name="propertyId" value={propertyId ?? ""} />
           <input type="hidden" name="roomId" value={room.id} />
           <input type="hidden" name="redirectTo" value={redirectTo} />
 
           <RoomFormSection title="Основное" description="Самые частые правки по номеру в одном блоке.">
-            <div className="br-property-form__grid">
+            <div className={propertyFormGridClass}>
               <Input id={`room-title-${room.id}`} name="title" label="Название номера" defaultValue={room.title} />
               {isStandalone ? (
                 <>
@@ -78,15 +101,15 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
                     name="address"
                     label="Адрес"
                     defaultValue={location.address}
-                    wrapperClassName="br-form-field--span-2"
+                    wrapperClassName="grid gap-1.5 md:col-span-2"
                   />
                 </>
               ) : null}
             </div>
           </RoomFormSection>
 
-          <RoomFormSection title="Вместимость и цена" description="Параметры для карточки номера и расчёта цены.">
-            <div className="br-property-form__grid br-room-form__grid--compact">
+          <RoomFormSection title="Вместимость и цена" description="Параметры для карточки номера и расчета цены.">
+            <div className={compactPricingGridClass}>
               <Input id={`room-capacity-${room.id}`} name="capacity" type="number" min="1" label="Гостей" defaultValue={String(room.capacity)} />
               <Input id={`room-bedrooms-${room.id}`} name="bedrooms" type="number" min="1" label="Спален" defaultValue={String(room.bedrooms)} />
               <Input id={`room-area-${room.id}`} name="area" type="number" min="0" label="Площадь, м²" defaultValue={String(room.area)} />
@@ -108,16 +131,16 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
 
           {isStandalone ? (
             <RoomFormSection title="Описание и контакты" description="Тексты, контакты и время заезда в одном месте.">
-              <div className="br-owner-stack">
+              <div className={pageStackClass}>
                 <Textarea id={`room-short-description-${room.id}`} name="shortDescription" label="Краткое описание" defaultValue={location.shortDescription} />
                 <Textarea
                   id={`room-full-description-${room.id}`}
                   name="fullDescription"
                   label="Подробное описание"
                   defaultValue={location.fullDescription}
-                  className="br-textarea--lg"
+                  className="min-h-[170px]"
                 />
-                <div className="br-inline-fields">
+                <div className={inlineFieldsClass}>
                   <Input id={`room-phone-${room.id}`} name="phone" label="Телефон" defaultValue={location.phone} />
                   <Input id={`room-telegram-${room.id}`} name="telegram" label="Telegram" defaultValue={location.telegram} />
                 </div>
@@ -126,28 +149,35 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
           ) : null}
 
           <RoomFormSection title="Настройки" description="Финальные переключатели для публикации и работы с агентами.">
-            <div className="br-toggle-list br-room-form__toggles">
-              <label className="br-toggle">
-                <span>Номер активен</span>
+            <div className={toggleListClass}>
+              <label className={toggleRowClass}>
+                <span className="max-w-[calc(100%-42px)]">Номер активен</span>
                 <input type="checkbox" name="isActive" defaultChecked={room.isActive} />
               </label>
               {isStandalone ? (
                 <>
-                  <label className="br-toggle">
-                    <span>Готов сотрудничать с агентами</span>
+                  <label className={toggleRowClass}>
+                    <span className="max-w-[calc(100%-42px)]">Готов сотрудничать с агентами</span>
                     <input type="checkbox" name="allowAgentInquiries" defaultChecked={location.allowAgentInquiries} />
                   </label>
-                  <label className="br-toggle">
-                    <span>Показывать контакты владельца агенту</span>
-                    <input type="checkbox" name="allowOwnerContactSharing" defaultChecked={location.allowOwnerContactSharing} />
+                  <label className={toggleRowClass}>
+                    <span className="max-w-[calc(100%-42px)]">Показывать контакты владельца агенту</span>
+                    <input
+                      type="checkbox"
+                      name="allowOwnerContactSharing"
+                      defaultChecked={location.allowOwnerContactSharing}
+                    />
                   </label>
                 </>
               ) : null}
             </div>
           </RoomFormSection>
 
-          <div className="br-active-step__actions br-room-form__actions">
-            <Button type="submit">Сохранить номер</Button>
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+            <div />
+            <Button type="submit" fullWidth>
+              Сохранить номер
+            </Button>
           </div>
         </form>
       </section>
@@ -172,18 +202,20 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
         compact
       />
 
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h3>Сезонные цены</h3>
-            <p>Быстро обновляйте периоды и стоимость, не покидая страницу номера.</p>
+      <section className={sectionCardClass}>
+        <div className={sectionHeaderClass}>
+          <div className="grid gap-1.5">
+            <h3 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Сезонные цены</h3>
+            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
+              Быстро обновляйте периоды и стоимость, не покидая страницу номера.
+            </p>
           </div>
         </div>
 
-        <div className="br-owner-stack">
+        <div className={pageStackClass}>
           {room.seasonalPrices.length ? (
             room.seasonalPrices.map((seasonalPrice) => (
-              <form key={seasonalPrice.id} action={updateRoomSeasonalPrice} className="br-owner-inline-form">
+              <form key={seasonalPrice.id} action={updateRoomSeasonalPrice} className={seasonalFormClass}>
                 <input type="hidden" name="propertyId" value={propertyId ?? ""} />
                 <input type="hidden" name="roomId" value={room.id} />
                 <input type="hidden" name="seasonalPriceId" value={seasonalPrice.id} />
@@ -199,11 +231,11 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
                   label="Цена за ночь"
                   defaultValue={String(seasonalPrice.pricePerNight)}
                 />
-                <label className="br-toggle">
-                  <span>Активна</span>
+                <label className={toggleRowClass}>
+                  <span className="max-w-[calc(100%-42px)]">Активна</span>
                   <input type="checkbox" name="isActive" defaultChecked={seasonalPrice.isActive} />
                 </label>
-                <div className="br-owner-actions">
+                <div className="grid gap-2 xl:min-w-[180px]">
                   <Button type="submit">Сохранить</Button>
                   <Button type="submit" variant="danger" formAction={deleteRoomSeasonalPrice}>
                     Удалить
@@ -212,21 +244,23 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
               </form>
             ))
           ) : (
-            <p className="br-owner-muted">Сезонные цены пока не добавлены.</p>
+            <p className="text-sm leading-[1.5] text-[var(--color-muted)]">Сезонные цены пока не добавлены.</p>
           )}
 
-          <form action={createRoomSeasonalPrice} className="br-owner-inline-form">
+          <form action={createRoomSeasonalPrice} className={seasonalFormClass}>
             <input type="hidden" name="propertyId" value={propertyId ?? ""} />
             <input type="hidden" name="roomId" value={room.id} />
             <input type="hidden" name="redirectTo" value={redirectTo} />
             <Input id={`season-start-new-${room.id}`} name="startsOn" type="date" label="С" />
             <Input id={`season-end-new-${room.id}`} name="endsOn" type="date" label="По" />
             <Input id={`season-price-new-${room.id}`} name="pricePerNight" type="number" step="0.01" min="0" label="Цена за ночь" />
-            <label className="br-toggle">
-              <span>Активна</span>
+            <label className={toggleRowClass}>
+              <span className="max-w-[calc(100%-42px)]">Активна</span>
               <input type="checkbox" name="isActive" defaultChecked />
             </label>
-            <SubmitButton pendingLabel="Сохранение">Добавить сезонную цену</SubmitButton>
+            <SubmitButton pendingLabel="Сохранение" fullWidth>
+              Добавить сезонную цену
+            </SubmitButton>
           </form>
         </div>
       </section>
@@ -235,7 +269,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
         title="Удаление номера"
         description="Удаление необратимо. Для подтверждения введите DELETE и только затем запускайте действие."
       >
-        <form action={deleteOwnerRoom} className="br-owner-danger">
+        <form action={deleteOwnerRoom} className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
           <input type="hidden" name="propertyId" value={propertyId ?? ""} />
           <input type="hidden" name="roomId" value={room.id} />
           <Input id={`room-delete-${room.id}`} name="confirmation" label="Введите DELETE для удаления номера" placeholder="DELETE" />

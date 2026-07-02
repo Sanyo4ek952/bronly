@@ -15,24 +15,24 @@ type PanelProps = HTMLAttributes<HTMLElement> & {
 function getSurfaceClass(surface: PanelSurface) {
   switch (surface) {
     case "subtle":
-      return "br-card--subtle";
+      return "bg-[var(--surface-subtle)]";
     case "raised":
-      return "br-card--raised";
+      return "bg-[var(--surface)] shadow-[var(--shadow-md)]";
     default:
-      return "br-card--default";
+      return "bg-[var(--surface)]";
   }
 }
 
 function getPaddingClass(padding: PanelPadding) {
   switch (padding) {
     case "none":
-      return "br-card--padding-none";
+      return "p-0";
     case "sm":
-      return "br-card--padding-sm";
+      return "p-3";
     case "lg":
-      return "br-card--padding-lg";
+      return "p-6";
     default:
-      return "br-card--padding-md";
+      return "p-4";
   }
 }
 
@@ -47,7 +47,15 @@ export function Panel({
   const Tag = as;
 
   return (
-    <Tag className={cn("br-card", getSurfaceClass(surface), getPaddingClass(padding), className)} {...props}>
+    <Tag
+      className={cn(
+        "rounded-[var(--radius-lg)] border border-[var(--border)] text-[var(--text)]",
+        getSurfaceClass(surface),
+        getPaddingClass(padding),
+        className,
+      )}
+      {...props}
+    >
       {children}
     </Tag>
   );

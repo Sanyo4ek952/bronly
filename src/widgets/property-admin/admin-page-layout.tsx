@@ -10,9 +10,15 @@ type AdminPageLayoutProps = {
 
 export function AdminPageLayout({ main, aside, className }: AdminPageLayoutProps) {
   return (
-    <div className={cn("br-property-admin-layout", Boolean(aside) && "br-property-admin-layout--split", className)}>
-      <div className="br-property-admin-layout__main">{main}</div>
-      {aside ? <aside className="br-property-admin-layout__aside">{aside}</aside> : null}
+    <div
+      className={cn(
+        "grid gap-4",
+        Boolean(aside) && "xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] xl:items-start",
+        className,
+      )}
+    >
+      <div className="grid gap-3">{main}</div>
+      {aside ? <aside className="grid gap-3">{aside}</aside> : null}
     </div>
   );
 }

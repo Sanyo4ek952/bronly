@@ -1,4 +1,5 @@
 import type { OwnerPropertyDetail } from "@/entities/property";
+import { cn } from "@/shared/lib/cn";
 import { Input, Textarea } from "@/shared/ui";
 import { FormSectionAccordion } from "@/widgets/property-admin";
 
@@ -10,15 +11,26 @@ function renderChecked(value: boolean | undefined) {
   return value ? { defaultChecked: true } : {};
 }
 
+const propertyFormGridClass = "grid gap-4 md:grid-cols-2";
+const inlineFieldsClass = "grid gap-4 md:grid-cols-2";
+const stackClass = "grid gap-4";
+const compactStackClass = "grid gap-3";
+const twoColumnTextareasClass = "grid gap-4 md:grid-cols-2";
+const toggleListClass = "grid gap-3";
+const toggleRowClass = cn(
+  "flex min-h-14 items-start justify-between gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-[14px] text-sm text-[var(--color-text)]",
+  "max-[640px]:min-h-[52px]",
+);
+
 export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsProps) {
   return (
-    <div className="br-owner-stack">
+    <div className={stackClass}>
       <FormSectionAccordion
         id="overview"
         title="Основные данные"
         description="Название, тип объекта, адрес и описания, которые видит владелец и гость."
       >
-        <div className="br-property-form__grid">
+        <div className={propertyFormGridClass}>
           <Input id="property-title" name="title" label="Название объекта" defaultValue={property?.title ?? ""} />
           <Input id="property-type" name="propertyType" label="Тип объекта" defaultValue={property?.propertyType ?? ""} />
           <Input id="property-city" name="city" label="Город" defaultValue={property?.city ?? ""} />
@@ -27,11 +39,11 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
             name="address"
             label="Адрес"
             defaultValue={property?.address ?? ""}
-            wrapperClassName="br-form-field--span-2"
+            wrapperClassName="grid gap-1.5 md:col-span-2"
           />
         </div>
 
-        <div className="br-owner-stack br-owner-stack--compact">
+        <div className={compactStackClass}>
           <Textarea
             id="property-short-description"
             name="shortDescription"
@@ -43,7 +55,7 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
             name="fullDescription"
             label="Подробное описание"
             defaultValue={property?.fullDescription ?? ""}
-            className="br-textarea--lg"
+            className="min-h-[170px]"
           />
         </div>
       </FormSectionAccordion>
@@ -53,7 +65,7 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
         title="Контакты"
         description="Каналы связи владельца для быстрой связи и публичной страницы."
       >
-        <div className="br-inline-fields">
+        <div className={inlineFieldsClass}>
           <Input id="property-phone" name="phone" label="Телефон" defaultValue={property?.phone ?? ""} />
           <Input id="property-telegram" name="telegram" label="Telegram" defaultValue={property?.telegram ?? ""} />
         </div>
@@ -64,12 +76,12 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
         title="Правила и особенности"
         description="Время заезда, выезда, особенности объекта и правила проживания."
       >
-        <div className="br-inline-fields">
+        <div className={inlineFieldsClass}>
           <Input id="property-check-in" name="checkInTime" label="Заезд" defaultValue={property?.checkInTime ?? ""} />
           <Input id="property-check-out" name="checkOutTime" label="Выезд" defaultValue={property?.checkOutTime ?? ""} />
         </div>
 
-        <div className="br-owner-grid-2">
+        <div className={twoColumnTextareasClass}>
           <Textarea
             id="property-features"
             name="features"
@@ -90,21 +102,21 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
         title="Публикация"
         description="Настройки видимости объекта и условий сотрудничества с агентами."
       >
-        <div className="br-toggle-list">
-          <label className="br-toggle">
-            <span>Показывать объект в публичной ссылке</span>
+        <div className={toggleListClass}>
+          <label className={toggleRowClass}>
+            <span className="max-w-[calc(100%-42px)]">Показывать объект в публичной ссылке</span>
             <input type="checkbox" name="published" {...renderChecked(property?.published ?? true)} />
           </label>
-          <label className="br-toggle">
-            <span>Заморозить объект</span>
+          <label className={toggleRowClass}>
+            <span className="max-w-[calc(100%-42px)]">Заморозить объект</span>
             <input type="checkbox" name="isFrozen" {...renderChecked(property?.isFrozen)} />
           </label>
-          <label className="br-toggle">
-            <span>Готов сотрудничать с агентами</span>
+          <label className={toggleRowClass}>
+            <span className="max-w-[calc(100%-42px)]">Готов сотрудничать с агентами</span>
             <input type="checkbox" name="allowAgentInquiries" {...renderChecked(property?.allowAgentInquiries)} />
           </label>
-          <label className="br-toggle">
-            <span>Показывать контакты владельца агенту</span>
+          <label className={toggleRowClass}>
+            <span className="max-w-[calc(100%-42px)]">Показывать контакты владельца агенту</span>
             <input
               type="checkbox"
               name="allowOwnerContactSharing"

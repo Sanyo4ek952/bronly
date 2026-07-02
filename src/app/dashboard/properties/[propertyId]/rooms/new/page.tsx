@@ -13,13 +13,20 @@ import {
 } from "@/features/property/edit-room/ui/room-form-blocks";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { buildOwnerInventoryBreadcrumbs, getRussianPluralForm, readSearchParams } from "@/shared/lib";
-import { Button, DashboardPageNav } from "@/shared/ui";
+import { Button, DashboardPageNav, InlineNotice } from "@/shared/ui";
 import { PropertySectionNav } from "@/widgets/property-section-nav";
 
 type PropertyRoomCreatePageProps = {
   params: Promise<{ propertyId: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+const pageStackClass = "grid gap-4";
+const sectionCardClass =
+  "grid gap-4 rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
+const sectionHeaderClass = "flex flex-wrap items-start justify-between gap-3";
+const formCardClass =
+  "grid gap-4 rounded-[24px] border border-[rgb(15_23_42_/_0.08)] bg-[rgb(255_255_255_/_0.94)] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
 
 function getActiveRoomWord(count: number) {
   return getRussianPluralForm(count, ["активный номер", "активных номера", "активных номеров"]);
@@ -50,7 +57,7 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
   const notice = getRoomCreateNotice(error);
 
   return (
-    <section className="br-owner-stack">
+    <section className={pageStackClass}>
       <DashboardPageNav
         backHref={`/dashboard/properties/${property.id}/rooms`}
         breadcrumbs={buildOwnerInventoryBreadcrumbs([
@@ -61,34 +68,36 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
         compact
       />
 
-      <div className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>{property.title}</h2>
-            <p>Добавьте новый номер для этого объекта.</p>
+      <section className={sectionCardClass}>
+        <div className={sectionHeaderClass}>
+          <div className="grid gap-1.5">
+            <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">{property.title}</h2>
+            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">Добавьте новый номер для этого объекта.</p>
           </div>
         </div>
 
         <PropertySectionNav propertyId={property.id} active="rooms" />
 
-        {notice ? <div className="br-inline-notice">{notice}</div> : null}
+        {notice ? <InlineNotice>{notice}</InlineNotice> : null}
         {subscription && roomUsageLabel ? (
-          <div className="br-owner-muted">
+          <InlineNotice tone="soft">
             Подписка: {roomUsageLabel}
             {roomLimitHint ? ` — ${roomLimitHint}` : ""}
-          </div>
+          </InlineNotice>
         ) : null}
-      </div>
+      </section>
 
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Добавить номер</h2>
-            <p>Заполните основные данные номера, а затем сохраните его в объект.</p>
+      <section className={sectionCardClass}>
+        <div className={sectionHeaderClass}>
+          <div className="grid gap-1.5">
+            <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Добавить номер</h2>
+            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
+              Заполните основные данные номера, а затем сохраните его в объект.
+            </p>
           </div>
         </div>
 
-        <form action={createOwnerRoom} className="br-owner-editor br-owner-editor--muted br-room-form">
+        <form action={createOwnerRoom} className={formCardClass}>
           <input type="hidden" name="propertyId" value={property.id} />
 
           <RoomBaseFields title="Основное" description="Короткая карточка номера без лишнего шума." />
@@ -105,8 +114,11 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
 
           <RoomPublishSettings title="Настройки" description="Оставьте только то, что важно для публикации." />
 
-          <div className="br-active-step__actions br-room-form__actions">
-            <Button type="submit">Сохранить номер</Button>
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+            <div />
+            <Button type="submit" fullWidth>
+              Сохранить номер
+            </Button>
           </div>
         </form>
       </section>

@@ -7,7 +7,7 @@ import { getOwnerPropertyDetail } from "@/entities/property";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
-import { ButtonLink, DashboardPageNav } from "@/shared/ui";
+import { ButtonLink, DashboardPageNav, InlineNotice } from "@/shared/ui";
 import { AdminPageHeader, ObjectSummaryCard, StatusBadge } from "@/widgets/property-admin";
 import { PropertySectionNav } from "@/widgets/property-section-nav";
 
@@ -15,6 +15,18 @@ type PropertyRoomsPageProps = {
   params: Promise<{ propertyId: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+const pageStackClass = "grid gap-4";
+const sectionCardClass =
+  "grid gap-4 rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
+const sectionHeaderClass = "flex flex-wrap items-start justify-between gap-3";
+const roomGridClass = "grid gap-4";
+const roomCardClass =
+  "grid gap-4 rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(246_248_247_/_0.96))] p-4 md:grid-cols-[minmax(0,1fr)_auto]";
+const roomCardMainClass =
+  "grid gap-4 text-inherit no-underline md:grid-cols-[180px_minmax(0,1fr)] md:items-stretch focus-visible:rounded-[18px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-primary)]";
+const roomMetaClass =
+  "inline-flex min-h-8 items-center rounded-full border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.82)] px-3 text-[13px] text-[var(--color-muted)]";
 
 function getSlotWord(count: number) {
   const mod10 = count % 10;
@@ -60,7 +72,7 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
   const busyRangeCount = property.rooms.reduce((total, room) => total + room.busyRanges.length, 0);
 
   return (
-    <section className="br-owner-stack">
+    <section className={pageStackClass}>
       <DashboardPageNav
         backHref="/dashboard/properties"
         breadcrumbs={buildOwnerInventoryBreadcrumbs([
@@ -77,12 +89,12 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
         actions={<ButtonLink href={`/dashboard/properties/${property.id}/rooms/new`}>Добавить номер</ButtonLink>}
         notice={
           <>
-            {notice ? <div className="br-inline-notice">{notice}</div> : null}
+            {notice ? <InlineNotice>{notice}</InlineNotice> : null}
             {subscription && roomUsageLabel ? (
-              <div className="br-inline-notice br-inline-notice--soft">
+              <InlineNotice tone="soft">
                 Подписка: {roomUsageLabel}
                 {roomLimitHint ? ` — ${roomLimitHint}` : ""}
-              </div>
+              </InlineNotice>
             ) : null}
           </>
         }
@@ -97,25 +109,30 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
         compact
       />
 
-      <section className="br-dashboard-block br-card">
+      <section className={sectionCardClass}>
         <PropertySectionNav propertyId={property.id} active="rooms" />
       </section>
 
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Номера и цены</h2>
-            <p>Карточки показывают статус, базовую цену, фото и объём ручной настройки по каждому номеру.</p>
+      <section className={sectionCardClass}>
+        <div className={sectionHeaderClass}>
+          <div className="grid gap-1.5">
+            <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Номера и цены</h2>
+            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
+              Карточки показывают статус, базовую цену, фото и объем ручной настройки по каждому номеру.
+            </p>
           </div>
           <ButtonLink href={`/dashboard/properties/${property.id}/rooms/new`}>Добавить номер</ButtonLink>
         </div>
 
-        <div className="br-owner-room-grid">
+        <div className={roomGridClass}>
           {property.rooms.length ? (
             property.rooms.map((room) => (
-              <article key={room.id} className="br-owner-room-card">
-                <Link href={`/dashboard/properties/${property.id}/rooms/${room.id}`} className="br-owner-room-card__main">
-                  <div className="br-owner-room-card__thumb">
+              <article key={room.id} className={roomCardClass}>
+                <Link
+                  href={`/dashboard/properties/${property.id}/rooms/${room.id}`}
+                  className={roomCardMainClass}
+                >
+                  <div className="min-h-[136px] overflow-hidden rounded-[18px] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.12),rgb(17_29_27_/_0.10)),linear-gradient(135deg,#b8dbe2_0%,#88bdd0_45%,#d6e3d5_78%,#cab69d_100%)] max-[640px]:min-h-[124px] max-[640px]:rounded-2xl">
                     {room.photos[0] ? (
                       <Image
                         src={room.photos[0].url}
@@ -123,37 +140,42 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
                         width={720}
                         height={480}
                         unoptimized
-                        className="br-owner-room-card__image"
+                        className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="br-owner-room-card__placeholder" aria-hidden="true" />
+                      <div
+                        className="h-full min-h-[136px] w-full bg-[radial-gradient(circle_at_30%_30%,rgb(255_255_255_/_0.45)_0_18px,transparent_19px),linear-gradient(135deg,#dfeceb_0%,#b8dbe2_50%,#d7c3aa_100%)] max-[640px]:min-h-[124px]"
+                        aria-hidden="true"
+                      />
                     )}
                   </div>
 
-                  <div className="br-owner-room-card__content">
-                    <div className="br-owner-room-card__header">
-                      <div>
-                        <strong>{room.title}</strong>
-                        <p>
+                  <div className="grid content-center gap-2.5 min-w-0">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="grid gap-1">
+                        <strong className="text-lg font-semibold leading-[1.15] text-[var(--color-text)]">{room.title}</strong>
+                        <p className="text-sm leading-[1.5] text-[var(--color-muted)]">
                           {room.capacity} гостя • {room.bedrooms} спальни • {room.area} м²
                         </p>
                       </div>
                       <StatusBadge kind="room" isActive={room.isActive} />
                     </div>
-                    <div className="br-owner-room-card__meta">
-                      <span>Фото: {room.photos.length}</span>
-                      <span>Сезонных цен: {room.seasonalPrices.length}</span>
-                      <span>Занятых диапазонов: {room.busyRanges.length}</span>
+                    <div className="flex flex-wrap gap-2">
+                      <span className={roomMetaClass}>Фото: {room.photos.length}</span>
+                      <span className={roomMetaClass}>Сезонных цен: {room.seasonalPrices.length}</span>
+                      <span className={roomMetaClass}>Занятых диапазонов: {room.busyRanges.length}</span>
                     </div>
                   </div>
                 </Link>
 
-                <div className="br-owner-room-card__aside">
-                  <strong className="br-owner-room-card__price">{room.pricePerNight.toLocaleString("ru-RU")} ₽</strong>
+                <div className="grid content-center justify-items-end gap-3 max-[640px]:justify-items-stretch">
+                  <strong className="whitespace-nowrap text-[22px] font-extrabold leading-none text-[var(--color-text)] max-[640px]:text-xl">
+                    {room.pricePerNight.toLocaleString("ru-RU")} ₽
+                  </strong>
                   <ButtonLink
                     href={`/dashboard/properties/${property.id}/rooms/${room.id}/settings`}
                     variant="secondary"
-                    className="br-owner-room-card__settings"
+                    className="max-[640px]:w-full"
                   >
                     Настройки
                   </ButtonLink>
@@ -161,7 +183,9 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
               </article>
             ))
           ) : (
-            <p className="br-owner-muted">В объекте пока нет номеров. Нажмите «Добавить номер», чтобы создать первый.</p>
+            <p className="text-sm leading-[1.5] text-[var(--color-muted)]">
+              В объекте пока нет номеров. Нажмите «Добавить номер», чтобы создать первый.
+            </p>
           )}
         </div>
       </section>

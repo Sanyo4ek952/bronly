@@ -1,5 +1,5 @@
 import type { OwnerRoomDetail } from "@/entities/room";
-import { ButtonLink, DashboardPageNav, StatusPill } from "@/shared/ui";
+import { DashboardPageNav, ButtonLink, StatusPill } from "@/shared/ui";
 
 import { formatMoney } from "@/app/dashboard/properties/page-helpers";
 import { RoomPhotoCarousel } from "./room-photo-carousel";
@@ -24,6 +24,17 @@ type RoomDetailPageProps = {
   listLabel?: string;
 };
 
+const pageStackClass = "grid gap-4";
+const sectionCardClass =
+  "grid gap-4 rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
+const sectionHeaderClass = "flex flex-wrap items-start justify-between gap-3";
+const chipClass =
+  "inline-flex min-h-8 items-center rounded-full border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.82)] px-3 text-[13px] text-[var(--color-muted)]";
+const statCardClass =
+  "grid gap-2 rounded-[20px] border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.92)] p-4";
+const amenityChipClass =
+  "inline-flex min-h-8 items-center rounded-full border border-[rgb(var(--color-primary-rgb)_/_0.16)] bg-[var(--color-primary-pale)] px-3 text-[13px] text-[var(--color-text)]";
+
 function formatDateRange(startsOn: string, endsOn: string) {
   const starts = new Date(startsOn).toLocaleDateString("ru-RU");
   const ends = new Date(endsOn).toLocaleDateString("ru-RU");
@@ -45,17 +56,17 @@ export function RoomDetailPage({
   listLabel,
 }: RoomDetailPageProps) {
   return (
-    <section className="br-owner-stack">
+    <section className={pageStackClass}>
       <DashboardPageNav backHref={backHref} breadcrumbs={breadcrumbs} compact />
 
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            {propertyLabel ? <p className="br-owner-muted">{propertyLabel}</p> : null}
-            <h2>{title}</h2>
-            <p>{intro}</p>
+      <section className={sectionCardClass}>
+        <div className={sectionHeaderClass}>
+          <div className="grid gap-1.5">
+            {propertyLabel ? <p className="text-sm leading-[1.5] text-[var(--color-muted)]">{propertyLabel}</p> : null}
+            <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">{title}</h2>
+            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">{intro}</p>
           </div>
-          <div className="br-room-page__actions">
+          <div className="flex flex-wrap items-center gap-3">
             {listHref && listLabel ? (
               <ButtonLink href={listHref} variant="secondary">
                 {listLabel}
@@ -66,85 +77,98 @@ export function RoomDetailPage({
         </div>
       </section>
 
-      <section className="br-dashboard-block br-card br-room-page-hero">
-        <div className="br-room-page-hero__media">
-          <RoomPhotoCarousel photos={room.photos} roomTitle={room.title} />
-        </div>
-        <div className="br-room-page-hero__content">
-          <div className="br-room-page-hero__header">
-            <StatusPill variant={room.isActive ? "active" : "inactive"}>{room.isActive ? "Активен" : "Неактивен"}</StatusPill>
-            <strong className="br-room-page__price">{formatMoney(room.pricePerNight)} / ночь</strong>
+      <section className="grid gap-5 rounded-[24px] border border-[rgb(15_23_42_/_0.08)] bg-[rgb(255_255_255_/_0.94)] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] xl:items-stretch">
+          <div className="min-w-0">
+            <RoomPhotoCarousel photos={room.photos} roomTitle={room.title} />
           </div>
-          <div className="br-selected-room-meta">
-            <span>{room.capacity} гостя</span>
-            <span>{room.bedrooms} спальни</span>
-            <span>{room.area} м²</span>
-            <span>Фото: {room.photos.length}</span>
-            <span>Сезонных цен: {room.seasonalPrices.length}</span>
-            <span>Занятых диапазонов: {room.busyRanges.length}</span>
-          </div>
-          <div className="br-owner-actions">
-            <ButtonLink href={settingsHref} variant="secondary">
-              Редактировать номер
-            </ButtonLink>
-            <ButtonLink href={calendarHref} variant="secondary">
-              {calendarCtaLabel}
-            </ButtonLink>
+
+          <div className="grid content-start gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <StatusPill variant={room.isActive ? "active" : "inactive"}>
+                {room.isActive ? "Активен" : "Неактивен"}
+              </StatusPill>
+              <strong className="whitespace-nowrap text-[24px] font-extrabold leading-none text-[var(--color-text)]">
+                {formatMoney(room.pricePerNight)} / ночь
+              </strong>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <span className={chipClass}>{room.capacity} гостя</span>
+              <span className={chipClass}>{room.bedrooms} спальни</span>
+              <span className={chipClass}>{room.area} м²</span>
+              <span className={chipClass}>Фото: {room.photos.length}</span>
+              <span className={chipClass}>Сезонных цен: {room.seasonalPrices.length}</span>
+              <span className={chipClass}>Занятых диапазонов: {room.busyRanges.length}</span>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <ButtonLink href={settingsHref} variant="secondary" fullWidth>
+                Редактировать номер
+              </ButtonLink>
+              <ButtonLink href={calendarHref} variant="secondary" fullWidth>
+                {calendarCtaLabel}
+              </ButtonLink>
+            </div>
           </div>
         </div>
       </section>
 
       {room.location.shortDescription || room.location.fullDescription ? (
-        <section className="br-dashboard-block br-card">
-          <div className="br-dashboard-block__header">
-            <div>
-              <h3>Описание</h3>
-              <p>Краткая и полная информация по номеру для проверки контента перед публикацией.</p>
-            </div>
+        <section className={sectionCardClass}>
+          <div className="grid gap-1.5">
+            <h3 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Описание</h3>
+            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
+              Краткая и полная информация по номеру для проверки контента перед публикацией.
+            </p>
           </div>
-          <div className="br-owner-stack">
+          <div className="grid gap-3 text-sm leading-[1.65] text-[var(--color-text)]">
             {room.location.shortDescription ? <p>{room.location.shortDescription}</p> : null}
             {room.location.fullDescription ? <p>{room.location.fullDescription}</p> : null}
           </div>
         </section>
       ) : null}
 
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h3>Быстрая сводка</h3>
-            <p>Контакты, публикация и условия заезда собраны на одном экране номера.</p>
-          </div>
+      <section className={sectionCardClass}>
+        <div className="grid gap-1.5">
+          <h3 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Быстрая сводка</h3>
+          <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
+            Контакты, публикация и условия заезда собраны на одном экране номера.
+          </p>
         </div>
 
-        <div className="br-quick-grid br-quick-grid--rooms">
-          <article className="br-quick-card">
-            <strong>Контакты и заезд</strong>
-            <p>Телефон: {room.location.phone || "не указан"}</p>
-            <p>WhatsApp: {room.location.whatsapp || "не указан"}</p>
-            <p>Telegram: {room.location.telegram || "не указан"}</p>
-            <p>Заезд: {room.location.checkInTime || "не указано"}</p>
-            <p>Выезд: {room.location.checkOutTime || "не указано"}</p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <article className={statCardClass}>
+            <strong className="text-base font-semibold text-[var(--color-text)]">Контакты и заезд</strong>
+            <div className="grid gap-2 text-sm leading-[1.55] text-[var(--color-muted)]">
+              <p>Телефон: {room.location.phone || "не указан"}</p>
+              <p>WhatsApp: {room.location.whatsapp || "не указан"}</p>
+              <p>Telegram: {room.location.telegram || "не указан"}</p>
+              <p>Заезд: {room.location.checkInTime || "не указано"}</p>
+              <p>Выезд: {room.location.checkOutTime || "не указано"}</p>
+            </div>
           </article>
-          <article className="br-quick-card">
-            <strong>Публикация и агентский контур</strong>
-            <p>Показывать агентам: {room.location.allowAgentInquiries ? "да" : "нет"}</p>
-            <p>Передавать контакты владельца: {room.location.allowOwnerContactSharing ? "да" : "нет"}</p>
+          <article className={statCardClass}>
+            <strong className="text-base font-semibold text-[var(--color-text)]">Публикация и агентский контур</strong>
+            <div className="grid gap-2 text-sm leading-[1.55] text-[var(--color-muted)]">
+              <p>Показывать агентам: {room.location.allowAgentInquiries ? "да" : "нет"}</p>
+              <p>Передавать контакты владельца: {room.location.allowOwnerContactSharing ? "да" : "нет"}</p>
+            </div>
           </article>
         </div>
       </section>
 
       {room.amenities.length ? (
-        <section className="br-dashboard-block br-card">
-          <div className="br-dashboard-block__header">
-            <div>
-              <h3>Удобства</h3>
-              <p>Этот список показывается в карточке номера и помогает проверить полноту описания.</p>
-            </div>
+        <section className={sectionCardClass}>
+          <div className="grid gap-1.5">
+            <h3 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Удобства</h3>
+            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
+              Этот список показывается в карточке номера и помогает проверить полноту описания.
+            </p>
           </div>
-          <div className="br-room-amenities">
+          <div className="flex flex-wrap gap-2.5">
             {room.amenities.map((amenity) => (
-              <span key={amenity} className="br-room-amenity-chip">
+              <span key={amenity} className={amenityChipClass}>
                 {amenity}
               </span>
             ))}
@@ -152,43 +176,47 @@ export function RoomDetailPage({
         </section>
       ) : null}
 
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h3>Цены и занятые даты</h3>
-            <p>{calendarSummaryText}</p>
-          </div>
+      <section className={sectionCardClass}>
+        <div className="grid gap-1.5">
+          <h3 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Цены и занятые даты</h3>
+          <p className="text-sm leading-[1.55] text-[var(--color-muted)]">{calendarSummaryText}</p>
         </div>
 
-        <div className="br-quick-grid br-quick-grid--rooms">
-          <article className="br-quick-card">
-            <strong>Сезонные цены</strong>
+        <div className="grid gap-4 md:grid-cols-2">
+          <article className={statCardClass}>
+            <strong className="text-base font-semibold text-[var(--color-text)]">Сезонные цены</strong>
             {room.seasonalPrices.length ? (
-              <ul className="br-legend-list">
+              <ul className="grid gap-2.5">
                 {room.seasonalPrices.map((item) => (
-                  <li key={item.id}>
-                    <span>{formatDateRange(item.startsOn, item.endsOn)}</span>
-                    <strong>{formatMoney(item.pricePerNight)}</strong>
+                  <li
+                    key={item.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-[16px] border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.82)] px-3 py-2.5"
+                  >
+                    <span className="text-sm leading-[1.5] text-[var(--color-muted)]">{formatDateRange(item.startsOn, item.endsOn)}</span>
+                    <strong className="text-sm font-semibold text-[var(--color-text)]">{formatMoney(item.pricePerNight)}</strong>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p>Сезонных цен пока нет.</p>
+              <p className="text-sm leading-[1.55] text-[var(--color-muted)]">Сезонных цен пока нет.</p>
             )}
           </article>
-          <article className="br-quick-card">
-            <strong>Занятые даты</strong>
+          <article className={statCardClass}>
+            <strong className="text-base font-semibold text-[var(--color-text)]">Занятые даты</strong>
             {room.busyRanges.length ? (
-              <ul className="br-legend-list">
+              <ul className="grid gap-2.5">
                 {room.busyRanges.map((item) => (
-                  <li key={item.id}>
-                    <span>{formatDateRange(item.startsOn, item.endsOn)}</span>
-                    <strong>{item.label || "Занято"}</strong>
+                  <li
+                    key={item.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-[16px] border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.82)] px-3 py-2.5"
+                  >
+                    <span className="text-sm leading-[1.5] text-[var(--color-muted)]">{formatDateRange(item.startsOn, item.endsOn)}</span>
+                    <strong className="text-sm font-semibold text-[var(--color-text)]">{item.label || "Занято"}</strong>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p>Занятых дат пока нет.</p>
+              <p className="text-sm leading-[1.55] text-[var(--color-muted)]">Занятых дат пока нет.</p>
             )}
           </article>
         </div>

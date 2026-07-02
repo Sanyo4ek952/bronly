@@ -26,25 +26,42 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   size?: ButtonSize;
 };
 
+const buttonBaseClass = cn(
+  "relative inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-transparent",
+  "px-4 text-[13px] font-bold leading-none no-underline transition-[background-color,border-color,color,transform,box-shadow] duration-[180ms]",
+  "focus-visible:outline-none focus-visible:border-[rgb(var(--color-primary-rgb)_/_0.44)] focus-visible:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.12)]",
+  "disabled:cursor-not-allowed disabled:opacity-60 disabled:transform-none",
+  "hover:-translate-y-px active:translate-y-0",
+);
+
 function getVariantClass(variant: ButtonVariant) {
   switch (variant) {
     case "secondary":
-      return "br-button--secondary";
+      return cn(
+        "border-[var(--border)] bg-[var(--surface)] text-[var(--text)]",
+        "hover:border-[rgb(var(--color-primary-rgb)_/_0.24)] hover:bg-[var(--color-primary-pale)]",
+      );
     case "danger":
-      return "br-button--danger";
+      return cn(
+        "border-[rgb(196_81_81_/_0.18)] bg-[rgb(196_81_81_/_0.08)] text-[var(--danger)]",
+        "hover:border-[rgb(196_81_81_/_0.28)] hover:bg-[rgb(196_81_81_/_0.14)]",
+      );
     case "ghost":
-      return "br-button--ghost";
+      return cn(
+        "border-transparent bg-transparent text-[var(--text-muted)] shadow-none",
+        "hover:border-[rgb(var(--color-primary-rgb)_/_0.24)] hover:bg-[var(--color-primary-pale)] hover:text-[var(--text)]",
+      );
     default:
-      return "br-button--primary";
+      return "bg-[var(--accent)] text-white hover:bg-[var(--accent-strong)]";
   }
 }
 
 function getSizeClass(size: ButtonSize) {
   switch (size) {
     case "sm":
-      return "br-button--sm";
+      return "min-h-[34px] px-3 text-xs";
     default:
-      return "br-button--md";
+      return "min-h-10";
   }
 }
 
@@ -70,21 +87,21 @@ export function Button({
       aria-busy={loadingState || undefined}
       aria-label={loadingState ? loadingLabel : ariaLabel}
       className={cn(
-        "br-button",
+        buttonBaseClass,
         getVariantClass(variant),
         getSizeClass(size),
-        fullWidth && "br-button--full",
-        loadingState && "br-button--loading",
+        fullWidth && "w-full",
+        loadingState && "pointer-events-none",
         className,
       )}
       disabled={disabled || loadingState}
       {...props}
     >
-      <span className="br-button__content">
-        <span className={cn("br-button__label", loadingState && "br-button__label--hidden")}>{children}</span>
+      <span className="relative inline-grid w-full place-items-center">
+        <span className={cn("inline-flex min-w-0 items-center justify-center", loadingState && "invisible")}>{children}</span>
         {loadingState ? (
-          <span className="br-button__spinner-wrap" aria-hidden="true">
-            <span className="br-button__spinner" />
+          <span className="absolute inset-0 grid place-items-center" aria-hidden="true">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
           </span>
         ) : null}
       </span>
@@ -104,10 +121,10 @@ export function ButtonLink({
     <Link
       href={href}
       className={cn(
-        "br-button",
+        buttonBaseClass,
         getVariantClass(variant),
         getSizeClass(size),
-        fullWidth && "br-button--full",
+        fullWidth && "w-full",
         className,
       )}
     >

@@ -9,5 +9,5 @@ type AppIconProps = Omit<LucideProps, "ref"> & {
 export type AppIconComponent = LucideIcon;
 
 export function AppIcon({ icon: Icon, className, strokeWidth = 1.9, ...props }: AppIconProps) {
-  return <Icon className={cn("br-ui-icon", className)} strokeWidth={strokeWidth} {...props} />;
+  return <Icon className={cn("h-[1em] w-[1em] shrink-0", className)} strokeWidth={strokeWidth} {...props} />;
 }

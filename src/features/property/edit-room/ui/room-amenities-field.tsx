@@ -2,6 +2,8 @@
 
 import { KeyboardEvent, useState } from "react";
 
+import { cn } from "@/shared/lib/cn";
+
 type AmenityItem = {
   label: string;
   popular?: boolean;
@@ -250,53 +252,72 @@ export function RoomAmenitiesField({
   }
 
   return (
-    <div className="br-form-field br-room-amenities-field">
-      <div className="br-room-amenities-field__intro">
-        <label className="br-label" htmlFor={`${id}-custom`}>
+    <div className="grid gap-[14px]">
+      <div className="grid gap-1.5">
+        <label className="text-[var(--label-size)] font-bold leading-[1.4] text-[var(--text-muted)]" htmlFor={`${id}-custom`}>
           {label}
         </label>
-        <span className="br-form-help">{description}</span>
+        <span className="text-xs leading-[1.45] text-[var(--text-muted)]">{description}</span>
       </div>
 
       <textarea hidden readOnly name={name} value={serializedAmenities} />
 
-      <div className="br-room-amenities-grid">
+      <div className="grid gap-3 md:grid-cols-2 max-[640px]:grid-cols-1">
         {visibleCategories.map((category) => {
           const isOpen = openCategories.has(category.title);
 
           return (
-            <section key={category.title} className="br-room-amenities-card" data-open={isOpen ? "true" : "false"}>
+            <section
+              key={category.title}
+              className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[rgb(248_250_252_/_0.9)] p-4 max-[640px]:p-[14px]"
+              data-open={isOpen ? "true" : "false"}
+            >
               <button
                 type="button"
-                className="br-room-amenities-card__toggle"
+                className="flex min-h-8 w-full items-center justify-between gap-3 bg-transparent text-left text-[var(--color-text)]"
                 aria-expanded={isOpen}
                 onClick={() => toggleCategory(category.title)}
               >
-                <span className="br-room-amenities-card__copy">
-                  <strong>{category.title}</strong>
-                  <small className="br-room-amenities-card__meta">
+                <span className="grid gap-1">
+                  <strong className="text-[15px] leading-[1.3]">{category.title}</strong>
+                  <small className="text-xs leading-[1.4] text-[var(--color-muted)] max-[640px]:hidden">
                     {category.selectedCount ? `Выбрано: ${category.selectedCount}` : `Пунктов: ${category.items.length}`}
                   </small>
                 </span>
-                <span className="br-room-amenities-card__chevron" aria-hidden="true">
+                <span
+                  className={cn(
+                    "text-[18px] leading-none text-[var(--color-muted)] transition-transform duration-[180ms] max-[640px]:inline-flex",
+                    isOpen ? "rotate-0" : "-rotate-90",
+                  )}
+                  aria-hidden="true"
+                >
                   ▾
                 </span>
               </button>
 
-              <div className="br-room-amenities-card__body">
-                <div className="br-room-amenities-options" role="group" aria-label={category.title}>
+              <div className={cn("grid gap-3", !isOpen && "max-[640px]:hidden")}>
+                <div className="grid gap-0 border-t border-[rgb(17_29_27_/_0.06)]" role="group" aria-label={category.title}>
                   {category.items.map((item, index) => {
                     const checked = selectedSet.has(item.label);
 
                     return (
                       <label
                         key={item.label}
-                        className="br-room-amenities-option"
+                        className={cn(
+                          "flex min-h-[52px] items-center gap-3 border-b border-[rgb(17_29_27_/_0.06)] bg-transparent px-0.5 py-3 text-sm leading-[1.4] transition-colors duration-[180ms] max-[640px]:min-h-[50px]",
+                          index === category.items.length - 1 && "border-b-0",
+                          checked && "text-[var(--color-primary-hover)]",
+                        )}
                         data-checked={checked ? "true" : "false"}
                         data-last={index === category.items.length - 1 ? "true" : "false"}
                       >
-                        <input type="checkbox" checked={checked} onChange={() => toggleAmenity(item.label)} />
-                        <span>{item.label}</span>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleAmenity(item.label)}
+                          className="m-0 h-[18px] w-[18px] flex-none accent-[var(--color-primary)]"
+                        />
+                        <span className={cn("text-sm text-[var(--color-text)]", checked && "text-inherit")}>{item.label}</span>
                       </label>
                     );
                   })}
@@ -310,43 +331,60 @@ export function RoomAmenitiesField({
       {hasAdditionalAmenities ? (
         <button
           type="button"
-          className="br-link-button br-room-amenities-field__more"
+          className="justify-self-start text-sm font-bold text-[var(--color-primary)] max-[640px]:w-full max-[640px]:rounded-[var(--radius-md)] max-[640px]:border max-[640px]:border-[var(--color-border)] max-[640px]:bg-[var(--color-bg)] max-[640px]:px-[14px] max-[640px]:py-3"
           onClick={() => setShowAll((current) => !current)}
         >
           {showAll ? "Скрыть дополнительные удобства" : "Показать еще удобства"}
         </button>
       ) : null}
 
-      <section className="br-room-amenities-custom" data-open={openCategories.has("custom") ? "true" : "false"}>
+      <section
+        className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[rgb(248_250_252_/_0.9)] p-4 max-[640px]:p-[14px]"
+        data-open={openCategories.has("custom") ? "true" : "false"}
+      >
         <button
           type="button"
-          className="br-room-amenities-card__toggle br-room-amenities-card__toggle--custom"
+          className="flex min-h-8 w-full items-center justify-between gap-3 bg-transparent text-left text-[var(--color-text)]"
           aria-expanded={openCategories.has("custom")}
           onClick={() => toggleCategory("custom")}
         >
-          <span className="br-room-amenities-card__copy">
-            <strong>Свои удобства</strong>
-            <small className="br-room-amenities-card__meta">
+          <span className="grid gap-1">
+            <strong className="text-[15px] leading-[1.3]">Свои удобства</strong>
+            <small className="text-xs leading-[1.4] text-[var(--color-muted)] max-[640px]:hidden">
               {customAmenities.length ? `Добавлено: ${customAmenities.length}` : "То, чего нет в списке"}
             </small>
           </span>
-          <span className="br-room-amenities-card__chevron" aria-hidden="true">
+          <span
+            className={cn(
+              "text-[18px] leading-none text-[var(--color-muted)] transition-transform duration-[180ms] max-[640px]:inline-flex",
+              openCategories.has("custom") ? "rotate-0" : "-rotate-90",
+            )}
+            aria-hidden="true"
+          >
             ▾
           </span>
         </button>
 
-        <div className="br-room-amenities-custom__body">
-          <div className="br-room-amenities-custom__header">
-            <strong>Свои удобства</strong>
-            <span>Добавьте то, чего нет в списке выше.</span>
+        <div className={cn("grid gap-3", !openCategories.has("custom") && "max-[640px]:hidden")}>
+          <div className="grid gap-1.5">
+            <strong className="text-[15px] leading-[1.3]">Свои удобства</strong>
+            <span className="text-[13px] leading-[1.5] text-[var(--color-muted)]">Добавьте то, чего нет в списке выше.</span>
           </div>
 
           {customAmenities.length ? (
-            <div className="br-room-amenities-custom__list">
+            <div className="flex flex-wrap gap-2">
               {customAmenities.map((amenity) => (
-                <span key={amenity} className="br-room-amenities-custom__chip">
+                <span
+                  key={amenity}
+                  className="inline-flex min-h-[34px] items-center gap-2 rounded-full border border-[rgb(var(--color-primary-rgb)_/_0.16)] bg-[var(--color-primary-pale)] px-[10px] py-1.5 text-[13px] text-[var(--color-text)]"
+                >
                   <span>{amenity}</span>
-                  <button type="button" onClick={() => removeCustomAmenity(amenity)} aria-label={`Удалить: ${amenity}`}>
+                  <button
+                    type="button"
+                    onClick={() => removeCustomAmenity(amenity)}
+                    aria-label={`Удалить: ${amenity}`}
+                    className="grid h-[18px] w-[18px] place-items-center rounded-full bg-transparent text-base leading-none text-[var(--color-muted)]"
+                  >
                     ×
                   </button>
                 </span>
@@ -354,17 +392,21 @@ export function RoomAmenitiesField({
             </div>
           ) : null}
 
-          <div className="br-room-amenities-custom__composer">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2.5 max-[640px]:grid-cols-1">
             <input
               id={`${id}-custom`}
               type="text"
-              className="br-field"
+              className="min-h-10 w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-[13px] leading-[1.45] text-[var(--text)] transition-[border-color,box-shadow] duration-[180ms] placeholder:text-[var(--text-subtle)] focus:outline-none focus:border-[rgb(var(--color-primary-rgb)_/_0.44)] focus:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.12)]"
               value={draftAmenity}
               onChange={(event) => setDraftAmenity(event.target.value)}
               onKeyDown={handleDraftAmenityKeyDown}
               placeholder="Например: кофемашина"
             />
-            <button type="button" className="br-button br-button--secondary" onClick={addCustomAmenity}>
+            <button
+              type="button"
+              className="inline-flex min-h-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-4 text-[13px] font-bold leading-none text-[var(--text)] transition-[background-color,border-color,color,transform,box-shadow] duration-[180ms] hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.24)] hover:bg-[var(--color-primary-pale)]"
+              onClick={addCustomAmenity}
+            >
               Добавить
             </button>
           </div>

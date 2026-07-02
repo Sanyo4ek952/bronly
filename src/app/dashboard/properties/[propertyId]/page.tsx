@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import {
@@ -12,7 +11,7 @@ import { getPropertyNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerPropertyDetail } from "@/entities/property";
 import { OwnerPropertyFormFields } from "@/features/property/edit-property";
 import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
-import { Button, DashboardPageNav, Input } from "@/shared/ui";
+import { Button, ButtonLink, DashboardPageNav, InlineNotice, Input } from "@/shared/ui";
 import {
   AdminPageHeader,
   AdminPageLayout,
@@ -28,6 +27,13 @@ type PropertyDetailPageProps = {
   params: Promise<{ propertyId: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+const pageStackClass = "grid gap-4";
+const sectionCardClass =
+  "grid gap-4 rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
+const sectionHeaderClass = "flex flex-wrap items-start justify-between gap-3";
+const destroyFormClass = "grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end";
+const compactAsideActionsClass = "grid gap-3";
 
 function getPropertyBusyRangeCount(property: NonNullable<Awaited<ReturnType<typeof getOwnerPropertyDetail>>>) {
   return property.rooms.reduce((total, room) => total + room.busyRanges.length, 0);
@@ -59,7 +65,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
   ];
 
   return (
-    <section className="br-owner-stack">
+    <section className={pageStackClass}>
       <DashboardPageNav
         backHref="/dashboard/properties"
         breadcrumbs={buildOwnerInventoryBreadcrumbs([{ label: property.title }])}
@@ -71,7 +77,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
         title={property.title}
         description={`${[property.city, property.address].filter(Boolean).join(", ")} · ${property.propertyType}`}
         actions={property.ownerPublicSlug ? <CopyLinkButton path={publicHref} /> : null}
-        notice={notice ? <div className="br-inline-notice">{notice}</div> : null}
+        notice={notice ? <InlineNotice>{notice}</InlineNotice> : null}
       />
 
       <ObjectSummaryCard
@@ -81,23 +87,25 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
         calendarHref={`/dashboard/properties/${property.id}/calendar`}
         publicHref={publicHref}
         compact
-        className="br-object-summary-card--mobile-only"
+        className="xl:hidden"
       />
 
       <ObjectTabs active="overview" items={tabs} />
 
       <AdminPageLayout
         main={
-          <div className="br-owner-stack">
-            <section className="br-dashboard-block br-card">
-              <div className="br-dashboard-block__header">
-                <div>
-                  <h2>Редактирование объекта</h2>
-                  <p>Данные, контакты, правила проживания и параметры публикации собраны в понятные секции.</p>
+          <div className={pageStackClass}>
+            <section className={sectionCardClass}>
+              <div className={sectionHeaderClass}>
+                <div className="grid gap-1.5">
+                  <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Редактирование объекта</h2>
+                  <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
+                    Данные, контакты, правила проживания и параметры публикации собраны в понятные секции.
+                  </p>
                 </div>
               </div>
 
-              <form id={formId} action={updateOwnerProperty} className="br-owner-stack">
+              <form id={formId} action={updateOwnerProperty} className={pageStackClass}>
                 <input type="hidden" name="propertyId" value={property.id} />
                 <OwnerPropertyFormFields property={property} />
               </form>
@@ -122,7 +130,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
               title="Удаление объекта"
               description="Удаление каскадно удалит номера, сезонные цены, занятые даты и связанные списки."
             >
-              <form action={deleteOwnerProperty} className="br-owner-danger">
+              <form action={deleteOwnerProperty} className={destroyFormClass}>
                 <input type="hidden" name="propertyId" value={property.id} />
                 <Input
                   id="property-delete-confirmation"
@@ -140,32 +148,32 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
               <Button type="submit" form={formId}>
                 Сохранить объект
               </Button>
-              <Link href={publicHref} className="br-button br-button--secondary">
+              <ButtonLink href={publicHref} variant="secondary" fullWidth>
                 {property.ownerPublicSlug ? "Открыть публичную страницу" : "Настройки профиля"}
-              </Link>
+              </ButtonLink>
             </StickyActions>
           </div>
         }
         aside={
-          <div className="br-owner-stack">
+          <div className={pageStackClass}>
             <ObjectSummaryCard
               property={property}
               busyRangeCount={busyRangeCount}
               roomsHref={`/dashboard/properties/${property.id}/rooms`}
               calendarHref={`/dashboard/properties/${property.id}/calendar`}
               publicHref={publicHref}
-              className="br-object-summary-card--desktop-sticky"
+              className="hidden xl:grid xl:sticky xl:top-5"
             />
             <DangerZone
               compact
               title="Удаление объекта"
               description="Сначала убедитесь, что данные больше не нужны: удаление необратимо."
             >
-              <div className="br-owner-stack br-owner-stack--compact">
+              <div className={compactAsideActionsClass}>
                 <CopyLinkButton path={publicHref} disabled={!property.ownerPublicSlug} />
-                <Link href="#property-delete-confirmation" className="br-button br-button--danger">
+                <ButtonLink href="#property-delete-confirmation" variant="danger" fullWidth>
                   Перейти к удалению
-                </Link>
+                </ButtonLink>
               </div>
             </DangerZone>
           </div>

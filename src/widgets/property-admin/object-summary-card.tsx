@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import type { OwnerPropertyDetail } from "@/entities/property";
-import { cn } from "@/shared/lib";
+import { cn } from "@/shared/lib/cn";
 import { ButtonLink } from "@/shared/ui";
 
 import { ObjectStats } from "./object-stats";
@@ -28,8 +28,14 @@ export function ObjectSummaryCard({
   className,
 }: ObjectSummaryCardProps) {
   return (
-    <section className={cn("br-object-summary-card br-card", compact && "br-object-summary-card--compact", className)}>
-      <div className="br-object-summary-card__media">
+    <section
+      className={cn(
+        "grid gap-4 overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))]",
+        compact && "gap-3",
+        className,
+      )}
+    >
+      <div className="relative aspect-[16/10] overflow-hidden rounded-t-[22px]">
         {property.coverImageUrl ? (
           <Image
             src={property.coverImageUrl}
@@ -37,22 +43,25 @@ export function ObjectSummaryCard({
             width={1200}
             height={760}
             unoptimized
-            className="br-object-summary-card__image"
+            className="h-full w-full object-cover"
           />
         ) : (
-          <div className="br-object-summary-card__placeholder" aria-hidden="true" />
+          <div
+            className="h-full w-full bg-[linear-gradient(180deg,rgb(255_255_255_/_0.10),rgb(17_29_27_/_0.08)),linear-gradient(135deg,#e3dccf_0%,#c4d4c7_52%,#f1e7d8_100%)]"
+            aria-hidden="true"
+          />
         )}
       </div>
 
-      <div className="br-object-summary-card__copy">
-        <div className="br-object-summary-card__top">
+      <div className="grid gap-4 p-[18px] max-[720px]:p-4">
+        <div className="flex flex-wrap items-center gap-3">
           <StatusBadge kind="property" published={property.published} isFrozen={property.isFrozen} />
-          <span className="br-object-summary-card__type">{property.propertyType}</span>
+          <span className="text-sm leading-[1.55] text-[var(--color-muted)]">{property.propertyType}</span>
         </div>
 
         <div>
-          <h2>{property.title}</h2>
-          <p>{[property.city, property.address].filter(Boolean).join(", ")}</p>
+          <h2 className="text-[22px] font-semibold leading-[1.1] text-[var(--color-text)]">{property.title}</h2>
+          <p className="mt-1 text-sm leading-[1.55] text-[var(--color-muted)]">{[property.city, property.address].filter(Boolean).join(", ")}</p>
         </div>
 
         <ObjectStats
@@ -63,19 +72,37 @@ export function ObjectSummaryCard({
           ]}
         />
 
-        <div className="br-object-summary-card__quick-links">
-          <Link href={roomsHref}>Перейти к номерам</Link>
-          <Link href={calendarHref}>Перейти к календарю</Link>
-          <Link href={publicHref}>Открыть публичную страницу</Link>
+        <div className="grid gap-3">
+          <Link href={roomsHref} className="text-sm font-bold text-[var(--color-primary-hover)]">
+            Перейти к номерам
+          </Link>
+          <Link href={calendarHref} className="text-sm font-bold text-[var(--color-primary-hover)]">
+            Перейти к календарю
+          </Link>
+          <Link href={publicHref} className="text-sm font-bold text-[var(--color-primary-hover)]">
+            Открыть публичную страницу
+          </Link>
         </div>
 
-        <div className="br-object-summary-card__hints">
-          {!property.photos.length ? <p>Добавьте больше фото, чтобы карточка выглядела убедительнее.</p> : null}
-          {!property.phone && !property.whatsapp && !property.telegram ? <p>Заполните контакты для быстрой связи.</p> : null}
-          {!property.houseRules.length ? <p>Укажите правила проживания, чтобы снизить количество уточнений.</p> : null}
+        <div className="grid gap-3">
+          {!property.photos.length ? (
+            <p className="rounded-2xl border border-[var(--color-border)] bg-[rgb(var(--color-primary-rgb)_/_0.06)] px-[14px] py-3 text-sm leading-[1.5] text-[var(--color-muted)]">
+              Добавьте больше фото, чтобы карточка выглядела убедительнее.
+            </p>
+          ) : null}
+          {!property.phone && !property.whatsapp && !property.telegram ? (
+            <p className="rounded-2xl border border-[var(--color-border)] bg-[rgb(var(--color-primary-rgb)_/_0.06)] px-[14px] py-3 text-sm leading-[1.5] text-[var(--color-muted)]">
+              Заполните контакты для быстрой связи.
+            </p>
+          ) : null}
+          {!property.houseRules.length ? (
+            <p className="rounded-2xl border border-[var(--color-border)] bg-[rgb(var(--color-primary-rgb)_/_0.06)] px-[14px] py-3 text-sm leading-[1.5] text-[var(--color-muted)]">
+              Укажите правила проживания, чтобы снизить количество уточнений.
+            </p>
+          ) : null}
         </div>
 
-        <div className="br-object-summary-card__actions">
+        <div className="grid gap-3">
           <ButtonLink href={roomsHref} variant="secondary" fullWidth>
             Номера
           </ButtonLink>

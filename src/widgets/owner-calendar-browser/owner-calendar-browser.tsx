@@ -5,8 +5,9 @@ import { CalendarDays, ChevronLeft, ChevronRight, Dot, PencilLine } from "lucide
 
 import { createRoomBusyRange, deleteRoomBusyRange, updateRoomBusyRange } from "@/app/dashboard/properties/actions";
 import type { OwnerBusyRange } from "@/entities/room";
+import { cn } from "@/shared/lib/cn";
 import { formatDateLabel } from "@/shared/lib/date";
-import { AppIcon, Button, IconButton, Input, StatCard, Textarea } from "@/shared/ui";
+import { AppIcon, Button, IconButton, InlineNotice, Input, StatCard, Textarea } from "@/shared/ui";
 import {
   addMonths,
   formatDateKey,
@@ -52,6 +53,19 @@ type ActiveEditorState =
       roomId: string;
       busyRange: OwnerBusyRange;
     };
+
+const stackClass = "grid gap-4";
+const shellClass =
+  "grid gap-[14px] overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.98)] max-[720px]:rounded-[20px]";
+const shellHeaderClass =
+  "flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(248_243_236_/_0.82)),var(--surface)] px-5 py-[18px] max-[720px]:px-4";
+const shellLegendClass =
+  "flex flex-wrap items-center gap-3 border-b border-[var(--border)] px-5 py-3 text-[13px] text-[var(--text-muted)] max-[720px]:px-4";
+const editorCardClass =
+  "grid gap-4 rounded-[22px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))] p-[18px] max-[720px]:rounded-[20px] max-[720px]:p-4";
+const actionGridClass = "grid auto-cols-max grid-flow-col gap-2 max-[640px]:grid-flow-row";
+const timelineCellClass =
+  "h-10 rounded-xl border border-transparent bg-[rgb(248_250_252_/_0.85)] transition-[transform,border-color,background-color] duration-[180ms] hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.28)]";
 
 function formatRoomPrice(value: number) {
   return `${value.toLocaleString("ru-RU")} ₽`;
@@ -231,17 +245,15 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
 
     if (!activeEditor) {
       return (
-        <section className="br-owner-calendar-editor br-card">
-          <div className="br-owner-calendar-editor__header">
-            <div>
-              <strong>{getPanelTitle(activeEditor)}</strong>
-              <p>{getPanelDescription(activeEditor)}</p>
-            </div>
+        <section className={editorCardClass}>
+          <div className="grid gap-1.5">
+            <strong className="text-base font-semibold leading-[1.25] text-[var(--color-text)]">{getPanelTitle(activeEditor)}</strong>
+            <p className="text-[13px] leading-[1.5] text-[var(--color-muted)]">{getPanelDescription(activeEditor)}</p>
           </div>
-          <div className="br-owner-calendar-editor__empty">
-            <strong>Отмечайте занятые даты прямо в сетке</strong>
-            <p>{getSelectionNotice(selectionStart)}</p>
-            <p>Клик по занятому диапазону откроет его для редактирования.</p>
+          <div className="grid gap-2 rounded-[18px] border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.92)] px-4 py-4">
+            <strong className="text-sm font-semibold text-[var(--color-text)]">Отмечайте занятые даты прямо в сетке</strong>
+            <p className="text-sm leading-[1.5] text-[var(--color-muted)]">{getSelectionNotice(selectionStart)}</p>
+            <p className="text-sm leading-[1.5] text-[var(--color-muted)]">Клик по занятому диапазону откроет его для редактирования.</p>
           </div>
         </section>
       );
@@ -249,25 +261,25 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
 
     if (activeEditor.mode === "create") {
       return (
-        <form action={createRoomBusyRange} className="br-owner-calendar-editor br-card">
+        <form action={createRoomBusyRange} className={editorCardClass}>
           <input type="hidden" name="propertyId" value={propertyId} />
           <input type="hidden" name="roomId" value={activeEditor.roomId} />
-          <div className="br-owner-calendar-editor__header">
-            <div>
-              <strong>{getPanelTitle(activeEditor)}</strong>
-              <p>{getPanelDescription(activeEditor)}</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="grid gap-1.5">
+              <strong className="text-base font-semibold leading-[1.25] text-[var(--color-text)]">{getPanelTitle(activeEditor)}</strong>
+              <p className="text-[13px] leading-[1.5] text-[var(--color-muted)]">{getPanelDescription(activeEditor)}</p>
             </div>
-            <button type="button" className="br-link-button" onClick={() => setActiveEditor(null)}>
+            <button type="button" className="text-sm font-bold text-[var(--color-primary)]" onClick={() => setActiveEditor(null)}>
               Отменить
             </button>
           </div>
-          <div className="br-owner-calendar-editor__body">
+          <div className="grid gap-4 md:grid-cols-2">
             <Input id="owner-busy-new-start" name="startsOn" type="date" label="С" defaultValue={activeEditor.startsOn} />
             <Input id="owner-busy-new-end" name="endsOn" type="date" label="По" defaultValue={activeEditor.endsOn} />
-            <Input id="owner-busy-new-label" name="label" label="Пометка" placeholder="Например, заявка" />
-            <Textarea id="owner-busy-new-note" name="note" label="Комментарий" rows={3} />
+            <Input id="owner-busy-new-label" name="label" label="Пометка" placeholder="Например, заявка" wrapperClassName="grid gap-1.5 md:col-span-2" />
+            <Textarea id="owner-busy-new-note" name="note" label="Комментарий" rows={3} wrapperClassName="grid gap-1.5 md:col-span-2" />
           </div>
-          <div className="br-owner-calendar-editor__actions">
+          <div className={actionGridClass}>
             <Button type="button" variant="secondary" onClick={() => setActiveEditor(null)}>
               Отменить
             </Button>
@@ -278,19 +290,19 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
     }
 
     return (
-      <form action={updateRoomBusyRange} className="br-owner-calendar-editor br-card">
+      <form action={updateRoomBusyRange} className={editorCardClass}>
         <input type="hidden" name="propertyId" value={propertyId} />
         <input type="hidden" name="busyRangeId" value={activeEditor.busyRange.id} />
-        <div className="br-owner-calendar-editor__header">
-          <div>
-            <strong>{getPanelTitle(activeEditor)}</strong>
-            <p>{getPanelDescription(activeEditor)}</p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="grid gap-1.5">
+            <strong className="text-base font-semibold leading-[1.25] text-[var(--color-text)]">{getPanelTitle(activeEditor)}</strong>
+            <p className="text-[13px] leading-[1.5] text-[var(--color-muted)]">{getPanelDescription(activeEditor)}</p>
           </div>
-          <button type="button" className="br-link-button" onClick={() => setActiveEditor(null)}>
+          <button type="button" className="text-sm font-bold text-[var(--color-primary)]" onClick={() => setActiveEditor(null)}>
             Отменить
           </button>
         </div>
-        <div className="br-owner-calendar-editor__body">
+        <div className="grid gap-4 md:grid-cols-2">
           <Input
             id={`owner-busy-edit-start-${activeEditor.busyRange.id}`}
             name="startsOn"
@@ -310,6 +322,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
             name="label"
             label="Пометка"
             defaultValue={activeEditor.busyRange.label}
+            wrapperClassName="grid gap-1.5 md:col-span-2"
           />
           <Textarea
             id={`owner-busy-edit-note-${activeEditor.busyRange.id}`}
@@ -317,9 +330,10 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
             label="Комментарий"
             rows={3}
             defaultValue={activeEditor.busyRange.note}
+            wrapperClassName="grid gap-1.5 md:col-span-2"
           />
         </div>
-        <div className="br-owner-calendar-editor__actions">
+        <div className={actionGridClass}>
           <Button type="submit" variant="danger" formAction={deleteRoomBusyRange}>
             Удалить
           </Button>
@@ -330,32 +344,32 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
   }
 
   return (
-    <section className="br-owner-stack">
-      {(serverNotice || localNotice) ? <div className="br-inline-notice">{serverNotice || localNotice}</div> : null}
+    <section className={stackClass}>
+      {(serverNotice || localNotice) ? <InlineNotice>{serverNotice || localNotice}</InlineNotice> : null}
 
-      <section className="br-calendar-shell br-card">
-        <div className="br-calendar-shell__header">
-          <div className="br-calendar-shell__heading">
-            <div className="br-calendar-shell__icon">
-              <AppIcon icon={CalendarDays} />
+      <section className={shellClass}>
+        <div className={shellHeaderClass}>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-[14px] bg-[rgb(var(--color-primary-rgb)_/_0.08)] text-[var(--accent-strong)]">
+              <AppIcon icon={CalendarDays} className="h-5 w-5" />
             </div>
             <div>
-              <h3>Календарь занятости</h3>
-              <p>{formatMonthRangeLabel(currentMonth)}</p>
+              <h3 className="text-[28px] font-bold leading-[1.05] tracking-[-0.04em] text-[var(--text)]">Календарь занятости</h3>
+              <p className="text-sm text-[var(--text-muted)]">{formatMonthRangeLabel(currentMonth)}</p>
             </div>
           </div>
 
-          <div className="br-calendar-shell__actions">
+          <div className="flex flex-wrap items-center justify-end gap-3">
             <IconButton
               aria-label="Предыдущий месяц"
-              className="br-calendar-shell__nav"
+              className="size-[42px]"
               onClick={() => updateMonth(addMonths(currentMonth, -1))}
             >
               <AppIcon icon={ChevronLeft} />
             </IconButton>
             <Button
               variant="secondary"
-              className="br-calendar-shell__today"
+              className="min-w-[152px] rounded-full"
               onClick={() => {
                 const today = new Date();
                 updateMonth(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -365,7 +379,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
             </Button>
             <IconButton
               aria-label="Следующий месяц"
-              className="br-calendar-shell__nav"
+              className="size-[42px]"
               onClick={() => updateMonth(addMonths(currentMonth, 1))}
             >
               <AppIcon icon={ChevronRight} />
@@ -373,24 +387,24 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
           </div>
         </div>
 
-        <div className="br-calendar-shell__legend">
-          <span><Dot />Свободно</span>
-          <span><Dot />Занятые даты</span>
-          <span><Dot />Сегодня</span>
-          <span><Dot />Выбранное начало</span>
-          <span><Dot />Активный диапазон</span>
+        <div className={shellLegendClass}>
+          <span className="inline-flex items-center gap-1.5"><Dot className="h-[14px] w-[14px] text-[#f2c94c]" />Свободно</span>
+          <span className="inline-flex items-center gap-1.5"><Dot className="h-[14px] w-[14px] text-[#d99a2b]" />Занятые даты</span>
+          <span className="inline-flex items-center gap-1.5"><Dot className="h-[14px] w-[14px] text-[var(--accent)]" />Сегодня</span>
+          <span className="inline-flex items-center gap-1.5"><Dot className="h-[14px] w-[14px] text-[#7c6fd6]" />Выбранное начало</span>
+          <span className="inline-flex items-center gap-1.5"><Dot className="h-[14px] w-[14px] text-[#3b6ea8]" />Активный диапазон</span>
         </div>
 
-        <div className="br-calendar-timeline">
-          <div className="br-calendar-timeline__windowbar">
-            <div className="br-calendar-timeline__windowcopy">
-              <strong>{timelineWindowLabel}</strong>
-              <span>{visibleTimelineDays.length} дней в видимом окне</span>
+        <div className="grid gap-3 px-0 pb-[18px] pt-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-2.5 max-[720px]:px-4">
+            <div className="flex min-w-0 flex-wrap items-center gap-3">
+              <strong className="text-sm text-[var(--text)]">{timelineWindowLabel}</strong>
+              <span className="text-xs text-[var(--text-muted)]">{visibleTimelineDays.length} дней в видимом окне</span>
             </div>
-            <div className="br-calendar-timeline__windowactions">
+            <div className="flex items-center gap-2">
               <IconButton
                 aria-label="Показать предыдущие дни"
-                className="br-calendar-shell__nav"
+                className="size-10"
                 disabled={!canMoveTimelineBackward}
                 onClick={() => shiftTimelineWindow(-1)}
               >
@@ -398,7 +412,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
               </IconButton>
               <IconButton
                 aria-label="Показать следующие дни"
-                className="br-calendar-shell__nav"
+                className="size-10"
                 disabled={!canMoveTimelineForward}
                 onClick={() => shiftTimelineWindow(1)}
               >
@@ -407,50 +421,75 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
             </div>
           </div>
 
-          <div className="br-calendar-timeline__scroll">
+          <div className="max-h-[min(58vh,720px)] overflow-auto px-5 pb-1 [scrollbar-gutter:stable_both-edges] max-[720px]:px-4">
             <div
-              className="br-calendar-timeline__canvas"
+              className="grid w-max min-w-[calc(190px+(var(--calendar-columns,31)*40px))] gap-2"
               style={{ ["--calendar-columns" as string]: String(visibleTimelineDays.length) }}
             >
-              <div className="br-calendar-timeline__header">
-                <div className="br-calendar-timeline__spacer" />
+              <div className="sticky top-0 z-[5] grid grid-cols-[190px_minmax(0,1fr)] gap-[14px] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(255_255_255_/_0.94))] pb-1.5">
+                <div className="sticky left-0 z-[7] min-h-[54px] border-b border-[var(--border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(255_255_255_/_0.94))]" />
 
-                <div className="br-calendar-timeline__days">
+                <div
+                  className="grid"
+                  style={{ gridTemplateColumns: `repeat(${visibleTimelineDays.length}, minmax(38px, 40px))` }}
+                >
                   {visibleTimelineDays.map((day) => (
                     <div
                       key={day.key}
-                      className={`br-calendar-timeline__head${day.isToday ? " br-calendar-timeline__head--today" : ""}`}
+                      className="grid min-h-[54px] justify-items-center gap-1 border-b border-[var(--border)] px-0 py-[6px] pb-2.5 text-[11px] lowercase text-[var(--text-muted)]"
                     >
-                      <strong>{day.dayLabel}</strong>
+                      <strong
+                        className={cn(
+                          "text-xs font-semibold text-[var(--text)]",
+                          day.isToday &&
+                            "grid h-8 w-8 place-items-center rounded-xl border border-[rgb(var(--color-primary-rgb)_/_0.26)] bg-[var(--surface)]",
+                        )}
+                      >
+                        {day.dayLabel}
+                      </strong>
                       <span>{day.weekDayLabel}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="br-calendar-timeline__rows">
+              <div className="grid gap-3">
                 {rooms.map((room, rowIndex) => {
                   const ranges = getTimelineBusyRanges(room.busyRanges, visibleTimelineDays);
                   const isSelectedRoom = room.id === selectedRoom?.id;
 
                   return (
-                    <div key={room.id} className="br-calendar-timeline__row">
+                    <div key={room.id} className="grid grid-cols-[190px_minmax(0,1fr)] items-stretch gap-[14px]">
                       <button
                         type="button"
-                        className={`br-calendar-room-card${isSelectedRoom ? " br-calendar-room-card--active" : ""}`}
+                        className={cn(
+                          "sticky left-0 z-[6] grid min-h-[72px] grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-[20px] border px-4 py-3 text-left shadow-[var(--shadow-sm)]",
+                          isSelectedRoom
+                            ? "border-[rgb(var(--color-primary-rgb)_/_0.28)] bg-[rgb(var(--color-primary-rgb)_/_0.08)]"
+                            : "border-[var(--color-border)] bg-[rgb(255_255_255_/_0.96)]",
+                        )}
                         onClick={() => handleRoomFocus(room.id)}
                       >
-                        <span className={`br-calendar-room-card__badge br-calendar-room-card__badge--${(rowIndex % 4) + 1}`}>
+                        <span
+                          className={cn(
+                            "grid h-9 w-9 place-items-center rounded-[14px] text-sm font-bold",
+                            `bg-[rgb(var(--color-primary-rgb)_/_0.${(rowIndex % 4) + 1}2)]`,
+                            "text-[var(--color-primary-hover)]",
+                          )}
+                        >
                           {rowIndex + 1}
                         </span>
-                        <span className="br-calendar-room-card__copy">
-                          <strong>{room.title}</strong>
-                          <small>{getRoomSummary(room)}</small>
+                        <span className="grid min-w-0 gap-0.5">
+                          <strong className="truncate text-sm font-semibold text-[var(--text)]">{room.title}</strong>
+                          <small className="text-xs text-[var(--text-muted)]">{getRoomSummary(room)}</small>
                         </span>
                       </button>
 
-                      <div className={`br-calendar-room-grid${isSelectedRoom ? " br-calendar-room-grid--active" : ""}`}>
-                        <div className="br-calendar-room-grid__cells">
+                      <div className={cn("grid gap-2 rounded-[20px] border px-3 py-3", isSelectedRoom ? "border-[rgb(var(--color-primary-rgb)_/_0.22)] bg-[rgb(var(--color-primary-rgb)_/_0.04)]" : "border-[var(--color-border)] bg-[rgb(255_255_255_/_0.82)]")}>
+                        <div
+                          className="grid gap-2"
+                          style={{ gridTemplateColumns: `repeat(${visibleTimelineDays.length}, minmax(38px, 40px))` }}
+                        >
                           {visibleTimelineDays.map((day) => {
                             const dayBusyRange =
                               room.busyRanges.find((range) => day.key >= range.startsOn && day.key <= range.endsOn) ?? null;
@@ -461,7 +500,13 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
                               <button
                                 key={`${room.id}-${day.key}`}
                                 type="button"
-                                className={`br-calendar-room-grid__cell${dayBusyRange ? " br-calendar-room-grid__cell--busy" : ""}${day.isToday ? " br-calendar-room-grid__cell--today" : ""}${isSelectionStart ? " br-calendar-room-grid__cell--selected" : ""}${isActiveRange ? " br-calendar-room-grid__cell--active" : ""}`}
+                                className={cn(
+                                  timelineCellClass,
+                                  dayBusyRange && "border-[rgb(217_154_43_/_0.18)] bg-[rgb(217_154_43_/_0.18)]",
+                                  day.isToday && "border-[rgb(var(--color-primary-rgb)_/_0.22)]",
+                                  isSelectionStart && "border-[#7c6fd6] bg-[rgb(124_111_214_/_0.16)]",
+                                  isActiveRange && "border-[#3b6ea8] bg-[rgb(59_110_168_/_0.18)]",
+                                )}
                                 onClick={() => handleTimelineCellClick(room, day.key)}
                                 aria-label={`${room.title}: ${formatDateLabel(day.date)}. ${dayBusyRange ? "Занято" : "Свободно"}.`}
                               />
@@ -469,31 +514,42 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
                           })}
                         </div>
 
-                        <div className="br-calendar-room-grid__prices">
+                        <div
+                          className="grid gap-2 text-center text-[11px] text-[var(--text-muted)]"
+                          style={{ gridTemplateColumns: `repeat(${visibleTimelineDays.length}, minmax(38px, 40px))` }}
+                        >
                           {visibleTimelineDays.map((day) => (
                             <span key={`${room.id}-price-${day.key}`}>{room.pricePerNight.toLocaleString("ru-RU")}</span>
                           ))}
                         </div>
 
-                        <div className="br-calendar-room-grid__ranges">
+                        <div
+                          className="grid gap-2"
+                          style={{ gridTemplateColumns: `repeat(${visibleTimelineDays.length}, minmax(38px, 40px))` }}
+                        >
                           {ranges.map((range) => (
                             <button
                               key={range.busyRange.id}
                               type="button"
-                              className={`br-calendar-range-card${selectedBusyRangeId === range.busyRange.id ? " br-calendar-range-card--active" : ""}`}
+                              className={cn(
+                                "grid gap-1 rounded-2xl border px-2 py-2 text-left text-white shadow-[var(--shadow-sm)]",
+                                selectedBusyRangeId === range.busyRange.id
+                                  ? "border-[#3b6ea8] bg-[#3b6ea8]"
+                                  : "border-[#d99a2b] bg-[#d99a2b]",
+                              )}
                               style={{
                                 gridColumn: `${range.startIndex + 1} / span ${range.span}`,
                               }}
                               onClick={() => handleOpenBusyRange(room.id, range.busyRange)}
                             >
-                              <span className="br-calendar-range-card__label">
+                              <span className="truncate text-xs font-semibold">
                                 {range.clippedStart ? "…" : ""}
                                 {getTimelineRangeLabel(range.busyRange)}
                                 {range.clippedEnd ? "…" : ""}
                               </span>
-                              <span className="br-calendar-range-card__meta">
+                              <span className="inline-flex items-center gap-1 text-[11px] opacity-95">
                                 {formatShortDateLabel(range.busyRange.startsOn)} - {formatShortDateLabel(range.busyRange.endsOn)}
-                                <AppIcon icon={PencilLine} />
+                                <AppIcon icon={PencilLine} className="h-3.5 w-3.5" />
                               </span>
                             </button>
                           ))}
@@ -509,14 +565,10 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
       </section>
 
       {selectedRoom ? (
-        <section className="br-owner-calendar-detail">
-          <div className="br-owner-calendar-stats">
+        <section className={stackClass}>
+          <div className="grid gap-4 md:grid-cols-3">
             <StatCard title="Выбранный номер" value={selectedRoom.title} subtitle="Календарь занятости номера" />
-            <StatCard
-              title="Базовая цена"
-              value={formatRoomPrice(selectedRoom.pricePerNight)}
-              subtitle="Отображается для каждого дня в шкале"
-            />
+            <StatCard title="Базовая цена" value={formatRoomPrice(selectedRoom.pricePerNight)} subtitle="Отображается для каждого дня в шкале" />
             <StatCard
               title="Ближайший период"
               value={
@@ -528,19 +580,19 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
             />
           </div>
 
-          <section className="br-owner-calendar-detail__grid">
-            <section className="br-owner-calendar-month br-card">
-              <div className="br-owner-calendar-month__header">
+          <section className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+            <section className="grid gap-4 rounded-[22px] border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.96)] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <strong>{selectedRoom.title}</strong>
-                  <p>Детальный месяц для проверки выбора и занятых дат.</p>
+                  <strong className="text-base font-semibold text-[var(--text)]">{selectedRoom.title}</strong>
+                  <p className="mt-1 text-[13px] leading-[1.5] text-[var(--text-muted)]">Детальный месяц для проверки выбора и занятых дат.</p>
                 </div>
-                <span>{formatMonthLabel(currentMonth)}</span>
+                <span className="text-sm font-medium text-[var(--text-muted)]">{formatMonthLabel(currentMonth)}</span>
               </div>
 
-              <div className="br-calendar-grid">
+              <div className="grid grid-cols-7 gap-2">
                 {weekDays.map((day) => (
-                  <div key={day} className="br-calendar-grid__head">
+                  <div key={day} className="text-center text-xs font-medium text-[var(--text-muted)]">
                     {day}
                   </div>
                 ))}
@@ -553,48 +605,60 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
                     <button
                       key={day.key}
                       type="button"
-                      className={`br-calendar-day br-owner-calendar-day${day.busyRange ? " br-calendar-day--busy" : ""}${!day.inCurrentMonth ? " br-calendar-day--outside" : ""}${day.isToday ? " br-calendar-day--today" : ""}${isSelectionStart ? " br-owner-calendar-day--selected" : ""}${isActiveBusyRange ? " br-owner-calendar-day--active" : ""}`}
+                      className={cn(
+                        "grid min-h-[72px] gap-1 rounded-[16px] border border-transparent bg-[rgb(248_250_252_/_0.85)] px-2 py-2 text-left transition-[transform,border-color,background-color] duration-[180ms] hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.28)]",
+                        day.busyRange && "border-[rgb(217_154_43_/_0.18)] bg-[rgb(217_154_43_/_0.18)]",
+                        !day.inCurrentMonth && "bg-[rgb(248_250_252_/_0.40)] text-[rgb(148_163_184)]",
+                        day.isToday && "border-[rgb(var(--color-primary-rgb)_/_0.22)]",
+                        isSelectionStart && "border-[#7c6fd6] bg-[rgb(124_111_214_/_0.16)]",
+                        isActiveBusyRange && "border-[#3b6ea8] bg-[rgb(59_110_168_/_0.18)]",
+                      )}
                       onClick={() => handleTimelineCellClick(selectedRoom, day.key)}
                     >
-                      <span className="br-owner-calendar-day__date">{day.date.getDate()}</span>
-                      <small>{day.busyRange?.label || (day.busyRange ? "Занято" : "Свободно")}</small>
+                      <span className="text-sm font-semibold text-[var(--text)]">{day.date.getDate()}</span>
+                      <small className="text-[11px] leading-[1.35] text-[var(--text-muted)]">
+                        {day.busyRange?.label || (day.busyRange ? "Занято" : "Свободно")}
+                      </small>
                     </button>
                   );
                 })}
               </div>
             </section>
 
-            <section className="br-owner-calendar-side">
-              <section className="br-owner-calendar-history br-card">
-                <div className="br-owner-calendar-history__header">
-                  <div>
-                    <strong>Занятые диапазоны</strong>
-                    <span>
-                      {selectedRoom.busyRanges.length
-                        ? "Откройте диапазон, чтобы изменить даты или комментарий."
-                        : "Пока нет занятых дат."}
-                    </span>
-                  </div>
+            <section className="grid gap-4">
+              <section className={editorCardClass}>
+                <div className="grid gap-1.5">
+                  <strong className="text-base font-semibold text-[var(--text)]">Занятые диапазоны</strong>
+                  <span className="text-[13px] leading-[1.5] text-[var(--text-muted)]">
+                    {selectedRoom.busyRanges.length
+                      ? "Откройте диапазон, чтобы изменить даты или комментарий."
+                      : "Пока нет занятых дат."}
+                  </span>
                 </div>
                 {selectedRoom.busyRanges.length ? (
-                  <div className="br-owner-calendar-history__list">
+                  <div className="grid gap-3">
                     {selectedRoom.busyRanges.map((busyRange) => (
                       <button
                         key={busyRange.id}
                         type="button"
-                        className={`br-owner-calendar-history__item${selectedBusyRangeId === busyRange.id ? " br-owner-calendar-history__item--active" : ""}`}
+                        className={cn(
+                          "grid gap-1 rounded-[18px] border px-4 py-3 text-left transition-[border-color,background-color,transform] duration-[180ms] hover:-translate-y-px",
+                          selectedBusyRangeId === busyRange.id
+                            ? "border-[rgb(var(--color-primary-rgb)_/_0.28)] bg-[rgb(var(--color-primary-rgb)_/_0.08)]"
+                            : "border-[var(--color-border)] bg-[rgb(255_255_255_/_0.92)]",
+                        )}
                         onClick={() => handleOpenBusyRange(selectedRoom.id, busyRange)}
                       >
-                        <strong>
+                        <strong className="text-sm font-semibold text-[var(--text)]">
                           {formatDateLabel(busyRange.startsOn)} - {formatDateLabel(busyRange.endsOn)}
                         </strong>
-                        <span>{busyRange.label || "Без пометки"}</span>
-                        <small>{busyRange.note || "Без комментария"}</small>
+                        <span className="text-sm text-[var(--text-muted)]">{busyRange.label || "Без пометки"}</span>
+                        <small className="text-xs text-[var(--text-muted)]">{busyRange.note || "Без комментария"}</small>
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <p className="br-owner-muted">Занятые даты еще не отмечены.</p>
+                  <p className="text-sm leading-[1.5] text-[var(--text-muted)]">Занятые даты еще не отмечены.</p>
                 )}
               </section>
 

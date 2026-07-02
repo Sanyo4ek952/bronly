@@ -1,3 +1,5 @@
+import { cn } from "@/shared/lib/cn";
+
 type ObjectStatItem = {
   label: string;
   value: string;
@@ -11,11 +13,16 @@ type ObjectStatsProps = {
 
 export function ObjectStats({ items, compact = false }: ObjectStatsProps) {
   return (
-    <div className={`br-object-stats${compact ? " br-object-stats--compact" : ""}`}>
+    <div className={cn("grid grid-cols-3 gap-3 max-[520px]:grid-cols-1", compact && "gap-2.5")}>
       {items.map((item) => (
-        <div key={item.label} className="br-object-stats__item">
-          <span>{item.label}</span>
-          <strong className={item.tone === "accent" ? "br-object-stats__value--accent" : undefined}>{item.value}</strong>
+        <div
+          key={item.label}
+          className="grid gap-1 rounded-2xl border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.74)] px-[14px] py-3"
+        >
+          <span className="text-xs leading-[1.4] text-[var(--color-muted)]">{item.label}</span>
+          <strong className={cn("text-lg font-semibold leading-[1.1] text-[var(--color-text)]", item.tone === "accent" && "text-[var(--color-primary-hover)]")}>
+            {item.value}
+          </strong>
         </div>
       ))}
     </div>

@@ -80,52 +80,59 @@ export function RoomDateRangeField({
   }
 
   return (
-    <div className={cn("br-form-field br-room-date-range", className)}>
-      <span className="br-label">{label}</span>
+    <div className={cn("grid gap-2", className)}>
+      <span className="text-[var(--label-size)] font-bold leading-[1.4] text-[var(--text-muted)]">{label}</span>
       <input type="hidden" name={startName} value={range?.startsOn ?? ""} />
       <input type="hidden" name={endName} value={range?.endsOn ?? ""} />
 
       <button
         type="button"
-        className={cn("br-room-date-range__trigger", isOpen && "br-room-date-range__trigger--open")}
+        className={cn(
+          "grid min-h-[58px] w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-[14px] text-left text-[var(--color-text)] transition-[border-color,box-shadow,transform] duration-[180ms]",
+          "hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.38)] hover:shadow-[0_12px_28px_rgb(15_23_42_/_0.08)]",
+          isOpen && "border-[rgb(var(--color-primary-rgb)_/_0.38)] shadow-[0_12px_28px_rgb(15_23_42_/_0.08)]",
+        )}
         onClick={() => setIsOpen((value) => !value)}
         aria-expanded={isOpen}
       >
-        <span className="br-room-date-range__trigger-copy">
-          <span className="br-room-date-range__trigger-title">
+        <span className="grid gap-1">
+          <span className="text-sm font-bold leading-[1.35]">
             {range ? getRangeLabel(range.startsOn, range.endsOn) : "Выбрать занятые даты"}
           </span>
-          <span className="br-room-date-range__trigger-meta">
+          <span className="text-xs leading-[1.5] text-[var(--color-muted)]">
             {range
               ? "Диапазон сохранится как занятые даты номера."
               : "Откройте календарь и выберите дату начала и дату окончания."}
           </span>
         </span>
-        <span className="br-room-date-range__trigger-icon" aria-hidden="true">
+        <span
+          className="grid h-[38px] w-[38px] place-items-center rounded-xl bg-[rgb(var(--color-primary-rgb)_/_0.08)] text-[var(--accent-strong)]"
+          aria-hidden="true"
+        >
           <AppIcon icon={CalendarDays} />
         </span>
       </button>
 
-      {description ? <span className="br-form-help">{description}</span> : null}
+      {description ? <span className="text-xs leading-[1.45] text-[var(--text-muted)]">{description}</span> : null}
 
       {isOpen ? (
-        <div className="br-room-date-range__panel">
-          <div className="br-room-date-range__header">
+        <div className="grid gap-[14px] rounded-[20px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(248_250_252_/_0.92))] p-[18px] max-[640px]:rounded-[18px] max-[640px]:p-4">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 max-[640px]:grid-cols-1">
             <div>
-              <strong>{formatMonthLabel(currentMonth)}</strong>
-              <p>{formatMonthRangeLabel(currentMonth)}</p>
+              <strong className="text-base font-semibold leading-[1.25] text-[var(--color-text)]">{formatMonthLabel(currentMonth)}</strong>
+              <p className="text-[13px] leading-[1.5] text-[var(--color-muted)]">{formatMonthRangeLabel(currentMonth)}</p>
             </div>
-            <div className="br-room-date-range__header-actions">
+            <div className="grid auto-cols-max grid-flow-col gap-2 max-[640px]:grid-flow-row">
               <IconButton
                 aria-label="Предыдущий месяц"
-                className="br-room-date-range__nav"
+                className="size-10"
                 onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}
               >
                 <AppIcon icon={ChevronLeft} />
               </IconButton>
               <IconButton
                 aria-label="Следующий месяц"
-                className="br-room-date-range__nav"
+                className="size-10"
                 onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
               >
                 <AppIcon icon={ChevronRight} />
@@ -133,13 +140,13 @@ export function RoomDateRangeField({
             </div>
           </div>
 
-          <div className="br-room-date-range__weekdays">
+          <div className="grid grid-cols-7 gap-2 text-center text-xs text-[var(--color-muted)]">
             {weekDays.map((day) => (
               <span key={day}>{day}</span>
             ))}
           </div>
 
-          <div className="br-room-date-range__grid">
+          <div className="grid grid-cols-7 gap-2">
             {monthDays.map((day) => {
               const isSelectedStart = selectionStart === day.key;
               const isActiveRange = Boolean(range && day.key >= range.startsOn && day.key <= range.endsOn);
@@ -149,11 +156,11 @@ export function RoomDateRangeField({
                   key={day.key}
                   type="button"
                   className={cn(
-                    "br-room-date-range__day",
-                    !day.inCurrentMonth && "br-room-date-range__day--outside",
-                    day.isToday && "br-room-date-range__day--today",
-                    isSelectedStart && "br-room-date-range__day--selected",
-                    isActiveRange && "br-room-date-range__day--active",
+                    "min-h-[42px] rounded-[14px] border border-transparent bg-[rgb(248_250_252_/_0.85)] text-sm font-semibold text-[var(--color-text)] transition-[transform,border-color,background-color] duration-[180ms]",
+                    "hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.28)]",
+                    !day.inCurrentMonth && "bg-[rgb(248_250_252_/_0.40)] text-[rgb(148_163_184)]",
+                    day.isToday && "border-[rgb(var(--color-primary-rgb)_/_0.22)]",
+                    (isSelectedStart || isActiveRange) && "border-[rgb(var(--color-primary-rgb)_/_0.32)] bg-[rgb(var(--color-primary-rgb)_/_0.14)] text-[rgb(var(--color-text-rgb))]",
                   )}
                   onClick={() => handleDayClick(day.key)}
                 >
@@ -163,8 +170,8 @@ export function RoomDateRangeField({
             })}
           </div>
 
-          <div className="br-room-date-range__footer">
-            <div className="br-room-date-range__summary">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 max-[640px]:grid-cols-1">
+            <div className="text-[13px] leading-[1.5] text-[var(--color-muted)]">
               {range ? (
                 <span>{getRangeLabel(range.startsOn, range.endsOn)}</span>
               ) : selectionStart ? (
@@ -173,8 +180,8 @@ export function RoomDateRangeField({
                 <span>Сначала выберите дату начала, затем дату окончания.</span>
               )}
             </div>
-            <div className="br-room-date-range__actions">
-              <Button type="button" variant="ghost" className="br-room-date-range__clear" onClick={handleClear}>
+            <div className="grid auto-cols-max grid-flow-col gap-2 max-[640px]:grid-flow-row">
+              <Button type="button" variant="ghost" className="gap-2" onClick={handleClear}>
                 <AppIcon icon={X} />
                 Очистить
               </Button>

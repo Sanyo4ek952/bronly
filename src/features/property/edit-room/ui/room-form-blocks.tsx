@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { cn } from "@/shared/lib/cn";
 import { Input } from "@/shared/ui";
 import { FormSection } from "@/shared/ui/form-section";
 
@@ -10,6 +11,14 @@ type RoomSectionProps = {
   description: string;
   children?: ReactNode;
 };
+
+const propertyFormGridClass = "grid gap-4 md:grid-cols-2";
+const compactPricingGridClass = "grid gap-4 md:grid-cols-2 xl:grid-cols-4";
+const toggleListClass = "grid gap-3";
+const toggleRowClass = cn(
+  "flex min-h-14 items-start justify-between gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-[14px] text-sm text-[var(--color-text)]",
+  "max-[640px]:min-h-[52px]",
+);
 
 export function RoomBaseFields({
   title,
@@ -26,7 +35,7 @@ export function RoomBaseFields({
 }) {
   return (
     <FormSection variant="plain" title={title} description={description}>
-      <div className="br-property-form__grid">
+      <div className={propertyFormGridClass}>
         <Input id="room-title-new" name="title" label="Название номера" defaultValue={values?.title ?? ""} />
         {standalone ? (
           <>
@@ -36,7 +45,7 @@ export function RoomBaseFields({
               name="address"
               label="Адрес"
               defaultValue={values?.address ?? ""}
-              wrapperClassName="br-form-field--span-2"
+              wrapperClassName="grid gap-1.5 md:col-span-2"
             />
           </>
         ) : null}
@@ -59,7 +68,7 @@ export function RoomPricingFields({
 }) {
   return (
     <FormSection variant="plain" title={title} description={description}>
-      <div className="br-property-form__grid br-room-form__grid--compact">
+      <div className={compactPricingGridClass}>
         <Input id="room-capacity-new" name="capacity" type="number" min="1" label="Гостей" defaultValue={values?.capacity ?? "2"} />
         <Input id="room-bedrooms-new" name="bedrooms" type="number" min="1" label="Спален" defaultValue={values?.bedrooms ?? "1"} />
         <Input id="room-area-new" name="area" type="number" min="0" label="Площадь, м2" defaultValue={values?.area ?? "0"} />
@@ -126,19 +135,19 @@ export function RoomPublishSettings({
 }) {
   return (
     <FormSection variant="plain" title={title} description={description}>
-      <div className="br-toggle-list br-room-form__toggles">
-        <label className="br-toggle">
-          <span>Номер активен</span>
+      <div className={toggleListClass}>
+        <label className={toggleRowClass}>
+          <span className="max-w-[calc(100%-42px)]">Номер активен</span>
           <input type="checkbox" name="isActive" defaultChecked={values?.isActive ?? true} />
         </label>
         {allowAgentControls ? (
           <>
-            <label className="br-toggle">
-              <span>Готов сотрудничать с агентами</span>
+            <label className={toggleRowClass}>
+              <span className="max-w-[calc(100%-42px)]">Готов сотрудничать с агентами</span>
               <input type="checkbox" name="allowAgentInquiries" defaultChecked={values?.allowAgentInquiries ?? false} />
             </label>
-            <label className="br-toggle">
-              <span>Показывать контакты владельца агенту</span>
+            <label className={toggleRowClass}>
+              <span className="max-w-[calc(100%-42px)]">Показывать контакты владельца агенту</span>
               <input
                 type="checkbox"
                 name="allowOwnerContactSharing"
