@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bronly Tailwind Migrator"
+  short_description: "Convert Bronly UI to Tailwind"
+  default_prompt: "Use $bronly-tailwind-component-migrator to rewrite this Bronly component from global CSS to Tailwind v4 utilities."
