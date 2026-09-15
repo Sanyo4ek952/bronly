@@ -43,7 +43,10 @@ function formatPrice(value: number | null) {
 
 export function PropertyCard({ item }: PropertyCardProps) {
   const [copied, setCopied] = useState(false);
-  const metaLabel = item.kind === "property" ? item.propertyType : `${item.propertyType} · Отдельный номер`;
+  const metaLabel =
+    item.kind === "property" || item.propertyType.toLocaleLowerCase("ru") === "отдельный номер"
+      ? item.propertyType
+      : `${item.propertyType} · Отдельный номер`;
 
   async function handleCopy() {
     if (!item.publicHref) return;
@@ -111,7 +114,7 @@ export function PropertyCard({ item }: PropertyCardProps) {
             </summary>
             <div className={inventoryMenuListClass}>
               {getMenuLinks(item).map((link) => (
-                <Link key={link.label} href={link.href} target={link.external ? "_blank" : undefined} rel={link.external ? "noreferrer" : undefined} className="rounded-xl px-3 py-2.5 text-sm text-[var(--text)] transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgb(var(--color-primary-rgb)_/_0.14)]">{link.label}</Link>
+                <Link key={link.label} href={link.href} aria-label={link.label} target={link.external ? "_blank" : undefined} rel={link.external ? "noreferrer" : undefined} className="rounded-xl px-3 py-2.5 text-sm text-[var(--text)] transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgb(var(--color-primary-rgb)_/_0.14)]">{link.label}</Link>
               ))}
             </div>
           </details>

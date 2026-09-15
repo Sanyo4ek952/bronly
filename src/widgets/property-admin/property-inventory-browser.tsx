@@ -173,7 +173,9 @@ export function PropertyInventoryBrowser({ data, feedback = null, feedbackTone =
         <Input id="properties-search" type="search" aria-label="Поиск по объектам и номерам" placeholder="Название, город или адрес" value={query} onChange={(event) => setQuery(event.target.value)} className="min-h-11 bg-[var(--bg)]" />
         <Select id="properties-status" aria-label="Статус" options={statusOptions} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)} className="min-h-11 bg-[var(--bg)] max-[720px]:hidden" />
         <Select id="properties-sort" aria-label="Сортировка" options={sortOptions} value={sort} onChange={(event) => setSort(event.target.value as SortMode)} className="min-h-11 bg-[var(--bg)] max-[720px]:hidden" />
-        <IconButton type="button" aria-label="Открыть фильтры" aria-expanded={isFiltersOpen} className="hidden size-11 rounded-[13px] bg-[var(--bg)] shadow-none max-[720px]:grid" onClick={() => setIsFiltersOpen(true)}><SlidersHorizontal aria-hidden="true" className="size-[18px]" strokeWidth={2} /></IconButton>
+        <span className="hidden max-[720px]:block">
+          <IconButton type="button" aria-label="Открыть фильтры" aria-expanded={isFiltersOpen} className="size-11 rounded-[13px] bg-[var(--bg)] shadow-none" onClick={() => setIsFiltersOpen(true)}><SlidersHorizontal aria-hidden="true" className="size-[18px]" strokeWidth={2} /></IconButton>
+        </span>
       </section>
 
       <div className="grid grid-cols-[minmax(0,1fr)_272px] items-start gap-[30px] max-[1180px]:grid-cols-1">
