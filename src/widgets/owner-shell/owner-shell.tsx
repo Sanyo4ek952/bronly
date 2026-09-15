@@ -141,8 +141,8 @@ export function OwnerShell({
   const isOverflowActive = mobileOverflowItems.some((item) => isItemActive(pathname, item.href));
 
   return (
-    <div className="grid w-full grid-cols-[232px_minmax(0,1fr)] items-start gap-6 pb-[var(--safe-area-bottom)] max-[1080px]:min-h-full max-[1080px]:flex-1 max-[1080px]:grid-cols-1 max-[1080px]:gap-4">
-      <aside className="sticky top-6 grid gap-5 rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.96),rgb(250_252_252_/_0.98))] px-4 py-[18px] shadow-[var(--shadow-md)] max-[1080px]:hidden">
+    <div className="grid w-full grid-cols-[224px_minmax(0,1fr)] items-start gap-[30px] pb-[var(--safe-area-bottom)] max-[1080px]:min-h-full max-[1080px]:flex-1 max-[1080px]:grid-cols-1 max-[1080px]:gap-4">
+      <aside className="sticky top-6 grid gap-5 rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,var(--surface),var(--surface-subtle))] px-4 py-[18px] shadow-[var(--shadow-md)] max-[1080px]:hidden">
         <div className="px-2.5 pb-1 pt-2">
           <BrandLogo />
         </div>
@@ -180,7 +180,7 @@ export function OwnerShell({
         </form>
       </aside>
 
-      <div className="grid min-w-0 gap-5 max-[1080px]:flex max-[1080px]:min-h-full max-[1080px]:w-full max-[1080px]:flex-1 max-[1080px]:flex-col max-[1080px]:gap-4 max-[1080px]:pb-[calc(88px+var(--safe-area-bottom))]">
+      <div className="grid min-w-0 gap-6 max-[1080px]:flex max-[1080px]:min-h-full max-[1080px]:w-full max-[1080px]:flex-1 max-[1080px]:flex-col max-[1080px]:gap-5 max-[1080px]:pb-[calc(88px+var(--safe-area-bottom))]">
         {pathname === dashboardRootPath && topbar ? <DashboardTopbar {...topbar} /> : null}
 
         {notice ? (
@@ -191,7 +191,7 @@ export function OwnerShell({
 
         {children}
 
-        <nav className="fixed inset-x-3 bottom-0 z-20 hidden grid-cols-5 gap-1 rounded-t-[18px] border border-[var(--border)] bg-[rgb(255_255_255_/_0.96)] p-2 pb-[calc(8px+var(--safe-area-bottom))] shadow-[var(--shadow-md)] backdrop-blur-xl max-[1080px]:grid max-[640px]:inset-x-2.5 max-[640px]:p-1.5 max-[640px]:pb-[calc(6px+var(--safe-area-bottom))]" aria-label="Мобильная навигация">
+        <nav className="fixed inset-x-3 bottom-0 z-20 hidden grid-cols-5 gap-1 rounded-t-[18px] border border-[var(--border)] bg-[var(--surface)] p-2 pb-[calc(8px+var(--safe-area-bottom))] shadow-[var(--shadow-md)] max-[1080px]:grid max-[640px]:inset-x-2.5 max-[640px]:p-1.5 max-[640px]:pb-[calc(6px+var(--safe-area-bottom))]" aria-label="Мобильная навигация">
           {mobilePrimaryItems.map((item) => {
             const isActive = isItemActive(pathname, item.href);
 

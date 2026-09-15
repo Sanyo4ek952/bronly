@@ -62,6 +62,7 @@ export function buildDashboardShellData({
     roleLabel:
       role === "agent" ? "Агент" : hasAdminRole ? "Администратор" : hasOwnerRole ? "Владелец" : "Владелец",
     topbar: {
+      eyebrow: role === "agent" ? "КАБИНЕТ АГЕНТА" : "КАБИНЕТ ВЛАДЕЛЬЦА",
       title: `Добро пожаловать, ${displayName}`,
       description:
         role === "agent"

@@ -82,7 +82,7 @@ export function OwnerDashboardOnboarding({ onboarding, emptyStates }: OwnerDashb
             const Icon = emptyStateIcons[state.iconId];
 
             return (
-              <Panel key={state.id} as="article" className="grid justify-items-start gap-3.5 p-5" surface="raised">
+              <Panel key={state.id} as="article" className="grid justify-items-start gap-3.5 border-0 p-5 sm:p-6" surface="subtle">
                 <div className="grid size-14 place-items-center rounded-[18px] bg-[rgb(var(--color-primary-rgb)_/_0.10)] text-[var(--color-primary-hover)]" aria-hidden="true">
                   <AppIcon icon={Icon} />
                 </div>
