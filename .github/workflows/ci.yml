@@ -60,5 +60,8 @@ jobs:
       - name: Type-check
         run: npx --no-install tsc --noEmit --incremental false
 
+      - name: Discover Playwright scenarios
+        run: npm run test:e2e:list
+
       - name: Build production application
         run: npm run build

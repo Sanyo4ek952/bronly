@@ -1,31 +1,15 @@
-import { Inbox, LayoutDashboard, MonitorSmartphone, Smartphone } from "lucide-react";
-
 import { cn } from "@/shared/lib/cn";
-import { AppIcon, ButtonLink, Panel, SectionSubtitle, SectionTitle, type AppIconComponent } from "@/shared/ui";
+import { BrandLogo, ButtonLink, Panel, SectionTitle } from "@/shared/ui";
 import { SiteHeader } from "@/widgets/site-header";
 
+const container = "mx-auto w-[calc(100%-48px)] max-w-[1240px]";
+const heading = "!text-[clamp(30px,3.2vw,44px)] font-medium !leading-[1.15]";
+
 const capabilityCards = [
-  {
-    icon: MonitorSmartphone,
-    title: "Персональная страница",
-    text: "Покажите объект, номера, цены и удобства по одной ссылке без общего каталога и без конкурентов рядом.",
-  },
-  {
-    icon: Inbox,
-    title: "Заявки без посредников",
-    text: "Гость оставляет запрос на проживание по конкретному номеру, а владелец или агент связывается с ним напрямую.",
-  },
-  {
-    icon: LayoutDashboard,
-    title: "Один кабинет",
-    text: "Календарь занятости, заявки, подписка и управление объектами собраны в одном mobile-first интерфейсе.",
-  },
-  {
-    icon: Smartphone,
-    title: "PWA на телефоне",
-    text: "Сервис работает как приложение на смартфоне: быстрый доступ, push-уведомления и удобная работа с телефона.",
-  },
-] satisfies Array<{ icon: AppIconComponent; title: string; text: string }>;
+  { title: "Всё по одной ссылке", text: "Фото, номера, цены и удобства — на вашей персональной странице." },
+  { title: "Свободные даты видны", text: "Ведите календарь занятости. Гости смогут выбрать подходящие даты." },
+  { title: "Заявки приходят к вам", text: "Гость выбирает номер и оставляет запрос. Вы связываетесь с ним напрямую." },
+];
 
 const workflowSteps = [
   "Создайте объект или отдельный номер.",
@@ -80,192 +64,149 @@ const faqItems = [
   },
 ];
 
+
 export function LandingPage() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgb(var(--color-primary-rgb)_/_0.08),transparent_34%),var(--color-page)] pb-[var(--safe-area-bottom)]">
-      <div className="mx-auto w-[calc(100%-40px)] max-w-[1180px] max-[640px]:w-[calc(100%-32px)]">
-        <SiteHeader />
-      </div>
+    <main className="min-h-screen bg-[var(--color-page)] text-[var(--color-text)] pb-[var(--safe-area-bottom)]">
+      <div className={cn(container, "[&_a[href='/register']]:!text-white min-[901px]:[&_header>button]:!hidden")}><SiteHeader /></div>
 
-      <section className="px-0 pb-14 pt-6 max-[640px]:pb-11 max-[640px]:pt-[18px]">
-        <div className="mx-auto grid w-[calc(100%-40px)] max-w-[1180px] grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)] items-center gap-14 max-[900px]:grid-cols-1 max-[640px]:w-[calc(100%-32px)] max-[640px]:gap-8">
-          <div>
-            <span className="inline-flex min-h-[30px] items-center gap-2.5 rounded-full bg-[var(--color-primary-soft)] px-4 py-1 text-[13px] font-bold text-[var(--color-primary-hover)] before:size-[9px] before:rounded-full before:bg-[var(--color-primary)] before:content-['']">mobile-first PWA для владельцев жилья и агентов</span>
-            <h1 className="mt-[26px] max-w-[650px] text-[clamp(42px,5vw,68px)] font-extrabold leading-[1.04] max-[640px]:text-[clamp(36px,12vw,52px)]">
-              Персональная страница
-              <br />
-              для ваших <span className="text-[var(--color-primary-hover)]">номеров и заявок</span>
-            </h1>
-            <p className="mt-[26px] max-w-[590px] text-lg leading-[1.65] text-[var(--color-muted)] max-[640px]:text-base">
-              Bronly помогает владельцам жилья и агентам показать варианты проживания, вести календарь занятости и получать
-              заявки по прямой ссылке без общего каталога.
+      <section aria-labelledby="landing-title" className="py-10 sm:py-16 lg:pb-20">
+        <div className={cn(container, "grid items-center gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-16")}>
+          <div className="grid min-w-0 justify-items-start gap-6 lg:gap-7">
+            <p className="text-[11px] font-bold tracking-[0.1em] text-[var(--color-primary-hover)] sm:text-xs">
+              ДЛЯ ВЛАДЕЛЬЦЕВ ЖИЛЬЯ И АГЕНТОВ
             </p>
-            <div className="mt-9 flex items-center gap-[18px] max-[520px]:grid">
-              <ButtonLink href="/register">
-                Попробовать бесплатно
-              </ButtonLink>
-              <ButtonLink href="#capabilities" variant="secondary">
-                Посмотреть возможности
-              </ButtonLink>
-            </div>
-
-            <div className="mt-9 grid grid-cols-3 gap-3.5 max-[900px]:grid-cols-1">
-              <div className="grid gap-1.5 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.72)] px-[18px] py-4 shadow-[var(--shadow-sm)]">
-                <strong>Без оплаты проживания</strong>
-                <span className="text-[13px] leading-[1.5] text-[var(--color-muted)]">Сервис не принимает деньги за проживание и не обещает подтверждение от своего имени</span>
-              </div>
-              <div className="grid gap-1.5 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.72)] px-[18px] py-4 shadow-[var(--shadow-sm)]">
-                <strong>Быстрый запуск</strong>
-                <span className="text-[13px] leading-[1.5] text-[var(--color-muted)]">Объект, номер, ссылка и первая заявка без перегруженного кабинета</span>
-              </div>
-              <div className="grid gap-1.5 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.72)] px-[18px] py-4 shadow-[var(--shadow-sm)]">
-                <strong>Удобно с телефона</strong>
-                <span className="text-[13px] leading-[1.5] text-[var(--color-muted)]">PWA, уведомления и сценарии, рассчитанные на mobile-first работу</span>
-              </div>
-            </div>
+            <h1 id="landing-title" className="text-[clamp(40px,5vw,68px)] font-medium leading-[1.08] tracking-[-0.045em]">
+              Ваше жильё.<br />Ваша ссылка.<br />Ваши гости.
+            </h1>
+            <p className="max-w-[520px] text-base leading-relaxed text-[var(--color-muted)] sm:text-lg">
+              Соберите номера, цены и свободные даты на одной странице. Отправляйте ссылку гостям и получайте заявки напрямую.
+            </p>
+            <ButtonLink href="/register" className="min-h-12 px-6 !text-white">Создать свою страницу</ButtonLink>
+            <p className="text-xs text-[var(--color-muted)]">Начните бесплатно · Работает с телефона</p>
           </div>
 
-          <Panel className="relative min-h-[540px] overflow-hidden bg-[radial-gradient(circle_at_24%_18%,rgb(255_255_255_/_0.95)_0,transparent_36%),linear-gradient(180deg,#d9eef0,#f7fbfb_56%,#f0f7f6)] p-7 max-[640px]:min-h-[500px] max-[640px]:p-4" padding="none">
-            <div className="absolute inset-[22px] rounded-[28px] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.10),rgb(17_29_27_/_0.04)),linear-gradient(135deg,#d0e6eb_0%,#a8d4de_28%,#8cc3d2_42%,#dae9df_62%,#c6d0bf_100%)]" />
-            <div className="absolute bottom-[26px] right-11 z-[1] grid w-[min(100%,320px)] gap-[18px] rounded-[34px] border border-[#d5dfdc] bg-[rgb(255_255_255_/_0.92)] px-4 pb-5 pt-[18px] shadow-[var(--shadow-lg)] backdrop-blur-xl max-[640px]:right-1/2 max-[640px]:w-[calc(100%-56px)] max-[640px]:translate-x-1/2">
-              <div className="flex justify-center gap-2">
-                <span className="size-2 rounded-full bg-[#d4dcda]" />
-                <span className="size-2 rounded-full bg-[#d4dcda]" />
+          <figure className="m-0 grid min-w-0 gap-4 rounded-[var(--radius-2xl)] bg-[var(--color-primary-soft)] p-4 sm:p-8">
+            <p className="text-[10px] font-bold tracking-[0.08em] text-[var(--color-primary-hover)] sm:text-xs">ВАША ПЕРСОНАЛЬНАЯ СТРАНИЦА</p>
+            <Panel as="div" padding="lg" className="grid min-w-0 gap-4">
+              {/* Exact vector geometry from the Figma creation script, recolored with project tokens. */}
+              <svg viewBox="0 0 502 210" width="502" height="210" aria-hidden="true" className="h-auto w-full overflow-hidden rounded-[var(--radius-lg)]">
+                <rect width="502" height="210" fill="var(--color-surface-soft-2)" />
+                <circle cx="405" cy="48" r="27" fill="var(--color-surface-soft)" />
+                <path d="M0 110Q130 70 250 115T502 98V210H0Z" fill="var(--color-primary-soft)" />
+                <path d="M0 150Q160 125 320 154T502 132V210H0Z" fill="var(--color-primary)" />
+                <path d="M73 107L206 43L352 100V175H73Z" fill="var(--color-bg)" />
+                <path d="M55 110L205 33L367 96L355 110L205 53L70 125Z" fill="var(--color-primary-hover)" />
+                <path d="M243 108H335V175H243Z" fill="var(--color-border)" />
+                <path d="M96 119H150V158H96ZM166 98H216V175H166ZM259 119H313V151H259Z" fill="var(--color-primary)" />
+                <path d="M111 119V158M181 98V175M274 119V151" stroke="var(--color-bg)" strokeWidth="3" />
+                <path d="M40 182H380L449 210H0Z" fill="var(--color-border)" />
+                <path d="M313 183H466L491 205H333Z" fill="var(--color-room-ocean)" />
+                <path d="M437 175V95M437 123L418 105M437 113L456 89" stroke="var(--color-primary-hover)" strokeWidth="6" />
+                <circle cx="433" cy="79" r="31" fill="var(--color-primary)" />
+                <circle cx="456" cy="103" r="24" fill="var(--color-primary)" />
+              </svg>
+              <div className="grid gap-1">
+                <p className="text-2xl font-bold">Вилла у моря</p>
+                <p className="text-xs leading-relaxed text-[var(--color-muted)]">Геленджик · Номера для вашего отдыха</p>
               </div>
-              <div className="overflow-hidden rounded-[18px] border border-[var(--color-border)] bg-[var(--color-bg)]">
-                <div className="aspect-[1.35] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.14),rgb(17_29_27_/_0.08)),linear-gradient(135deg,#b9d8df_0%,#89bdd0_38%,#d7e5d6_78%,#c8b99f_100%)]" />
-                <div className="grid gap-1 p-3.5">
-                  <strong className="text-lg">Вилла у моря</strong>
-                  <span className="text-[13px] leading-[1.5] text-[var(--color-muted)]">Геленджик, Набережная, 15</span>
+              <div className="flex flex-wrap items-start justify-between gap-4 rounded-[var(--radius-md)] bg-[var(--color-surface-soft)] p-4">
+                <div className="grid gap-1">
+                  <p className="text-sm font-semibold">Двухместный с террасой</p>
+                  <p className="text-xs text-[var(--color-muted)]">2 гостя · Wi-Fi · Вид на море</p>
                 </div>
+                <p className="text-sm font-bold text-[var(--color-primary-hover)]">от 4 500 ₽<span className="block text-xs font-normal">за сутки</span></p>
               </div>
-              <div className="flex flex-wrap gap-2 text-xs font-bold text-[var(--color-primary-hover)] [&>span]:rounded-full [&>span]:bg-[var(--color-primary-pale)] [&>span]:px-2.5 [&>span]:py-[7px]">
-                <span>Wi-Fi</span><span>2 гостя</span><span>Вид на море</span>
-              </div>
-              <span className="inline-flex min-h-12 w-full items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-primary)] px-[22px] text-sm font-bold text-white shadow-[0_10px_22px_rgb(var(--color-primary-rgb)_/_0.18)]">Оставить заявку</span>
-              <p className="text-[13px] leading-[1.5] text-[var(--color-muted)]">Гость видит понятный сценарий и оставляет запрос на проживание по конкретному номеру.</p>
-            </div>
-          </Panel>
-        </div>
-      </section>
-
-      <section id="capabilities" className="py-14 sm:py-[72px]">
-        <div className="mx-auto w-[calc(100%-40px)] max-w-[1180px] max-[640px]:w-[calc(100%-32px)]">
-          <div className="grid gap-3">
-            <SectionTitle>Возможности Bronly</SectionTitle>
-            <SectionSubtitle>Стартовый набор для персональной страницы владельца или агентской витрины в рамках MVP.</SectionSubtitle>
-          </div>
-          <div className="mt-[42px] grid grid-cols-4 gap-[18px] max-[900px]:grid-cols-2 max-[560px]:grid-cols-1">
-            {capabilityCards.map((card) => (
-              <article key={card.title} className="min-h-[148px] rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-[22px] shadow-[var(--shadow-sm)]">
-                <div className="mb-4 grid size-[34px] place-items-center rounded-[10px] bg-[var(--color-primary-soft)] text-[var(--color-primary)]" aria-hidden="true">
-                  <AppIcon icon={card.icon} className="size-[18px]" />
-                </div>
-                <h3 className="text-[15px] font-extrabold leading-[1.3]">{card.title}</h3>
-                <p className="mt-2 text-[13px] leading-[1.55] text-[var(--color-muted)]">{card.text}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="workflow" className="bg-[linear-gradient(180deg,rgb(255_255_255_/_0),rgb(255_255_255_/_0.64))] py-14 sm:py-[72px]">
-        <div className="mx-auto w-[calc(100%-40px)] max-w-[1180px] max-[640px]:w-[calc(100%-32px)]">
-          <div className="grid grid-cols-[minmax(0,1fr)_360px] items-start gap-7 max-[900px]:grid-cols-1">
-            <div>
-              <div className="grid gap-3">
-                <SectionTitle>Как это работает</SectionTitle>
-                <SectionSubtitle>Фокус на простом сценарии: объект, номер, ссылка, заявка и календарь занятости.</SectionSubtitle>
-              </div>
-              <div className="mt-7 grid gap-4">
-                {workflowSteps.map((step, index) => (
-                  <div key={step} className="grid grid-cols-[52px_1fr] items-center gap-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg)] p-[18px]">
-                    <div className="grid size-[52px] place-items-center rounded-2xl bg-[var(--color-primary-soft)] font-extrabold text-[var(--color-primary-hover)]">{index + 1}</div>
-                    <p className="text-[15px] leading-[1.55]">{step}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <Panel as="aside" className="p-6" padding="none">
-              <div className="grid gap-2">
-                <strong>Кабинет владельца</strong>
-                <span className="text-[13px] text-[var(--color-muted)]">Обзор за 30 дней</span>
-              </div>
-              <div className="mt-[22px] grid grid-cols-3 gap-3">
-                <div className="grid gap-1.5 rounded-[var(--radius-lg)] bg-[var(--color-surface-soft)] px-4 py-[18px]">
-                  <strong className="text-2xl">2</strong>
-                  <span className="text-[13px] text-[var(--color-muted)]">объекта</span>
-                </div>
-                <div className="grid gap-1.5 rounded-[var(--radius-lg)] bg-[var(--color-surface-soft)] px-4 py-[18px]">
-                  <strong className="text-2xl">7</strong>
-                  <span className="text-[13px] text-[var(--color-muted)]">номеров</span>
-                </div>
-                <div className="grid gap-1.5 rounded-[var(--radius-lg)] bg-[var(--color-surface-soft)] px-4 py-[18px]">
-                  <strong className="text-2xl">18</strong>
-                  <span className="text-[13px] text-[var(--color-muted)]">новых заявок</span>
-                </div>
-              </div>
-              <div className="mt-[22px] grid gap-2 [&>div]:grid [&>div]:gap-1 [&>div]:border-t [&>div]:border-[var(--color-border)] [&>div]:py-3.5 [&_span]:text-[13px] [&_span]:text-[var(--color-muted)]">
-                <div><span>Публичная ссылка</span>
-                  <strong>bronly.app/p/ivanov-villa</strong>
-                </div>
-                <div>
-                  <span>Статус</span>
-                  <strong>Календарь и заявки под рукой</strong>
-                </div>
-              </div>
+              <span className="inline-flex min-h-12 items-center justify-center justify-self-start rounded-[var(--radius-md)] bg-[var(--accent)] px-6 text-sm font-bold text-white">Оставить заявку</span>
             </Panel>
+            <figcaption className="text-[11px] leading-relaxed text-[var(--color-muted)]">Пример страницы · данные для иллюстрации</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section id="capabilities" aria-labelledby="capabilities-title" className="scroll-mt-6 bg-[var(--color-surface)] py-14 sm:py-20">
+        <div className={container}>
+          <SectionTitle id="capabilities-title" className={heading}>Меньше переписки.<br />Больше ясности.</SectionTitle>
+          <div className="mt-9 grid gap-6 md:grid-cols-3">
+            {capabilityCards.map((card, index) => (
+              <Panel key={card.title} as="article" surface="subtle" padding="lg" className="grid content-start gap-5 !border-0">
+                <span className="text-xs font-bold text-[var(--color-primary-hover)]">0{index + 1}</span>
+                <h3 className="text-xl font-semibold tracking-[-0.02em]">{card.title}</h3>
+                <p className="text-[15px] leading-relaxed text-[var(--color-muted)]">{card.text}</p>
+              </Panel>
+            ))}
           </div>
         </div>
       </section>
 
-      <section id="pricing" className="py-14 sm:py-[72px]">
-        <div className="mx-auto w-[calc(100%-40px)] max-w-[1180px] max-[640px]:w-[calc(100%-32px)]">
-          <div className="grid gap-3">
-            <SectionTitle>Простые тарифы</SectionTitle>
-            <SectionSubtitle>Подписка на сервис без оплаты проживания и без обещаний гарантированного подтверждения.</SectionSubtitle>
+      <section id="workflow" aria-labelledby="workflow-title" className="scroll-mt-6 py-14 sm:py-20">
+        <div className={cn(container, "grid gap-9 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20")}>
+          <div className="grid content-start gap-6">
+            <SectionTitle id="workflow-title" className={heading}>От первого номера<br />до первой заявки.</SectionTitle>
+            <p className="text-base leading-relaxed text-[var(--color-muted)]">Начните с того, что уже есть.<br />Управлять страницей удобно с телефона.</p>
           </div>
-          <div className="mt-10 grid grid-cols-3 gap-[18px] max-[900px]:grid-cols-1">
+          <ol className="m-0 grid list-none gap-6 p-0">
+            {workflowSteps.map((step, index) => (
+              <li key={step} className="flex items-baseline gap-5">
+                <span className="text-sm font-bold text-[var(--color-primary-hover)]" aria-hidden="true">0{index + 1}</span>
+                <p className="text-base font-semibold leading-relaxed sm:text-lg">{step}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section id="pricing" aria-labelledby="pricing-title" className="scroll-mt-6 bg-[var(--color-surface-soft-2)] py-14 sm:py-20">
+        <div className={container}>
+          <SectionTitle id="pricing-title" className={heading}>Выберите свой масштаб</SectionTitle>
+          <p className="!mt-5 text-base leading-relaxed text-[var(--color-muted)]">Подписка на Bronly — для вашей страницы, календаря и заявок.</p>
+          <div className="mt-9 grid gap-6 lg:grid-cols-3">
             {pricingCards.map((card) => (
-              <article key={card.name} className={cn("relative grid gap-4 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-bg)] p-[26px] shadow-[var(--shadow-sm)]", card.featured && "border-[rgb(var(--color-primary-rgb)_/_0.25)] shadow-[0_18px_34px_rgb(var(--color-primary-rgb)_/_0.12)]")}>
-                {card.featured ? <span className="absolute -top-3 left-6 rounded-full bg-[#ffd7a1] px-2.5 py-1.5 text-xs font-bold text-[#85501a]">Популярный</span> : null}
-                <h3 className="text-[22px]">{card.name}</h3>
-                <div className="flex items-baseline gap-1.5 text-[40px] font-extrabold">
-                  {card.price}
-                  <span className="text-[15px] font-semibold text-[var(--color-muted)]">/ мес.</span>
-                </div>
-                <p className="leading-[1.6] text-[var(--color-muted)]">{card.text}</p>
-                <ul className="grid gap-2.5">
-                  {card.features.map((feature) => (
-                    <li key={feature} className="relative pl-5 text-sm leading-[1.6] text-[var(--color-muted)] before:absolute before:left-0 before:top-2 before:size-2 before:rounded-full before:bg-[var(--color-primary)]">{feature}</li>
-                  ))}
+              <Panel key={card.name} as="article" padding="lg" className="flex min-w-0 flex-col gap-6 !border-0"
+                style={card.featured ? { background: "var(--color-primary-hover)", color: "var(--color-bg)" } : undefined}>
+                <h3 className="text-[22px] font-semibold">{card.name}</h3>
+                <p className="flex flex-wrap items-baseline gap-2 text-4xl font-medium tracking-[-0.03em]">
+                  {card.price}<span className="text-sm font-normal tracking-normal">/ мес.</span>
+                </p>
+                <p className={cn("text-[15px] leading-relaxed", !card.featured && "text-[var(--color-muted)]")}>{card.text}</p>
+                <ul className="grid gap-2 text-sm leading-relaxed">
+                  {card.features.map((feature) => <li key={feature}>{feature}</li>)}
                 </ul>
-                <ButtonLink href="/register" fullWidth>
-                  {card.cta}
-                </ButtonLink>
+                <ButtonLink href="/register" variant={card.featured ? "secondary" : "primary"} className={cn("mt-auto min-h-12 self-start px-6", card.featured ? "!text-[var(--text)]" : "!text-white")}>{card.cta}</ButtonLink>
+              </Panel>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" aria-labelledby="faq-title" className="scroll-mt-6 bg-[var(--color-surface)] py-14 sm:py-20">
+        <div className={cn(container, "grid gap-9 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] lg:gap-20")}>
+          <SectionTitle id="faq-title" className={heading}>Несколько<br />важных ответов</SectionTitle>
+          <div className="grid gap-7">
+            {faqItems.map((item) => (
+              <article key={item.question} className="grid gap-2">
+                <h3 className="text-base font-semibold">{item.question}</h3>
+                <p className="text-sm leading-relaxed text-[var(--color-muted)]">{item.answer}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="faq" className="bg-[linear-gradient(180deg,rgb(255_255_255_/_0),rgb(255_255_255_/_0.64))] py-14 sm:py-[72px]">
-        <div className="mx-auto w-[calc(100%-40px)] max-w-[1180px] max-[640px]:w-[calc(100%-32px)]">
-          <div className="grid gap-3">
-            <SectionTitle>Частые вопросы</SectionTitle>
-            <SectionSubtitle>Ответы соответствуют границам MVP: Bronly помогает получать заявки, но не заменяет прямое общение с гостем.</SectionSubtitle>
-          </div>
-          <div className="mt-[34px] grid gap-3.5">
-            {faqItems.map((item) => (
-              <article key={item.question} className="grid gap-2.5 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg)] px-[22px] py-5">
-                <strong className="text-base">{item.question}</strong>
-                <p className="text-sm leading-[1.6] text-[var(--color-muted)]">{item.answer}</p>
-              </article>
-            ))}
-          </div>
+      <section aria-labelledby="start-title" className="bg-[var(--color-primary-hover)] py-14 text-[var(--color-bg)] sm:py-16">
+        <div className={cn(container, "grid justify-items-start gap-6")}>
+          <SectionTitle id="start-title" className={heading}>Ваше гостеприимство.<br />В одном месте.</SectionTitle>
+          <ButtonLink href="/register" variant="secondary" className="min-h-12 px-6 !text-[var(--text)]">Создать свою страницу</ButtonLink>
+          <p className="text-sm leading-relaxed">Номера, календарь занятости и заявки — с вами на телефоне.</p>
         </div>
       </section>
+      <footer className={cn(container, "flex flex-col items-start justify-between gap-6 py-10 md:flex-row")}>
+        <BrandLogo />
+        <p className="max-w-[620px] text-xs leading-relaxed text-[var(--color-muted)]">
+          Сервис персональных страниц для владельцев жилья и агентов.<br />
+          Bronly не принимает оплату за проживание и не гарантирует проживание.
+        </p>
+      </footer>
     </main>
   );
 }

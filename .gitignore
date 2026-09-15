@@ -1,5 +1,8 @@
 .env
 .env.local
+.env.e2e.local
+playwright-report/
+test-results/
 .env.*.local
 
 node_modules/
