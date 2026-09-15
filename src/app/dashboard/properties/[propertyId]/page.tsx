@@ -77,7 +77,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
         title={property.title}
         description={`${[property.city, property.address].filter(Boolean).join(", ")} · ${property.propertyType}`}
         actions={property.ownerPublicSlug ? <CopyLinkButton path={publicHref} /> : null}
-        notice={notice ? <InlineNotice>{notice}</InlineNotice> : null}
+        notice={notice ? <InlineNotice tone={error ? "error" : "default"}>{notice}</InlineNotice> : null}
       />
 
       <ObjectSummaryCard

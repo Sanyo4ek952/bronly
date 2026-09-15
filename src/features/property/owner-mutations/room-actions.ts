@@ -9,7 +9,12 @@ import { getCheckbox, getInteger, getNumber, getString } from "@/shared/lib/form
 
 import { mapActionError } from "./lib/errors";
 import { replaceRoomAmenities } from "./lib/labels";
-import { requireOwnerActiveRoomSlotAccess, requireOwnerMutationAccess } from "./lib/owner-access";
+import {
+  requireOwnedProperty,
+  requireOwnedRoom,
+  requireOwnerActiveRoomSlotAccess,
+  requireOwnerMutationAccess,
+} from "./lib/owner-access";
 import {
   buildPropertyPath,
   buildPropertyPathWithState,
@@ -101,6 +106,10 @@ export async function createOwnerRoom(formData: FormData) {
     redirect(`${buildPropertyRoomCreatePath(propertyId)}?error=${roomPhotoError}`);
   }
 
+  if (propertyId) {
+    await requireOwnedProperty(profile.id, propertyId, buildPropertyRoomCreatePath(propertyId));
+  }
+
   if (isActive) {
     await requireOwnerActiveRoomSlotAccess(propertyId ? buildPropertyRoomCreatePath(propertyId) : buildStandaloneRoomCreatePath());
   }
@@ -134,8 +143,8 @@ export async function createOwnerRoom(formData: FormData) {
     redirect(`${buildPropertyRoomCreatePath(propertyId)}?error=${mapActionError(error)}`);
   }
 
-  await replaceRoomAmenities(data.id as string, getString(formData, "amenities"));
-  const photoUploadError = await uploadRoomPhotoFiles(supabase, profile.id, data.id as string, roomPhotoFiles);
+  await replaceRoomAmenities(data.id, getString(formData, "amenities"));
+  const photoUploadError = await uploadRoomPhotoFiles(supabase, profile.id, data.id, roomPhotoFiles);
 
   const initialBusyRange = getNormalizedBusyRange(formData);
 
@@ -157,7 +166,7 @@ export async function createOwnerRoom(formData: FormData) {
   revalidatePath("/dashboard/rooms");
 
   if (!propertyId) {
-    redirect(`${buildStandaloneRoomPath(data.id as string)}&success=${photoUploadError ? "room-created-photo-upload" : "room-created"}`);
+    redirect(`${buildStandaloneRoomPath(data.id)}&success=${photoUploadError ? "room-created-photo-upload" : "room-created"}`);
   }
 
   revalidatePath(buildPropertyPath(propertyId));
@@ -168,13 +177,20 @@ export async function updateOwnerRoom(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
   const roomId = getString(formData, "roomId");
   const isStandalone = !propertyId;
-  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId));
+  const profile = await requireOwnerMutationAccess(
+    propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId),
+  );
   const title = getString(formData, "title");
   const nextIsActive = getCheckbox(formData, "isActive");
   const fallbackPath = propertyId ? buildPropertyRoomSettingsPath(propertyId, roomId) : buildStandaloneRoomSettingsPath(roomId);
 
   if (!roomId || !title || (!propertyId && !validateStandaloneRoom(formData))) {
     redirect(buildRoomRedirectTarget(formData, fallbackPath, { error: "validation" }));
+  }
+
+  await requireOwnedRoom(profile.id, roomId, propertyId || null, fallbackPath);
+  if (propertyId) {
+    await requireOwnedProperty(profile.id, propertyId, fallbackPath);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -223,7 +239,8 @@ export async function updateOwnerRoom(formData: FormData) {
           }),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", roomId);
+    .eq("id", roomId)
+    .eq("owner_id", profile.id);
 
   if (error) {
     redirect(buildRoomRedirectTarget(formData, fallbackPath, { error: mapActionError(error) }));
@@ -249,7 +266,9 @@ export async function updateOwnerRoom(formData: FormData) {
 export async function deleteOwnerRoom(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
   const roomId = getString(formData, "roomId");
-  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId));
+  const profile = await requireOwnerMutationAccess(
+    propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId),
+  );
   const confirmation = getString(formData, "confirmation");
 
   if (!roomId || confirmation !== "DELETE") {
@@ -260,8 +279,11 @@ export async function deleteOwnerRoom(formData: FormData) {
     redirect(buildPropertyPathWithState(propertyId, "rooms", { error: "delete-confirmation" }));
   }
 
+  const redirectPath = propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId);
+  await requireOwnedRoom(profile.id, roomId, propertyId || null, redirectPath);
+
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("rooms").delete().eq("id", roomId);
+  const { error } = await supabase.from("rooms").delete().eq("id", roomId).eq("owner_id", profile.id);
 
   if (error) {
     if (!propertyId) {

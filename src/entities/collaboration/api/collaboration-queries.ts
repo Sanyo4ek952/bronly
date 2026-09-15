@@ -9,9 +9,11 @@ import type {
   OwnerIncomingAgentProposalItem,
 } from "@/entities/collaboration/model/types";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
+import { logServerConfigurationError, logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 import { createSupabaseServerClient, getCurrentAuthProfile, type AuthProfile } from "@/shared/api/supabase/server-auth";
 import type { SupabaseRoomAgentMarkupRow } from "@/shared/api/supabase/types";
 import { buildAgentPublicPath } from "@/shared/lib/public-links";
+import { canAccessAgentMutations, canAccessOwnerMutations } from "@/shared/api/supabase/access-rules";
 
 import { getActiveAgentPropertyIds, getActiveAgentRoomIds } from "./collaboration-access";
 import { getFallbackSummary } from "./collaboration-formatters";
@@ -27,18 +29,18 @@ import {
 import type { AgentPropertyLinkListRow, AgentRoomLinkListRow, CollaborationRoomRow, ProfileContactRow, PropertyLookupRow } from "./collaboration-types";
 
 export async function getAgentDashboardSummary(profile: AuthProfile): Promise<AgentDashboardSummary> {
+  if (!canAccessAgentMutations(profile)) {
+    return getFallbackSummary(profile);
+  }
+
   if (!canUseSupabase()) {
+    logServerConfigurationError("agent_dashboard_supabase_not_configured");
     return getFallbackSummary(profile);
   }
 
   try {
     const supabase = createSupabaseAdminClient();
-    const [
-      { count: activePropertyCollaborations },
-      { count: activeRoomCollaborations },
-      { count: incomingRequests },
-      { count: completedDeals },
-    ] = await Promise.all([
+    const results = await Promise.all([
       supabase
         .from("agent_property_links")
         .select("*", { count: "exact", head: true })
@@ -61,14 +63,29 @@ export async function getAgentDashboardSummary(profile: AuthProfile): Promise<Ag
         .eq("status", "completed"),
     ]);
 
+    for (const result of results) {
+      if (result.error) {
+        throw result.error;
+      }
+    }
+
+    const [
+      { count: activePropertyCollaborations },
+      { count: activeRoomCollaborations },
+      { count: incomingRequests },
+      { count: completedDeals },
+    ] = results;
+
     return {
+      loadState: "ready",
       activeCollaborations: (activePropertyCollaborations ?? 0) + (activeRoomCollaborations ?? 0),
       incomingRequests: incomingRequests ?? 0,
       completedDeals: completedDeals ?? 0,
       publicLinkLabel: buildAgentPublicPath(profile.agentPublicId) ?? "",
       publicLinkHref: buildAgentPublicPath(profile.agentPublicId),
     };
-  } catch {
+  } catch (error) {
+    logServerDataError("agent_dashboard_load_failed", error);
     return getFallbackSummary(profile);
   }
 }
@@ -76,9 +93,14 @@ export async function getAgentDashboardSummary(profile: AuthProfile): Promise<Ag
 async function buildAgentCollaborationItems(
   profile: AuthProfile,
   options?: { status?: "active" },
-): Promise<AgentCollaborationItem[]> {
+): Promise<AgentCollaborationItem[] | null> {
+  if (!canAccessAgentMutations(profile)) {
+    return null;
+  }
+
   if (!canUseSupabase()) {
-    return [];
+    logServerConfigurationError("agent_collaborations_supabase_not_configured");
+    return null;
   }
 
   const statusFilter = options?.status;
@@ -100,10 +122,14 @@ async function buildAgentCollaborationItems(
       .eq("agent_id", profile.id)
       .order("created_at", { ascending: false });
 
-    const [{ data: propertyLinks }, { data: roomLinks }] = await Promise.all([
+    const [propertyLinksResult, roomLinksResult] = await Promise.all([
       statusFilter ? propertyQuery.eq("status", statusFilter) : propertyQuery,
       statusFilter ? roomQuery.eq("status", statusFilter) : roomQuery,
     ]);
+    if (propertyLinksResult.error) throw propertyLinksResult.error;
+    if (roomLinksResult.error) throw roomLinksResult.error;
+    const propertyLinks = propertyLinksResult.data;
+    const roomLinks = roomLinksResult.data;
 
     const safePropertyLinks = (propertyLinks ?? []) as AgentPropertyLinkListRow[];
     const safeRoomLinks = (roomLinks ?? []) as AgentRoomLinkListRow[];
@@ -114,40 +140,40 @@ async function buildAgentCollaborationItems(
       ? safeRoomLinks.map((item) => item.room_id)
       : safeRoomLinks.filter((item) => item.status === "active").map((item) => item.room_id);
 
-    const [propertyRoomRows, standaloneRoomRows] = await Promise.all([
+    const [propertyRoomResult, standaloneRoomResult] = await Promise.all([
       activePropertyIds.length
-        ? (
-            await supabase
-              .from("rooms")
-              .select("id, property_id, title, subtitle, price_per_night")
-              .in("property_id", activePropertyIds)
-              .eq("is_active", true)
-              .order("title", { ascending: true })
-          ).data ?? []
-        : [],
+        ? supabase
+            .from("rooms")
+            .select("id, property_id, title, subtitle, price_per_night")
+            .in("property_id", activePropertyIds)
+            .eq("is_active", true)
+            .order("title", { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
       activeStandaloneRoomIds.length
-        ? (
-            await supabase
-              .from("rooms")
-              .select("id, property_id, title, subtitle, price_per_night")
-              .in("id", activeStandaloneRoomIds)
-              .eq("is_active", true)
-              .order("title", { ascending: true })
-          ).data ?? []
-        : [],
+        ? supabase
+            .from("rooms")
+            .select("id, property_id, title, subtitle, price_per_night")
+            .in("id", activeStandaloneRoomIds)
+            .eq("is_active", true)
+            .order("title", { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
     ]);
+    if (propertyRoomResult.error) throw propertyRoomResult.error;
+    if (standaloneRoomResult.error) throw standaloneRoomResult.error;
+    const propertyRoomRows = propertyRoomResult.data ?? [];
+    const standaloneRoomRows = standaloneRoomResult.data ?? [];
 
     const allRoomRows = [...(propertyRoomRows as CollaborationRoomRow[]), ...(standaloneRoomRows as CollaborationRoomRow[])];
     const roomIds = allRoomRows.map((room) => room.id);
-    const markupRows = roomIds.length
-      ? (
-          await supabase
-            .from("room_agent_markups")
-            .select("*")
-            .eq("agent_id", profile.id)
-            .in("room_id", roomIds)
-        ).data ?? []
-      : [];
+    const markupResult = roomIds.length
+      ? await supabase
+          .from("room_agent_markups")
+          .select("*")
+          .eq("agent_id", profile.id)
+          .in("room_id", roomIds)
+      : { data: [], error: null };
+    if (markupResult.error) throw markupResult.error;
+    const markupRows = markupResult.data ?? [];
     const { roomsByProperty, standaloneRoomMap } = buildMarkupRoomsLookup(
       allRoomRows,
       markupRows as SupabaseRoomAgentMarkupRow[],
@@ -160,22 +186,28 @@ async function buildAgentCollaborationItems(
       standaloneRoomMap,
       defaultStatus: statusFilter ?? "pending",
     });
-  } catch {
-    return [];
+  } catch (error) {
+    logServerDataError("agent_collaborations_load_failed", error);
+    return null;
   }
 }
 
-export async function getAgentCollaborations(profile: AuthProfile): Promise<AgentCollaborationItem[]> {
+export async function getAgentCollaborations(profile: AuthProfile): Promise<AgentCollaborationItem[] | null> {
   return buildAgentCollaborationItems(profile);
 }
 
-export async function getAgentActiveCollaborations(profile: AuthProfile): Promise<AgentCollaborationItem[]> {
+export async function getAgentActiveCollaborations(profile: AuthProfile): Promise<AgentCollaborationItem[] | null> {
   return buildAgentCollaborationItems(profile, { status: "active" });
 }
 
-export async function getAgentCalendarData(profile: AuthProfile): Promise<AgentCalendarPropertyItem[]> {
+export async function getAgentCalendarData(profile: AuthProfile): Promise<AgentCalendarPropertyItem[] | null> {
+  if (!canAccessAgentMutations(profile)) {
+    return null;
+  }
+
   if (!canUseSupabase()) {
-    return [];
+    logServerConfigurationError("agent_calendar_supabase_not_configured");
+    return null;
   }
 
   try {
@@ -185,10 +217,10 @@ export async function getAgentCalendarData(profile: AuthProfile): Promise<AgentC
       getActiveAgentRoomIds(profile.id),
     ]);
 
-    const [{ data: propertyRows }, { data: propertyRoomRows }, { data: standaloneRoomRows }] = await Promise.all([
+    const [propertyResult, propertyRoomResult, standaloneRoomResult] = await Promise.all([
       propertyIds.length
         ? supabase.from("properties").select("id, title, city, address").in("id", propertyIds).order("title", { ascending: true })
-        : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
       propertyIds.length
         ? supabase
             .from("rooms")
@@ -196,7 +228,7 @@ export async function getAgentCalendarData(profile: AuthProfile): Promise<AgentC
             .in("property_id", propertyIds)
             .eq("is_active", true)
             .order("title", { ascending: true })
-        : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
       standaloneRoomIds.length
         ? supabase
             .from("rooms")
@@ -204,8 +236,14 @@ export async function getAgentCalendarData(profile: AuthProfile): Promise<AgentC
             .in("id", standaloneRoomIds)
             .eq("is_active", true)
             .order("title", { ascending: true })
-        : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
     ]);
+    if (propertyResult.error) throw propertyResult.error;
+    if (propertyRoomResult.error) throw propertyRoomResult.error;
+    if (standaloneRoomResult.error) throw standaloneRoomResult.error;
+    const propertyRows = propertyResult.data;
+    const propertyRoomRows = propertyRoomResult.data;
+    const standaloneRoomRows = standaloneRoomResult.data;
 
     const safePropertyRows = (propertyRows ?? []) as Array<{
       id: string;
@@ -229,9 +267,11 @@ export async function getAgentCalendarData(profile: AuthProfile): Promise<AgentC
     }>;
 
     const roomIds = [...safePropertyRoomRows.map((room) => room.id), ...safeStandaloneRoomRows.map((room) => room.id)];
-    const { data: busyRows } = roomIds.length
+    const busyResult = roomIds.length
       ? await supabase.from("room_busy_ranges").select("id, room_id, starts_on, ends_on, label, note").in("room_id", roomIds)
-      : { data: [] };
+      : { data: [], error: null };
+    if (busyResult.error) throw busyResult.error;
+    const busyRows = busyResult.data;
     const busyMap = new Map<string, AgentCalendarBusyRange[]>();
 
     for (const item of (busyRows ?? []) as Array<{
@@ -259,19 +299,25 @@ export async function getAgentCalendarData(profile: AuthProfile): Promise<AgentC
       standaloneRooms: safeStandaloneRoomRows,
       busyMap,
     });
-  } catch {
-    return [];
+  } catch (error) {
+    logServerDataError("agent_calendar_load_failed", error);
+    return null;
   }
 }
 
-export async function getAgentAvailableProperties(profile: AuthProfile): Promise<AgentAvailablePropertyItem[]> {
+export async function getAgentAvailableProperties(profile: AuthProfile): Promise<AgentAvailablePropertyItem[] | null> {
+  if (!canAccessAgentMutations(profile)) {
+    return null;
+  }
+
   if (!canUseSupabase()) {
-    return [];
+    logServerConfigurationError("agent_opportunities_supabase_not_configured");
+    return null;
   }
 
   try {
     const supabase = createSupabaseAdminClient();
-    const [{ data: candidateProperties }, { data: candidateRooms }] = await Promise.all([
+    const [candidatePropertiesResult, candidateRoomsResult] = await Promise.all([
       supabase
         .from("properties")
         .select("id, owner_id, title, short_title, city, address, short_description, allow_agent_inquiries")
@@ -287,6 +333,10 @@ export async function getAgentAvailableProperties(profile: AuthProfile): Promise
         .eq("is_active", true)
         .order("created_at", { ascending: false }),
     ]);
+    if (candidatePropertiesResult.error) throw candidatePropertiesResult.error;
+    if (candidateRoomsResult.error) throw candidateRoomsResult.error;
+    const candidateProperties = candidatePropertiesResult.data;
+    const candidateRooms = candidateRoomsResult.data;
 
     const safeCandidates = (candidateProperties ?? []) as PropertyLookupRow[];
     const safeStandaloneRooms = (candidateRooms ?? []) as Array<{
@@ -303,15 +353,23 @@ export async function getAgentAvailableProperties(profile: AuthProfile): Promise
     const propertyIds = safeCandidates.map((property) => property.id);
     const roomIds = safeStandaloneRooms.map((room) => room.id);
     const ownerIds = [...new Set([...safeCandidates.map((property) => property.owner_id), ...safeStandaloneRooms.map((room) => room.owner_id)])];
-    const [{ data: propertyLinks }, { data: roomLinks }, { data: ownerRows }] = await Promise.all([
+    const [propertyLinksResult, roomLinksResult, ownerRowsResult] = await Promise.all([
       propertyIds.length
         ? supabase.from("agent_property_links").select("property_id, status").eq("agent_id", profile.id).in("property_id", propertyIds)
-        : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
       roomIds.length
         ? supabase.from("agent_room_links").select("room_id, status").eq("agent_id", profile.id).in("room_id", roomIds)
-        : Promise.resolve({ data: [] }),
-      ownerIds.length ? supabase.from("profiles").select("id, display_name").in("id", ownerIds) : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
+      ownerIds.length
+        ? supabase.from("profiles").select("id, display_name").in("id", ownerIds)
+        : Promise.resolve({ data: [], error: null }),
     ]);
+    if (propertyLinksResult.error) throw propertyLinksResult.error;
+    if (roomLinksResult.error) throw roomLinksResult.error;
+    if (ownerRowsResult.error) throw ownerRowsResult.error;
+    const propertyLinks = propertyLinksResult.data;
+    const roomLinks = roomLinksResult.data;
+    const ownerRows = ownerRowsResult.data;
 
     const blockedPropertyIds = new Set(
       ((propertyLinks ?? []) as Array<{ property_id: string; status: "pending" | "active" | "declined" | "ended" }>).flatMap((row) =>
@@ -334,19 +392,25 @@ export async function getAgentAvailableProperties(profile: AuthProfile): Promise
       blockedRoomIds,
       ownerNameMap,
     });
-  } catch {
-    return [];
+  } catch (error) {
+    logServerDataError("agent_opportunities_load_failed", error);
+    return null;
   }
 }
 
-export async function getAgentOutgoingProposals(profile: AuthProfile): Promise<AgentProposalItem[]> {
+export async function getAgentOutgoingProposals(profile: AuthProfile): Promise<AgentProposalItem[] | null> {
+  if (!canAccessAgentMutations(profile)) {
+    return null;
+  }
+
   if (!canUseSupabase()) {
-    return [];
+    logServerConfigurationError("agent_proposals_supabase_not_configured");
+    return null;
   }
 
   try {
     const supabase = createSupabaseAdminClient();
-    const [{ data: propertyLinks }, { data: roomLinks }] = await Promise.all([
+    const [propertyLinksResult, roomLinksResult] = await Promise.all([
       supabase
         .from("agent_property_links")
         .select("id, status, proposal_message, proposed_at, properties(title), profiles!agent_property_links_owner_id_fkey(display_name)")
@@ -358,30 +422,37 @@ export async function getAgentOutgoingProposals(profile: AuthProfile): Promise<A
         .eq("agent_id", profile.id)
         .order("created_at", { ascending: false }),
     ]);
+    if (propertyLinksResult.error) throw propertyLinksResult.error;
+    if (roomLinksResult.error) throw roomLinksResult.error;
+    const propertyLinks = propertyLinksResult.data;
+    const roomLinks = roomLinksResult.data;
 
     return mapAgentProposalItems({
       propertyLinks: (propertyLinks ?? []) as Array<{ id: string; status?: string | null; proposal_message?: string | null; proposed_at?: string | null; properties?: { title?: string } | null; profiles?: { display_name?: string } | null }>,
       roomLinks: (roomLinks ?? []) as Array<{ id: string; status?: string | null; proposal_message?: string | null; proposed_at?: string | null; rooms?: { title?: string } | null; profiles?: { display_name?: string } | null }>,
     });
-  } catch {
-    return [];
+  } catch (error) {
+    logServerDataError("agent_proposals_load_failed", error);
+    return null;
   }
 }
 
-export async function getOwnerIncomingAgentProposals(): Promise<OwnerIncomingAgentProposalItem[]> {
+export async function getOwnerIncomingAgentProposals(): Promise<OwnerIncomingAgentProposalItem[] | null> {
   if (!canUseSupabase()) {
-    return [];
+    logServerConfigurationError("owner_agent_proposals_supabase_not_configured");
+    return null;
   }
 
   const profile = await getCurrentAuthProfile();
 
-  if (!profile) {
-    return [];
+  if (!profile || !canAccessOwnerMutations(profile)) {
+    logServerDataError("owner_agent_proposals_profile_unavailable", null);
+    return null;
   }
 
   try {
     const supabase = createSupabaseAdminClient();
-    const [{ data: propertyLinks }, { data: roomLinks }] = await Promise.all([
+    const [propertyLinksResult, roomLinksResult] = await Promise.all([
       supabase
         .from("agent_property_links")
         .select("id, proposal_message, proposed_at, properties(title), profiles!agent_property_links_agent_id_fkey(display_name)")
@@ -395,30 +466,37 @@ export async function getOwnerIncomingAgentProposals(): Promise<OwnerIncomingAge
         .eq("status", "pending")
         .order("proposed_at", { ascending: false }),
     ]);
+    if (propertyLinksResult.error) throw propertyLinksResult.error;
+    if (roomLinksResult.error) throw roomLinksResult.error;
+    const propertyLinks = propertyLinksResult.data;
+    const roomLinks = roomLinksResult.data;
 
     return mapOwnerIncomingProposalItems({
       propertyLinks: (propertyLinks ?? []) as Array<{ id: string; proposal_message?: string | null; proposed_at?: string | null; properties?: { title?: string } | null; profiles?: { display_name?: string } | null }>,
       roomLinks: (roomLinks ?? []) as Array<{ id: string; proposal_message?: string | null; proposed_at?: string | null; rooms?: { title?: string } | null; profiles?: { display_name?: string } | null }>,
     });
-  } catch {
-    return [];
+  } catch (error) {
+    logServerDataError("owner_agent_proposals_load_failed", error);
+    return null;
   }
 }
 
-export async function getOwnerActiveCollaborations(): Promise<OwnerActiveCollaborationItem[]> {
+export async function getOwnerActiveCollaborations(): Promise<OwnerActiveCollaborationItem[] | null> {
   if (!canUseSupabase()) {
-    return [];
+    logServerConfigurationError("owner_collaborations_supabase_not_configured");
+    return null;
   }
 
   const profile = await getCurrentAuthProfile();
 
-  if (!profile) {
-    return [];
+  if (!profile || !canAccessOwnerMutations(profile)) {
+    logServerDataError("owner_collaborations_profile_unavailable", null);
+    return null;
   }
 
   try {
     const supabase = createSupabaseAdminClient();
-    const [{ data: propertyLinks }, { data: roomLinks }] = await Promise.all([
+    const [propertyLinksResult, roomLinksResult] = await Promise.all([
       supabase
         .from("agent_property_links")
         .select(
@@ -436,6 +514,10 @@ export async function getOwnerActiveCollaborations(): Promise<OwnerActiveCollabo
         .eq("status", "active")
         .order("created_at", { ascending: false }),
     ]);
+    if (propertyLinksResult.error) throw propertyLinksResult.error;
+    if (roomLinksResult.error) throw roomLinksResult.error;
+    const propertyLinks = propertyLinksResult.data;
+    const roomLinks = roomLinksResult.data;
 
     return mapOwnerActiveCollaborations({
       propertyLinks: (propertyLinks ?? []) as Array<{
@@ -453,7 +535,8 @@ export async function getOwnerActiveCollaborations(): Promise<OwnerActiveCollabo
         profiles: ProfileContactRow | null;
       }>,
     });
-  } catch {
-    return [];
+  } catch (error) {
+    logServerDataError("owner_collaborations_load_failed", error);
+    return null;
   }
 }

@@ -20,6 +20,7 @@ export function mapCollectionSummary(row: SupabaseCollectionRow, itemCount: numb
   return {
     id: row.id,
     title: row.title,
+    guestLabel: row.guest_label ?? "",
     slug: row.slug,
     isArchived: row.is_archived,
     itemCount,

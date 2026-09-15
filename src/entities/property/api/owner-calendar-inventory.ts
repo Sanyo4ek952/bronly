@@ -1,4 +1,4 @@
-import { mapBusyRange } from "@/entities/room/model/mappers";
+import { mapBusyRange, normalizeRoomKind } from "@/entities/room/model/mappers";
 import type { OwnerCalendarInventoryGroup, OwnerCalendarInventoryRoom } from "@/entities/property/model/types";
 import { createSupabaseServerClient, getCurrentAuthProfile } from "@/shared/api/supabase/server-auth";
 import type { SupabasePropertyRow, SupabaseRoomBusyRangeRow, SupabaseRoomRow } from "@/shared/api/supabase/types";
@@ -24,8 +24,8 @@ export async function getOwnerCalendarInventory(): Promise<OwnerCalendarInventor
     supabase.from("rooms").select("*").eq("owner_id", profile.id).order("created_at", { ascending: true }),
   ]);
 
-  const safePropertyRows = (propertyRows ?? []) as SupabasePropertyRow[];
-  const safeRoomRows = (roomRows ?? []) as SupabaseRoomRow[];
+  const safePropertyRows = propertyRows ?? [];
+  const safeRoomRows = roomRows ?? [];
   const roomIds = safeRoomRows.map((room) => room.id);
 
   const busyRows = roomIds.length
@@ -40,7 +40,7 @@ export async function getOwnerCalendarInventory(): Promise<OwnerCalendarInventor
 
   const busyMap = new Map<string, OwnerCalendarInventoryRoom["busyRanges"]>();
 
-  for (const row of busyRows as SupabaseRoomBusyRangeRow[]) {
+  for (const row of busyRows) {
     const current = busyMap.get(row.room_id) ?? [];
     current.push(mapBusyRange(row));
     busyMap.set(row.room_id, current);
@@ -51,7 +51,7 @@ export async function getOwnerCalendarInventory(): Promise<OwnerCalendarInventor
       .filter((room) => room.property_id === property.id)
       .map<OwnerCalendarInventoryRoom>((room) => ({
         id: room.id,
-        kind: room.room_kind,
+        kind: normalizeRoomKind(room.room_kind),
         propertyId: property.id,
         title: room.title,
         subtitle: room.subtitle ?? "",
@@ -75,7 +75,7 @@ export async function getOwnerCalendarInventory(): Promise<OwnerCalendarInventor
     .filter((room) => room.room_kind === "standalone_room")
     .map<OwnerCalendarInventoryRoom>((room) => ({
       id: room.id,
-      kind: room.room_kind,
+      kind: normalizeRoomKind(room.room_kind),
       propertyId: null,
       title: room.title,
       subtitle: room.subtitle ?? "",

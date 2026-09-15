@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { ensureAgentSubscriptionMutationAllowed } from "@/app/agent/dashboard/subscription-guard";
 import { submitAgentProposal } from "@/entities/collaboration";
@@ -13,8 +14,14 @@ function getString(formData: FormData, key: string) {
 export async function submitAgentProposalAction(formData: FormData) {
   await ensureAgentSubscriptionMutationAllowed("/agent/dashboard/opportunities");
 
+  const targetType = getString(formData, "targetType");
+
+  if (targetType !== "property" && targetType !== "standalone_room") {
+    redirect("/agent/dashboard/opportunities?error=validation");
+  }
+
   const result = await submitAgentProposal({
-    targetType: (getString(formData, "targetType") || "property") as "property" | "standalone_room",
+    targetType,
     propertyId: getString(formData, "propertyId") || undefined,
     roomId: getString(formData, "roomId") || undefined,
     message: getString(formData, "message"),
@@ -25,5 +32,8 @@ export async function submitAgentProposalAction(formData: FormData) {
     revalidatePath("/agent/dashboard/opportunities");
     revalidatePath("/agent/dashboard/collaborations");
     revalidatePath("/dashboard/agent-proposals");
+    redirect("/agent/dashboard/opportunities?success=sent");
   }
+
+  redirect(`/agent/dashboard/opportunities?error=${result.reason}`);
 }

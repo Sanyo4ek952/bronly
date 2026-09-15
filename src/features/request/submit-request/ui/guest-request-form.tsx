@@ -3,9 +3,9 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
-import { normalizePublicStayFilters, type PublicStayFilters } from "@/entities/room/model/pricing";
+import { buildPublicRoomQuote, normalizePublicStayFilters, type PublicStayFilters } from "@/entities/room/model/pricing";
 import type { PublicRoom } from "@/entities/room/model/types";
-import { InlineNotice, Input, Select, SubmitButton, Textarea } from "@/shared/ui";
+import { InlineNotice, Input, Panel, Select, SubmitButton, Textarea } from "@/shared/ui";
 
 import { buildPublicRequestSummary } from "../model/public-request-ui";
 
@@ -52,10 +52,11 @@ export function GuestRequestForm({
     adults: adultsCount,
     rooms: roomsCount,
   });
-  const summary = selectedRoom ? buildPublicRequestSummary(selectedRoom, summaryFilters, propertyTitle) : null;
+  const quotedRoom = selectedRoom ? buildPublicRoomQuote(selectedRoom, summaryFilters) : null;
+  const summary = quotedRoom ? buildPublicRequestSummary(quotedRoom, summaryFilters, propertyTitle) : null;
 
   return (
-    <form className="br-request-form" action={action}>
+    <form className="grid gap-4" action={action}>
       {publicSlug ? <input type="hidden" name="publicSlug" value={publicSlug} /> : null}
       {propertySlug ? <input type="hidden" name="propertySlug" value={propertySlug} /> : null}
       {hiddenFields.map((field) => (
@@ -63,9 +64,9 @@ export function GuestRequestForm({
       ))}
 
       {summary ? (
-        <section className="br-request-summary">
-          <div className="br-request-summary__card">
-            <div className="br-request-summary__media">
+        <section className="grid gap-4">
+          <Panel className="grid gap-0 overflow-hidden border-[var(--color-border)] bg-[rgb(255_255_255_/_0.82)]" padding="md">
+            <div className="aspect-[16/10] overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#e3dccf_0%,#c4d4c7_52%,#f1e7d8_100%)]">
               {summary.imageUrl ? (
                 <Image
                   src={summary.imageUrl}
@@ -73,54 +74,59 @@ export function GuestRequestForm({
                   width={1200}
                   height={800}
                   unoptimized
-                  className="br-request-summary__image"
+                  className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="br-request-summary__placeholder" aria-hidden="true" />
+                <div className="h-full w-full" aria-hidden="true" />
               )}
             </div>
-            <div className="br-request-summary__body">
-              <span className="br-request-summary__eyebrow">{headingEyebrow}</span>
-              <div className="br-request-summary__heading">
+            <div className="grid gap-4 pt-4">
+              <span className="text-xs font-extrabold uppercase tracking-[0.04em] text-[var(--color-primary-hover)]">{headingEyebrow}</span>
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
                 <div>
-                  <h2>{summary.roomTitle}</h2>
-                  {summary.propertyTitle ? <p>{summary.propertyTitle}</p> : null}
+                  <h2 className="text-[22px] font-extrabold leading-tight">{summary.roomTitle}</h2>
+                  {summary.propertyTitle ? <p className="mt-1 text-sm text-[var(--color-muted)]">{summary.propertyTitle}</p> : null}
                 </div>
-                <div className="br-request-summary__price">
-                  <strong>{summary.priceLabel}</strong>
-                  <span>{summary.priceCaption}</span>
+                <div className="grid gap-1">
+                  <strong className="text-xl leading-tight">{summary.priceLabel}</strong>
+                  <span className="text-sm text-[var(--color-muted)]">{summary.priceCaption}</span>
                 </div>
               </div>
-              <p className="br-request-summary__meta">{summary.roomMeta}</p>
-              <div className="br-request-summary__facts">
-                <div className="br-request-summary__fact">
-                  <span>Заезд</span>
+              <p className="text-sm text-[var(--color-muted)]">{summary.roomMeta}</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-1 rounded-2xl bg-[rgb(248_250_252_/_0.9)] px-[14px] py-3">
+                  <span className="text-sm text-[var(--color-muted)]">Заезд</span>
                   <strong>{summary.checkIn ?? "Уточните дату"}</strong>
                 </div>
-                <div className="br-request-summary__fact">
-                  <span>Выезд</span>
+                <div className="grid gap-1 rounded-2xl bg-[rgb(248_250_252_/_0.9)] px-[14px] py-3">
+                  <span className="text-sm text-[var(--color-muted)]">Выезд</span>
                   <strong>{summary.checkOut ?? "Уточните дату"}</strong>
                 </div>
-                <div className="br-request-summary__fact">
-                  <span>Гости</span>
+                <div className="grid gap-1 rounded-2xl bg-[rgb(248_250_252_/_0.9)] px-[14px] py-3">
+                  <span className="text-sm text-[var(--color-muted)]">Гости</span>
                   <strong>{summary.guestsLabel}</strong>
                 </div>
-                <div className="br-request-summary__fact">
-                  <span>Комнаты</span>
+                <div className="grid gap-1 rounded-2xl bg-[rgb(248_250_252_/_0.9)] px-[14px] py-3">
+                  <span className="text-sm text-[var(--color-muted)]">Комнаты</span>
                   <strong>{summary.roomsLabel}</strong>
                 </div>
               </div>
-              <p className="br-request-summary__request-label">{summary.requestLabel}</p>
+              <p className="text-sm leading-relaxed text-[var(--color-muted)]">{summary.requestLabel}</p>
             </div>
-          </div>
-          <InlineNotice className="br-request-summary__notice" title="Что важно знать" tone="soft">
+          </Panel>
+          {quotedRoom && !quotedRoom.isAvailableForFilter && quotedRoom.unavailableReason ? (
+            <InlineNotice title="Параметры не подходят" tone="warning">
+              {quotedRoom.unavailableReason}. Измените параметры ниже или выберите другой номер.
+            </InlineNotice>
+          ) : null}
+          <InlineNotice title="Что важно знать" tone="soft">
             {contextMessage}
           </InlineNotice>
         </section>
       ) : null}
 
       {errorMessage ? (
-        <InlineNotice className="br-request-form__notice br-request-form__notice--warning" title="Не удалось отправить заявку">
+        <InlineNotice title="Не удалось отправить заявку" tone="error">
           {errorMessage}
         </InlineNotice>
       ) : null}
@@ -135,13 +141,13 @@ export function GuestRequestForm({
         onChange={(event) => setSelectedRoomId(event.target.value)}
         options={activeRooms.map((room) => ({
           value: room.id,
-          label: room.unavailableReason ? `${room.title} - ${room.unavailableReason}` : room.title,
+          label: !room.isAvailableForFilter && room.unavailableReason ? `${room.title} — ${room.unavailableReason}` : room.title,
         }))}
+        description={roomFieldHint}
         required
       />
-      <p className="br-request-form__hint">{roomFieldHint}</p>
 
-      <div className="br-inline-fields">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Input
           id="checkin"
           name="checkIn"
@@ -193,8 +199,8 @@ export function GuestRequestForm({
         placeholder="Например: хотим уточнить ранний заезд или размещение с ребёнком."
       />
 
-      <label className="br-check">
-        <input type="checkbox" required />
+      <label className="grid grid-cols-[18px_1fr] items-start gap-2.5 py-2 text-[13px] leading-relaxed text-[var(--color-muted)]">
+        <input className="mt-0.5 h-[18px] w-[18px] accent-[var(--color-primary)]" type="checkbox" name="privacyConsent" required />
         <span>Я согласен на обработку персональных данных и понимаю, что заявка передаётся для уточнения доступности.</span>
       </label>
 

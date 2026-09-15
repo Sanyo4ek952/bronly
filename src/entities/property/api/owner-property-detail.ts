@@ -1,6 +1,6 @@
 import { buildPropertyPhotoMap, buildRoomPhotoMap, withLegacyPropertyCover } from "@/entities/property/api/photo-utils";
 import type { OwnerPropertyDetail } from "@/entities/property/model/types";
-import { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
+import { mapBusyRange, mapSeasonalPrice, normalizeRoomKind } from "@/entities/room/model/mappers";
 import type { OwnerBusyRange, OwnerRoomDetail, OwnerSeasonalPrice, RoomPhoto } from "@/entities/room/model/types";
 import { createSupabaseServerClient, getCurrentAuthProfile } from "@/shared/api/supabase/server-auth";
 import type {
@@ -26,7 +26,7 @@ export function mapOwnerRoomRow(
   return {
     id: row.id,
     ownerId: row.owner_id,
-    kind: row.room_kind,
+    kind: normalizeRoomKind(row.room_kind),
     propertyId: row.property_id,
     slug: row.slug,
     title: row.title,
@@ -75,7 +75,7 @@ export async function getOwnerPropertyDetail(propertyIdOrSlug: string): Promise<
     .eq("owner_id", profile.id)
     .or(`id.eq.${propertyIdOrSlug},slug.eq.${propertyIdOrSlug}`)
     .maybeSingle();
-  const propertyRow = propertyRowData as SupabasePropertyRow | null;
+  const propertyRow = propertyRowData;
 
   if (!propertyRow) {
     return null;
@@ -105,7 +105,7 @@ export async function getOwnerPropertyDetail(propertyIdOrSlug: string): Promise<
       .order("created_at", { ascending: true }),
   ]);
 
-  const safeRoomRows = (roomRows ?? []) as SupabaseRoomRow[];
+  const safeRoomRows = roomRows ?? [];
   const roomIds = safeRoomRows.map((room) => room.id);
 
   const [amenitiesResult, seasonalResult, busyResult, roomPhotosResult] = roomIds.length
@@ -138,26 +138,26 @@ export async function getOwnerPropertyDetail(propertyIdOrSlug: string): Promise<
   const seasonalMap = new Map<string, OwnerSeasonalPrice[]>();
   const busyMap = new Map<string, OwnerBusyRange[]>();
 
-  for (const amenity of (amenitiesResult.data ?? []) as SupabaseRoomAmenityRow[]) {
+  for (const amenity of amenitiesResult.data ?? []) {
     const current = amenityMap.get(amenity.room_id) ?? [];
     current.push(amenity.label);
     amenityMap.set(amenity.room_id, current);
   }
 
-  for (const price of (seasonalResult.data ?? []) as SupabaseRoomSeasonalPriceRow[]) {
+  for (const price of seasonalResult.data ?? []) {
     const current = seasonalMap.get(price.room_id) ?? [];
     current.push(mapSeasonalPrice(price));
     seasonalMap.set(price.room_id, current);
   }
 
-  for (const range of (busyResult.data ?? []) as SupabaseRoomBusyRangeRow[]) {
+  for (const range of busyResult.data ?? []) {
     const current = busyMap.get(range.room_id) ?? [];
     current.push(mapBusyRange(range));
     busyMap.set(range.room_id, current);
   }
 
-  const propertyPhotoMap = buildPropertyPhotoMap((propertyPhotoRows ?? []) as SupabasePropertyPhotoRow[]);
-  const roomPhotoMap = buildRoomPhotoMap((roomPhotosResult.data ?? []) as SupabaseRoomPhotoRow[]);
+  const propertyPhotoMap = buildPropertyPhotoMap(propertyPhotoRows ?? []);
+  const roomPhotoMap = buildRoomPhotoMap(roomPhotosResult.data ?? []);
   const propertyPhotos = withLegacyPropertyCover(propertyPhotoMap.get(propertyRow.id) ?? [], propertyRow.cover_image_url);
 
   return {
@@ -184,8 +184,8 @@ export async function getOwnerPropertyDetail(propertyIdOrSlug: string): Promise<
     allowOwnerContactSharing: propertyRow.allow_owner_contact_sharing,
     photos: propertyPhotos,
     coverImageUrl: propertyPhotos[0]?.url ?? propertyRow.cover_image_url ?? "",
-    features: ((featureRows ?? []) as SupabasePropertyFeatureRow[]).map((item) => item.label),
-    houseRules: ((ruleRows ?? []) as SupabasePropertyRuleRow[]).map((item) => item.label),
+    features: (featureRows ?? []).map((item) => item.label),
+    houseRules: (ruleRows ?? []).map((item) => item.label),
     rooms: safeRoomRows.map((room) =>
       mapOwnerRoomRow(
         room,

@@ -57,6 +57,19 @@ export function getBrowserPushSupport(): BrowserPushSupport {
   };
 }
 
+export async function ensureBronlyServiceWorkerRegistration() {
+  const support = getBrowserPushSupport();
+
+  if (!support.isSupported) {
+    throw new Error("Push notifications are not supported in this browser.");
+  }
+
+  return (
+    (await navigator.serviceWorker.getRegistration("/")) ??
+    navigator.serviceWorker.register("/sw.js", { scope: "/" })
+  );
+}
+
 export async function getExistingBrowserPushSubscription() {
   const support = getBrowserPushSupport();
 
@@ -64,7 +77,7 @@ export async function getExistingBrowserPushSubscription() {
     return null;
   }
 
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await ensureBronlyServiceWorkerRegistration();
   return registration.pushManager.getSubscription();
 }
 
@@ -75,13 +88,17 @@ export async function subscribeBrowserToPush(vapidPublicKey: string) {
     throw new Error("Push notifications are not supported in this browser.");
   }
 
+  if (!vapidPublicKey.trim()) {
+    throw new Error("Push configuration is unavailable.");
+  }
+
   const permission = await Notification.requestPermission();
 
   if (permission !== "granted") {
     throw new Error(permission === "denied" ? "Push permission denied." : "Push permission was not granted.");
   }
 
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await ensureBronlyServiceWorkerRegistration();
   const existingSubscription = await registration.pushManager.getSubscription();
   const subscription =
     existingSubscription ??
@@ -91,17 +108,4 @@ export async function subscribeBrowserToPush(vapidPublicKey: string) {
     }));
 
   return mapSubscription(subscription);
-}
-
-export async function unsubscribeBrowserFromPush() {
-  const existingSubscription = await getExistingBrowserPushSubscription();
-
-  if (!existingSubscription) {
-    return { endpoint: null };
-  }
-
-  const endpoint = existingSubscription.endpoint;
-  await existingSubscription.unsubscribe();
-
-  return { endpoint };
 }

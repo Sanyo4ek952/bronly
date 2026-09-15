@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { isValidInclusiveDateRange } from "@/entities/room";
 import { createSupabaseServerClient } from "@/shared/api/supabase";
 import { getString } from "@/shared/lib/form-data";
 
-import { requireOwnerMutationAccess } from "./lib/owner-access";
+import { requireOwnedRoom, requireOwnerMutationAccess } from "./lib/owner-access";
 import {
   buildPropertyPath,
   buildPropertyPathWithState,
@@ -45,15 +46,15 @@ async function getOwnedBusyRange(roomId: string, busyRangeId: string, propertyId
     return null;
   }
 
-  const room = await getOwnedRoomForCalendar(data.room_id as string, propertyId);
+  const room = await getOwnedRoomForCalendar(data.room_id, propertyId);
 
   if (!room || room.id !== roomId) {
     return null;
   }
 
   return {
-    id: data.id as string,
-    roomId: data.room_id as string,
+    id: data.id,
+    roomId: data.room_id,
   };
 }
 
@@ -93,13 +94,17 @@ function revalidateOwnerCalendarPaths(propertyId: string, roomId: string) {
 export async function createRoomBusyRange(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
   const roomId = getString(formData, "roomId");
-  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "calendar") : buildStandaloneRoomCalendarPath(roomId));
+  const profile = await requireOwnerMutationAccess(
+    propertyId ? buildPropertyPath(propertyId, "calendar") : buildStandaloneRoomCalendarPath(roomId),
+  );
   const startsOn = getString(formData, "startsOn");
   const endsOn = getString(formData, "endsOn");
 
-  if (!roomId || !startsOn || !endsOn || startsOn > endsOn) {
+  if (!roomId || !isValidInclusiveDateRange(startsOn, endsOn)) {
     redirectWithCalendarError(propertyId, roomId, "validation");
   }
+
+  await requireOwnedRoom(profile.id, roomId, propertyId || null, buildCalendarRedirectPath(propertyId, roomId, {}));
 
   const room = await getOwnedRoomForCalendar(roomId, propertyId || undefined);
 
@@ -132,14 +137,18 @@ export async function createRoomBusyRange(formData: FormData) {
 export async function updateRoomBusyRange(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
   const roomId = getString(formData, "roomId");
-  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "calendar") : buildStandaloneRoomCalendarPath(roomId));
+  const profile = await requireOwnerMutationAccess(
+    propertyId ? buildPropertyPath(propertyId, "calendar") : buildStandaloneRoomCalendarPath(roomId),
+  );
   const busyRangeId = getString(formData, "busyRangeId");
   const startsOn = getString(formData, "startsOn");
   const endsOn = getString(formData, "endsOn");
 
-  if (!roomId || !busyRangeId || !startsOn || !endsOn || startsOn > endsOn) {
+  if (!roomId || !busyRangeId || !isValidInclusiveDateRange(startsOn, endsOn)) {
     redirectWithCalendarError(propertyId, roomId, "validation");
   }
+
+  await requireOwnedRoom(profile.id, roomId, propertyId || null, buildCalendarRedirectPath(propertyId, roomId, {}));
 
   const busyRange = await getOwnedBusyRange(roomId, busyRangeId, propertyId || undefined);
 
@@ -174,12 +183,16 @@ export async function updateRoomBusyRange(formData: FormData) {
 export async function deleteRoomBusyRange(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
   const roomId = getString(formData, "roomId");
-  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "calendar") : buildStandaloneRoomCalendarPath(roomId));
+  const profile = await requireOwnerMutationAccess(
+    propertyId ? buildPropertyPath(propertyId, "calendar") : buildStandaloneRoomCalendarPath(roomId),
+  );
   const busyRangeId = getString(formData, "busyRangeId");
 
   if (!roomId || !busyRangeId) {
     redirectWithCalendarError(propertyId, roomId, "delete");
   }
+
+  await requireOwnedRoom(profile.id, roomId, propertyId || null, buildCalendarRedirectPath(propertyId, roomId, {}));
 
   const busyRange = await getOwnedBusyRange(roomId, busyRangeId, propertyId || undefined);
 

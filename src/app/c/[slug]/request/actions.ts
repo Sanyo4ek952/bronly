@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { getCollectionRequestContext } from "@/entities/collection";
-import { createGuestRequest } from "@/entities/request";
+import { createGuestRequest, mapGuestRequestFailureToPublicError } from "@/entities/request";
 import { encodePublicPathSegment } from "@/shared/lib/public-links";
 
 function getString(formData: FormData, key: string) {
@@ -64,6 +64,7 @@ export async function submitCollectionGuestRequestAction(formData: FormData) {
   }
 
   const result = await createGuestRequest({
+    publicSlug: collectionSlug,
     propertySlug: requestContext.propertySlug ?? undefined,
     roomId,
     guestName,
@@ -76,22 +77,10 @@ export async function submitCollectionGuestRequestAction(formData: FormData) {
     source: "collection",
     collectionId: requestContext.collectionId,
     agentProfileId: requestContext.agentProfileId,
-    agentMarkupPercent: requestContext.agentMarkupPercent,
   });
 
   if (!result.ok) {
-    const error =
-      result.reason === "room_not_found"
-        ? "room"
-        : result.reason === "availability_failed"
-          ? "availability"
-          : result.reason === "room_not_suitable" || result.reason === "validation_failed"
-            ? "validation"
-            : result.reason === "property_not_found"
-              ? "property"
-              : result.reason === "subscription_expired"
-                ? "subscription"
-                : "save";
+    const error = mapGuestRequestFailureToPublicError(result.reason);
     redirect(buildRequestPath(collectionSlug, { ...baseState, error }));
   }
 

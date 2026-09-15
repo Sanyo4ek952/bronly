@@ -20,7 +20,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import { signOutAction } from "@/app/auth/actions";
+import { signOutAction } from "@/features/auth/sign-out-action";
+import { cn } from "@/shared/lib/cn";
 import { AppIcon, BottomSheet, Button, type AppIconComponent, BrandLogo, InlineNotice } from "@/shared/ui";
 import { DashboardTopbar, type DashboardTopbarProps } from "@/widgets/dashboard-topbar";
 
@@ -91,6 +92,24 @@ function getNavigationConfig(roleKind: "owner" | "agent"): NavigationConfig {
   };
 }
 
+function getNavigationItemClass(isActive: boolean, surface: "sidebar" | "bottom" | "sheet") {
+  return cn(
+    "inline-flex items-center font-bold text-[var(--text-muted)] transition-[background-color,color,box-shadow] duration-[180ms]",
+    "hover:bg-[var(--surface-subtle)] hover:text-[var(--text)]",
+    "focus-visible:outline-none focus-visible:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.12)]",
+    surface === "sidebar" && "min-h-11 gap-2.5 rounded-[14px] px-3.5 text-sm",
+    surface === "bottom" && cn(
+      "relative min-h-14 justify-center gap-0 rounded-[18px] border-0 bg-transparent p-2",
+      "max-[640px]:min-h-[50px] max-[640px]:rounded-[16px] max-[640px]:p-1.5",
+    ),
+    surface === "sheet" && "min-h-[52px] gap-3 rounded-[var(--radius-lg)] px-3.5 text-[15px]",
+    isActive && cn(
+      "bg-[rgb(var(--color-primary-rgb)_/_0.10)] text-[var(--accent-strong)]",
+      surface === "bottom" && "shadow-[inset_0_0_0_1px_rgb(var(--color-primary-rgb)_/_0.18)]",
+    ),
+  );
+}
+
 export type OwnerShellProps = {
   children: React.ReactNode;
   userName: string;
@@ -122,13 +141,13 @@ export function OwnerShell({
   const isOverflowActive = mobileOverflowItems.some((item) => isItemActive(pathname, item.href));
 
   return (
-    <div className="br-owner">
-      <aside className="br-owner__sidebar br-card">
-        <div className="br-owner__brand">
+    <div className="grid w-full grid-cols-[232px_minmax(0,1fr)] items-start gap-6 pb-[var(--safe-area-bottom)] max-[1080px]:min-h-full max-[1080px]:flex-1 max-[1080px]:grid-cols-1 max-[1080px]:gap-4">
+      <aside className="sticky top-6 grid gap-5 rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.96),rgb(250_252_252_/_0.98))] px-4 py-[18px] shadow-[var(--shadow-md)] max-[1080px]:hidden">
+        <div className="px-2.5 pb-1 pt-2">
           <BrandLogo />
         </div>
 
-        <nav className="br-owner-nav" aria-label="Навигация кабинета">
+        <nav className="grid gap-1.5" aria-label="Навигация кабинета">
           {desktopItems.map((item) => {
             const isActive = isItemActive(pathname, item.href);
 
@@ -136,31 +155,32 @@ export function OwnerShell({
               <Link
                 key={item.label}
                 href={item.href}
-                className={`br-owner-nav__item${isActive ? " br-owner-nav__item--active" : ""}`}
+                className={getNavigationItemClass(isActive, "sidebar")}
+                aria-current={isActive ? "page" : undefined}
               >
-                <AppIcon icon={item.icon} aria-hidden="true" />
+                <AppIcon icon={item.icon} className="size-[18px]" aria-hidden="true" />
                 <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="br-owner-profile">
-          <div className="br-owner-profile__avatar">{userInitial}</div>
-          <div>
-            <strong>{userName}</strong>
-            <span>{roleLabel}</span>
+        <div className="grid grid-cols-[42px_1fr] items-center gap-2.5 border-t border-[var(--border)] pt-4">
+          <div className="grid size-[42px] place-items-center rounded-[14px] bg-[rgb(var(--color-primary-rgb)_/_0.10)] text-sm font-extrabold text-[var(--accent-strong)]">{userInitial}</div>
+          <div className="min-w-0">
+            <strong className="block truncate">{userName}</strong>
+            <span className="mt-1 block text-[13px] text-[var(--text-muted)]">{roleLabel}</span>
           </div>
         </div>
 
         <form action={signOutAction}>
-          <Button className="br-owner-signout" variant="ghost" fullWidth type="submit">
+          <Button className="justify-start" variant="ghost" fullWidth type="submit">
             Выйти
           </Button>
         </form>
       </aside>
 
-      <div className="br-owner__content">
+      <div className="grid min-w-0 gap-5 max-[1080px]:flex max-[1080px]:min-h-full max-[1080px]:w-full max-[1080px]:flex-1 max-[1080px]:flex-col max-[1080px]:gap-4 max-[1080px]:pb-[calc(88px+var(--safe-area-bottom))]">
         {pathname === dashboardRootPath && topbar ? <DashboardTopbar {...topbar} /> : null}
 
         {notice ? (
@@ -171,7 +191,7 @@ export function OwnerShell({
 
         {children}
 
-        <nav className="br-owner-bottom-nav br-card" aria-label="Мобильная навигация">
+        <nav className="fixed inset-x-3 bottom-0 z-20 hidden grid-cols-5 gap-1 rounded-t-[18px] border border-[var(--border)] bg-[rgb(255_255_255_/_0.96)] p-2 pb-[calc(8px+var(--safe-area-bottom))] shadow-[var(--shadow-md)] backdrop-blur-xl max-[1080px]:grid max-[640px]:inset-x-2.5 max-[640px]:p-1.5 max-[640px]:pb-[calc(6px+var(--safe-area-bottom))]" aria-label="Мобильная навигация">
           {mobilePrimaryItems.map((item) => {
             const isActive = isItemActive(pathname, item.href);
 
@@ -179,39 +199,38 @@ export function OwnerShell({
               <Link
                 key={item.label}
                 href={item.href}
-                className={`br-owner-bottom-nav__item${isActive ? " br-owner-bottom-nav__item--active" : ""}`}
+                className={getNavigationItemClass(isActive, "bottom")}
                 aria-label={item.label}
                 aria-current={isActive ? "page" : undefined}
               >
-                <AppIcon icon={item.icon} aria-hidden="true" />
-                <span className="br-visually-hidden">{item.label}</span>
+                <AppIcon icon={item.icon} className="size-5" aria-hidden="true" />
+                <span className="sr-only">{item.label}</span>
               </Link>
             );
           })}
 
           <button
             type="button"
-            className={`br-owner-bottom-nav__item${isMobileMenuOpen || isOverflowActive ? " br-owner-bottom-nav__item--active" : ""}`}
+            className={getNavigationItemClass(isMobileMenuOpen || isOverflowActive, "bottom")}
             aria-expanded={isMobileMenuOpen}
-            aria-controls="br-owner-mobile-menu"
+            aria-controls="owner-mobile-menu"
             aria-label="Ещё"
             onClick={() => setIsMobileMenuOpen(true)}
           >
-            <AppIcon icon={Menu} aria-hidden="true" />
-            <span className="br-visually-hidden">Ещё</span>
+            <AppIcon icon={Menu} className="size-5" aria-hidden="true" />
+            <span className="sr-only">Ещё</span>
           </button>
         </nav>
 
         <BottomSheet
           open={isMobileMenuOpen}
           onOpenChange={setIsMobileMenuOpen}
-          dialogId="br-owner-mobile-menu"
-          titleId="br-owner-mobile-sheet-title"
+          dialogId="owner-mobile-menu"
+          titleId="owner-mobile-sheet-title"
           title="Ещё"
           description="Быстрый доступ к остальным разделам кабинета."
           closeLabel="Закрыть"
-          className="br-owner-mobile-sheet"
-          bodyClassName="br-owner-mobile-sheet__list"
+          bodyClassName="gap-2"
         >
           {({ close }) => (
             <>
@@ -222,20 +241,21 @@ export function OwnerShell({
                   <Link
                     key={item.label}
                     href={item.href}
-                    className={`br-owner-mobile-sheet__item${isActive ? " br-owner-mobile-sheet__item--active" : ""}`}
+                    className={getNavigationItemClass(isActive, "sheet")}
+                    aria-current={isActive ? "page" : undefined}
                     onClick={close}
                   >
-                    <AppIcon icon={item.icon} aria-hidden="true" />
+                    <AppIcon icon={item.icon} className="size-[18px]" aria-hidden="true" />
                     <span>{item.label}</span>
                   </Link>
                 );
               })}
-              <form action={signOutAction} className="br-owner-mobile-sheet__form">
+              <form action={signOutAction}>
                 <button
                   type="submit"
-                  className="br-owner-mobile-sheet__item br-owner-mobile-sheet__item--button"
+                  className={cn(getNavigationItemClass(false, "sheet"), "w-full border-0 bg-transparent text-left")}
                 >
-                  <AppIcon icon={LogOut} aria-hidden="true" />
+                  <AppIcon icon={LogOut} className="size-[18px]" aria-hidden="true" />
                   <span>Выйти</span>
                 </button>
               </form>

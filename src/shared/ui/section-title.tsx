@@ -18,7 +18,10 @@ export function SectionTitle<T extends ElementType = "h2">({
   const Component = as ?? "h2";
 
   return (
-    <Component className={cn("br-section-title", className)} {...props}>
+    <Component
+      className={cn("text-[var(--section-title-size)] leading-[1.12] tracking-[-0.03em]", className)}
+      {...props}
+    >
       {children}
     </Component>
   );

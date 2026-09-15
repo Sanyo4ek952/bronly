@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import type { ReferralInviteSummary } from "@/entities/referral";
-import { Button } from "@/shared/ui";
+import { Button, InlineNotice, Panel } from "@/shared/ui";
 
 type ReferralShareCardProps = {
   invite: ReferralInviteSummary;
@@ -42,26 +42,27 @@ export function ReferralShareCard({ invite, title, description }: ReferralShareC
   }
 
   return (
-    <section className="br-dashboard-block br-card br-referral-card">
-      <div className="br-dashboard-block__header">
-        <div>
-          <h2>{title}</h2>
-          <p>{description}</p>
-        </div>
+    <Panel className="grid min-w-0 gap-4 p-4 sm:p-5" surface="raised">
+      <div className="grid gap-1.5">
+        <h2 className="text-xl font-bold tracking-[-0.025em] text-[var(--text)]">{title}</h2>
+        <p className="text-sm leading-[1.55] text-[var(--text-muted)]">{description}</p>
       </div>
 
-      {notice ? <div className="br-inline-notice">{notice}</div> : null}
+      {notice ? <InlineNotice aria-live="polite">{notice}</InlineNotice> : null}
 
-      <div className="br-owner-stack">
-        <div className="br-owner-editor br-owner-editor--muted br-referral-card__copy">
-          <strong>Текст приглашения</strong>
-          <p className="br-referral-card__value">{invite.shareMessage}</p>
+      <div className="grid min-w-0 gap-3">
+        <div className="grid min-w-0 gap-2 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-subtle)] p-4">
+          <strong className="text-sm text-[var(--text)]">Текст приглашения</strong>
+          <p className="max-w-full [overflow-wrap:anywhere] text-sm leading-[1.6] text-[var(--text-muted)]">{invite.shareMessage}</p>
         </div>
-        <div className="br-owner-editor br-owner-editor--muted br-referral-card__copy">
-          <strong>Ссылка</strong>
-          <p className="br-referral-card__value br-referral-card__value--url">{invite.inviteUrl}</p>
+        <div className="grid min-w-0 gap-2 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-subtle)] p-4">
+          <strong className="text-sm text-[var(--text)]">Ссылка</strong>
+          <p className="max-w-full break-all font-mono text-[13px] leading-[1.6] text-[var(--text)]">{invite.inviteUrl}</p>
         </div>
-        <div className="br-owner-actions">
+        <InlineNotice tone="soft">
+          Бонус не начисляется автоматически: после первого целевого действия приглашённого решение принимает администратор.
+        </InlineNotice>
+        <div className="flex flex-wrap gap-3 max-[480px]:grid max-[480px]:grid-cols-1">
           <Button type="button" onClick={shareInvite} size="sm">
             Поделиться
           </Button>
@@ -70,6 +71,6 @@ export function ReferralShareCard({ invite, title, description }: ReferralShareC
           </Button>
         </div>
       </div>
-    </section>
+    </Panel>
   );
 }

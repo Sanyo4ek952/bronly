@@ -26,21 +26,21 @@ export function PublicHero({
   className,
 }: PublicHeroProps) {
   return (
-    <section className={cn("br-public-hero br-card br-card--raised br-card--padding-none", className)}>
-      <div className="br-public-hero__media">
+    <section className={cn("grid overflow-hidden rounded-[var(--radius-lg)] border border-[rgb(var(--color-primary-rgb)_/_0.10)] bg-[var(--surface)] shadow-[var(--shadow-md)]", className)}>
+      <div className="relative min-h-[340px] overflow-hidden bg-[linear-gradient(135deg,#d4e8e4_0%,#b8d6d4_34%,#f2e2cf_72%,#efe7da_100%)] max-[640px]:min-h-60">
         {imageUrl ? (
-          <Image src={imageUrl} alt={imageAlt} width={1600} height={1000} unoptimized className="br-public-hero__image" />
+          <Image src={imageUrl} alt={imageAlt} width={1600} height={1000} unoptimized className="h-full w-full object-cover" />
         ) : null}
       </div>
-      <div className="br-public-hero__body">
-        <div className="br-public-hero__copy">
-          {eyebrow ? <span className="br-public-hero__eyebrow">{eyebrow}</span> : null}
-          <h1>{title}</h1>
-          {description ? <p>{description}</p> : null}
-          {summary ? <div className="br-public-hero__summary">{summary}</div> : null}
-          {notice ? <div className="br-public-hero__notice">{notice}</div> : null}
+      <div className="grid items-end gap-6 p-7 max-[640px]:p-[18px] lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
+        <div className="grid gap-[14px]">
+          {eyebrow ? <span className="inline-flex min-h-8 w-fit items-center rounded-full bg-[rgb(var(--color-primary-rgb)_/_0.10)] px-3 text-xs font-bold text-[var(--color-primary-hover)]">{eyebrow}</span> : null}
+          <h1 className="text-[clamp(2rem,4vw,2.625rem)] font-extrabold leading-[1.06]">{title}</h1>
+          {description ? <p className="text-sm leading-relaxed text-[var(--color-muted)]">{description}</p> : null}
+          {summary ? <div className="grid gap-3">{summary}</div> : null}
+          {notice ? <div className="grid gap-3">{notice}</div> : null}
         </div>
-        {actions ? <div className="br-public-hero__actions">{actions}</div> : null}
+        {actions ? <div className="grid min-w-0 content-end gap-[14px]">{actions}</div> : null}
       </div>
     </section>
   );

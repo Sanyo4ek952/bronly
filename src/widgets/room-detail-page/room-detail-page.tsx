@@ -1,7 +1,6 @@
 import type { OwnerRoomDetail } from "@/entities/room";
+import { formatRubles } from "@/shared/lib";
 import { DashboardPageNav, ButtonLink, StatusPill } from "@/shared/ui";
-
-import { formatMoney } from "@/app/dashboard/properties/page-helpers";
 import { RoomPhotoCarousel } from "./room-photo-carousel";
 
 type BreadcrumbItem = {
@@ -89,7 +88,7 @@ export function RoomDetailPage({
                 {room.isActive ? "Активен" : "Неактивен"}
               </StatusPill>
               <strong className="whitespace-nowrap text-[24px] font-extrabold leading-none text-[var(--color-text)]">
-                {formatMoney(room.pricePerNight)} / ночь
+                {formatRubles(room.pricePerNight)} / ночь
               </strong>
             </div>
 
@@ -193,7 +192,7 @@ export function RoomDetailPage({
                     className="flex flex-wrap items-center justify-between gap-2 rounded-[16px] border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.82)] px-3 py-2.5"
                   >
                     <span className="text-sm leading-[1.5] text-[var(--color-muted)]">{formatDateRange(item.startsOn, item.endsOn)}</span>
-                    <strong className="text-sm font-semibold text-[var(--color-text)]">{formatMoney(item.pricePerNight)}</strong>
+                    <strong className="text-sm font-semibold text-[var(--color-text)]">{formatRubles(item.pricePerNight)}</strong>
                   </li>
                 ))}
               </ul>

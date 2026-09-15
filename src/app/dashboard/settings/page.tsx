@@ -1,11 +1,14 @@
-import Link from "next/link";
-
-import { startTelegramNotificationLinkAction, updateProfileAction } from "@/app/auth/actions";
+import {
+  setTelegramNotificationsEnabledAction,
+  startTelegramNotificationLinkAction,
+  updateProfileAction,
+} from "@/app/auth/actions";
 import { getMyTelegramNotificationStatus } from "@/entities/notification";
 import { InstallAppCard } from "@/features/pwa/install-app";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { buildOwnerPublicPath } from "@/shared/lib";
-import { SubmitButton } from "@/shared/ui";
+import { ButtonLink, InlineNotice, Input, Panel, SubmitButton } from "@/shared/ui";
+import { CopyLinkButton } from "@/widgets/property-admin";
 import { TelegramNotificationsCard } from "@/widgets/telegram-notifications-card";
 
 type SettingsPageProps = {
@@ -19,6 +22,18 @@ function getErrorMessage(error: string) {
 
   if (error === "telegram-link") {
     return "Не удалось создать ссылку для привязки Telegram.";
+  }
+
+  if (error === "telegram-setting") {
+    return "Не удалось изменить настройки Telegram-уведомлений.";
+  }
+
+  if (error === "validation") {
+    return "Укажите имя владельца и проверьте остальные поля.";
+  }
+
+  if (error === "subscription") {
+    return "Профиль временно нельзя изменить, пока подписка не продлена.";
   }
 
   if (error) {
@@ -37,68 +52,62 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const success = typeof params.success === "string" ? params.success : "";
 
   return (
-    <section className="br-requests-layout">
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Профиль владельца</h2>
-            <p>Контакты и базовые настройки кабинета.</p>
-          </div>
+    <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <Panel className="grid gap-5 p-5 max-[640px]:p-4" surface="raised">
+        <div className="grid gap-1.5">
+          <h1 className="text-[clamp(26px,4vw,34px)] font-bold leading-[1.05] tracking-[-0.035em] text-[var(--text)]">Профиль владельца</h1>
+          <p className="text-sm leading-[1.55] text-[var(--text-muted)]">Контакты, адрес публичной страницы и базовые настройки кабинета.</p>
         </div>
-        {getErrorMessage(error) ? <p className="br-card" style={{ marginBottom: 16 }}>{getErrorMessage(error)}</p> : null}
-        {success === "saved" ? <p className="br-card" style={{ marginBottom: 16 }}>Профиль обновлен.</p> : null}
-        <div className="br-card" style={{ marginBottom: 16, padding: 16 }}>
-          <strong>Публичная страница владельца</strong>
-          <p style={{ marginTop: 8 }}>{publicOwnerPath ?? "Заполните slug, чтобы получить ссылку /p/[profile.slug]."}</p>
-          <div className="br-active-step__actions" style={{ marginTop: 12 }}>
-            <Link href={publicOwnerPath ?? "/dashboard/settings"} className="br-button br-button--secondary">
-              {publicOwnerPath ? "Открыть публичную страницу" : "Заполнить slug"}
-            </Link>
+        {getErrorMessage(error) ? <InlineNotice tone="error">{getErrorMessage(error)}</InlineNotice> : null}
+        {success === "saved" ? <InlineNotice>Профиль обновлен.</InlineNotice> : null}
+        {success === "telegram-enabled" ? <InlineNotice>Telegram-уведомления включены.</InlineNotice> : null}
+        {success === "telegram-disabled" ? <InlineNotice tone="soft">Telegram-уведомления отключены.</InlineNotice> : null}
+
+        <section className="grid gap-3 rounded-[20px] border border-[rgb(var(--color-primary-rgb)_/_0.16)] bg-[var(--color-primary-pale)] p-4">
+          <div className="grid gap-1.5">
+            <strong className="text-base text-[var(--text)]">Публичная страница владельца</strong>
+            <p className="break-all text-sm leading-[1.5] text-[var(--text-muted)]">
+              {publicOwnerPath ?? "Задайте адрес страницы ниже, чтобы получить персональную ссылку для гостей."}
+            </p>
           </div>
-        </div>
-        <form action={updateProfileAction}>
+          <div className="flex flex-wrap gap-2.5">
+            <ButtonLink href={publicOwnerPath ?? "#public-slug"} variant="secondary" disabled={!publicOwnerPath}>
+              Открыть страницу
+            </ButtonLink>
+            {publicOwnerPath ? <CopyLinkButton path={publicOwnerPath} /> : null}
+          </div>
+        </section>
+
+        <form action={updateProfileAction} className="grid gap-5">
           <input type="hidden" name="role" value="owner" />
-          <div className="br-settings-grid">
-            <div className="br-form-field">
-              <label className="br-label" htmlFor="display-name">Имя</label>
-              <input id="display-name" name="displayName" className="br-field" defaultValue={profile?.displayName} />
-            </div>
-            <div className="br-form-field">
-              <label className="br-label" htmlFor="phone">Телефон</label>
-              <input id="phone" name="phone" className="br-field" defaultValue={profile?.phone} />
-            </div>
-            <div className="br-form-field">
-              <label className="br-label" htmlFor="email">Email</label>
-              <input id="email" className="br-field" defaultValue={profile?.email} disabled />
-            </div>
-            <div className="br-form-field">
-              <label className="br-label" htmlFor="slug">Slug</label>
-              <input id="slug" name="slug" className="br-field" defaultValue={profile?.slug} />
-            </div>
-            <div className="br-form-field">
-              <label className="br-label" htmlFor="telegram">Telegram</label>
-              <input id="telegram" name="telegram" className="br-field" defaultValue={profile?.telegram} />
-            </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Input id="display-name" name="displayName" label="Имя" defaultValue={profile?.displayName} required />
+            <Input id="phone" name="phone" type="tel" label="Телефон" defaultValue={profile?.phone} />
+            <Input id="email" type="email" label="Email" defaultValue={profile?.email} disabled />
+            <Input id="public-slug" name="slug" label="Адрес страницы" description="Используется в персональной ссылке после /p/." defaultValue={profile?.slug} />
+            <Input id="telegram" name="telegram" label="Telegram" placeholder="@username" defaultValue={profile?.telegram} />
           </div>
-          <div className="br-active-step__actions">
-            <Link href="/forgot-password" className="br-button br-button--secondary">Изменить пароль</Link>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ButtonLink href="/forgot-password" variant="secondary" fullWidth>Изменить пароль</ButtonLink>
             <SubmitButton pendingLabel="Сохранение">Сохранить</SubmitButton>
           </div>
         </form>
-      </section>
+      </Panel>
 
-      <aside>
-        <TelegramNotificationsCard role="owner" status={telegramStatus} action={startTelegramNotificationLinkAction} />
-        <div style={{ height: 16 }} />
-        <section className="br-dashboard-block br-card">
-          <div className="br-dashboard-block__header">
-            <div>
-              <h2>Установка на главный экран</h2>
-              <p>Быстрый доступ к Bronly с телефона без App Store и Google Play.</p>
-            </div>
+      <aside className="grid gap-4">
+        <TelegramNotificationsCard
+          role="owner"
+          status={telegramStatus}
+          linkAction={startTelegramNotificationLinkAction}
+          toggleAction={setTelegramNotificationsEnabledAction}
+        />
+        <Panel className="grid gap-4 p-4" surface="raised">
+          <div className="grid gap-1.5">
+            <h2 className="text-lg font-semibold text-[var(--text)]">Установка на главный экран</h2>
+            <p className="text-sm leading-[1.5] text-[var(--text-muted)]">Быстрый доступ к Bronly с телефона без App Store и Google Play.</p>
           </div>
           <InstallAppCard />
-        </section>
+        </Panel>
       </aside>
     </section>
   );

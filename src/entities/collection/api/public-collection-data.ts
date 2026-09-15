@@ -2,10 +2,11 @@ import { cache } from "react";
 
 import { buildPropertyPhotoMap, buildRoomPhotoMap, withLegacyPropertyCover } from "@/entities/property/api/photo-utils";
 import { buildPublicRoomQuote, normalizePublicStayFilters, type PublicRoom, type PublicStayFilters } from "@/entities/room";
-import { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
+import { mapBusyRange, mapSeasonalPrice, normalizeRoomKind } from "@/entities/room/model/mappers";
 import type { OwnerBusyRange, OwnerSeasonalPrice, RoomPhoto } from "@/entities/room/model/types";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
+import { logServerConfigurationError, logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 import type { PublicUnavailableReason } from "@/shared/lib/public-page-visibility";
 import type {
   SupabaseCollectionRow,
@@ -24,6 +25,11 @@ import type {
   PublicCollectionSection,
   PublicCollectionStandaloneRoomItem,
 } from "../model/types";
+import {
+  canCollectionCreatorAccessProperty,
+  canCollectionCreatorAccessRoom,
+  isCollectionVisitorKey,
+} from "../model/rules";
 
 type CollectionRoomRow = SupabaseRoomRow & {
   properties:
@@ -64,6 +70,18 @@ type CollectionContext = {
   publicUnavailableReason: PublicUnavailableReason | null;
 } | null;
 
+function buildServiceUnavailableCollectionData(filters: PublicStayFilters): PublicCollectionPageData {
+  return {
+    collection: null,
+    contact: null,
+    sections: [],
+    standaloneRooms: [],
+    filters,
+    publicUnavailableReason: "service_unavailable",
+    publicWarningText: null,
+  };
+}
+
 function getSingleRow<T>(value: T | T[] | null): T | null {
   if (Array.isArray(value)) {
     return value[0] ?? null;
@@ -82,7 +100,7 @@ function mapRoomRow(
   return {
     id: room.id,
     ownerId: room.owner_id,
-    kind: room.room_kind,
+    kind: normalizeRoomKind(room.room_kind),
     title: room.title,
     subtitle: room.subtitle ?? "",
     propertyTitle: room.property_id ? undefined : room.property_type ?? "Отдельный номер",
@@ -124,14 +142,22 @@ async function loadPublicCollectionContext(
   }
 
   const supabase = createSupabaseAdminClient();
-  const { data: collectionData } = await supabase.from("collections").select("*").eq("slug", slug).maybeSingle();
+  const { data: collectionData, error: collectionError } = await supabase
+    .from("collections")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (collectionError) {
+    throw collectionError;
+  }
   const collectionRow = collectionData as SupabaseCollectionRow | null;
 
   if (!collectionRow || collectionRow.is_archived) {
     return null;
   }
 
-  const [{ data: creatorVisibilityData }, creatorSubscription] = await Promise.all([
+  const [creatorVisibilityResult, creatorSubscription] = await Promise.all([
     supabase
       .from("profiles")
       .select("is_public_hidden_by_admin")
@@ -139,6 +165,12 @@ async function loadPublicCollectionContext(
       .maybeSingle(),
     getSubscriptionRuntimeState(collectionRow.creator_id, collectionRow.creator_role),
   ]);
+
+  if (creatorVisibilityResult.error) {
+    throw creatorVisibilityResult.error;
+  }
+
+  const creatorVisibilityData = creatorVisibilityResult.data;
 
   if (!creatorSubscription.isPublicAllowed) {
     return {
@@ -162,7 +194,7 @@ async function loadPublicCollectionContext(
     };
   }
 
-  const [{ data: creatorData }, { data: itemRows }] = await Promise.all([
+  const [creatorResult, itemsResult] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, slug, display_name, phone, whatsapp, telegram")
@@ -175,6 +207,17 @@ async function loadPublicCollectionContext(
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true }),
   ]);
+
+  if (creatorResult.error) {
+    throw creatorResult.error;
+  }
+
+  if (itemsResult.error) {
+    throw itemsResult.error;
+  }
+
+  const creatorData = creatorResult.data;
+  const itemRows = itemsResult.data;
 
   const creator = creatorData as {
     id: string;
@@ -200,7 +243,7 @@ async function loadPublicCollectionContext(
         .in("id", propertyIds)
         .eq("published", true)
         .eq("is_frozen", false)
-    : { data: [] };
+    : { data: [], error: null };
   const directRoomRowsResult = directRoomIds.length
     ? await supabase
         .from("rooms")
@@ -208,7 +251,15 @@ async function loadPublicCollectionContext(
         .in("id", directRoomIds)
         .eq("is_active", true)
         .order("title", { ascending: true })
-    : { data: [] };
+    : { data: [], error: null };
+
+  if (propertyRowsResult.error) {
+    throw propertyRowsResult.error;
+  }
+
+  if (directRoomRowsResult.error) {
+    throw directRoomRowsResult.error;
+  }
 
   const directRoomPropertyIds = [
     ...new Set(
@@ -225,19 +276,81 @@ async function loadPublicCollectionContext(
         .in("id", extraPropertyIds)
         .eq("published", true)
         .eq("is_frozen", false)
-    : { data: [] };
+    : { data: [], error: null };
 
-  const propertyRows = [...(propertyRowsResult.data ?? []), ...(extraPropertyRowsResult.data ?? [])] as Array<
+  if (extraPropertyRowsResult.error) {
+    throw extraPropertyRowsResult.error;
+  }
+
+  const candidatePropertyRows = [...(propertyRowsResult.data ?? []), ...(extraPropertyRowsResult.data ?? [])] as Array<
     Pick<
       SupabasePropertyRow,
       "id" | "owner_id" | "slug" | "title" | "short_title" | "city" | "address" | "cover_image_url" | "published" | "is_frozen"
     >
   >;
+  const directRoomRows = (directRoomRowsResult.data ?? []) as CollectionRoomRow[];
+  const candidatePropertyIds = [...new Set(candidatePropertyRows.map((property) => property.id))];
+  const candidateStandaloneRoomIds = directRoomRows
+    .filter((room) => room.room_kind === "standalone_room")
+    .map((room) => room.id);
+  const [activePropertyLinksResult, activeRoomLinksResult] = collectionRow.creator_role === "agent"
+    ? await Promise.all([
+        candidatePropertyIds.length
+          ? supabase
+              .from("agent_property_links")
+              .select("property_id")
+              .eq("agent_id", collectionRow.creator_id)
+              .eq("status", "active")
+              .in("property_id", candidatePropertyIds)
+          : Promise.resolve({ data: [], error: null }),
+        candidateStandaloneRoomIds.length
+          ? supabase
+              .from("agent_room_links")
+              .select("room_id")
+              .eq("agent_id", collectionRow.creator_id)
+              .eq("status", "active")
+              .in("room_id", candidateStandaloneRoomIds)
+          : Promise.resolve({ data: [], error: null }),
+      ])
+    : [{ data: [], error: null }, { data: [], error: null }];
+
+  if (activePropertyLinksResult.error) {
+    throw activePropertyLinksResult.error;
+  }
+
+  if (activeRoomLinksResult.error) {
+    throw activeRoomLinksResult.error;
+  }
+  const activePropertyIds = new Set((activePropertyLinksResult.data ?? []).map((link) => link.property_id as string));
+  const activeStandaloneRoomIds = new Set((activeRoomLinksResult.data ?? []).map((link) => link.room_id as string));
+  const creatorAccess = {
+    creatorId: collectionRow.creator_id,
+    creatorRole: collectionRow.creator_role as CollectionRole,
+  };
+  const propertyRows = candidatePropertyRows.filter((property) =>
+    canCollectionCreatorAccessProperty({
+      creator: creatorAccess,
+      propertyOwnerId: property.owner_id,
+      hasActivePropertyLink: activePropertyIds.has(property.id),
+    }),
+  );
+  const accessibleDirectRoomRows = directRoomRows.filter((room) =>
+    canCollectionCreatorAccessRoom({
+      creator: creatorAccess,
+      room: {
+        ownerId: room.owner_id,
+        propertyId: room.property_id,
+        kind: room.room_kind,
+      },
+      hasActivePropertyLink: Boolean(room.property_id && activePropertyIds.has(room.property_id)),
+      hasActiveRoomLink: activeStandaloneRoomIds.has(room.id),
+    }),
+  );
   const ownerStates = await Promise.all(
     [
       ...new Set([
         ...propertyRows.map((property) => property.owner_id),
-        ...((directRoomRowsResult.data ?? []) as CollectionRoomRow[]).map((room) => room.owner_id),
+        ...accessibleDirectRoomRows.map((room) => room.owner_id),
       ]),
     ].map(async (ownerId) => [ownerId, await getSubscriptionRuntimeState(ownerId, "owner")] as const),
   );
@@ -255,14 +368,18 @@ async function loadPublicCollectionContext(
         .in("property_id", [...safePropertyMap.keys()])
         .eq("is_active", true)
         .order("title", { ascending: true })
-    : { data: [] };
+    : { data: [], error: null };
+
+  if (propertyRoomRowsResult.error) {
+    throw propertyRoomRowsResult.error;
+  }
 
   const propertyRoomMap = new Map<string, CollectionRoomRow>();
   const standaloneRoomMap = new Map<string, CollectionRoomRow>();
 
   for (const row of [
     ...((propertyRoomRowsResult.data ?? []) as CollectionRoomRow[]),
-    ...((directRoomRowsResult.data ?? []) as CollectionRoomRow[]),
+    ...accessibleDirectRoomRows,
   ]) {
     const property = getSingleRow(row.properties);
 
@@ -297,7 +414,7 @@ async function loadPublicCollectionContext(
               .select("room_id, markup_percent")
               .eq("agent_id", collectionRow.creator_id)
               .in("room_id", roomIds)
-          : Promise.resolve({ data: [] }),
+          : Promise.resolve({ data: [], error: null }),
         supabase
           .from("room_photos")
           .select("*")
@@ -311,9 +428,21 @@ async function loadPublicCollectionContext(
               .in("property_id", propertyPhotoIds)
               .order("sort_order", { ascending: true })
               .order("created_at", { ascending: true })
-          : Promise.resolve({ data: [] }),
+          : Promise.resolve({ data: [], error: null }),
       ])
-    : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
+    : [
+        { data: [], error: null },
+        { data: [], error: null },
+        { data: [], error: null },
+        { data: [], error: null },
+        { data: [], error: null },
+      ];
+
+  for (const result of [seasonalResult, busyResult, markupResult, roomPhotosResult, propertyPhotosResult]) {
+    if (result.error) {
+      throw result.error;
+    }
+  }
 
   const seasonalMap = new Map<string, OwnerSeasonalPrice[]>();
   const busyMap = new Map<string, OwnerBusyRange[]>();
@@ -490,7 +619,8 @@ export const getPublicCollectionPageData = cache(
     const filters = normalizePublicStayFilters(filterInput);
 
     if (!canUseSupabase()) {
-      return null;
+      logServerConfigurationError("collection_public_page_supabase_not_configured");
+      return buildServiceUnavailableCollectionData(filters);
     }
 
     try {
@@ -521,34 +651,41 @@ export const getPublicCollectionPageData = cache(
         publicUnavailableReason: context.publicUnavailableReason,
         publicWarningText: context.publicWarningText,
       };
-    } catch {
-      return null;
+    } catch (error) {
+      logServerDataError("collection_public_page_load_failed", error);
+      return buildServiceUnavailableCollectionData(filters);
     }
   },
 );
 
-export async function recordPublicCollectionOpen(collectionSlug: string) {
+export async function recordPublicCollectionOpen(collectionSlug: string, visitorKey: string) {
+  if (!collectionSlug || !isCollectionVisitorKey(visitorKey)) {
+    return false;
+  }
+
   if (!canUseSupabase()) {
+    logServerConfigurationError("collection_open_supabase_not_configured");
     return false;
   }
 
   try {
     const supabase = createSupabaseAdminClient();
-    const { data } = await supabase
+    const { data, error: collectionError } = await supabase
       .from("collections")
-      .select("id, creator_id, creator_role, is_archived, views_count, first_opened_at")
+      .select("id, creator_id, creator_role, is_archived")
       .eq("slug", collectionSlug)
       .maybeSingle();
-    const collection = (data ?? null) as Pick<
-      SupabaseCollectionRow,
-      "id" | "creator_id" | "creator_role" | "is_archived" | "views_count" | "first_opened_at"
-    > | null;
+
+    if (collectionError) {
+      throw collectionError;
+    }
+    const collection = (data ?? null) as Pick<SupabaseCollectionRow, "id" | "creator_id" | "creator_role" | "is_archived"> | null;
 
     if (!collection || collection.is_archived) {
       return false;
     }
 
-    const [{ data: creatorVisibilityData }, creatorSubscription] = await Promise.all([
+    const [creatorVisibilityResult, creatorSubscription] = await Promise.all([
       supabase
         .from("profiles")
         .select("is_public_hidden_by_admin")
@@ -557,22 +694,24 @@ export async function recordPublicCollectionOpen(collectionSlug: string) {
       getSubscriptionRuntimeState(collection.creator_id, collection.creator_role),
     ]);
 
+    if (creatorVisibilityResult.error) {
+      throw creatorVisibilityResult.error;
+    }
+
+    const creatorVisibilityData = creatorVisibilityResult.data;
+
     if (!creatorSubscription.isPublicAllowed || creatorVisibilityData?.is_public_hidden_by_admin) {
       return false;
     }
 
-    const openedAt = new Date().toISOString();
-    const { error } = await supabase
-      .from("collections")
-      .update({
-        views_count: collection.views_count + 1,
-        first_opened_at: collection.first_opened_at ?? openedAt,
-        last_opened_at: openedAt,
-      })
-      .eq("id", collection.id);
+    const { data: recorded, error } = await supabase.rpc("record_collection_open", {
+      p_collection_slug: collectionSlug,
+      p_visitor_key: visitorKey,
+    });
 
-    return !error;
-  } catch {
+    return !error && recorded === true;
+  } catch (error) {
+    logServerDataError("collection_open_record_failed", error);
     return false;
   }
 }
@@ -590,7 +729,7 @@ export async function getCollectionRequestContext(collectionSlug: string, proper
     return {
       collectionId: pageData.collection.id,
       collectionSlug: pageData.collection.slug,
-      collectionTitle: pageData.collection.title,
+      collectionTitle: pageData.collection.guestLabel || pageData.collection.title,
       creatorRole: pageData.collection.creatorRole,
       contactId: pageData.contact.id,
       propertySlug: null,
@@ -614,7 +753,7 @@ export async function getCollectionRequestContext(collectionSlug: string, proper
   return {
     collectionId: pageData.collection.id,
     collectionSlug: pageData.collection.slug,
-    collectionTitle: pageData.collection.title,
+    collectionTitle: pageData.collection.guestLabel || pageData.collection.title,
     creatorRole: pageData.collection.creatorRole,
     contactId: pageData.contact.id,
     propertySlug: propertySection.property.slug,

@@ -64,7 +64,11 @@ function getTrackedFiles() {
     encoding: "utf8",
   });
 
-  return output.split("\0").filter(Boolean).filter(isTextFile);
+  return output
+    .split("\0")
+    .filter(Boolean)
+    .filter(isTextFile)
+    .filter((filePath) => fs.existsSync(path.join(rootDir, filePath)));
 }
 
 function hasUtf8Bom(buffer) {

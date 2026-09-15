@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { signInAction } from "@/app/auth/actions";
 import { getCurrentAuthProfile, getPostLoginRedirect } from "@/shared/api/supabase";
 import { createSeoMetadata } from "@/shared/lib/seo";
-import { BrandLogo, SubmitButton } from "@/shared/ui";
+import { InlineNotice, Input, SubmitButton } from "@/shared/ui";
+import { AuthShell } from "@/widgets/auth-shell";
 
 export const metadata: Metadata = createSeoMetadata({
   title: "Вход",
@@ -50,94 +51,41 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const next = typeof params.next === "string" ? params.next : "";
   const invite = typeof params.invite === "string" ? params.invite : "";
 
-  return (
-    <main className="br-auth-page">
-      <section className="br-auth-shell br-card">
-        <BrandLogo className="br-auth-shell__logo" />
-        <div className="br-auth-shell__grid">
-          <div className="br-auth-shell__intro">
-            <span className="br-chip">Вход владельца или агента</span>
-            <h1 className="br-auth-shell__title">Вход в аккаунт</h1>
-            <p className="br-auth-shell__text">
-              Вернитесь в кабинет, чтобы управлять объектами, календарем занятости и заявками.
-            </p>
-          </div>
+  const errorMessage = error === "profile"
+    ? "Вход выполнен, но профиль в Bronly не создан. Попробуйте войти еще раз или обратитесь в поддержку."
+    : error === "session"
+      ? "Вход прошел, но сессия не сохранилась. Разрешите cookies для сайта и попробуйте снова."
+      : error === "email-not-confirmed"
+        ? "Email еще не подтвержден. Завершите подтверждение из письма или восстановите доступ."
+        : error
+          ? "Не удалось войти. Проверьте email и пароль."
+          : "";
 
-          <div className="br-auth-panel">
-            {error === "profile" ? (
-              <p className="br-card" style={{ marginBottom: 16 }}>
-                Вход выполнен, но профиль в Bronly не создан. Попробуйте войти еще раз или обратитесь в поддержку.
-              </p>
-            ) : null}
-            {error === "session" ? (
-              <p className="br-card" style={{ marginBottom: 16 }}>
-                Вход прошел, но сессия не сохранилась. Отключите блокировку cookies для localhost и попробуйте снова.
-              </p>
-            ) : null}
-            {error === "email-not-confirmed" ? (
-              <p className="br-card" style={{ marginBottom: 16 }}>
-                Email еще не подтвержден. Завершите подтверждение из письма или восстановите доступ через «Забыли
-                пароль?».
-              </p>
-            ) : null}
-            {error && error !== "profile" && error !== "session" && error !== "email-not-confirmed" ? (
-              <p className="br-card" style={{ marginBottom: 16 }}>
-                Не удалось войти. Проверьте email и пароль.
-              </p>
-            ) : null}
+  return (
+    <AuthShell
+      eyebrow="Вход владельца или агента"
+      title="Вход в аккаунт"
+      description="Вернитесь в кабинет, чтобы управлять объектами, календарем занятости и заявками."
+      footer={<>Нет аккаунта? <Link href={buildRegisterHref(invite, next)}>Создать аккаунт</Link></>}
+    >
+            {errorMessage ? <InlineNotice tone="error">{errorMessage}</InlineNotice> : null}
             {success === "check-email" ? (
-              <p className="br-card" style={{ marginBottom: 16 }}>
-                Аккаунт создан. Если в проекте включено подтверждение email, завершите его и затем войдите.
-              </p>
+              <InlineNotice>Аккаунт создан. Если включено подтверждение email, завершите его и затем войдите.</InlineNotice>
             ) : null}
             {info === "already-confirmed" ? (
-              <p className="br-card" style={{ marginBottom: 16 }}>
-                Этот email уже подтвержден. Войдите с паролем или восстановите его через «Забыли пароль?».
-              </p>
+              <InlineNotice tone="soft">Этот email уже подтвержден. Войдите с паролем или восстановите доступ.</InlineNotice>
             ) : null}
 
-            <form className="br-auth-form" action={signInAction}>
+            <form className="grid gap-4" action={signInAction}>
               <input type="hidden" name="next" value={next} />
 
-              <div className="br-auth-form__field">
-                <label className="br-label" htmlFor="email">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  className="br-field"
-                  placeholder="name@example.com"
-                  defaultValue={emailHint}
-                  required
-                />
-              </div>
-              <div className="br-auth-form__field">
-                <label className="br-label" htmlFor="password">
-                  Пароль
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  className="br-field"
-                  placeholder="Введите пароль"
-                  required
-                />
-              </div>
-              <Link href="/forgot-password" className="br-auth-form__forgot">
+              <Input id="email" name="email" type="email" label="Email" placeholder="name@example.com" defaultValue={emailHint} required />
+              <Input id="password" name="password" type="password" label="Пароль" placeholder="Введите пароль" required />
+              <Link href="/forgot-password" className="justify-self-end text-sm font-bold text-[var(--color-primary-hover)] underline-offset-4 hover:underline">
                 Забыли пароль?
               </Link>
               <SubmitButton fullWidth pendingLabel="Вход">Войти</SubmitButton>
             </form>
-
-            <p className="br-auth-bottom">
-              Нет аккаунта? <Link href={buildRegisterHref(invite, next)}>Создать аккаунт</Link>
-            </p>
-          </div>
-        </div>
-      </section>
-    </main>
+    </AuthShell>
   );
 }

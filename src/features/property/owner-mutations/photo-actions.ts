@@ -42,7 +42,7 @@ async function loadOwnedProperty(propertyId: string) {
 
   return {
     supabase,
-    property: (data ?? null) as { id: string; slug: string; owner_id: string } | null,
+    property: data,
   };
 }
 
@@ -58,7 +58,7 @@ async function loadOwnedRoom(roomId: string, propertyId?: string) {
 
   return {
     supabase,
-    room: (data ?? null) as { id: string; property_id: string | null; owner_id: string } | null,
+    room: data,
   };
 }
 
@@ -99,7 +99,7 @@ async function getOwnerPublicSlug(
 
   if (!resolvedOwnerId) {
     const { data: propertyData } = await supabase.from("properties").select("owner_id").eq("id", propertyId).maybeSingle();
-    resolvedOwnerId = (propertyData?.owner_id as string | undefined) ?? "";
+    resolvedOwnerId = propertyData?.owner_id ?? "";
   }
 
   if (!resolvedOwnerId) {
@@ -107,7 +107,7 @@ async function getOwnerPublicSlug(
   }
 
   const { data: profileData } = await supabase.from("profiles").select("slug").eq("id", resolvedOwnerId).maybeSingle();
-  return (profileData?.slug as string | undefined) ?? "";
+  return profileData?.slug ?? "";
 }
 
 function revalidateRoomMedia(propertyId: string, roomId: string, ownerPublicSlug?: string) {
@@ -203,7 +203,7 @@ export async function deletePropertyPhoto(formData: FormData) {
     .eq("id", photoId)
     .eq("property_id", propertyId)
     .maybeSingle();
-  const photoRow = (photoRowData ?? null) as Pick<PropertyPhotoRecord, "id" | "property_id" | "storage_path"> | null;
+  const photoRow = photoRowData;
 
   if (!photoRow) {
     redirect(buildPropertyPathWithState(propertyId, "property", { error: "photo-delete" }));
@@ -251,7 +251,7 @@ export async function setPropertyPhotoPrimary(formData: FormData) {
     .eq("property_id", propertyId)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
-  const photoRows = (photoRowsData ?? []) as PropertyPhotoRecord[];
+  const photoRows = photoRowsData ?? [];
 
   if (!photoRows.some((photo) => photo.id === photoId)) {
     redirect(buildPropertyPathWithState(propertyId, "property", { error: "photo-order" }));
@@ -325,7 +325,7 @@ export async function deleteRoomPhoto(formData: FormData) {
     .eq("id", photoId)
     .eq("room_id", roomId)
     .maybeSingle();
-  const photoRow = (photoRowData ?? null) as Pick<RoomPhotoRecord, "id" | "room_id" | "storage_path"> | null;
+  const photoRow = photoRowData;
 
   if (!photoRow) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "room-photo-delete" }));
@@ -371,7 +371,7 @@ export async function setRoomPhotoPrimary(formData: FormData) {
     .eq("room_id", roomId)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
-  const photoRows = (photoRowsData ?? []) as RoomPhotoRecord[];
+  const photoRows = photoRowsData ?? [];
 
   if (!photoRows.some((photo) => photo.id === photoId)) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "room-photo-order" }));

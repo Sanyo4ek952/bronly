@@ -1,6 +1,8 @@
 export type SubscriptionRoleContext = "owner" | "agent";
 
-export type SubscriptionStatus = "trial" | "active" | "grace" | "expired" | "manual";
+export type SubscriptionStatus = "trial" | "active" | "grace" | "expired";
+
+export type StoredSubscriptionStatus = SubscriptionStatus | "manual";
 
 export type SubscriptionPlanTier = "start" | "base" | "plus" | "custom";
 
@@ -10,7 +12,7 @@ export type SubscriptionRuntimeState = {
   profileId: string;
   roleContext: SubscriptionRoleContext;
   status: SubscriptionStatus;
-  storedStatus: SubscriptionStatus;
+  storedStatus: StoredSubscriptionStatus;
   statusLabel: string;
   planTier: SubscriptionPlanTier;
   planName: string;

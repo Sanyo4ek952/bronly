@@ -1,7 +1,6 @@
 import type { OwnerPropertyDetail } from "@/entities/property";
 import { cn } from "@/shared/lib/cn";
-import { Input, Textarea } from "@/shared/ui";
-import { FormSectionAccordion } from "@/widgets/property-admin";
+import { FormSection, Input, Textarea } from "@/shared/ui";
 
 type OwnerPropertyFormFieldsProps = {
   property?: OwnerPropertyDetail | null;
@@ -25,10 +24,11 @@ const toggleRowClass = cn(
 export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsProps) {
   return (
     <div className={stackClass}>
-      <FormSectionAccordion
+      <FormSection
         id="overview"
         title="Основные данные"
         description="Название, тип объекта, адрес и описания, которые видит владелец и гость."
+        variant="accordion"
       >
         <div className={propertyFormGridClass}>
           <Input id="property-title" name="title" label="Название объекта" defaultValue={property?.title ?? ""} />
@@ -58,23 +58,25 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
             className="min-h-[170px]"
           />
         </div>
-      </FormSectionAccordion>
+      </FormSection>
 
-      <FormSectionAccordion
+      <FormSection
         id="contacts"
         title="Контакты"
         description="Каналы связи владельца для быстрой связи и публичной страницы."
+        variant="accordion"
       >
         <div className={inlineFieldsClass}>
           <Input id="property-phone" name="phone" label="Телефон" defaultValue={property?.phone ?? ""} />
           <Input id="property-telegram" name="telegram" label="Telegram" defaultValue={property?.telegram ?? ""} />
         </div>
-      </FormSectionAccordion>
+      </FormSection>
 
-      <FormSectionAccordion
+      <FormSection
         id="rules"
         title="Правила и особенности"
         description="Время заезда, выезда, особенности объекта и правила проживания."
+        variant="accordion"
       >
         <div className={inlineFieldsClass}>
           <Input id="property-check-in" name="checkInTime" label="Заезд" defaultValue={property?.checkInTime ?? ""} />
@@ -95,12 +97,13 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
             defaultValue={property?.houseRules.join("\n") ?? ""}
           />
         </div>
-      </FormSectionAccordion>
+      </FormSection>
 
-      <FormSectionAccordion
+      <FormSection
         id="contacts-visibility"
         title="Публикация"
         description="Настройки видимости объекта и условий сотрудничества с агентами."
+        variant="accordion"
       >
         <div className={toggleListClass}>
           <label className={toggleRowClass}>
@@ -124,7 +127,7 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
             />
           </label>
         </div>
-      </FormSectionAccordion>
+      </FormSection>
     </div>
   );
 }

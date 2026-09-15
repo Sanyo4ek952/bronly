@@ -6,6 +6,7 @@ import {
   type SupabaseNotificationSettingsRow,
   type SupabasePushSubscriptionRow,
 } from "@/shared/api/supabase";
+import { logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 import { ensureNotificationSettings } from "@/entities/notification/api/notification-settings";
 
 export type PushSubscriptionInput = {
@@ -40,16 +41,20 @@ export async function getMyPushSubscriptionStatus(): Promise<PushSubscriptionSta
   }
 
   const supabase = await createSupabaseServerClient();
-  const [{ data: settingsData }, { count }] = await Promise.all([
+  const [settingsResult, subscriptionsResult] = await Promise.all([
     supabase.from("notification_settings").select("*").eq("profile_id", profile.id).maybeSingle(),
     supabase.from("push_subscriptions").select("*", { count: "exact", head: true }).eq("profile_id", profile.id),
   ]);
 
-  const settings = (settingsData as SupabaseNotificationSettingsRow | null) ?? null;
+  if (settingsResult.error || subscriptionsResult.error) {
+    throw settingsResult.error ?? subscriptionsResult.error;
+  }
+
+  const settings = settingsResult.data ?? null;
 
   return {
     pushEnabled: settings?.push_enabled ?? true,
-    hasSubscriptions: (count ?? 0) > 0,
+    hasSubscriptions: (subscriptionsResult.count ?? 0) > 0,
     deliveryMode: hasConfiguredWebPush() ? "enabled" : "foundation_only",
   };
 }
@@ -84,10 +89,19 @@ export async function savePushSubscription(input: PushSubscriptionInput) {
   );
 
   if (error) {
+    logServerDataError("push_subscription_save_failed", error);
     return { ok: false as const, reason: "save_failed" as const };
   }
 
-  await ensureNotificationSettings(profile.id);
+  const { error: settingsError } = await admin
+    .from("notification_settings")
+    .update({ push_enabled: true, updated_at: nowIso })
+    .eq("profile_id", profile.id);
+
+  if (settingsError) {
+    logServerDataError("push_notification_setting_enable_failed", settingsError);
+    return { ok: false as const, reason: "save_failed" as const };
+  }
 
   return { ok: true as const };
 }
@@ -111,24 +125,30 @@ export async function deletePushSubscription(endpoint: string) {
     .eq("endpoint", endpoint);
 
   if (error) {
+    logServerDataError("push_subscription_delete_failed", error);
     return { ok: false as const, reason: "delete_failed" as const };
   }
 
-  const { count } = await admin
+  const { count, error: countError } = await admin
     .from("push_subscriptions")
     .select("*", { count: "exact", head: true })
     .eq("profile_id", profile.id);
 
-  await admin.from("notification_settings").upsert(
-    {
-      profile_id: profile.id,
-      push_enabled: (count ?? 0) > 0,
-      in_app_enabled: true,
-      telegram_enabled: true,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "profile_id" },
-  );
+  if (countError) {
+    logServerDataError("push_subscription_count_failed", countError);
+    return { ok: false as const, reason: "delete_failed" as const };
+  }
+
+  await ensureNotificationSettings(profile.id);
+  const { error: settingsError } = await admin
+    .from("notification_settings")
+    .update({ push_enabled: (count ?? 0) > 0, updated_at: new Date().toISOString() })
+    .eq("profile_id", profile.id);
+
+  if (settingsError) {
+    logServerDataError("push_notification_setting_disable_failed", settingsError);
+    return { ok: false as const, reason: "delete_failed" as const };
+  }
 
   return { ok: true as const };
 }
@@ -147,5 +167,5 @@ export async function listMyPushSubscriptions() {
     .eq("profile_id", profile.id)
     .order("updated_at", { ascending: false });
 
-  return (data as SupabasePushSubscriptionRow[] | null) ?? [];
+  return data ?? [];
 }

@@ -30,6 +30,13 @@ export type {
   PublicCollectionSection,
 } from "@/entities/collection/model/types";
 export {
+  canCollectionCreatorAccessProperty,
+  canCollectionCreatorAccessRoom,
+  getCollectionRequestContextFailure,
+  isCollectionVisitorKey,
+  isRoomIncludedInCollection,
+} from "@/entities/collection/model/rules";
+export {
   getCollectionRequestContext as getPublicCollectionRequestContext,
   getPublicCollectionPageData as getPublicCollectionData,
   recordPublicCollectionOpen as recordCollectionOpen,

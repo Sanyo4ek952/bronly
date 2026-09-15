@@ -13,12 +13,12 @@ type SectionHeaderProps = HTMLAttributes<HTMLDivElement> & {
 
 export function SectionHeader({ title, description, actions, className, ...props }: SectionHeaderProps) {
   return (
-    <div className={cn("br-section-header", className)} {...props}>
-      <div className="br-section-copy br-section-header__copy">
+    <div className={cn("flex items-start justify-between gap-4", className)} {...props}>
+      <div className="grid min-w-0 gap-1.5">
         <SectionTitle>{title}</SectionTitle>
         {description ? <SectionSubtitle>{description}</SectionSubtitle> : null}
       </div>
-      {actions ? <div className="br-section-header__actions">{actions}</div> : null}
+      {actions ? <div className="flex items-center gap-2.5">{actions}</div> : null}
     </div>
   );
 }

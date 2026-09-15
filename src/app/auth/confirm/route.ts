@@ -7,6 +7,12 @@ import {
   getSupabaseUrl,
   logAuthDiagnostic,
 } from "@/shared/api/supabase";
+import type { Database } from "@/shared/api/supabase/database.types";
+import { consumeAuthReferralInvite } from "@/features/auth/consume-auth-referral-invite";
+
+function isSupportedOtpType(value: string): value is "recovery" | "email" {
+  return value === "recovery" || value === "email";
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response = NextResponse.redirect(new URL(next, request.url));
-    const supabase = createServerClient(url, anonKey, {
+    const supabase = createServerClient<Database>(url, anonKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -53,9 +59,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL("/login?error=auth-confirm", request.url));
       }
 
-      const ensured = await ensureAuthUserProfile(data.user);
+      const profileId = await ensureAuthUserProfile(data.user);
 
-      if (!ensured) {
+      if (!profileId || !(await consumeAuthReferralInvite(data.user, profileId))) {
         logAuthDiagnostic("error", "auth_confirm_profile_ensure_failed", {
           requestUrl: request.url,
           authUserId: data.user.id,
@@ -66,7 +72,7 @@ export async function GET(request: NextRequest) {
       return response;
     }
 
-    if (!tokenHash || !type) {
+    if (!tokenHash || !type || !isSupportedOtpType(type)) {
       logAuthDiagnostic("warn", "auth_confirm_missing_token", {
         requestUrl: request.url,
         hasTokenHash: Boolean(tokenHash),
@@ -77,7 +83,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
-      type: type as "recovery" | "email",
+      type,
     });
 
     if (error || !data.user) {
@@ -90,9 +96,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/login?error=auth-confirm", request.url));
     }
 
-    const ensured = await ensureAuthUserProfile(data.user);
+    const profileId = await ensureAuthUserProfile(data.user);
 
-    if (!ensured) {
+    if (!profileId || !(await consumeAuthReferralInvite(data.user, profileId))) {
       logAuthDiagnostic("error", "auth_confirm_profile_ensure_failed", {
         requestUrl: request.url,
         authUserId: data.user.id,

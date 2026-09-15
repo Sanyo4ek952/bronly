@@ -1,11 +1,11 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getAgentDashboardSummary } from "@/entities/collaboration";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
-import { ButtonLink, SectionSubtitle, SectionTitle } from "@/shared/ui";
+import { ButtonLink, InlineNotice, Panel, SectionHeader, StatCard } from "@/shared/ui";
 import { OwnerDashboardActionSection } from "@/widgets/owner-dashboard-overview/owner-dashboard-action-section";
+import { CopyLinkButton } from "@/widgets/property-admin";
 import { SubscriptionOverviewCard } from "@/widgets/subscription-status-card";
 
 export default async function AgentDashboardPage() {
@@ -20,83 +20,70 @@ export default async function AgentDashboardPage() {
     getSubscriptionRuntimeState(profile.id, "agent"),
   ]);
 
-  return (
-    <>
-      <section className="br-summary-grid">
-        <article className="br-summary-card br-card">
-          <div className="br-summary-card__header">
-            <strong>Агентская витрина</strong>
-            <span className="br-summary-card__badge">Агент</span>
-          </div>
-          <div className="br-summary-card__rows">
-            <div className="br-summary-card__row">
-              <span>Публичная ссылка</span>
-              {summary.publicLinkHref ? (
-                <Link href={summary.publicLinkHref}>
-                  <strong>{summary.publicLinkLabel}</strong>
-                </Link>
-              ) : (
-                <strong>{summary.publicLinkLabel}</strong>
-              )}
-            </div>
-            <div className="br-summary-card__row">
-              <span>Активные связи</span>
-              <strong>{summary.activeCollaborations}</strong>
-            </div>
-            <div className="br-summary-card__row">
-              <span>Новые заявки</span>
-              <strong>{summary.incomingRequests}</strong>
-            </div>
-          </div>
-          <Link href="/agent/dashboard/opportunities" className="br-button br-button--primary br-button--full">
-            Найти объекты
-          </Link>
-        </article>
-        <article className="br-summary-card br-card">
-          <div className="br-summary-card__header">
-            <strong>Сделки</strong>
-          </div>
-          <div className="br-summary-card__rows">
-            <div className="br-summary-card__row">
-              <span>Завершенные</span>
-              <strong>{summary.completedDeals}</strong>
-            </div>
-            <div className="br-summary-card__row">
-              <span>Статус</span>
-              <strong>Вручную через владельца</strong>
-            </div>
-          </div>
-          <Link href="/agent/dashboard/deals" className="br-button br-button--secondary br-button--full">
-            Открыть сделки
-          </Link>
-        </article>
-        <SubscriptionOverviewCard subscription={subscription} href="/agent/dashboard/subscription" />
-      </section>
+  if (summary.loadState === "unavailable") {
+    return (
+      <InlineNotice title="Не удалось загрузить данные кабинета" tone="warning" aria-live="polite">
+        Статистика и действия временно недоступны. Обновите страницу позже.
+      </InlineNotice>
+    );
+  }
 
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div className="br-section-copy">
-            <SectionTitle>Ближайшие шаги агента</SectionTitle>
-            <SectionSubtitle>Рабочая схема MVP без лишнего CRM-слоя.</SectionSubtitle>
-          </div>
+  return (
+    <div className="grid gap-4">
+      <Panel className="grid gap-5 p-5 max-[640px]:p-4" surface="raised">
+        <SectionHeader
+          title="Агентская витрина"
+          description="Персональная ссылка, активные сотрудничества и заявки по вашим каналам."
+        />
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <StatCard title="Активные связи" value={summary.activeCollaborations} subtitle="Объекты и отдельные номера" />
+          <StatCard title="Новые заявки" value={summary.incomingRequests} subtitle="Ожидают вашего действия" />
+          <StatCard title="Завершенные сделки" value={summary.completedDeals} subtitle="Статус ставит владелец" />
         </div>
 
-        <div className="br-onboarding-grid">
+        <section className="grid gap-3 rounded-[20px] border border-[rgb(var(--color-primary-rgb)_/_0.16)] bg-[var(--color-primary-pale)] p-4">
+          <div className="grid gap-1.5">
+            <strong className="text-base text-[var(--text)]">Публичная ссылка агента</strong>
+            <p className="break-all text-sm leading-relaxed text-[var(--text-muted)]">
+              {summary.publicLinkLabel || "Ссылка создается автоматически для профиля агента."}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2.5">
+            <ButtonLink href={summary.publicLinkHref ?? "#"} variant="secondary" disabled={!summary.publicLinkHref}>
+              Открыть витрину
+            </ButtonLink>
+            {summary.publicLinkHref ? <CopyLinkButton path={summary.publicLinkHref} /> : null}
+            <ButtonLink href="/agent/dashboard/opportunities">Найти объекты</ButtonLink>
+          </div>
+        </section>
+      </Panel>
+
+      <Panel className="grid gap-4 p-5 max-[640px]:p-4" surface="raised">
+        <SectionHeader title="Ближайшие шаги агента" description="Последовательный путь от профиля до передачи заявки владельцу." />
+        <ol className="grid gap-3 md:grid-cols-3">
           {[
             "Заполните контакты, которые увидит гость по агентской ссылке.",
-            "Откройте раздел «К сотрудничеству», чтобы отправить предложение владельцу.",
-            "После принятия связи принимайте заявки и вручную передавайте их владельцу.",
+            "Отправьте предложение владельцу по объекту или отдельному номеру.",
+            "После принятия связи настройте цену и передавайте заявки владельцу вручную.",
           ].map((step, index) => (
-            <article key={step} className="br-onboarding-card br-onboarding-card--current">
-              <div className="br-onboarding-card__top">
-                <span className="br-onboarding-card__index">{index + 1}</span>
-                <span className="br-onboarding-card__status">Следующий шаг</span>
-              </div>
-              <strong>{step}</strong>
-            </article>
+            <li key={step} className="grid gap-3 rounded-[20px] border border-[var(--border)] bg-[var(--surface-subtle)] p-4">
+              <span className="grid size-9 place-items-center rounded-[14px] bg-[rgb(var(--color-primary-rgb)_/_0.10)] text-sm font-extrabold text-[var(--color-primary-hover)]">
+                {index + 1}
+              </span>
+              <strong className="text-sm leading-relaxed text-[var(--text)]">{step}</strong>
+            </li>
           ))}
-        </div>
-      </section>
+        </ol>
+      </Panel>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Panel className="grid gap-4 p-5 max-[640px]:p-4" surface="raised">
+          <SectionHeader title="Сделки" description="Только владелец может отметить принятую заявку завершенной." />
+          <ButtonLink href="/agent/dashboard/deals" variant="secondary">Открыть сделки</ButtonLink>
+        </Panel>
+        <SubscriptionOverviewCard subscription={subscription} href="/agent/dashboard/subscription" />
+      </div>
 
       <OwnerDashboardActionSection
         title="Приглашения"
@@ -105,6 +92,6 @@ export default async function AgentDashboardPage() {
         actionLabel="Пригласить"
         buttonSize="sm"
       />
-    </>
+    </div>
   );
 }

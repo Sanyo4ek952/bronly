@@ -1,10 +1,14 @@
+import "server-only";
+
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { unstable_rethrow } from "next/navigation";
 
+import type { Database } from "@/shared/api/supabase/database.types";
 import { ensureAuthUserProfile } from "@/shared/api/supabase/ensure-profile";
 import { logAuthDiagnostic } from "@/shared/api/supabase/auth-diagnostics";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/shared/api/supabase/env";
+import { logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 
 export type AuthRole = "owner" | "agent" | "admin";
 
@@ -66,7 +70,7 @@ export async function createSupabaseServerClient() {
 
   const cookieStore = await cookies();
 
-  return createServerClient(url, anonKey, {
+  return createServerClient<Database>(url, anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -89,17 +93,29 @@ export async function getCurrentAuthProfile(): Promise<AuthProfile | null> {
     const supabase = await createSupabaseServerClient();
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser();
+
+    if (authError) {
+      logServerDataError("current_auth_user_lookup_failed", authError);
+      return null;
+    }
 
     if (!user) {
       return null;
     }
 
-    let { data: profileRow } = await supabase
+    const profileResult = await supabase
       .from("profiles")
       .select("id, auth_user_id, display_name, phone, slug, agent_public_id, telegram")
       .eq("auth_user_id", user.id)
       .maybeSingle();
+    let profileRow = profileResult.data;
+
+    if (profileResult.error) {
+      logServerDataError("current_auth_profile_lookup_failed", profileResult.error);
+      return null;
+    }
 
     if (!profileRow) {
       logAuthDiagnostic("warn", "profile_missing_for_authenticated_user", {
@@ -120,6 +136,12 @@ export async function getCurrentAuthProfile(): Promise<AuthProfile | null> {
         .select("id, auth_user_id, display_name, phone, slug, agent_public_id, telegram")
         .eq("auth_user_id", user.id)
         .maybeSingle();
+
+      if (refetch.error) {
+        logServerDataError("current_auth_profile_refetch_failed", refetch.error);
+        return null;
+      }
+
       profileRow = refetch.data;
     }
 
@@ -131,27 +153,30 @@ export async function getCurrentAuthProfile(): Promise<AuthProfile | null> {
       return null;
     }
 
-    const { data: roleRows } = await supabase
+    const { data: roleRows, error: roleError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("profile_id", profileRow.id);
 
+    if (roleError) {
+      logServerDataError("current_auth_roles_lookup_failed", roleError);
+      return null;
+    }
+
     return {
-      id: profileRow.id as string,
-      authUserId: profileRow.auth_user_id as string,
-      displayName: (profileRow.display_name as string) ?? "",
-      phone: (profileRow.phone as string | null) ?? "",
-      slug: (profileRow.slug as string | null) ?? "",
-      agentPublicId: (profileRow.agent_public_id as string | null) ?? "",
-      telegram: (profileRow.telegram as string | null) ?? "",
+      id: profileRow.id,
+      authUserId: profileRow.auth_user_id ?? user.id,
+      displayName: profileRow.display_name,
+      phone: profileRow.phone ?? "",
+      slug: profileRow.slug ?? "",
+      agentPublicId: profileRow.agent_public_id ?? "",
+      telegram: profileRow.telegram ?? "",
       email: user.email ?? "",
-      roles: (roleRows ?? []).map((row) => row.role as AuthRole),
+      roles: (roleRows ?? []).map((row) => row.role),
     };
   } catch (error) {
     unstable_rethrow(error);
-    logAuthDiagnostic("error", "get_current_auth_profile_failed", {
-      errorMessage: error instanceof Error ? error.message : "Unknown error",
-    });
+    logServerDataError("get_current_auth_profile_failed", error);
     return null;
   }
 }

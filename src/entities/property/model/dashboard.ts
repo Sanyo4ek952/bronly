@@ -5,6 +5,7 @@ import { rooms } from "@/entities/room/model/mock";
 import { buildOwnerPublicPath } from "@/shared/lib";
 
 export const dashboardStats: OwnerDashboardSummary = {
+  loadState: "demo",
   objects: 2,
   rooms: rooms.length,
   activeRooms: rooms.filter((room) => room.status === "active").length,

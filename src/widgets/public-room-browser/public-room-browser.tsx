@@ -1,10 +1,17 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import type { PublicRoom, PublicStayFilters } from "@/entities/room";
-import { Button, ButtonLink, Input, SectionSubtitle, SectionTitle, Select, StatCard } from "@/shared/ui";
+import { formatRubles } from "@/shared/lib/money";
+import { Button, ButtonLink, InlineNotice, Input, Panel, Select, StatCard } from "@/shared/ui";
+
+type PublicStayFilterProps = {
+  publicBaseHref: string;
+  filters: PublicStayFilters;
+  resetHref?: string;
+};
 
 type PublicRoomBrowserProps = {
   publicBaseHref: string;
@@ -25,16 +32,12 @@ function formatRoomMeta(room: PublicRoom) {
   return `${room.capacity} гостей • ${room.bedrooms} комнат • ${room.area} м²`;
 }
 
-function formatMoney(value: number) {
-  return `${Math.round(value).toLocaleString("ru-RU")} ₽`;
-}
-
 function formatRoomPrice(room: PublicRoom, hasDates: boolean) {
-  if (hasDates && room.totalPrice && room.nights) {
-    return `${formatMoney(room.totalPrice)} за ${room.nights} ноч.`;
+  if (hasDates && room.totalPrice != null && room.nights) {
+    return `${formatRubles(Math.round(room.totalPrice))} за ${room.nights} ноч.`;
   }
 
-  return `от ${formatMoney(room.displayPricePerNight ?? room.pricePerNight)} / ночь`;
+  return `от ${formatRubles(Math.round(room.displayPricePerNight ?? room.pricePerNight))} / ночь`;
 }
 
 function formatLocation(room: PublicRoom) {
@@ -45,7 +48,7 @@ function formatLocation(room: PublicRoom) {
 }
 
 function getRoomActionLabel(room: PublicRoom) {
-  return room.isAvailableForFilter ? "Оставить заявку" : "Уточнить доступность";
+  return room.isAvailableForFilter ? "Оставить заявку" : "Изменить параметры";
 }
 
 function buildPublicRequestHref(
@@ -72,6 +75,57 @@ function buildPublicRequestHref(
   return `${publicBaseHref}/request?${params.toString()}`;
 }
 
+export function PublicStayFilter({ publicBaseHref, filters, resetHref }: PublicStayFilterProps) {
+  const filterId = useId();
+
+  return (
+    <div className="grid gap-[18px]">
+      <form
+        method="get"
+        aria-label="Параметры проживания"
+        className="grid items-end gap-[14px] rounded-[var(--radius-lg)] border border-[rgb(var(--color-primary-rgb)_/_0.10)] bg-[var(--surface)] p-4 shadow-[var(--shadow-sm)] md:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(220px,280px)]"
+      >
+        <Input id={`${filterId}-check-in`} name="checkIn" type="date" label="Заезд" defaultValue={filters.checkIn} />
+        <Input id={`${filterId}-check-out`} name="checkOut" type="date" label="Выезд" defaultValue={filters.checkOut} />
+        <Select
+          id={`${filterId}-adults`}
+          name="adults"
+          label="Гости"
+          defaultValue={String(filters.adults)}
+          options={Array.from({ length: 8 }, (_, index) => {
+            const value = String(index + 1);
+            return { value, label: value };
+          })}
+        />
+        <Select
+          id={`${filterId}-rooms`}
+          name="rooms"
+          label="Комнаты"
+          defaultValue={String(filters.rooms)}
+          options={Array.from({ length: 5 }, (_, index) => {
+            const value = String(index + 1);
+            return { value, label: value };
+          })}
+        />
+        <div className="grid gap-2.5">
+          <Button type="submit" fullWidth>
+            Подобрать номера
+          </Button>
+          <ButtonLink href={resetHref ?? publicBaseHref} variant="secondary" fullWidth>
+            Сбросить
+          </ButtonLink>
+        </div>
+      </form>
+
+      {filters.hasDates ? (
+        <InlineNotice tone="soft">
+          Показаны варианты с {filters.checkIn} по {filters.checkOut}. Итоговая сумма рассчитана по ночам.
+        </InlineNotice>
+      ) : null}
+    </div>
+  );
+}
+
 export function PublicRoomBrowser({
   publicBaseHref,
   propertySlug,
@@ -88,8 +142,9 @@ export function PublicRoomBrowser({
 }: PublicRoomBrowserProps) {
   const defaultRoom = useMemo(() => rooms.find((room) => room.isAvailableForFilter) ?? rooms[0], [rooms]);
   const [selectedRoomId, setSelectedRoomId] = useState(defaultRoom?.id ?? "");
-  const resolvedSelectedRoomId = rooms.some((room) => room.id === selectedRoomId) ? selectedRoomId : (defaultRoom?.id ?? rooms[0]?.id ?? "");
-
+  const resolvedSelectedRoomId = rooms.some((room) => room.id === selectedRoomId)
+    ? selectedRoomId
+    : (defaultRoom?.id ?? rooms[0]?.id ?? "");
   const selectedRoom = useMemo(
     () => rooms.find((room) => room.id === resolvedSelectedRoomId) ?? defaultRoom,
     [defaultRoom, resolvedSelectedRoomId, rooms],
@@ -101,54 +156,9 @@ export function PublicRoomBrowser({
     buildPublicRequestHref(publicBaseHref, propertySlug, room, currentFilters);
 
   return (
-    <>
+    <div className="grid gap-6">
       {showFilter ? (
-        <form className="br-public-filter br-card" method="get">
-          <div className="br-public-filter__field">
-            <Input id="public-check-in" name="checkIn" type="date" label="Заезд" defaultValue={filters.checkIn} />
-          </div>
-          <div className="br-public-filter__field">
-            <Input id="public-check-out" name="checkOut" type="date" label="Выезд" defaultValue={filters.checkOut} />
-          </div>
-          <div className="br-public-filter__field">
-            <Select
-              id="public-adults"
-              name="adults"
-              label="Гости"
-              defaultValue={String(filters.adults)}
-              options={Array.from({ length: 8 }, (_, index) => {
-                const value = String(index + 1);
-                return { value, label: value };
-              })}
-            />
-          </div>
-          <div className="br-public-filter__field">
-            <Select
-              id="public-rooms"
-              name="rooms"
-              label="Комнаты"
-              defaultValue={String(filters.rooms)}
-              options={Array.from({ length: 5 }, (_, index) => {
-                const value = String(index + 1);
-                return { value, label: value };
-              })}
-            />
-          </div>
-          <div className="br-public-filter__actions">
-            <Button type="submit" fullWidth>
-              Подобрать номера
-            </Button>
-            <ButtonLink href={resetHref ?? publicBaseHref} variant="secondary" fullWidth>
-              Сбросить
-            </ButtonLink>
-          </div>
-        </form>
-      ) : null}
-
-      {filters.hasDates ? (
-        <div className="br-inline-notice br-inline-notice--soft" style={{ marginTop: 18 }}>
-          Показаны варианты с {filters.checkIn} по {filters.checkOut}. Итоговая сумма считается по ночам.
-        </div>
+        <PublicStayFilter publicBaseHref={publicBaseHref} filters={filters} resetHref={resetHref} />
       ) : null}
 
       <RoomGrid
@@ -165,6 +175,7 @@ export function PublicRoomBrowser({
       {unsuitableRooms.length ? (
         <RoomGrid
           title="Остальные варианты"
+          description="Эти номера не подходят хотя бы по одному параметру. Причина указана в карточке."
           filters={filters}
           rooms={unsuitableRooms}
           selectedRoomId={resolvedSelectedRoomId}
@@ -176,13 +187,19 @@ export function PublicRoomBrowser({
       ) : null}
 
       {selectedRoom && showSelectedRoomSummary ? (
-        <div className="br-public-selected-room">
-          <div className="br-section-heading">
-            <SectionTitle>{selectedRoomTitle}</SectionTitle>
-            <SectionSubtitle>{selectedRoomDescription}</SectionSubtitle>
+        <Panel
+          as="section"
+          aria-live="polite"
+          className="grid gap-[18px] border-[rgb(var(--color-primary-rgb)_/_0.10)] shadow-[var(--shadow-md)]"
+          surface="raised"
+          padding="lg"
+        >
+          <div className="grid gap-2">
+            <h3 className="text-[clamp(1.25rem,2vw,1.6rem)] font-extrabold leading-tight">{selectedRoomTitle}</h3>
+            <p className="text-sm leading-relaxed text-[var(--text-muted)]">{selectedRoomDescription}</p>
           </div>
-          <div className="br-inline-notice br-inline-notice--soft br-public-selected-room__notice">{selectionHint}</div>
-          <div className="br-public-selected-room__grid">
+          <InlineNotice tone="soft">{selectionHint}</InlineNotice>
+          <div className="grid gap-[14px] md:grid-cols-3">
             <StatCard
               title="Номер"
               value={selectedRoom.title}
@@ -191,40 +208,47 @@ export function PublicRoomBrowser({
             <StatCard
               title={filters.hasDates ? "Итого" : "Цена за ночь"}
               value={
-                filters.hasDates && selectedRoom.totalPrice
-                  ? formatMoney(selectedRoom.totalPrice)
-                  : formatMoney(selectedRoom.displayPricePerNight ?? selectedRoom.pricePerNight)
+                filters.hasDates && selectedRoom.totalPrice != null
+                  ? formatRubles(Math.round(selectedRoom.totalPrice))
+                  : formatRubles(Math.round(selectedRoom.displayPricePerNight ?? selectedRoom.pricePerNight))
               }
               subtitle={filters.hasDates && selectedRoom.nights ? `${selectedRoom.nights} ноч.` : "без выбранных дат"}
             />
             <StatCard title="Вместимость" value={`${selectedRoom.capacity} гостей`} subtitle={formatRoomMeta(selectedRoom)} />
           </div>
-          {selectedRoom.unavailableReason ? <p className="br-public-room-warning">{selectedRoom.unavailableReason}</p> : null}
-          <div className="br-public-selected-room__actions">
+          {!selectedRoom.isAvailableForFilter && selectedRoom.unavailableReason ? (
+            <InlineNotice tone="warning" title="Параметры не подходят">
+              {selectedRoom.unavailableReason}. В форме можно изменить даты, количество гостей или комнат.
+            </InlineNotice>
+          ) : null}
+          <div className="flex justify-start">
             <ButtonLink href={resolveRequestHref(selectedRoom, filters)}>
               {cardActionLabel ?? `Оставить заявку на номер ${selectedRoom.title}`}
             </ButtonLink>
           </div>
-        </div>
+        </Panel>
       ) : null}
 
       {showStickyCta && stickyTargetRoom ? (
-        <div className="br-public-sticky-cta">
-          <div className="br-public-sticky-cta__copy">
-            <strong>{stickyTargetRoom.title}</strong>
-            <span>{formatRoomPrice(stickyTargetRoom, filters.hasDates)}</span>
+        <div className="fixed inset-x-[14px] bottom-0 z-30 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-t-[20px] border border-[rgb(var(--color-primary-rgb)_/_0.12)] bg-[rgb(255_255_255_/_0.97)] p-3 pb-[calc(12px+var(--safe-area-bottom))] shadow-[var(--shadow-lg)] backdrop-blur-xl min-[721px]:hidden">
+          <div className="grid min-w-0 gap-1">
+            <strong className="block truncate">{stickyTargetRoom.title}</strong>
+            <span className="block truncate text-[13px] text-[var(--text-muted)]">
+              {formatRoomPrice(stickyTargetRoom, filters.hasDates)}
+            </span>
           </div>
-          <ButtonLink href={resolveRequestHref(stickyTargetRoom, filters)} className="br-public-sticky-cta__button">
-            Оставить заявку на этот номер
+          <ButtonLink href={resolveRequestHref(stickyTargetRoom, filters)} className="w-auto" size="sm">
+            Оставить заявку
           </ButtonLink>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }
 
 function RoomGrid({
   title,
+  description,
   emptyText,
   filters,
   rooms,
@@ -235,6 +259,7 @@ function RoomGrid({
   cardActionLabel,
 }: {
   title: string;
+  description?: string;
   emptyText?: string;
   filters: PublicStayFilters;
   rooms: PublicRoom[];
@@ -245,22 +270,28 @@ function RoomGrid({
   cardActionLabel?: string;
 }) {
   return (
-    <section className={muted ? "br-public-room-section br-public-room-section--muted" : "br-public-room-section"}>
-      <div className="br-section-heading">
-        <SectionTitle as="h3">{title}</SectionTitle>
-        {emptyText && !rooms.length ? <SectionSubtitle>{emptyText}</SectionSubtitle> : null}
+    <section className="grid gap-4">
+      <div className="grid gap-2">
+        <h3 className="text-2xl font-extrabold leading-tight">{title}</h3>
+        {description ? <p className="text-sm leading-relaxed text-[var(--text-muted)]">{description}</p> : null}
+        {emptyText && !rooms.length ? <p className="text-sm leading-relaxed text-[var(--text-muted)]">{emptyText}</p> : null}
       </div>
       {rooms.length ? (
-        <div className="br-public-room-grid">
+        <div className="grid gap-[18px] min-[721px]:grid-cols-2 xl:grid-cols-3">
           {rooms.map((room) => {
             const location = formatLocation(room);
+            const selected = selectedRoomId === room.id;
 
             return (
-              <article
+              <Panel
                 key={room.id}
-                className={`br-public-room-card br-card${selectedRoomId === room.id ? " br-public-room-card--selected" : ""}`}
+                as="article"
+                className={`grid overflow-hidden border-[rgb(var(--color-primary-rgb)_/_0.10)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(248_250_250_/_0.96))] shadow-[var(--shadow-sm)] transition-[border-color,box-shadow,transform] duration-[180ms] hover:-translate-y-px ${
+                  selected ? "border-[rgb(var(--color-primary-rgb)_/_0.36)] shadow-[0_18px_34px_rgb(var(--color-primary-rgb)_/_0.10)]" : ""
+                } ${muted ? "opacity-95" : ""}`}
+                padding="none"
               >
-                <div className="br-public-room-card__image">
+                <div className="min-h-[200px] overflow-hidden bg-[linear-gradient(135deg,#d7eae6_0%,#c3ddd9_42%,#f0e0ce_100%)]">
                   {room.photos[0] ? (
                     <Image
                       src={room.photos[0].url}
@@ -268,28 +299,36 @@ function RoomGrid({
                       width={1200}
                       height={800}
                       unoptimized
-                      className="br-public-room-card__image-content"
+                      className="h-full min-h-[200px] w-full object-cover"
                     />
                   ) : null}
                 </div>
-                <div className="br-public-room-card__body">
-                  {room.propertyTitle ? <span className="br-public-room-card__eyebrow">{room.propertyTitle}</span> : null}
-                  <strong>{room.title}</strong>
-                  {location ? <span className="br-public-room-card__location">{location}</span> : null}
-                  <span>{formatRoomMeta(room)}</span>
-                  {room.unavailableReason ? <small>{room.unavailableReason}</small> : null}
-                  <div className="br-public-room-card__footer">
+                <div className="grid gap-2.5 p-[18px]">
+                  {room.propertyTitle ? (
+                    <span className="inline-flex min-h-8 w-fit items-center rounded-full bg-[rgb(var(--color-primary-rgb)_/_0.10)] px-3 text-xs font-bold text-[var(--color-primary-hover)]">
+                      {room.propertyTitle}
+                    </span>
+                  ) : null}
+                  <strong className="text-lg leading-tight">{room.title}</strong>
+                  {location ? <span className="text-[13px] leading-relaxed text-[var(--text-muted)]">{location}</span> : null}
+                  <span className="text-sm text-[var(--text-muted)]">{formatRoomMeta(room)}</span>
+                  {!room.isAvailableForFilter && room.unavailableReason ? (
+                    <InlineNotice tone="warning">{room.unavailableReason}</InlineNotice>
+                  ) : null}
+                  <div className="mt-2.5 grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                     <strong>{formatRoomPrice(room, filters.hasDates)}</strong>
-                    <Button variant={selectedRoomId === room.id ? "primary" : "secondary"} onClick={() => onSelect(room.id)}>
-                      {selectedRoomId === room.id ? "Выбрано" : "Выбрать номер"}
+                    <Button variant={selected ? "primary" : "secondary"} aria-pressed={selected} onClick={() => onSelect(room.id)}>
+                      {selected ? "Выбрано" : "Выбрать номер"}
                     </Button>
                   </div>
-                  <p className="br-public-room-card__request-hint">Заявка отправляется только по этому номеру.</p>
+                  <p className="text-[13px] leading-relaxed text-[var(--text-muted)]">
+                    Заявка отправляется только по этому номеру.
+                  </p>
                   <ButtonLink href={requestHrefBuilder(room, filters)} variant="secondary" fullWidth>
                     {cardActionLabel ?? getRoomActionLabel(room)}
                   </ButtonLink>
                 </div>
-              </article>
+              </Panel>
             );
           })}
         </div>

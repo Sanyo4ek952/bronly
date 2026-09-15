@@ -7,6 +7,7 @@ import {
   type SupabaseNotificationSettingsRow,
   type SupabaseTelegramNotificationConnectionRow,
 } from "@/shared/api/supabase";
+import { logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 import type { NotificationCopy } from "@/entities/notification/api/push-delivery";
 
 type TelegramDeliveryStatus =
@@ -58,19 +59,33 @@ async function saveTelegramDeliveryRecord(input: {
   sentAt?: string | null;
 }) {
   const admin = createSupabaseAdminClient();
+  const nowIso = new Date().toISOString();
 
-  await admin.from("notification_deliveries").insert({
-    notification_id: input.notificationId,
-    recipient_id: input.recipientId,
-    channel: "telegram",
-    push_subscription_id: null,
-    telegram_chat_id: input.telegramChatId,
-    status: input.status,
-    provider_message_id: input.providerMessageId ?? null,
-    error_code: input.errorCode ?? null,
-    error_message: input.errorMessage ?? null,
-    sent_at: input.sentAt ?? null,
-  });
+  const { error } = await admin.from("notification_deliveries").upsert(
+    {
+      notification_id: input.notificationId,
+      recipient_id: input.recipientId,
+      channel: "telegram",
+      delivery_target_key: input.telegramChatId ?? "channel",
+      push_subscription_id: null,
+      telegram_chat_id: input.telegramChatId,
+      status: input.status,
+      provider_message_id: input.providerMessageId ?? null,
+      error_code: input.errorCode ?? null,
+      error_message: input.errorMessage ?? null,
+      sent_at: input.sentAt ?? null,
+      updated_at: nowIso,
+    },
+    { onConflict: "notification_id,channel,delivery_target_key" },
+  );
+
+  if (error) {
+    logServerDataError("telegram_delivery_status_save_failed", error, {
+      notificationId: input.notificationId,
+      status: input.status,
+    });
+    throw error;
+  }
 }
 
 async function sendTelegramMessage(chatId: string, text: string) {
@@ -119,7 +134,7 @@ export async function deliverTelegramNotification(input: {
   copy: NotificationCopy;
 }) {
   const admin = createSupabaseAdminClient();
-  const [{ data: settingsData }, { data: connectionData }] = await Promise.all([
+  const [settingsResult, connectionResult] = await Promise.all([
     admin.from("notification_settings").select("*").eq("profile_id", input.notification.recipient_id).maybeSingle(),
     admin
       .from("telegram_notification_connections")
@@ -128,8 +143,24 @@ export async function deliverTelegramNotification(input: {
       .maybeSingle(),
   ]);
 
-  const settings = (settingsData as SupabaseNotificationSettingsRow | null) ?? null;
-  const connection = (connectionData as SupabaseTelegramNotificationConnectionRow | null) ?? null;
+  if (settingsResult.error || connectionResult.error) {
+    const queryError = settingsResult.error ?? connectionResult.error ?? new Error("Telegram delivery lookup failed.");
+    logServerDataError("telegram_delivery_lookup_failed", queryError, {
+      notificationId: input.notification.id,
+    });
+    await saveTelegramDeliveryRecord({
+      notificationId: input.notification.id,
+      recipientId: input.notification.recipient_id,
+      telegramChatId: null,
+      status: "failed",
+      errorCode: "lookup_failed",
+      errorMessage: "Telegram delivery settings could not be loaded.",
+    });
+    return;
+  }
+
+  const settings = settingsResult.data ?? null;
+  const connection = connectionResult.data ?? null;
 
   if (settings?.telegram_enabled === false) {
     await saveTelegramDeliveryRecord({

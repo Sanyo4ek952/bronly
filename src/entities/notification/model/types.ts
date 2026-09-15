@@ -1,12 +1,6 @@
-export type NotificationEventType =
-  | "new_request"
-  | "request_transferred_to_owner"
-  | "request_completion_requested"
-  | "agent_proposal_received"
-  | "agent_proposal_accepted"
-  | "agent_proposal_rejected"
-  | "subscription_reminder"
-  | "subscription_status_changed";
+import type { NotificationEventType, NotificationRoleContext } from "@/entities/notification/model/notification-rules";
+
+export type { NotificationEventType, NotificationRoleContext } from "@/entities/notification/model/notification-rules";
 
 export type NotificationPayload = {
   requestId?: string;
@@ -15,7 +9,7 @@ export type NotificationPayload = {
   roomTitle?: string;
   proposalId?: string;
   subscriptionStatus?: "trial" | "active" | "grace" | "expired" | "manual";
-  roleContext?: "owner" | "agent";
+  roleContext?: NotificationRoleContext;
   linkPath?: string;
 };
 

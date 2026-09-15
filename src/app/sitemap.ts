@@ -4,13 +4,6 @@ import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
 import { buildCanonicalUrl } from "@/shared/lib/seo";
 
-type ProfileRow = {
-  id: string;
-  slug: string | null;
-  agent_public_id: string | null;
-  is_public_hidden_by_admin: boolean;
-};
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const items: MetadataRoute.Sitemap = [
@@ -32,8 +25,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     supabase.from("user_roles").select("profile_id").eq("role", "agent"),
   ]);
 
-  const ownerIds = [...new Set((ownerRoleRows ?? []).map((row) => row.profile_id as string))];
-  const agentIds = [...new Set((agentRoleRows ?? []).map((row) => row.profile_id as string))];
+  const ownerIds = [...new Set((ownerRoleRows ?? []).map((row) => row.profile_id))];
+  const agentIds = [...new Set((agentRoleRows ?? []).map((row) => row.profile_id))];
   const profileIds = [...new Set([...ownerIds, ...agentIds])];
 
   if (!profileIds.length) {
@@ -45,7 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .select("id, slug, agent_public_id, is_public_hidden_by_admin")
     .in("id", profileIds);
 
-  const profiles = (profileRows ?? []) as ProfileRow[];
+  const profiles = profileRows ?? [];
   const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
 
   const [ownerStates, agentStates] = await Promise.all([

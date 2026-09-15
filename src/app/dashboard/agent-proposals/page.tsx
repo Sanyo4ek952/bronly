@@ -1,154 +1,116 @@
 import {
   getOwnerActiveCollaborations,
   getOwnerIncomingAgentProposals,
-  type CollaborationContact,
-  type CollaborationTargetSummary,
 } from "@/entities/collaboration";
-import { Button } from "@/shared/ui";
+import { Button, InlineNotice, Panel, SectionHeader, StatusPill } from "@/shared/ui";
+import {
+  CollaborationContactLinks,
+  CollaborationTargets,
+  getTargetFormatLabel,
+} from "@/widgets/collaboration-details";
 
 import { acceptAgentProposalAction, rejectAgentProposalAction } from "./actions";
 
-function getTargetFormatLabel(targetType: CollaborationTargetSummary["targetType"]) {
-  return targetType === "property" ? "Формат: объект" : "Формат: отдельный номер";
+type OwnerAgentProposalsPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function getFeedback(success: string, error: string) {
+  if (success === "accepted") return "Предложение принято. Вариант появился в активном сотрудничестве агента.";
+  if (success === "declined") return "Предложение отклонено.";
+  if (error === "subscription") return "Решение по предложению временно недоступно, пока подписка не продлена.";
+  if (error === "not_found") return "Предложение уже обработано или относится к другому владельцу.";
+  if (error === "validation") return "Не удалось определить предложение.";
+  if (error === "unauthorized") return "Действие доступно только владельцу варианта.";
+  if (error) return "Не удалось сохранить решение. Попробуйте еще раз.";
+  return "";
 }
 
-function ContactLinks({ contact }: { contact: CollaborationContact }) {
-  if (!contact.phone && !contact.whatsapp && !contact.telegram) {
-    return <span>Контакты не заполнены.</span>;
-  }
-
-  return (
-    <div className="br-owner-stack" style={{ gap: 8 }}>
-      {contact.phone ? (
-        <a href={`tel:${contact.phone}`} className="br-button br-button--secondary br-button--sm">
-          {contact.phone}
-        </a>
-      ) : null}
-      {contact.whatsapp ? (
-        <a href={contact.whatsapp} className="br-button br-button--secondary br-button--sm">
-          WhatsApp
-        </a>
-      ) : null}
-      {contact.telegram ? (
-        <a
-          href={contact.telegram.startsWith("http") ? contact.telegram : `https://t.me/${contact.telegram.replace(/^@/, "")}`}
-          className="br-button br-button--secondary br-button--sm"
-        >
-          Telegram
-        </a>
-      ) : null}
-    </div>
-  );
-}
-
-function CollaborationTargets({ targets }: { targets: CollaborationTargetSummary[] }) {
-  return (
-    <div className="br-owner-stack" style={{ gap: 8 }}>
-      {targets.map((target) => (
-        <div key={`${target.targetType}-${target.id}`} className="br-owner-editor br-owner-editor--muted">
-          <strong>{target.targetTitle}</strong>
-          <p>{getTargetFormatLabel(target.targetType)}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export default async function OwnerAgentProposalsPage() {
-  const [proposals, activeCollaborations] = await Promise.all([
+export default async function OwnerAgentProposalsPage({ searchParams }: OwnerAgentProposalsPageProps) {
+  const [proposals, activeCollaborations, params] = await Promise.all([
     getOwnerIncomingAgentProposals(),
     getOwnerActiveCollaborations(),
+    searchParams ?? Promise.resolve<Record<string, string | string[] | undefined>>({}),
   ]);
 
+  if (!proposals || !activeCollaborations) {
+    return (
+      <InlineNotice title="Не удалось загрузить сотрудничества" tone="warning" aria-live="polite">
+        Данные временно недоступны. Попробуйте обновить страницу позже.
+      </InlineNotice>
+    );
+  }
+
+  const success = typeof params.success === "string" ? params.success : "";
+  const error = typeof params.error === "string" ? params.error : "";
+  const feedback = getFeedback(success, error);
+
   return (
-    <section className="br-owner-stack">
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Предложения агентов</h2>
-            <p>Владелец принимает или отклоняет предложение до появления объекта или номера в активном сотрудничестве.</p>
-          </div>
-        </div>
+    <div className="grid gap-4">
+      <Panel className="grid gap-4 p-5 max-[640px]:p-4" surface="raised">
+        <SectionHeader title="Предложения агентов" description="Примите или отклоните предложение до появления объекта или отдельного номера в агентской витрине." />
+        <InlineNotice tone="soft">После принятия агент видит календарь занятости только для чтения и может настроить только свою надбавку. Данные владельца он не редактирует.</InlineNotice>
+        {feedback ? <InlineNotice tone={error ? "error" : "default"}>{feedback}</InlineNotice> : null}
+      </Panel>
 
-        {proposals.length ? (
-          <div className="br-requests-list">
-            {proposals.map((item) => (
-              <article key={`${item.targetType}-${item.id}`} className="br-request-item">
-                <div className="br-request-item__avatar">{item.agentName[0] ?? "А"}</div>
-                <div className="br-request-item__body">
-                  <strong>{item.title}</strong>
-                  <span>{getTargetFormatLabel(item.targetType)}</span>
-                  <span>Агент: {item.agentName}</span>
-                  <span>{item.createdAt}</span>
-                  <span>{item.message || "Агент отправил предложение без дополнительного сообщения."}</span>
-                </div>
-                <div className="br-owner-stack">
-                  <form action={acceptAgentProposalAction}>
-                    <input type="hidden" name="proposalId" value={item.id} />
-                    <input type="hidden" name="targetType" value={item.targetType} />
-                    <Button type="submit">Принять</Button>
-                  </form>
-                  <form action={rejectAgentProposalAction}>
-                    <input type="hidden" name="proposalId" value={item.id} />
-                    <input type="hidden" name="targetType" value={item.targetType} />
-                    <Button type="submit" variant="danger">
-                      Отклонить
-                    </Button>
-                  </form>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p>Пока нет новых предложений от агентов.</p>
-        )}
-      </section>
-
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Активные сотрудничества</h2>
-            <p>Здесь собраны агенты, с которыми уже есть активная договоренность, их контакты и объекты сотрудничества.</p>
-          </div>
-        </div>
-
-        {activeCollaborations.length ? (
-          <div className="br-requests-list">
-            {activeCollaborations.map((item) => (
-              <article key={item.agentId} className="br-request-item" style={{ alignItems: "stretch" }}>
-                <div className="br-request-item__avatar">{item.agentName[0] ?? "А"}</div>
-                <div className="br-request-item__body" style={{ width: "100%" }}>
-                  <strong>{item.agentName}</strong>
-                  <span className="br-request-item__status">Активно</span>
-
-                  <div className="br-owner-stack" style={{ marginTop: 12 }}>
-                    <div>
-                      <strong>Контакты агента</strong>
-                      <div style={{ marginTop: 8 }}>
-                        <ContactLinks contact={item.agentContact} />
-                      </div>
-                    </div>
-
-                    <div>
-                      <strong>На какие объекты заключена договоренность</strong>
-                      <div style={{ marginTop: 8 }}>
-                        <CollaborationTargets targets={item.targets} />
-                      </div>
-                    </div>
-
-                    <div className="br-owner-editor br-owner-editor--muted">
-                      <strong>Условия сотрудничества</strong>
-                      <p>{item.terms}</p>
-                    </div>
+      {proposals.length ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {proposals.map((item) => (
+            <Panel key={`${item.targetType}-${item.id}`} as="article" className="grid gap-4 p-5 max-[640px]:p-4" surface="raised">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-[16px] bg-[rgb(var(--color-primary-rgb)_/_0.10)] text-sm font-extrabold text-[var(--color-primary-hover)]">{item.agentName[0] ?? "А"}</span>
+                  <div className="grid min-w-0 gap-1">
+                    <h2 className="text-lg font-bold leading-tight">{item.title}</h2>
+                    <p className="text-sm text-[var(--text-muted)]">Агент: {item.agentName}</p>
                   </div>
                 </div>
-              </article>
+                <StatusPill variant="pending">Ожидает</StatusPill>
+              </div>
+              <p className="text-xs text-[var(--text-muted)]">{getTargetFormatLabel(item.targetType)} • {item.createdAt}</p>
+              <p className="text-sm leading-relaxed text-[var(--text)]">{item.message || "Агент отправил предложение без дополнительного сообщения."}</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <form action={acceptAgentProposalAction}>
+                  <input type="hidden" name="proposalId" value={item.id} />
+                  <input type="hidden" name="targetType" value={item.targetType} />
+                  <Button type="submit" fullWidth>Принять</Button>
+                </form>
+                <form action={rejectAgentProposalAction}>
+                  <input type="hidden" name="proposalId" value={item.id} />
+                  <input type="hidden" name="targetType" value={item.targetType} />
+                  <Button type="submit" variant="danger" fullWidth>Отклонить</Button>
+                </form>
+              </div>
+            </Panel>
+          ))}
+        </div>
+      ) : (
+        <Panel className="p-5 text-sm text-[var(--text-muted)]" surface="subtle">Пока нет новых предложений от агентов.</Panel>
+      )}
+
+      <section className="grid gap-4">
+        <SectionHeader title="Активные сотрудничества" description="Агенты, их контакты и варианты, по которым уже действует договоренность." />
+        {activeCollaborations.length ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {activeCollaborations.map((item) => (
+              <Panel key={item.agentId} as="article" className="grid gap-4 p-5 max-[640px]:p-4" surface="raised">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-[16px] bg-[rgb(var(--color-primary-rgb)_/_0.10)] text-sm font-extrabold text-[var(--color-primary-hover)]">{item.agentName[0] ?? "А"}</span>
+                    <div className="grid gap-1"><h3 className="text-lg font-bold">{item.agentName}</h3><p className="text-sm text-[var(--text-muted)]">Активный агент</p></div>
+                  </div>
+                  <StatusPill variant="active">Активно</StatusPill>
+                </div>
+                <section className="grid gap-2"><strong className="text-sm">Контакты агента</strong><CollaborationContactLinks contact={item.agentContact} /></section>
+                <section className="grid gap-2"><strong className="text-sm">Цели сотрудничества</strong><CollaborationTargets targets={item.targets} /></section>
+                <Panel className="grid gap-1 rounded-[18px]" surface="subtle" padding="md"><strong className="text-sm">Условия сотрудничества</strong><p className="text-sm leading-relaxed text-[var(--text-muted)]">{item.terms}</p></Panel>
+              </Panel>
             ))}
           </div>
         ) : (
-          <p>Пока нет активных договоренностей с агентами.</p>
+          <Panel className="p-5 text-sm text-[var(--text-muted)]" surface="subtle">Пока нет активных договоренностей с агентами.</Panel>
         )}
       </section>
-    </section>
+    </div>
   );
 }

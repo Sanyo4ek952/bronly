@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-
 import { resendConfirmationEmailAction } from "@/app/auth/actions";
 import { getAuthUserEmailStatus } from "@/shared/api/supabase";
 import { createSeoMetadata } from "@/shared/lib/seo";
-import { BrandLogo } from "@/shared/ui";
+import { ButtonLink, InlineNotice, SubmitButton } from "@/shared/ui";
+import { AuthShell } from "@/widgets/auth-shell";
 
 type CheckEmailPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -46,93 +45,58 @@ export default async function CheckEmailPage({ searchParams }: CheckEmailPagePro
     const loginHref = buildLoginHref(email, invite);
 
     return (
-      <main className="br-auth-page">
-        <section className="br-auth-shell br-card">
-          <BrandLogo className="br-auth-shell__logo" />
-          <div className="br-auth-shell__grid">
-            <div className="br-auth-shell__intro">
-              <span className="br-chip">email уже подтвержден</span>
-              <h1 className="br-auth-shell__title">Можно войти</h1>
-              <p className="br-auth-shell__text">
-                Аккаунт {email} уже зарегистрирован и подтвержден в Supabase. Новое письмо для этого email не
-                отправляется — войдите с паролем или восстановите доступ.
-              </p>
-            </div>
-
-            <div className="br-auth-panel">
-              <div className="br-auth-form">
-                <Link href={loginHref} className="br-button br-button--primary br-button--full">
-                  Войти в аккаунт
-                </Link>
-                <Link href="/forgot-password" className="br-button br-button--secondary br-button--full">
-                  Забыли пароль?
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
+      <AuthShell
+        eyebrow="Email уже подтвержден"
+        title="Можно войти"
+        description={`Аккаунт ${email} уже зарегистрирован и подтвержден. Войдите с паролем или восстановите доступ.`}
+        footer="После входа вы вернетесь к настройке витрины."
+      >
+        <div className="grid gap-3">
+          <ButtonLink href={loginHref} fullWidth>Войти в аккаунт</ButtonLink>
+          <ButtonLink href="/forgot-password" variant="secondary" fullWidth>Забыли пароль?</ButtonLink>
+        </div>
+      </AuthShell>
     );
   }
 
   return (
-    <main className="br-auth-page">
-      <section className="br-auth-shell br-card">
-        <BrandLogo className="br-auth-shell__logo" />
-        <div className="br-auth-shell__grid">
-          <div className="br-auth-shell__intro">
-            <span className="br-chip">подтвердите email</span>
-            <h1 className="br-auth-shell__title">Почти готово</h1>
-            <p className="br-auth-shell__text">
-              Мы создали аккаунт {roleLabel}. Подтвердите email{email ? ` ${email}` : ""}, чтобы завершить вход в
-              Bronly.
-            </p>
-          </div>
-
-          <div className="br-auth-panel">
+    <AuthShell
+      eyebrow="Подтвердите email"
+      title="Почти готово"
+      description={`Мы создали аккаунт ${roleLabel}. Подтвердите email${email ? ` ${email}` : ""}, чтобы завершить вход в Bronly.`}
+      footer="После подтверждения откройте вход и продолжите настройку кабинета."
+    >
             {error === "resend" ? (
-              <p className="br-card" style={{ marginBottom: 16 }}>
-                Не удалось отправить письмо повторно. Попробуйте позже или проверьте настройки SMTP в Supabase.
-              </p>
+              <InlineNotice tone="error">Не удалось отправить письмо повторно. Попробуйте позже.</InlineNotice>
             ) : null}
             {success === "sent" ? (
-              <p className="br-card" style={{ marginBottom: 16 }}>
-                Запрос отправлен. Проверьте входящие и папку «Спам» (отправитель — Supabase Auth).
-              </p>
+              <InlineNotice>Письмо отправлено. Проверьте входящие и папку «Спам».</InlineNotice>
             ) : null}
 
-            <div className="br-auth-form">
-              <div className="br-auth-form__field">
-                <strong>1. Откройте письмо от Supabase (тема вроде «Confirm your signup»).</strong>
-              </div>
-              <div className="br-auth-form__field">
-                <strong>2. Перейдите по ссылке подтверждения.</strong>
-              </div>
-              <div className="br-auth-form__field">
-                <strong>3. После этого войдите в кабинет Bronly.</strong>
-              </div>
+            <div className="grid gap-3">
+              {["Откройте письмо с подтверждением.", "Перейдите по ссылке из письма.", "Войдите в кабинет Bronly."].map((step, index) => (
+                <div key={step} className="grid grid-cols-[30px_minmax(0,1fr)] items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-subtle)] p-3">
+                  <span className="grid size-[30px] place-items-center rounded-full bg-[var(--color-primary-pale)] text-xs font-bold text-[var(--color-primary-hover)]">{index + 1}</span>
+                  <strong className="text-sm leading-[1.45] text-[var(--text)]">{step}</strong>
+                </div>
+              ))}
 
               {email ? (
-                <form className="br-auth-form" action={resendConfirmationEmailAction}>
+                <form action={resendConfirmationEmailAction}>
                   <input type="hidden" name="email" value={email} />
                   <input type="hidden" name="role" value={role} />
                   <input type="hidden" name="invite" value={invite} />
-                  <button type="submit" className="br-button br-button--secondary br-button--full">
-                    Отправить письмо еще раз
-                  </button>
+                  <SubmitButton variant="secondary" pendingLabel="Отправка" fullWidth>Отправить письмо еще раз</SubmitButton>
                 </form>
               ) : null}
 
-              <Link
+              <ButtonLink
                 href={invite ? `/login?${new URLSearchParams({ invite, next: `/invite/${invite}` }).toString()}` : "/login"}
-                className="br-button br-button--primary br-button--full"
+                fullWidth
               >
                 Перейти ко входу
-              </Link>
+              </ButtonLink>
             </div>
-          </div>
-        </div>
-      </section>
-    </main>
+    </AuthShell>
   );
 }

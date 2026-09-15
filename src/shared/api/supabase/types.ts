@@ -1,3 +1,5 @@
+import type { Json } from "@/shared/api/supabase/database.types";
+
 export type SupabasePropertyRow = {
   id: string;
   owner_id: string;
@@ -57,7 +59,7 @@ export type SupabaseRoomRow = {
   id: string;
   property_id: string | null;
   owner_id: string;
-  room_kind: "property_room" | "standalone_room";
+  room_kind: string;
   slug: string;
   title: string;
   subtitle: string | null;
@@ -243,6 +245,14 @@ export type SupabaseCollectionItemRow = {
   created_at: string;
 };
 
+export type SupabaseCollectionEventRow = {
+  id: string;
+  collection_id: string;
+  event_type: "open";
+  visitor_key: string;
+  created_at: string;
+};
+
 export type SupabaseGuestRequestRow = {
   id: string;
   source: "owner" | "agent" | "collection";
@@ -268,7 +278,7 @@ export type SupabaseGuestRequestRow = {
   total_price: number | null;
   base_price_per_night: number | null;
   agent_markup_percent: number | null;
-  pricing_snapshot: Record<string, unknown>;
+  pricing_snapshot: Json;
   created_at: string;
   updated_at: string;
 };
@@ -277,6 +287,7 @@ export type SupabaseNotificationRow = {
   id: string;
   recipient_id: string;
   channel: string;
+  idempotency_key: string;
   event_type:
     | "new_request"
     | "request_transferred_to_owner"
@@ -342,6 +353,7 @@ export type SupabaseNotificationDeliveryRow = {
   notification_id: string;
   recipient_id: string;
   channel: string;
+  delivery_target_key: string;
   push_subscription_id: string | null;
   telegram_chat_id: string | null;
   status: string;
@@ -350,4 +362,5 @@ export type SupabaseNotificationDeliveryRow = {
   error_message: string | null;
   sent_at: string | null;
   created_at: string;
+  updated_at: string;
 };

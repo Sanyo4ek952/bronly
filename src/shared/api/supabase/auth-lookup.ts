@@ -1,13 +1,19 @@
 import { getSupabaseServiceRoleKey, getSupabaseUrl } from "@/shared/api/supabase/env";
+import { logServerConfigurationError, logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 
-export type AuthUserEmailStatus = "not_found" | "pending" | "confirmed";
+export type AuthUserEmailStatus = "not_found" | "pending" | "confirmed" | "unavailable";
 
 export async function getAuthUserEmailStatus(email: string): Promise<AuthUserEmailStatus> {
   const url = getSupabaseUrl();
   const serviceRoleKey = getSupabaseServiceRoleKey();
 
-  if (!url || !serviceRoleKey || !email.trim()) {
+  if (!email.trim()) {
     return "not_found";
+  }
+
+  if (!url || !serviceRoleKey) {
+    logServerConfigurationError("auth_user_lookup_supabase_not_configured");
+    return "unavailable";
   }
 
   try {
@@ -20,7 +26,8 @@ export async function getAuthUserEmailStatus(email: string): Promise<AuthUserEma
     });
 
     if (!response.ok) {
-      return "not_found";
+      logServerDataError("auth_user_lookup_request_failed", { status: response.status });
+      return "unavailable";
     }
 
     const data = (await response.json()) as {
@@ -33,7 +40,8 @@ export async function getAuthUserEmailStatus(email: string): Promise<AuthUserEma
     }
 
     return user.email_confirmed_at ? "confirmed" : "pending";
-  } catch {
-    return "not_found";
+  } catch (error) {
+    logServerDataError("auth_user_lookup_unhandled_error", error);
+    return "unavailable";
   }
 }

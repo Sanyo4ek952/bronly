@@ -296,8 +296,15 @@ export function TopLoadingBar() {
   }, [pathname, searchParams]);
 
   return (
-    <div className="br-top-loading-bar" data-visible={isVisible ? "true" : "false"} aria-hidden="true">
-      <span className="br-top-loading-bar__progress" style={{ transform: `scaleX(${progress})` }} />
+    <div
+      className="pointer-events-none fixed inset-x-0 top-0 z-[9999] h-0.5 opacity-0 transition-opacity duration-150 ease-in data-[visible=true]:opacity-100 motion-reduce:transition-none"
+      data-visible={isVisible ? "true" : "false"}
+      aria-hidden="true"
+    >
+      <span
+        className="block h-full w-full origin-left bg-[linear-gradient(90deg,var(--color-primary),var(--color-primary-hover))] shadow-[0_0_10px_rgb(var(--color-primary-rgb)_/_0.24)] transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none"
+        style={{ transform: `scaleX(${progress})` }}
+      />
     </div>
   );
 }

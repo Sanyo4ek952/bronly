@@ -9,7 +9,7 @@ import { getCheckbox, getString } from "@/shared/lib/form-data";
 
 import { mapActionError } from "./lib/errors";
 import { replacePropertyLabels } from "./lib/labels";
-import { requireOwnerMutationAccess } from "./lib/owner-access";
+import { requireOwnedProperty, requireOwnerMutationAccess } from "./lib/owner-access";
 import { buildPropertyPath, buildPropertyPathWithState } from "./lib/paths";
 import { generateUniquePropertySlug } from "./lib/slugs";
 import { getUploadedPropertyPhotoFiles, uploadPropertyPhotoFiles, validatePropertyPhotoFiles } from "./property-photo-upload";
@@ -64,18 +64,18 @@ export async function createOwnerProperty(formData: FormData) {
     redirect(`/dashboard/properties/new?error=${mapActionError(error)}`);
   }
 
-  await replacePropertyLabels(data.id as string, getString(formData, "features"), getString(formData, "houseRules"));
-  const photoUploadError = await uploadPropertyPhotoFiles(supabase, profile.id, data.id as string, propertyPhotoFiles);
+  await replacePropertyLabels(data.id, getString(formData, "features"), getString(formData, "houseRules"));
+  const photoUploadError = await uploadPropertyPhotoFiles(supabase, profile.id, data.id, propertyPhotoFiles);
   await markOwnerReferralMilestone(profile.id);
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/properties");
-  redirect(buildPropertyPathWithState(data.id as string, "property", { success: photoUploadError ? "created-photo-upload" : "created" }));
+  redirect(buildPropertyPathWithState(data.id, "property", { success: photoUploadError ? "created-photo-upload" : "created" }));
 }
 
 export async function updateOwnerProperty(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
-  await requireOwnerMutationAccess(buildPropertyPath(propertyId));
+  const profile = await requireOwnerMutationAccess(buildPropertyPath(propertyId));
   const title = getString(formData, "title");
   const shortTitle = getString(formData, "shortTitle") || title;
   const propertyType = getString(formData, "propertyType");
@@ -86,6 +86,7 @@ export async function updateOwnerProperty(formData: FormData) {
     redirect(buildPropertyPathWithState(propertyId, "property", { error: "validation" }));
   }
 
+  await requireOwnedProperty(profile.id, propertyId, buildPropertyPath(propertyId));
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from("properties")
@@ -109,7 +110,8 @@ export async function updateOwnerProperty(formData: FormData) {
       allow_owner_contact_sharing: getCheckbox(formData, "allowOwnerContactSharing"),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", propertyId);
+    .eq("id", propertyId)
+    .eq("owner_id", profile.id);
 
   if (error) {
     redirect(buildPropertyPathWithState(propertyId, "property", { error: mapActionError(error) }));
@@ -125,15 +127,16 @@ export async function updateOwnerProperty(formData: FormData) {
 
 export async function deleteOwnerProperty(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
-  await requireOwnerMutationAccess(buildPropertyPath(propertyId));
+  const profile = await requireOwnerMutationAccess(buildPropertyPath(propertyId));
   const confirmation = getString(formData, "confirmation");
 
   if (!propertyId || confirmation !== "DELETE") {
     redirect(buildPropertyPathWithState(propertyId, "property", { error: "delete-confirmation" }));
   }
 
+  await requireOwnedProperty(profile.id, propertyId, buildPropertyPath(propertyId));
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("properties").delete().eq("id", propertyId);
+  const { error } = await supabase.from("properties").delete().eq("id", propertyId).eq("owner_id", profile.id);
 
   if (error) {
     redirect(buildPropertyPathWithState(propertyId, "property", { error: "delete" }));

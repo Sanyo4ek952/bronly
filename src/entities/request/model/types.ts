@@ -26,10 +26,14 @@ export type AgentRequestItem = {
   propertyTitle: string;
   roomTitle: string;
   guestName: string;
+  phone: string;
   createdAt: string;
   source: "agent" | "collection";
   status: "new" | "accepted_by_owner" | "rejected" | "transferred_to_owner" | "completed";
   guestsLabel: string;
+  checkIn: string;
+  checkOut: string;
+  comment: string;
   roomsCount: number;
   totalPrice: number;
   quotedPricePerNight: number;

@@ -9,8 +9,6 @@ export {
   getPublicPropertyPageData,
   resolveOwnerPublicSlug,
 } from "@/entities/property/api/property-data";
-export { dashboardStats } from "@/entities/property/model/dashboard";
-export { property } from "@/entities/property/model/mock";
 export { aggregateRoomAmenities, resolvePublicPropertyDetailMode } from "@/entities/property/model/public-property";
 export type {
   OwnerCalendarInventoryGroup,

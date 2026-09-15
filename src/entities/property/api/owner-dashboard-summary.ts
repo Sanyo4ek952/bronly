@@ -3,7 +3,9 @@ import { cache } from "react";
 import { dashboardStats } from "@/entities/property/model/dashboard";
 import type { OwnerDashboardSummary } from "@/entities/property/model/types";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
+import { isDemoModeEnabled } from "@/shared/api/supabase/env";
 import { canUseSupabase } from "@/shared/api/supabase/server";
+import { logServerConfigurationError, logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 import type { AuthProfile } from "@/shared/api/supabase/server-auth";
 import { createSupabaseServerClient, getCurrentAuthProfile } from "@/shared/api/supabase/server-auth";
 import { buildOwnerPublicPath } from "@/shared/lib";
@@ -73,6 +75,28 @@ function getStepState(isDone: boolean, isCurrent: boolean): OwnerOnboardingStep[
   }
 
   return "pending";
+}
+
+function buildUnavailableOwnerDashboardSummary(): OwnerDashboardSummary {
+  return {
+    loadState: "unavailable",
+    objects: 0,
+    rooms: 0,
+    activeRooms: 0,
+    newRequests: 0,
+    publicUrl: null,
+    subscriptionStatus: "unavailable",
+    subscriptionStatusLabel: "Недоступно",
+    subscriptionPlan: "Недоступно",
+    subscriptionValidUntil: "Недоступно",
+    subscriptionWarningText: null,
+    isCabinetRestricted: true,
+    isMutationAllowed: false,
+    onboarding: {
+      activeStepLabel: "Данные временно недоступны",
+      steps: [],
+    },
+  };
 }
 
 function buildOwnerOnboarding(input: {
@@ -162,14 +186,20 @@ function buildOwnerOnboarding(input: {
 
 export const getOwnerDashboardSummary = cache(async (): Promise<OwnerDashboardSummary> => {
   if (!canUseSupabase()) {
-    return dashboardStats;
+    if (isDemoModeEnabled()) {
+      return dashboardStats;
+    }
+
+    logServerConfigurationError("owner_dashboard_supabase_not_configured");
+    return buildUnavailableOwnerDashboardSummary();
   }
 
   try {
     const profile = await getCurrentAuthProfile();
 
     if (!profile) {
-      return dashboardStats;
+      logServerDataError("owner_dashboard_profile_unavailable", new Error("Authenticated profile is unavailable."));
+      return buildUnavailableOwnerDashboardSummary();
     }
 
     const supabase = await createSupabaseServerClient();
@@ -184,6 +214,18 @@ export const getOwnerDashboardSummary = cache(async (): Promise<OwnerDashboardSu
       supabase.from("property_photos").select("property_id"),
       supabase.from("room_photos").select("room_id"),
     ]);
+
+    for (const result of [
+      propertyRowsResult,
+      roomRowsResult,
+      newRequestRowsResult,
+      propertyPhotoRowsResult,
+      roomPhotoRowsResult,
+    ]) {
+      if (result.error) {
+        throw result.error;
+      }
+    }
 
     const propertyRows = (propertyRowsResult.data ?? []) as Array<{ id: string }>;
     const roomRows = (roomRowsResult.data ?? []) as Array<{
@@ -210,6 +252,7 @@ export const getOwnerDashboardSummary = cache(async (): Promise<OwnerDashboardSu
     const hasPhotos = photoPropertyIds.size > 0 || photoRoomIds.size > 0;
 
     return {
+      loadState: "ready",
       objects: propertyRows.length,
       rooms: roomRows.length,
       activeRooms,
@@ -238,7 +281,8 @@ export const getOwnerDashboardSummary = cache(async (): Promise<OwnerDashboardSu
         hasPhotos,
       }),
     };
-  } catch {
-    return dashboardStats;
+  } catch (error) {
+    logServerDataError("owner_dashboard_load_failed", error);
+    return buildUnavailableOwnerDashboardSummary();
   }
 });

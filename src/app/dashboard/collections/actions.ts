@@ -58,6 +58,7 @@ export async function createOwnerCollectionAction(formData: FormData) {
   const result = await createCollection({
     role: "owner",
     title: getString(formData, "title"),
+    guestLabel: getString(formData, "guestLabel"),
   });
 
   if (!result.ok) {
@@ -77,6 +78,7 @@ export async function renameOwnerCollectionAction(formData: FormData) {
     role: "owner",
     collectionId,
     title: getString(formData, "title"),
+    guestLabel: getString(formData, "guestLabel"),
   });
 
   if (!result.ok) {

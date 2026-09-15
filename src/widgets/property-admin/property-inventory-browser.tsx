@@ -17,9 +17,9 @@ import { useMemo, useRef, useState } from "react";
 
 import { cn } from "@/shared/lib/cn";
 import type { OwnerInventoryDashboardData, OwnerInventoryDashboardItem } from "@/entities/property";
+import { BottomSheet, InlineNotice } from "@/shared/ui";
 
 import { PropertyCard } from "./property-card";
-import { PropertyInventoryMobileSheet } from "./property-inventory-mobile-sheet";
 import {
   inventoryFieldClass,
   inventoryGradientButtonClass,
@@ -32,6 +32,7 @@ import {
 type PropertyInventoryBrowserProps = {
   data: OwnerInventoryDashboardData;
   feedback?: string | null;
+  feedbackTone?: "default" | "error";
 };
 
 type StatusFilter = "all" | "published" | "draft" | "archived";
@@ -78,7 +79,7 @@ function sortItems(items: OwnerInventoryDashboardItem[], sort: SortMode) {
 
 function getStatusCards(data: OwnerInventoryDashboardData["summary"]) {
   return [
-    { key: "total", label: "Всего объектов", value: data.totalCount, icon: Home, tone: "blue" as const },
+    { key: "total", label: "Всего вариантов", value: data.totalCount, icon: Home, tone: "blue" as const },
     { key: "published", label: "Опубликовано", value: data.publishedCount, icon: CheckCircle2, tone: "green" as const },
     { key: "draft", label: "Черновики", value: data.draftCount, icon: FileText, tone: "amber" as const },
     { key: "archived", label: "Архив", value: data.archivedCount, icon: Archive, tone: "slate" as const },
@@ -150,7 +151,7 @@ function getStatCardToneClass(tone: "blue" | "green" | "amber" | "slate") {
   }
 }
 
-export function PropertyInventoryBrowser({ data, feedback = null }: PropertyInventoryBrowserProps) {
+export function PropertyInventoryBrowser({ data, feedback = null, feedbackTone = "default" }: PropertyInventoryBrowserProps) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sort, setSort] = useState<SortMode>("newest");
@@ -189,10 +190,10 @@ export function PropertyInventoryBrowser({ data, feedback = null }: PropertyInve
           <div className="grid gap-2">
             <div className="grid gap-2">
               <h1 className="text-[clamp(28px,4vw,32px)] leading-[1.02] tracking-[-0.04em] text-[var(--text)] max-[520px]:text-2xl">
-                Объекты
+                Объекты и номера
               </h1>
               <p className="max-w-[680px] text-[var(--text-muted)] max-[720px]:hidden">
-                Управляйте объектами, ссылками и публикацией в одном кабинете владельца.
+                Управляйте объектами, отдельными номерами, ссылками и публикацией в одном кабинете владельца.
               </p>
             </div>
           </div>
@@ -217,8 +218,8 @@ export function PropertyInventoryBrowser({ data, feedback = null }: PropertyInve
           </div>
         </div>
 
-        <div className="flex items-start justify-between gap-4 max-[720px]:hidden">
-          <div className="grid flex-1 grid-cols-[minmax(280px,1.25fr)_repeat(2,minmax(180px,0.42fr))] gap-3">
+        <div className="flex min-w-0 items-start justify-between gap-4 max-[1280px]:grid max-[720px]:hidden">
+          <div className="grid min-w-0 flex-1 grid-cols-[minmax(240px,1.25fr)_repeat(2,minmax(160px,0.42fr))] gap-3">
             <label className="min-w-0" htmlFor="properties-search">
               <input
                 id="properties-search"
@@ -246,7 +247,8 @@ export function PropertyInventoryBrowser({ data, feedback = null }: PropertyInve
             />
           </div>
 
-          <div className="shrink-0">
+          <div className="flex shrink-0 justify-end gap-2.5">
+            <Link href="/dashboard/rooms/new" className={cn(inventorySecondaryButtonClass, "min-h-11")}>Отдельный номер</Link>
             <Link href="/dashboard/properties/new" className={cn(inventoryPrimaryButtonClass, "min-h-11 gap-2.5 px-[18px]")}>
               <Plus aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={2.2} />
               <span>Добавить объект</span>
@@ -254,18 +256,15 @@ export function PropertyInventoryBrowser({ data, feedback = null }: PropertyInve
           </div>
         </div>
 
-        <div className="hidden max-[720px]:block">
+        <div className="hidden gap-2.5 max-[720px]:grid max-[720px]:grid-cols-2 max-[420px]:grid-cols-1">
           <Link href="/dashboard/properties/new" className={cn(inventoryPrimaryButtonClass, "w-full")}>
             <Plus aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={2.2} />
             <span>Добавить объект</span>
           </Link>
+          <Link href="/dashboard/rooms/new" className={cn(inventorySecondaryButtonClass, "w-full")}>Отдельный номер</Link>
         </div>
 
-        {feedback ? (
-          <div className="rounded-2xl border border-[rgb(var(--color-primary-rgb)_/_0.16)] bg-[rgb(var(--color-primary-rgb)_/_0.07)] px-4 py-[14px] font-semibold text-[var(--color-primary-hover)]">
-            {feedback}
-          </div>
-        ) : null}
+        {feedback ? <InlineNotice tone={feedbackTone}>{feedback}</InlineNotice> : null}
       </section>
 
       <div className="grid grid-cols-5 gap-3 max-[960px]:grid-cols-2 max-[720px]:grid-cols-2 max-[520px]:gap-3">
@@ -316,17 +315,18 @@ export function PropertyInventoryBrowser({ data, feedback = null }: PropertyInve
               </div>
               <div className="grid gap-2">
                 <h2 className="text-xl font-bold leading-[1.15] text-[var(--text)]">
-                  {data.items.length ? "По этому фильтру ничего не найдено" : "У вас пока нет объектов"}
+                  {data.items.length ? "По этому фильтру ничего не найдено" : "У вас пока нет объектов и номеров"}
                 </h2>
                 <p className="text-[var(--text-muted)]">
                   {data.items.length
                     ? "Попробуйте изменить поиск, статус или сортировку, чтобы увидеть нужные карточки."
-                    : "Создайте первый объект, добавьте номера и получите публичную ссылку для гостей."}
+                    : "Создайте объект с номерами или отдельный номер и получите публичную ссылку для гостей."}
                 </p>
               </div>
-              <Link href="/dashboard/properties/new" className={inventoryPrimaryButtonClass}>
-                Добавить объект
-              </Link>
+              <div className="flex flex-wrap gap-2.5">
+                <Link href="/dashboard/properties/new" className={inventoryPrimaryButtonClass}>Добавить объект</Link>
+                <Link href="/dashboard/rooms/new" className={inventorySecondaryButtonClass}>Создать отдельный номер</Link>
+              </div>
             </section>
           )}
         </div>
@@ -418,12 +418,13 @@ export function PropertyInventoryBrowser({ data, feedback = null }: PropertyInve
         </aside>
       </div>
 
-      <PropertyInventoryMobileSheet
+      <BottomSheet
         open={isFiltersOpen}
         onOpenChange={setIsFiltersOpen}
         title="Фильтры"
         description="Поиск, статус и сортировка для списка объектов."
         closeLabel="Закрыть фильтры"
+        rootClassName="min-[721px]:hidden"
       >
         {({ close }) => (
           <>
@@ -454,7 +455,7 @@ export function PropertyInventoryBrowser({ data, feedback = null }: PropertyInve
             </button>
           </>
         )}
-      </PropertyInventoryMobileSheet>
+      </BottomSheet>
     </div>
   );
 }

@@ -66,7 +66,7 @@ export default async function PropertyRoomSettingsPage({ params, searchParams }:
           </div>
         </div>
 
-        {notice ? <InlineNotice>{notice}</InlineNotice> : null}
+        {notice ? <InlineNotice tone={error ? "error" : "default"}>{notice}</InlineNotice> : null}
       </section>
 
       <RoomSettingsEditor propertyId={property.id} room={room} redirectTo={redirectTo} />

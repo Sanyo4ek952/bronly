@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getAgentDashboardSummary } from "@/entities/collaboration";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
+import { ButtonLink, InlineNotice, Panel, SectionHeader, StatCard } from "@/shared/ui";
 
 export default async function AgentDealsPage() {
   const profile = await getCurrentAuthProfile();
@@ -12,24 +13,25 @@ export default async function AgentDealsPage() {
 
   const summary = await getAgentDashboardSummary(profile);
 
+  if (summary.loadState === "unavailable") {
+    return (
+      <InlineNotice title="Не удалось загрузить сделки" tone="warning" aria-live="polite">
+        Данные временно недоступны. Попробуйте обновить страницу позже.
+      </InlineNotice>
+    );
+  }
+
   return (
-    <section className="br-dashboard-block br-card">
-      <div className="br-dashboard-block__header">
-        <div>
-          <h2>Сделки</h2>
-          <p>В MVP сделка считается успешной только после статуса completed от владельца.</p>
-        </div>
+    <Panel className="grid gap-5 p-5 max-[640px]:p-4" surface="raised">
+      <SectionHeader title="Сделки" description="Сделка считается завершенной только после действия владельца по принятой заявке." />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <StatCard title="Завершенные сделки" value={summary.completedDeals} subtitle="Статус completed" />
+        <StatCard title="Кто завершает" value="Владелец" subtitle="Агент может только отправить запрос" />
       </div>
-      <div className="br-summary-card__rows">
-        <div className="br-summary-card__row">
-          <span>Завершенные сделки</span>
-          <strong>{summary.completedDeals}</strong>
-        </div>
-        <div className="br-summary-card__row">
-          <span>Подтверждение</span>
-          <strong>Только владелец</strong>
-        </div>
+      <InlineNotice tone="soft">Bronly не рассчитывает и не выплачивает комиссию агента. Условия сотрудничества стороны согласуют самостоятельно.</InlineNotice>
+      <div className="flex justify-start">
+        <ButtonLink href="/agent/dashboard/requests" variant="secondary">Открыть заявки</ButtonLink>
       </div>
-    </section>
+    </Panel>
   );
 }

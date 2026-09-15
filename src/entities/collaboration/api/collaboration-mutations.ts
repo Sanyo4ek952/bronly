@@ -1,19 +1,22 @@
-import { createNotificationEvent } from "@/entities/notification";
+import { buildNotificationIdempotencyKey, createNotificationEvent } from "@/entities/notification";
 import { markAgentReferralMilestone } from "@/entities/referral";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
+import { logServerConfigurationError, logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 import { createSupabaseServerClient, getCurrentAuthProfile } from "@/shared/api/supabase/server-auth";
+import { canAccessAgentMutations, canAccessOwnerMutations } from "@/shared/api/supabase/access-rules";
 import type {
   SupabaseAgentPropertyLinkRow,
   SupabaseAgentRoomLinkRow,
 } from "@/shared/api/supabase/types";
 import type { AgentCollaborationTargetType } from "@/entities/collaboration/model/types";
+import { normalizeAgentMarkupPercent } from "@/entities/collaboration/model/rules";
 
 import { getAccessibleRoomForAgent, resolveProposalTarget } from "./collaboration-access";
-import { normalizeMarkupPercent } from "./collaboration-formatters";
 
 export async function upsertAgentRoomMarkup(input: { roomId: string; markupPercent: number }) {
   if (!canUseSupabase()) {
-    return { ok: true as const };
+    logServerConfigurationError("agent_room_markup_supabase_not_configured");
+    return { ok: false as const, reason: "service_unavailable" as const };
   }
 
   const profile = await getCurrentAuthProfile();
@@ -32,7 +35,12 @@ export async function upsertAgentRoomMarkup(input: { roomId: string; markupPerce
     return { ok: false as const, reason: "not_allowed" as const };
   }
 
-  const markupPercent = normalizeMarkupPercent(input.markupPercent);
+  const markupPercent = normalizeAgentMarkupPercent(input.markupPercent);
+
+  if (markupPercent == null) {
+    return { ok: false as const, reason: "validation" as const };
+  }
+
   const supabase = await createSupabaseServerClient();
 
   if (markupPercent === 0) {
@@ -43,6 +51,7 @@ export async function upsertAgentRoomMarkup(input: { roomId: string; markupPerce
       .eq("agent_id", profile.id);
 
     if (error) {
+      logServerDataError("agent_room_markup_delete_failed", error);
       return { ok: false as const, reason: "save_failed" as const };
     }
 
@@ -60,6 +69,7 @@ export async function upsertAgentRoomMarkup(input: { roomId: string; markupPerce
   );
 
   if (error) {
+    logServerDataError("agent_room_markup_upsert_failed", error);
     return { ok: false as const, reason: "save_failed" as const };
   }
 
@@ -73,12 +83,13 @@ export async function submitAgentProposal(input: {
   message: string;
 }) {
   if (!canUseSupabase()) {
-    return { ok: true as const };
+    logServerConfigurationError("agent_proposal_supabase_not_configured");
+    return { ok: false as const, reason: "service_unavailable" as const };
   }
 
   const profile = await getCurrentAuthProfile();
 
-  if (!profile) {
+  if (!profile || !canAccessAgentMutations(profile)) {
     return { ok: false as const, reason: "unauthorized" as const };
   }
 
@@ -95,14 +106,17 @@ export async function submitAgentProposal(input: {
 
   try {
     const supabase = createSupabaseAdminClient();
+    const proposedAt = new Date().toISOString();
+    let proposalId: string;
     const payload = {
       owner_id: target.ownerId,
       agent_id: profile.id,
-      status: "pending",
+      status: "pending" as const,
       proposal_message: input.message.trim() || null,
-      proposed_at: new Date().toISOString(),
+      proposed_at: proposedAt,
       decided_at: null,
       owner_contact_visible: false,
+      collaboration_terms: null,
     };
 
     if (target.targetType === "property") {
@@ -112,19 +126,31 @@ export async function submitAgentProposal(input: {
         .eq("property_id", target.targetId)
         .eq("agent_id", profile.id)
         .maybeSingle();
-      const existing = existingData as SupabaseAgentPropertyLinkRow | null;
+      const existing = existingData;
 
       if (existing?.status === "pending" || existing?.status === "active") {
         return { ok: false as const, reason: "duplicate" as const };
       }
 
-      const { error } = existing
-        ? await supabase.from("agent_property_links").update({ ...payload, property_id: target.targetId }).eq("id", existing.id)
-        : await supabase.from("agent_property_links").insert({ ...payload, property_id: target.targetId });
+      const result = existing
+        ? await supabase
+            .from("agent_property_links")
+            .update({ ...payload, property_id: target.targetId })
+            .eq("id", existing.id)
+            .select("id")
+            .single()
+        : await supabase
+            .from("agent_property_links")
+            .insert({ ...payload, property_id: target.targetId })
+            .select("id")
+            .single();
 
-      if (error) {
+      if (result.error || !result.data?.id) {
+        logServerDataError("agent_property_proposal_save_failed", result.error ?? new Error("Missing proposal id."));
         return { ok: false as const, reason: "save_failed" as const };
       }
+
+      proposalId = result.data.id;
     } else {
       const { data: existingData } = await supabase
         .from("agent_room_links")
@@ -132,34 +158,53 @@ export async function submitAgentProposal(input: {
         .eq("room_id", target.targetId)
         .eq("agent_id", profile.id)
         .maybeSingle();
-      const existing = existingData as SupabaseAgentRoomLinkRow | null;
+      const existing = existingData;
 
       if (existing?.status === "pending" || existing?.status === "active") {
         return { ok: false as const, reason: "duplicate" as const };
       }
 
-      const { error } = existing
-        ? await supabase.from("agent_room_links").update({ ...payload, room_id: target.targetId }).eq("id", existing.id)
-        : await supabase.from("agent_room_links").insert({ ...payload, room_id: target.targetId });
+      const result = existing
+        ? await supabase
+            .from("agent_room_links")
+            .update({ ...payload, room_id: target.targetId })
+            .eq("id", existing.id)
+            .select("id")
+            .single()
+        : await supabase
+            .from("agent_room_links")
+            .insert({ ...payload, room_id: target.targetId })
+            .select("id")
+            .single();
 
-      if (error) {
+      if (result.error || !result.data?.id) {
+        logServerDataError("agent_room_proposal_save_failed", result.error ?? new Error("Missing proposal id."));
         return { ok: false as const, reason: "save_failed" as const };
       }
+
+      proposalId = result.data.id;
     }
 
     await createNotificationEvent({
       recipientId: target.ownerId,
       eventType: "agent_proposal_received",
+      idempotencyKey: buildNotificationIdempotencyKey({
+        eventType: "agent_proposal_received",
+        sourceId: proposalId,
+        occurrence: proposedAt,
+      }),
       payload: {
+        proposalId,
         propertyId: target.targetType === "property" ? target.targetId : undefined,
         propertyTitle: target.targetType === "property" ? target.title : undefined,
         roomTitle: target.targetType === "standalone_room" ? target.title : undefined,
-        linkPath: "/dashboard/agent-proposals",
+        roleContext: "owner",
       },
     });
 
     return { ok: true as const };
-  } catch {
+  } catch (error) {
+    logServerDataError("agent_proposal_unhandled_error", error);
     return { ok: false as const, reason: "save_failed" as const };
   }
 }
@@ -170,12 +215,13 @@ export async function reviewAgentProposal(input: {
   decision: "active" | "declined";
 }) {
   if (!canUseSupabase()) {
-    return { ok: true as const };
+    logServerConfigurationError("agent_proposal_review_supabase_not_configured");
+    return { ok: false as const, reason: "service_unavailable" as const };
   }
 
   const profile = await getCurrentAuthProfile();
 
-  if (!profile || !input.proposalId) {
+  if (!profile || !canAccessOwnerMutations(profile) || !input.proposalId) {
     return { ok: false as const, reason: "unauthorized" as const };
   }
 
@@ -188,12 +234,13 @@ export async function reviewAgentProposal(input: {
         .select("*")
         .eq("id", input.proposalId)
         .maybeSingle();
-      const proposal = proposalData as SupabaseAgentPropertyLinkRow | null;
+      const proposal = proposalData;
 
       if (!proposal || proposal.owner_id !== profile.id || proposal.status !== "pending") {
         return { ok: false as const, reason: "not_found" as const };
       }
 
+      const decidedAt = new Date().toISOString();
       let ownerContactVisible = false;
 
       if (input.decision === "active") {
@@ -210,13 +257,14 @@ export async function reviewAgentProposal(input: {
         .from("agent_property_links")
         .update({
           status: input.decision,
-          decided_at: new Date().toISOString(),
+          decided_at: decidedAt,
           owner_contact_visible: ownerContactVisible,
           collaboration_terms: proposal.collaboration_terms ?? proposal.proposal_message,
         })
         .eq("id", proposal.id);
 
       if (error) {
+        logServerDataError("agent_property_proposal_review_save_failed", error);
         return { ok: false as const, reason: "save_failed" as const };
       }
 
@@ -225,11 +273,16 @@ export async function reviewAgentProposal(input: {
       await createNotificationEvent({
         recipientId: proposal.agent_id,
         eventType: input.decision === "active" ? "agent_proposal_accepted" : "agent_proposal_rejected",
+        idempotencyKey: buildNotificationIdempotencyKey({
+          eventType: input.decision === "active" ? "agent_proposal_accepted" : "agent_proposal_rejected",
+          sourceId: proposal.id,
+          occurrence: decidedAt,
+        }),
         payload: {
           proposalId: proposal.id,
           propertyId: proposal.property_id,
           propertyTitle: (propertyDetails?.title as string | null) ?? undefined,
-          linkPath: input.decision === "active" ? "/agent/dashboard/collaborations" : "/agent/dashboard/opportunities",
+          roleContext: "agent",
         },
       });
 
@@ -245,12 +298,13 @@ export async function reviewAgentProposal(input: {
       .select("*")
       .eq("id", input.proposalId)
       .maybeSingle();
-    const proposal = proposalData as SupabaseAgentRoomLinkRow | null;
+    const proposal = proposalData;
 
     if (!proposal || proposal.owner_id !== profile.id || proposal.status !== "pending") {
       return { ok: false as const, reason: "not_found" as const };
     }
 
+    const decidedAt = new Date().toISOString();
     let ownerContactVisible = false;
 
     if (input.decision === "active") {
@@ -267,13 +321,14 @@ export async function reviewAgentProposal(input: {
       .from("agent_room_links")
       .update({
         status: input.decision,
-        decided_at: new Date().toISOString(),
+        decided_at: decidedAt,
         owner_contact_visible: ownerContactVisible,
         collaboration_terms: proposal.collaboration_terms ?? proposal.proposal_message,
       })
       .eq("id", proposal.id);
 
     if (error) {
+      logServerDataError("agent_room_proposal_review_save_failed", error);
       return { ok: false as const, reason: "save_failed" as const };
     }
 
@@ -282,10 +337,15 @@ export async function reviewAgentProposal(input: {
     await createNotificationEvent({
       recipientId: proposal.agent_id,
       eventType: input.decision === "active" ? "agent_proposal_accepted" : "agent_proposal_rejected",
+      idempotencyKey: buildNotificationIdempotencyKey({
+        eventType: input.decision === "active" ? "agent_proposal_accepted" : "agent_proposal_rejected",
+        sourceId: proposal.id,
+        occurrence: decidedAt,
+      }),
       payload: {
         proposalId: proposal.id,
         roomTitle: (roomDetails?.title as string | null) ?? undefined,
-        linkPath: input.decision === "active" ? "/agent/dashboard/collaborations" : "/agent/dashboard/opportunities",
+        roleContext: "agent",
       },
     });
 
@@ -294,7 +354,8 @@ export async function reviewAgentProposal(input: {
     }
 
     return { ok: true as const };
-  } catch {
+  } catch (error) {
+    logServerDataError("agent_proposal_review_unhandled_error", error);
     return { ok: false as const, reason: "save_failed" as const };
   }
 }

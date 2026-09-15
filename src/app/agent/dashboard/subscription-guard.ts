@@ -10,6 +10,10 @@ export async function ensureAgentSubscriptionMutationAllowed(redirectPath: strin
     redirect("/login");
   }
 
+  if (!profile.roles.includes("agent")) {
+    redirect("/dashboard");
+  }
+
   const subscription = await getSubscriptionRuntimeState(profile.id, "agent");
 
   if (!subscription.isMutationAllowed) {

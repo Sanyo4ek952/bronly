@@ -21,5 +21,5 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
   const { error, success } = readFeedbackSearchParams(params);
   const data = await getOwnerInventoryDashboardData();
 
-  return <PropertyInventoryBrowser data={data} feedback={getMessage(error, success) || null} />;
+  return <PropertyInventoryBrowser data={data} feedback={getMessage(error, success) || null} feedbackTone={error ? "error" : "default"} />;
 }

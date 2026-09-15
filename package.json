@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:unit": "node --experimental-strip-types --test --test-reporter=spec tests/unit/*.test.ts",
     "check:encoding": "node scripts/check-encoding.mjs",
     "dev": "next dev",
     "build": "next build",
@@ -15,7 +16,8 @@
     "graphify:report": "graphify query \"What are the main architecture areas in this codebase?\" --graph ./src/graphify-out/graph.json",
     "graphify:check": "graphify --help",
     "supabase:push": "npx supabase db push",
-    "supabase:types": "npx supabase gen types typescript --linked"
+    "supabase:types": "node scripts/generate-supabase-types.mjs",
+    "supabase:types:cli": "npx supabase gen types typescript --linked"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
@@ -23,13 +25,15 @@
     "lucide-react": "^1.17.0",
     "next": "^16.2.7",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.1",
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.16",
     "@types/react-dom": "^19.2.3",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.7",
     "postcss": "^8.5.15",

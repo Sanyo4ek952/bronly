@@ -6,6 +6,7 @@ export type ResultReason =
   | "not_allowed"
   | "not_found"
   | "save_failed"
+  | "subscription_expired"
   | "unauthorized"
   | "validation";
 
@@ -14,6 +15,11 @@ export type MutationResult = {
   collectionId?: string;
   collectionSlug?: string;
   reason?: ResultReason;
+};
+
+export type CollectionEditableFields = {
+  title: string;
+  guestLabel?: string;
 };
 
 export type PropertyCandidateRow = Pick<SupabasePropertyRow, "id" | "owner_id" | "title" | "city" | "address">;

@@ -1,3 +1,5 @@
+import webPush from "web-push";
+
 import {
   createSupabaseAdminClient,
   getVapidPrivateKey,
@@ -8,6 +10,7 @@ import {
   type SupabaseNotificationRow,
   type SupabasePushSubscriptionRow,
 } from "@/shared/api/supabase";
+import { logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 
 export type NotificationCopy = {
   title: string;
@@ -72,44 +75,43 @@ export async function savePushDeliveryRecord(input: {
   sentAt?: string | null;
 }) {
   const admin = createSupabaseAdminClient();
+  const nowIso = new Date().toISOString();
 
-  await admin.from("notification_deliveries").insert({
-    notification_id: input.notificationId,
-    recipient_id: input.recipientId,
-    channel: "push",
-    push_subscription_id: input.pushSubscriptionId,
-    telegram_chat_id: input.telegramChatId ?? null,
-    status: input.status,
-    provider_message_id: input.providerMessageId ?? null,
-    error_code: input.errorCode ?? null,
-    error_message: input.errorMessage ?? null,
-    sent_at: input.sentAt ?? null,
-  });
+  const { error } = await admin.from("notification_deliveries").upsert(
+    {
+      notification_id: input.notificationId,
+      recipient_id: input.recipientId,
+      channel: "push",
+      delivery_target_key: input.pushSubscriptionId ?? "channel",
+      push_subscription_id: input.pushSubscriptionId,
+      telegram_chat_id: input.telegramChatId ?? null,
+      status: input.status,
+      provider_message_id: input.providerMessageId ?? null,
+      error_code: input.errorCode ?? null,
+      error_message: input.errorMessage ?? null,
+      sent_at: input.sentAt ?? null,
+      updated_at: nowIso,
+    },
+    { onConflict: "notification_id,channel,delivery_target_key" },
+  );
+
+  if (error) {
+    logServerDataError("push_delivery_status_save_failed", error, {
+      notificationId: input.notificationId,
+      status: input.status,
+    });
+    throw error;
+  }
 }
 
 async function sendViaWebPush(subscription: SupabasePushSubscriptionRow, payload: PushPayload) {
-  const importModule = new Function("moduleName", "return import(moduleName);") as (
-    moduleName: string,
-  ) => Promise<unknown>;
-  const imported = (await importModule("web-push")) as {
-    sendNotification?: (
-      subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
-      payload: string,
-    ) => Promise<{ statusCode?: number; headers?: Record<string, string> }>;
-    setVapidDetails?: (subject: string, publicKey: string, privateKey: string) => void;
-  };
-
-  if (!imported.sendNotification || !imported.setVapidDetails) {
-    throw new Error("web-push module is not available.");
-  }
-
-  imported.setVapidDetails(
+  webPush.setVapidDetails(
     getVapidSubject() ?? "mailto:push@example.com",
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
     getVapidPrivateKey() ?? "",
   );
 
-  return imported.sendNotification(
+  return webPush.sendNotification(
     {
       endpoint: subscription.endpoint,
       keys: {
@@ -126,7 +128,7 @@ export async function deliverPushNotification(input: {
   copy: NotificationCopy;
 }) {
   const admin = createSupabaseAdminClient();
-  const [{ data: settingsData }, { data: subscriptionRows }] = await Promise.all([
+  const [settingsResult, subscriptionsResult] = await Promise.all([
     admin.from("notification_settings").select("*").eq("profile_id", input.notification.recipient_id).maybeSingle(),
     admin
       .from("push_subscriptions")
@@ -135,8 +137,24 @@ export async function deliverPushNotification(input: {
       .order("updated_at", { ascending: false }),
   ]);
 
-  const settings = (settingsData as SupabaseNotificationSettingsRow | null) ?? null;
-  const subscriptions = (subscriptionRows as SupabasePushSubscriptionRow[] | null) ?? [];
+  if (settingsResult.error || subscriptionsResult.error) {
+    const queryError = settingsResult.error ?? subscriptionsResult.error ?? new Error("Push delivery lookup failed.");
+    logServerDataError("push_delivery_lookup_failed", queryError, {
+      notificationId: input.notification.id,
+    });
+    await savePushDeliveryRecord({
+      notificationId: input.notification.id,
+      recipientId: input.notification.recipient_id,
+      pushSubscriptionId: null,
+      status: "failed",
+      errorCode: "lookup_failed",
+      errorMessage: "Push delivery settings could not be loaded.",
+    });
+    return;
+  }
+
+  const settings = settingsResult.data ?? null;
+  const subscriptions = subscriptionsResult.data ?? [];
 
   if (settings?.push_enabled === false) {
     await savePushDeliveryRecord({
@@ -158,8 +176,6 @@ export async function deliverPushNotification(input: {
     return;
   }
 
-  const payload = buildPushPayload(input.notification, input.copy);
-
   if (!hasConfiguredWebPush()) {
     await Promise.all(
       subscriptions.map((subscription) =>
@@ -168,6 +184,27 @@ export async function deliverPushNotification(input: {
           recipientId: input.notification.recipient_id,
           pushSubscriptionId: subscription.id,
           status: "pending_configuration",
+        }),
+      ),
+    );
+    return;
+  }
+
+  let payload: PushPayload;
+
+  try {
+    payload = buildPushPayload(input.notification, input.copy);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Push payload could not be built.";
+    await Promise.all(
+      subscriptions.map((subscription) =>
+        savePushDeliveryRecord({
+          notificationId: input.notification.id,
+          recipientId: input.notification.recipient_id,
+          pushSubscriptionId: subscription.id,
+          status: "failed",
+          errorCode: "payload_failed",
+          errorMessage,
         }),
       ),
     );
@@ -205,6 +242,21 @@ export async function deliverPushNotification(input: {
           errorCode,
           errorMessage,
         });
+
+        if (errorCode === "404" || errorCode === "410") {
+          const { error: deleteError } = await admin
+            .from("push_subscriptions")
+            .delete()
+            .eq("id", subscription.id)
+            .eq("profile_id", input.notification.recipient_id);
+
+          if (deleteError) {
+            logServerDataError("expired_push_subscription_delete_failed", deleteError, {
+              notificationId: input.notification.id,
+              pushSubscriptionId: subscription.id,
+            });
+          }
+        }
       }
     }),
   );

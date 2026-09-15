@@ -3,6 +3,8 @@ import Link from "next/link";
 
 import { getReferralInvitePageData } from "@/entities/referral";
 import { createSeoMetadata } from "@/shared/lib/seo";
+import { ButtonLink, InlineNotice } from "@/shared/ui";
+import { AuthShell } from "@/widgets/auth-shell";
 
 type InvitePageProps = {
   params: Promise<{ token: string }>;
@@ -21,22 +23,17 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
   if (!data.invite) {
     return (
-      <main className="br-auth-page">
-        <section className="br-auth-shell br-card">
-          <div className="br-auth-shell__grid">
-            <div className="br-auth-shell__intro">
-              <span className="br-chip">приглашение недоступно</span>
-              <h1 className="br-auth-shell__title">Ссылка больше не работает</h1>
-              <p className="br-auth-shell__text">Попросите отправить новое приглашение из кабинета.</p>
-            </div>
-            <div className="br-auth-panel">
-              <Link href="/register" className="br-button br-button--primary br-button--full">
-                Создать аккаунт
-              </Link>
-            </div>
-          </div>
-        </section>
-      </main>
+      <AuthShell
+        eyebrow="Приглашение недоступно"
+        title="Ссылка больше не работает"
+        description="Попросите отправить новое персональное приглашение из кабинета Bronly."
+        footer={<Link href="/login">Уже есть аккаунт? Войти</Link>}
+      >
+        <InlineNotice tone="warning">Приглашение могло быть использовано, отозвано или просрочено.</InlineNotice>
+        <ButtonLink href="/register" fullWidth>
+          Создать аккаунт без приглашения
+        </ButtonLink>
+      </AuthShell>
     );
   }
 
@@ -52,40 +49,31 @@ export default async function InvitePage({ params }: InvitePageProps) {
   const roleLabel = data.invite.inviteeRole === "agent" ? "агента" : "владельца";
 
   return (
-    <main className="br-auth-page">
-      <section className="br-auth-shell br-card">
-        <div className="br-auth-shell__grid">
-          <div className="br-auth-shell__intro">
-            <span className="br-chip">персональное приглашение</span>
-            <h1 className="br-auth-shell__title">{data.invite.inviterName} приглашает вас в Bronly</h1>
-            <p className="br-auth-shell__text">После регистрации вы сможете начать работу в роли {roleLabel}.</p>
-          </div>
+    <AuthShell
+      eyebrow="Персональное приглашение"
+      title={`${data.invite.inviterName} приглашает вас в Bronly`}
+      description={`После регистрации вы сможете начать работу в роли ${roleLabel}. Ожидаемая роль сохранена в приглашении.`}
+      footer={<Link href="/">На главную Bronly</Link>}
+    >
+      <div className="grid gap-2 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-subtle)] p-4">
+        <strong className="text-base text-[var(--text)]">{data.invite.title}</strong>
+        <p className="text-sm leading-[1.55] text-[var(--text-muted)]">{data.invite.nextStepText}</p>
+      </div>
 
-          <div className="br-auth-panel">
-            <div className="br-auth-form">
-              <div className="br-auth-form__field">
-                <strong>{data.invite.title}</strong>
-                <p>{data.invite.nextStepText}</p>
-              </div>
-
-              {data.canRegister ? (
-                <>
-                  <Link href={registerHref} className="br-button br-button--primary br-button--full">
-                    Зарегистрироваться
-                  </Link>
-                  <Link href={loginHref} className="br-button br-button--secondary br-button--full">
-                    У меня уже есть аккаунт
-                  </Link>
-                </>
-              ) : (
-                <Link href={data.targetHref} className="br-button br-button--primary br-button--full">
-                  {data.targetLabel}
-                </Link>
-              )}
-            </div>
-          </div>
+      {data.canRegister ? (
+        <div className="grid gap-3">
+          <ButtonLink href={registerHref} fullWidth>
+            Зарегистрироваться
+          </ButtonLink>
+          <ButtonLink href={loginHref} variant="secondary" fullWidth>
+            У меня уже есть аккаунт
+          </ButtonLink>
         </div>
-      </section>
-    </main>
+      ) : (
+        <ButtonLink href={data.targetHref} fullWidth>
+          {data.targetLabel}
+        </ButtonLink>
+      )}
+    </AuthShell>
   );
 }

@@ -14,6 +14,7 @@ export function getFallbackSummary(profile: AuthProfile): AgentDashboardSummary 
   const publicLinkHref = buildAgentPublicPath(profile.agentPublicId);
 
   return {
+    loadState: "unavailable",
     activeCollaborations: 0,
     incomingRequests: 0,
     completedDeals: 0,
@@ -67,14 +68,6 @@ export function getSingleRow<T>(value: T | T[] | null): T | null {
   return value;
 }
 
-export function normalizeMarkupPercent(value: number) {
-  if (!Number.isFinite(value) || value <= 0) {
-    return 0;
-  }
-
-  return Math.round(value * 100) / 100;
-}
-
-export function mapStandaloneRoomLocation(room: RoomLookupRow) {
+export function mapStandaloneRoomLocation(room: Pick<RoomLookupRow, "property_type" | "city" | "address">) {
   return [room.property_type ?? "Отдельный номер", room.city ?? "", room.address ?? ""].filter(Boolean).join(" • ");
 }

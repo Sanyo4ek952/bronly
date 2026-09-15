@@ -1,1 +1,1 @@
-export { PublicRoomBrowser } from "@/widgets/public-room-browser/public-room-browser";
+export { PublicRoomBrowser, PublicStayFilter } from "@/widgets/public-room-browser/public-room-browser";

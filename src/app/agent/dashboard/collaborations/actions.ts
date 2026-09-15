@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { ensureAgentSubscriptionMutationAllowed } from "@/app/agent/dashboard/subscription-guard";
 import { upsertAgentRoomMarkup } from "@/entities/collaboration";
-import { getNumber, getString } from "@/shared/lib/form-data";
+import { getString } from "@/shared/lib/form-data";
 
 function buildCollaborationsPath(state?: Record<string, string>) {
   const params = new URLSearchParams();
@@ -25,7 +25,8 @@ function buildCollaborationsPath(state?: Record<string, string>) {
 
 export async function saveAgentRoomMarkupAction(formData: FormData) {
   const roomId = getString(formData, "roomId");
-  const markupPercent = getNumber(formData, "markupPercent", 0);
+  const markupValue = getString(formData, "markupPercent");
+  const markupPercent = markupValue ? Number(markupValue) : Number.NaN;
 
   await ensureAgentSubscriptionMutationAllowed("/agent/dashboard/collaborations");
 

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { ensureAgentSubscriptionMutationAllowed } from "@/app/agent/dashboard/subscription-guard";
 import { requestAgentCompletion, transferAgentRequestToOwner } from "@/entities/request";
@@ -19,7 +20,10 @@ export async function transferAgentRequestAction(formData: FormData) {
     revalidatePath("/agent/dashboard/requests");
     revalidatePath("/agent/dashboard");
     revalidatePath("/dashboard/requests");
+    redirect("/agent/dashboard/requests?success=transferred");
   }
+
+  redirect(`/agent/dashboard/requests?error=${result.reason}`);
 }
 
 export async function requestAgentCompletionAction(formData: FormData) {
@@ -32,5 +36,8 @@ export async function requestAgentCompletionAction(formData: FormData) {
     revalidatePath("/agent/dashboard");
     revalidatePath("/dashboard/requests");
     revalidatePath("/dashboard/notifications");
+    redirect("/agent/dashboard/requests?success=completion-requested");
   }
+
+  redirect(`/agent/dashboard/requests?error=${result.reason}`);
 }

@@ -17,7 +17,7 @@ import type {
 import type { ReferralQueueItem } from "@/entities/referral";
 import { formatDateLabel, formatDateTimeLabel } from "@/shared/lib/date";
 import { cn } from "@/shared/lib/cn";
-import { AppIcon, Button, InlineNotice, Input, Select } from "@/shared/ui";
+import { AppIcon, Button, ButtonLink, InlineNotice, Input, Panel, Select, StatusPill } from "@/shared/ui";
 import { AdminPageHeader } from "@/widgets/property-admin";
 
 import {
@@ -26,7 +26,7 @@ import {
   saveSubscriptionAction,
   toggleProfilePublicVisibilityAction,
   togglePropertyFreezeAction,
-} from "@/app/admin/actions";
+} from "@/features/admin/actions";
 
 function getShortProfileId(profileId: string) {
   return profileId.slice(0, 8);
@@ -56,7 +56,6 @@ function getSubscriptionAnchorId(profileId: string, roleContext: "owner" | "agen
 function getSubscriptionStatusVariant(status: AdminSubscriptionItem["status"]) {
   switch (status) {
     case "active":
-    case "manual":
       return "active";
     case "grace":
       return "attention";
@@ -102,7 +101,8 @@ function getUserVisibilityVariant(row: AdminUserItem) {
 type AdminBadgeTone = "active" | "danger" | "attention" | "neutral";
 
 function AdminBadge({ children, tone }: { children: React.ReactNode; tone: AdminBadgeTone }) {
-  return <span className={cn("br-admin-badge", `br-admin-badge--${tone}`)}>{children}</span>;
+  const variant = tone === "active" ? "active" : tone === "danger" ? "inactive" : tone === "attention" ? "pending" : "neutral";
+  return <StatusPill variant={variant} className="min-h-[30px] px-2.5 text-xs">{children}</StatusPill>;
 }
 
 function AdminAccordion({
@@ -122,25 +122,25 @@ function AdminAccordion({
   const panelId = useId();
 
   return (
-    <section className="br-admin-accordion" data-open={isOpen ? "true" : "false"}>
+    <section className="rounded-[18px] border border-[var(--border)] bg-[rgb(248_250_252_/_0.9)]">
       <button
         type="button"
-        className="br-admin-accordion__trigger"
+        className="flex w-full items-start justify-between gap-3 rounded-[18px] bg-transparent p-3.5 text-left text-inherit transition hover:bg-[rgb(255_255_255_/_0.52)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]"
         aria-expanded={isOpen}
         aria-controls={panelId}
         onClick={() => setIsOpen((current) => !current)}
       >
-        <div className="br-admin-accordion__copy">
-          <strong>{title}</strong>
-          {subtitle ? <span>{subtitle}</span> : null}
+        <div className="grid gap-1">
+          <strong className="block text-sm text-[var(--text)]">{title}</strong>
+          {subtitle ? <span className="text-xs leading-[1.45] text-[var(--text-muted)]">{subtitle}</span> : null}
         </div>
-        <span className="br-admin-accordion__right">
+        <span className="inline-flex items-center gap-2.5">
           {rightSlot}
-          <ChevronDown className="br-admin-accordion__chevron" aria-hidden="true" />
+          <ChevronDown className={cn("size-[18px] text-[var(--text-muted)] transition-transform", isOpen && "rotate-180")} aria-hidden="true" />
         </span>
       </button>
       {isOpen ? (
-        <div id={panelId} className="br-admin-accordion__body">
+        <div id={panelId} className="grid gap-3.5 px-3.5 pb-3.5">
           {children}
         </div>
       ) : null}
@@ -158,14 +158,16 @@ function AdminFilterChips<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <div className="br-admin-filter-chips" role="tablist" aria-label="Фильтры">
+    <div className="flex gap-2.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Фильтры">
       {options.map((option) => (
         <button
           key={option.value}
           type="button"
+          role="tab"
+          aria-selected={value === option.value}
           className={cn(
-            "br-admin-filter-chip",
-            value === option.value && "br-admin-filter-chip--active",
+            "min-h-9 whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 text-[13px] font-bold text-[var(--text-muted)] transition hover:border-[rgb(var(--color-primary-rgb)_/_0.24)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]",
+            value === option.value && "border-[rgb(var(--color-primary-rgb)_/_0.24)] bg-[rgb(var(--color-primary-rgb)_/_0.08)] text-[var(--color-primary-hover)]",
           )}
           onClick={() => onChange(option.value)}
         >
@@ -186,11 +188,11 @@ function AdminSummaryCard({
   hint: string;
 }) {
   return (
-    <article className="br-admin-summary-card br-card">
-      <span className="br-admin-summary-card__label">{label}</span>
-      <strong className="br-admin-summary-card__value">{value}</strong>
-      <small className="br-admin-summary-card__hint">{hint}</small>
-    </article>
+    <Panel as="article" className="grid gap-2 rounded-[22px] bg-[rgb(255_255_255_/_0.95)] p-4 max-[390px]:rounded-[18px] max-[390px]:p-3">
+      <span className="min-w-0 text-sm text-[var(--text-muted)]">{label}</span>
+      <strong className="text-3xl leading-none text-[var(--text)] max-[390px]:text-[26px]">{value}</strong>
+      <small className="min-w-0 text-xs leading-[1.45] text-[var(--text-muted)]">{hint}</small>
+    </Panel>
   );
 }
 
@@ -208,20 +210,20 @@ function AdminPreviewCard({
   children: React.ReactNode;
 }) {
   return (
-    <article className="br-admin-preview-card br-card">
-      <div className="br-admin-preview-card__header">
-        <div className="br-admin-preview-card__copy">
-          <strong className="br-admin-preview-card__title">{title}</strong>
-          <p className="br-admin-preview-card__description">{description}</p>
+    <Panel as="article" className="grid gap-3.5 rounded-[22px] bg-[rgb(255_255_255_/_0.95)] p-4 max-[390px]:rounded-[18px] max-[390px]:p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <strong className="block text-[var(--text)]">{title}</strong>
+          <p className="min-w-0 text-sm leading-[1.5] text-[var(--text-muted)]">{description}</p>
         </div>
         <AdminBadge tone={count > 0 ? "attention" : "neutral"}>{count}</AdminBadge>
       </div>
-      <div className="br-admin-preview-card__body">{children}</div>
-      <Link href={href} className="br-admin-inline-link">
+      <div>{children}</div>
+      <Link href={href} className="inline-flex items-center gap-2 font-bold text-[var(--color-primary-hover)] hover:underline focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]">
         Открыть раздел
         <ArrowRight aria-hidden="true" />
       </Link>
-    </article>
+    </Panel>
   );
 }
 
@@ -233,13 +235,13 @@ function AdminEmptyState({
   description: string;
 }) {
   return (
-    <article className="br-admin-empty br-card">
-      <div className="br-admin-empty__icon" aria-hidden="true">
+    <Panel as="article" className="grid justify-items-start gap-2.5 rounded-[22px] bg-[rgb(255_255_255_/_0.95)] p-4 max-[390px]:rounded-[18px] max-[390px]:p-3">
+      <div className="grid size-12 place-items-center rounded-2xl bg-[rgb(var(--color-primary-rgb)_/_0.08)] text-[var(--color-primary-hover)]" aria-hidden="true">
         <AppIcon icon={Shield} />
       </div>
       <strong>{title}</strong>
-      <p>{description}</p>
-    </article>
+      <p className="text-sm leading-[1.5] text-[var(--text-muted)]">{description}</p>
+    </Panel>
   );
 }
 
@@ -253,16 +255,16 @@ function AdminPreviewList({
   }>;
 }) {
   if (!items.length) {
-    return <p className="br-admin-muted">Сейчас здесь пусто.</p>;
+    return <p className="text-sm text-[var(--text-muted)]">Сейчас здесь пусто.</p>;
   }
 
   return (
-    <div className="br-admin-preview-list">
+    <div className="grid gap-2.5">
       {items.map((item) => (
-        <article key={`${item.title}-${item.subtitle}`} className="br-admin-preview-list__item">
-          <div className="br-admin-preview-list__copy">
-            <strong className="br-admin-preview-list__title">{item.title}</strong>
-            <span className="br-admin-preview-list__subtitle">{item.subtitle}</span>
+        <article key={`${item.title}-${item.subtitle}`} className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[rgb(243_248_247_/_0.68)] px-3.5 py-3">
+          <div className="min-w-0">
+            <strong className="block text-sm text-[var(--text)]">{item.title}</strong>
+            <span className="min-w-0 text-xs leading-[1.45] text-[var(--text-muted)]">{item.subtitle}</span>
           </div>
           {item.badge ? <AdminBadge tone={item.badge.tone}>{item.badge.label}</AdminBadge> : null}
         </article>
@@ -274,39 +276,39 @@ function AdminPreviewList({
 export function AdminOverview({ data, message }: { data: AdminOverviewData; message: string }) {
   const peopleStats = [
     { label: "Пользователи", value: String(data.userCount), hint: "Все профили с доступом в сервис" },
-    { label: "Владельцы", value: String(data.ownerCount), hint: "Кабинеты owner" },
-    { label: "Агенты", value: String(data.agentCount), hint: "Активные agent-роли" },
-    { label: "Две роли", value: String(data.dualRoleCount), hint: "Owner и agent в одном профиле" },
+    { label: "Владельцы", value: String(data.ownerCount), hint: "Кабинеты владельцев" },
+    { label: "Агенты", value: String(data.agentCount), hint: "Профили с ролью агента" },
+    { label: "Две роли", value: String(data.dualRoleCount), hint: "Владелец и агент в одном профиле" },
   ];
 
   const subscriptionStats = [
-    { label: "Активные подписки", value: String(data.activeSubscriptionCount), hint: "Статусы active или manual" },
+    { label: "Активные подписки", value: String(data.activeSubscriptionCount), hint: "Текущий статус active" },
     { label: "Платящие сейчас", value: String(data.paidUserCount), hint: "Уникальные профили с доступом" },
     { label: "Скоро истекают", value: String(data.expiringSoonCount), hint: "Нужна ручная проверка" },
-    { label: "В очереди referral", value: String(data.pendingReferralCount), hint: "Ожидают решения админа" },
+    { label: "Реферальная очередь", value: String(data.pendingReferralCount), hint: "Ожидают решения администратора" },
   ];
 
   const activityStats = [
     { label: "Объекты", value: String(data.propertyCount), hint: "Все созданные объекты" },
     { label: "Номера", value: String(data.roomCount), hint: "Активные и неактивные варианты" },
     { label: "Заявки", value: String(data.requestCount), hint: "Всего запросов на проживание" },
-    { label: "Коллекции", value: String(data.collectionCount), hint: "Owner и agent подборки" },
+    { label: "Коллекции", value: String(data.collectionCount), hint: "Подборки владельцев и агентов" },
   ];
 
   return (
-    <section className="br-admin-page">
+    <section className="grid gap-[14px] rounded-[24px] border border-[var(--border)] bg-[rgb(255_255_255_/_0.95)] p-[18px] shadow-[var(--shadow-md)] max-[720px]:rounded-[22px] max-[720px]:p-3.5 max-[390px]:gap-2.5 max-[390px]:rounded-[20px] max-[390px]:p-3">
       <AdminPageHeader
         variant="plain"
         title="Админка Bronly"
         description="Мобильная сводка по пользователям, подпискам и внутренним проверкам."
         actions={
           <>
-            <Link href="/admin/reviews" className="br-button br-button--primary">
+            <ButtonLink href="/admin/reviews">
               Проверки
-            </Link>
-            <Link href="/admin/subscriptions" className="br-button br-button--secondary">
+            </ButtonLink>
+            <ButtonLink href="/admin/subscriptions" variant="secondary">
               Подписки
-            </Link>
+            </ButtonLink>
           </>
         }
       />
@@ -317,46 +319,46 @@ export function AdminOverview({ data, message }: { data: AdminOverviewData; mess
         </InlineNotice>
       ) : null}
 
-      <section className="br-admin-summary-group">
-        <div className="br-admin-summary-group__header">
-          <h2>Пользователи</h2>
-          <p>Кого сейчас обслуживает платформа.</p>
+      <section className="grid gap-3.5">
+        <div className="grid gap-1.5">
+          <h2 className="text-[clamp(24px,4vw,36px)] font-bold leading-[1.05] tracking-[-0.04em] text-[var(--text)]">Пользователи</h2>
+          <p className="text-sm text-[var(--text-muted)]">Кого сейчас обслуживает платформа.</p>
         </div>
-        <div className="br-admin-summary-grid">
+        <div className="grid grid-cols-4 gap-3.5 max-[1080px]:grid-cols-2 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
           {peopleStats.map((item) => (
             <AdminSummaryCard key={item.label} {...item} />
           ))}
         </div>
       </section>
 
-      <section className="br-admin-summary-group">
-        <div className="br-admin-summary-group__header">
-          <h2>Подписки</h2>
-          <p>Что требует ручного продления и внимания.</p>
+      <section className="grid gap-3.5">
+        <div className="grid gap-1.5">
+          <h2 className="text-[clamp(24px,4vw,36px)] font-bold leading-[1.05] tracking-[-0.04em] text-[var(--text)]">Подписки</h2>
+          <p className="text-sm text-[var(--text-muted)]">Что требует ручного продления и внимания.</p>
         </div>
-        <div className="br-admin-summary-grid">
+        <div className="grid grid-cols-4 gap-3.5 max-[1080px]:grid-cols-2 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
           {subscriptionStats.map((item) => (
             <AdminSummaryCard key={item.label} {...item} />
           ))}
         </div>
       </section>
 
-      <section className="br-admin-summary-group">
-        <div className="br-admin-summary-group__header">
-          <h2>Активность</h2>
-          <p>Объекты, номера и поток заявок.</p>
+      <section className="grid gap-3.5">
+        <div className="grid gap-1.5">
+          <h2 className="text-[clamp(24px,4vw,36px)] font-bold leading-[1.05] tracking-[-0.04em] text-[var(--text)]">Активность</h2>
+          <p className="text-sm text-[var(--text-muted)]">Объекты, номера и поток заявок.</p>
         </div>
-        <div className="br-admin-summary-grid">
+        <div className="grid grid-cols-4 gap-3.5 max-[1080px]:grid-cols-2 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
           {activityStats.map((item) => (
             <AdminSummaryCard key={item.label} {...item} />
           ))}
         </div>
       </section>
 
-      <section className="br-admin-preview-grid">
+      <section className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
         <AdminPreviewCard
           title="Очередь проверок"
-          description="Referral-бонусы, которые нужно подтвердить или отклонить."
+          description="Реферальные продления, которые нужно подтвердить или отклонить."
           href="/admin/reviews"
           count={data.pendingReferralCount}
         >
@@ -386,7 +388,7 @@ export function AdminOverview({ data, message }: { data: AdminOverviewData; mess
 
         <AdminPreviewCard
           title="Скрытые страницы"
-          description="Owner и agent профили, скрытые администратором."
+          description="Профили владельцев и агентов, скрытые администратором."
           href="/admin/users"
           count={data.hiddenProfileCount}
         >
@@ -420,12 +422,16 @@ export function AdminOverview({ data, message }: { data: AdminOverviewData; mess
 
 export function AdminReviewsPage({ data, message }: { data: AdminReviewsPageData; message: string }) {
   return (
-    <section className="br-admin-page">
+    <section className="grid gap-[14px] rounded-[24px] border border-[var(--border)] bg-[rgb(255_255_255_/_0.95)] p-[18px] shadow-[var(--shadow-md)] max-[720px]:rounded-[22px] max-[720px]:p-3.5 max-[390px]:gap-2.5 max-[390px]:rounded-[20px] max-[390px]:p-3">
       <AdminPageHeader
         variant="plain"
         title="Проверки"
-        description="Решения по referral-продлениям и быстрый переход к нужной подписке."
+        description="Решения по реферальным продлениям и быстрый переход к нужной подписке."
       />
+
+      <InlineNotice tone="soft" title="Как применяется бонус">
+        Подтверждение один раз продлит на 10 дней все контексты владельца и агента у пригласившего. Отклонение не меняет подписки.
+      </InlineNotice>
 
       {message ? (
         <InlineNotice title="Статус действия" aria-live="polite">
@@ -434,25 +440,25 @@ export function AdminReviewsPage({ data, message }: { data: AdminReviewsPageData
       ) : null}
 
       {data.pendingReferralRewards.length ? (
-        <div className="br-admin-list">
+        <div className="grid gap-3.5 max-[390px]:gap-2.5">
           {data.pendingReferralRewards.map((row) => (
-            <article key={row.rewardId} className="br-admin-record-card br-card">
-              <div className="br-admin-record-card__top">
+            <Panel key={row.rewardId} as="article" className="grid gap-3.5 rounded-[22px] bg-[rgb(255_255_255_/_0.95)] p-4 max-[390px]:rounded-[18px] max-[390px]:p-3">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <strong>{row.inviterName}</strong>
-                  <p>{row.invitedName}</p>
+                  <strong className="block text-[var(--text)]">{row.inviterName}</strong>
+                  <p className="text-sm text-[var(--text-muted)]">Приглашён: {row.invitedName}</p>
                 </div>
                 <AdminBadge tone="attention">+{row.rewardDays} дней</AdminBadge>
               </div>
 
-              <div className="br-admin-record-card__stats">
-                <div>
-                  <span>Milestone</span>
-                  <strong>{row.milestoneLabel}</strong>
+              <div className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
+                <div className="grid gap-1">
+                  <span className="text-xs text-[var(--text-muted)]">Целевое действие</span>
+                  <strong className="block text-sm text-[var(--text)]">{row.milestoneLabel}</strong>
                 </div>
-                <div>
-                  <span>Когда достигнут</span>
-                  <strong>{row.milestoneReachedAt}</strong>
+                <div className="grid gap-1">
+                  <span className="text-xs text-[var(--text-muted)]">Когда достигнуто</span>
+                  <strong className="block text-sm text-[var(--text)]">{row.milestoneReachedAt}</strong>
                 </div>
               </div>
 
@@ -460,31 +466,31 @@ export function AdminReviewsPage({ data, message }: { data: AdminReviewsPageData
                 title="Подробнее"
                 subtitle="Показать роли, профиль и быстрый переход к подписке."
               >
-                <div className="br-admin-detail-grid">
-                  <div>
-                    <span>Роли пригласившего</span>
-                    <strong>{row.inviterRoles.join(", ") || "owner"}</strong>
+                <div className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
+                  <div className="grid gap-1">
+                    <span className="text-xs text-[var(--text-muted)]">Контексты продления</span>
+                    <strong className="block text-sm text-[var(--text)]">{row.inviterRoles.join(", ") || "Нет доступных контекстов"}</strong>
                   </div>
-                  <div>
-                    <span>Профиль</span>
-                    <strong>id {getShortProfileId(row.inviterProfileId)}</strong>
+                  <div className="grid gap-1">
+                    <span className="text-xs text-[var(--text-muted)]">Профиль пригласившего</span>
+                    <strong className="block text-sm text-[var(--text)]">id {getShortProfileId(row.inviterProfileId)}</strong>
                   </div>
                 </div>
                 <Link
                   href={`/admin/subscriptions?focus=${encodeURIComponent(getSubscriptionFocusKey(row))}`}
-                  className="br-admin-inline-link"
+                  className="inline-flex items-center gap-2 font-bold text-[var(--color-primary-hover)] hover:underline focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]"
                 >
                   Перейти к подписке
                   <ArrowRight aria-hidden="true" />
                 </Link>
               </AdminAccordion>
 
-              <div className="br-admin-sticky-actions">
+              <div className="grid gap-2.5 max-[720px]:sticky max-[720px]:bottom-[calc(74px+var(--safe-area-bottom))] max-[720px]:rounded-[18px] max-[720px]:border max-[720px]:border-[var(--border)] max-[720px]:bg-[rgb(255_255_255_/_0.96)] max-[720px]:p-2.5 max-[720px]:shadow-[var(--shadow-md)] sm:grid-cols-2">
                 <form action={reviewReferralRewardAction}>
                   <input type="hidden" name="rewardId" value={row.rewardId} />
                   <input type="hidden" name="decision" value="approved" />
                   <Button type="submit" fullWidth>
-                    Подтвердить
+                    Подтвердить +10 дней
                   </Button>
                 </form>
                 <form action={reviewReferralRewardAction}>
@@ -495,13 +501,13 @@ export function AdminReviewsPage({ data, message }: { data: AdminReviewsPageData
                   </Button>
                 </form>
               </div>
-            </article>
+            </Panel>
           ))}
         </div>
       ) : (
         <AdminEmptyState
           title="Очередь проверок пуста"
-          description="Новых referral-продлений для ручного подтверждения пока нет."
+          description="Новых реферальных продлений для ручного подтверждения пока нет."
         />
       )}
     </section>
@@ -545,7 +551,7 @@ export function AdminUsersPage({ data, message }: { data: AdminUsersPageData; me
   }, [data.users, filter, search]);
 
   return (
-    <section className="br-admin-page">
+    <section className="grid gap-[14px] rounded-[24px] border border-[var(--border)] bg-[rgb(255_255_255_/_0.95)] p-[18px] shadow-[var(--shadow-md)] max-[720px]:rounded-[22px] max-[720px]:p-3.5 max-[390px]:gap-2.5 max-[390px]:rounded-[20px] max-[390px]:p-3">
       <AdminPageHeader
         variant="plain"
         title="Пользователи"
@@ -558,14 +564,14 @@ export function AdminUsersPage({ data, message }: { data: AdminUsersPageData; me
         </InlineNotice>
       ) : null}
 
-      <section className="br-admin-toolbar br-card">
+      <Panel className="grid gap-3.5 rounded-[22px] bg-[rgb(255_255_255_/_0.95)] p-4 max-[390px]:rounded-[18px] max-[390px]:p-3">
         <Input
           id="admin-users-search"
           label="Поиск"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Имя, slug, телефон или id"
-          wrapperClassName="br-admin-toolbar__search"
+          wrapperClassName="max-w-[460px]"
         />
         <AdminFilterChips
           value={filter}
@@ -578,10 +584,10 @@ export function AdminUsersPage({ data, message }: { data: AdminUsersPageData; me
             { label: `Скрыты (${data.hiddenProfileCount})`, value: "hidden" },
           ]}
         />
-      </section>
+      </Panel>
 
       {filteredUsers.length ? (
-        <div className="br-admin-list">
+        <div className="grid gap-3.5 max-[390px]:gap-2.5">
           {filteredUsers.map((row) => (
             <AdminAccordion
               key={row.profileId}
@@ -589,40 +595,40 @@ export function AdminUsersPage({ data, message }: { data: AdminUsersPageData; me
               subtitle={`${row.roles.join(", ") || "owner"} · ${row.requestCount} заявок`}
               rightSlot={<AdminBadge tone={getUserVisibilityVariant(row)}>{getUserVisibilityLabel(row)}</AdminBadge>}
             >
-              <div className="br-admin-detail-grid">
-                <div>
-                  <span>Профиль</span>
-                  <strong>id {getShortProfileId(row.profileId)}</strong>
+              <div className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
+                <div className="grid gap-1">
+                  <span className="text-xs text-[var(--text-muted)]">Профиль</span>
+                  <strong className="block text-sm text-[var(--text)]">id {getShortProfileId(row.profileId)}</strong>
                 </div>
-                <div>
-                  <span>Создан</span>
-                  <strong>{row.createdAt ? formatDateTimeLabel(row.createdAt) : "Не задано"}</strong>
+                <div className="grid gap-1">
+                  <span className="text-xs text-[var(--text-muted)]">Создан</span>
+                  <strong className="block text-sm text-[var(--text)]">{row.createdAt ? formatDateTimeLabel(row.createdAt) : "Не задано"}</strong>
                 </div>
-                <div>
-                  <span>Контакт</span>
-                  <strong>{row.phone || "Не указан"}</strong>
+                <div className="grid gap-1">
+                  <span className="text-xs text-[var(--text-muted)]">Контакт</span>
+                  <strong className="block text-sm text-[var(--text)]">{row.phone || "Не указан"}</strong>
                 </div>
-                <div>
-                  <span>Объекты</span>
-                  <strong>{row.propertyCount}</strong>
+                <div className="grid gap-1">
+                  <span className="text-xs text-[var(--text-muted)]">Объекты</span>
+                  <strong className="block text-sm text-[var(--text)]">{row.propertyCount}</strong>
                 </div>
               </div>
 
-              <div className="br-admin-links-stack">
+              <div className="grid gap-3.5">
                 {row.publicPageUrls.length ? (
                   row.publicPageUrls.map((link) => (
-                    <Link key={link} href={link} className="br-admin-external-link" target="_blank">
+                    <Link key={link} href={link} className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[rgb(243_248_247_/_0.68)] px-3.5 py-3 font-bold text-[var(--color-primary-hover)] hover:border-[rgb(var(--color-primary-rgb)_/_0.24)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]" target="_blank" rel="noreferrer">
                       <span>{link}</span>
                       <ExternalLink aria-hidden="true" />
                     </Link>
                   ))
                 ) : (
-                  <p className="br-admin-muted">Публичные ссылки ещё не созданы.</p>
+                  <p className="text-sm text-[var(--text-muted)]">Публичные ссылки ещё не созданы.</p>
                 )}
               </div>
 
               {row.publicPageUrls.length ? (
-                <div className="br-admin-card-actions">
+                <div className="grid gap-2.5">
                   <form action={toggleProfilePublicVisibilityAction}>
                     <input type="hidden" name="profileId" value={row.profileId} />
                     <input
@@ -691,7 +697,7 @@ export function AdminSubscriptionsPage({
         return false;
       }
 
-      if (statusFilter === "active" && row.status !== "active" && row.status !== "manual") {
+      if (statusFilter === "active" && row.status !== "active") {
         return false;
       }
 
@@ -710,11 +716,11 @@ export function AdminSubscriptionsPage({
   }, [contextFilter, data.subscriptions, search, statusFilter]);
 
   return (
-    <section className="br-admin-page">
+    <section className="grid gap-[14px] rounded-[24px] border border-[var(--border)] bg-[rgb(255_255_255_/_0.95)] p-[18px] shadow-[var(--shadow-md)] max-[720px]:rounded-[22px] max-[720px]:p-3.5 max-[390px]:gap-2.5 max-[390px]:rounded-[20px] max-[390px]:p-3">
       <AdminPageHeader
         variant="plain"
         title="Подписки"
-        description="Главный рабочий экран для продления доступа и ручной корректировки статусов."
+        description="Продлевайте доступ вручную и контролируйте статусы и лимиты. Каждое продление записывается в журнал с администратором и новым сроком."
       />
 
       {message ? (
@@ -723,14 +729,14 @@ export function AdminSubscriptionsPage({
         </InlineNotice>
       ) : null}
 
-      <section className="br-admin-toolbar br-card">
+      <Panel className="grid gap-3.5 rounded-[22px] bg-[rgb(255_255_255_/_0.95)] p-4 max-[390px]:rounded-[18px] max-[390px]:p-3">
         <Input
           id="admin-subscriptions-search"
           label="Поиск"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Имя, slug, профиль или план"
-          wrapperClassName="br-admin-toolbar__search"
+          wrapperClassName="max-w-[460px]"
         />
         <AdminFilterChips
           value={statusFilter}
@@ -752,10 +758,10 @@ export function AdminSubscriptionsPage({
             { label: "Agent", value: "agent" },
           ]}
         />
-      </section>
+      </Panel>
 
       {filteredSubscriptions.length ? (
-        <div className="br-admin-list">
+        <div className="grid gap-3.5 max-[390px]:gap-2.5">
           {filteredSubscriptions.map((row) => {
             const cardKey = `${row.profileId}:${row.roleContext}`;
             const isOpen = openKey === cardKey;
@@ -765,42 +771,45 @@ export function AdminSubscriptionsPage({
                 key={cardKey}
                 id={getSubscriptionAnchorId(row.profileId, row.roleContext)}
                 ref={focusKey === cardKey ? focusedCardRef : undefined}
-                className={cn("br-admin-record-card br-card", isOpen && "br-admin-record-card--focused")}
+                className={cn(
+                  "grid gap-3.5 rounded-[22px] border border-[var(--border)] bg-[rgb(255_255_255_/_0.95)] p-4 max-[390px]:rounded-[18px] max-[390px]:p-3",
+                  isOpen && "shadow-[0_0_0_1px_rgb(var(--color-primary-rgb)_/_0.22),0_18px_36px_rgb(var(--color-primary-rgb)_/_0.10)]",
+                )}
               >
                 <button
                   type="button"
-                  className="br-admin-record-card__trigger"
+                  className="flex w-full items-start justify-between gap-3 bg-transparent p-0 text-left text-inherit focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]"
                   aria-expanded={isOpen}
                   onClick={() => setOpenKey((current) => (current === cardKey ? "" : cardKey))}
                 >
-                  <div className="br-admin-record-card__top">
+                  <div className="grid min-w-0 flex-1 gap-3.5">
                     <div>
-                      <strong>{row.displayName}</strong>
-                      <p>
+                      <strong className="block text-[var(--text)]">{row.displayName}</strong>
+                      <p className="text-sm text-[var(--text-muted)]">
                         {row.roleContext} · {row.activeRoomCount} активных номеров
                       </p>
                     </div>
                     <AdminBadge tone={getSubscriptionStatusVariant(row.status)}>{row.statusLabel}</AdminBadge>
                   </div>
-                  <div className="br-admin-record-card__stats">
-                    <div>
-                      <span>Доступ до</span>
-                      <strong>{row.validUntil ? formatDateLabel(row.validUntil) : "Не задано"}</strong>
+                  <div className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
+                    <div className="grid gap-1">
+                      <span className="text-xs text-[var(--text-muted)]">Доступ до</span>
+                      <strong className="block text-sm text-[var(--text)]">{row.validUntil ? formatDateLabel(row.validUntil) : "Не задано"}</strong>
                     </div>
-                    <div>
-                      <span>План</span>
-                      <strong>{row.planName}</strong>
+                    <div className="grid gap-1">
+                      <span className="text-xs text-[var(--text-muted)]">План</span>
+                      <strong className="block text-sm text-[var(--text)]">{row.planName}</strong>
                     </div>
                   </div>
                 </button>
 
                 {isOpen ? (
-                  <form action={saveSubscriptionAction} className="br-admin-subscription-form">
+                  <form action={saveSubscriptionAction} className="grid gap-3">
                     <input type="hidden" name="profileId" value={row.profileId} />
                     <input type="hidden" name="roleContext" value={row.roleContext} />
 
                     <AdminAccordion title="Статус и план" defaultOpen>
-                      <div className="br-admin-form-grid">
+                      <div className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
                         <Select
                           id={`${cardKey}-status`}
                           name="status"
@@ -811,7 +820,6 @@ export function AdminSubscriptionsPage({
                             { label: "active", value: "active" },
                             { label: "grace", value: "grace" },
                             { label: "expired", value: "expired" },
-                            { label: "manual", value: "manual" },
                           ]}
                         />
                         <Input
@@ -824,7 +832,7 @@ export function AdminSubscriptionsPage({
                     </AdminAccordion>
 
                     <AdminAccordion title="Лимиты" subtitle="Ручная корректировка room limit.">
-                      <div className="br-admin-form-grid">
+                      <div className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
                         <Input
                           id={`${cardKey}-limit`}
                           name="activeRoomLimit"
@@ -841,8 +849,8 @@ export function AdminSubscriptionsPage({
                       </div>
                     </AdminAccordion>
 
-                    <AdminAccordion title="Даты доступа" subtitle="Оплачен до, grace period и текущий доступ.">
-                      <div className="br-admin-form-grid">
+                    <AdminAccordion title="Даты доступа" subtitle="Оплачен до, grace period и текущий доступ. Продление на 30 дней применяется от более поздней даты: сегодня или текущий оплаченный срок.">
+                      <div className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
                         <Input
                           id={`${cardKey}-valid`}
                           label="Доступ до"
@@ -866,7 +874,7 @@ export function AdminSubscriptionsPage({
                       </div>
                     </AdminAccordion>
 
-                    <div className="br-admin-sticky-actions">
+                    <div className="grid gap-2.5 max-[720px]:sticky max-[720px]:bottom-[calc(74px+var(--safe-area-bottom))] max-[720px]:rounded-[18px] max-[720px]:border max-[720px]:border-[var(--border)] max-[720px]:bg-[rgb(255_255_255_/_0.96)] max-[720px]:p-2.5 max-[720px]:shadow-[var(--shadow-md)] sm:grid-cols-2">
                       <Button type="submit" variant="secondary" fullWidth>
                         Сохранить
                       </Button>
@@ -927,7 +935,7 @@ export function AdminPropertiesPage({ data, message }: { data: AdminPropertiesPa
   }, [data.properties, filter, search]);
 
   return (
-    <section className="br-admin-page">
+    <section className="grid gap-[14px] rounded-[24px] border border-[var(--border)] bg-[rgb(255_255_255_/_0.95)] p-[18px] shadow-[var(--shadow-md)] max-[720px]:rounded-[22px] max-[720px]:p-3.5 max-[390px]:gap-2.5 max-[390px]:rounded-[20px] max-[390px]:p-3">
       <AdminPageHeader
         variant="plain"
         title="Объекты"
@@ -940,14 +948,14 @@ export function AdminPropertiesPage({ data, message }: { data: AdminPropertiesPa
         </InlineNotice>
       ) : null}
 
-      <section className="br-admin-toolbar br-card">
+      <Panel className="grid gap-3.5 rounded-[22px] bg-[rgb(255_255_255_/_0.95)] p-4 max-[390px]:rounded-[18px] max-[390px]:p-3">
         <Input
           id="admin-properties-search"
           label="Поиск"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Название, владелец, slug или id"
-          wrapperClassName="br-admin-toolbar__search"
+          wrapperClassName="max-w-[460px]"
         />
         <AdminFilterChips
           value={filter}
@@ -959,10 +967,10 @@ export function AdminPropertiesPage({ data, message }: { data: AdminPropertiesPa
             { label: "Скрыты", value: "hidden" },
           ]}
         />
-      </section>
+      </Panel>
 
       {filteredProperties.length ? (
-        <div className="br-admin-list">
+        <div className="grid gap-3.5 max-[390px]:gap-2.5">
           {filteredProperties.map((row) => (
             <AdminAccordion
               key={row.propertyId}
@@ -970,27 +978,27 @@ export function AdminPropertiesPage({ data, message }: { data: AdminPropertiesPa
               subtitle={`${row.ownerName} · ${row.activeRoomCount}/${row.totalRoomCount} номеров`}
               rightSlot={<AdminBadge tone={getPropertyStatusVariant(row)}>{getPropertyStatusLabel(row)}</AdminBadge>}
             >
-              <div className="br-admin-detail-grid">
-                <div>
-                  <span>Slug объекта</span>
-                  <strong>{row.slug}</strong>
+              <div className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
+                <div className="grid gap-1">
+                  <span className="text-xs text-[var(--text-muted)]">Slug объекта</span>
+                  <strong className="block text-sm text-[var(--text)]">{row.slug}</strong>
                 </div>
-                <div>
-                  <span>Владелец</span>
-                  <strong>{row.ownerName}</strong>
+                <div className="grid gap-1">
+                  <span className="text-xs text-[var(--text-muted)]">Владелец</span>
+                  <strong className="block text-sm text-[var(--text)]">{row.ownerName}</strong>
                 </div>
               </div>
 
               {row.ownerPublicSlug ? (
-                <Link href={`/p/${row.ownerPublicSlug}`} className="br-admin-external-link" target="_blank">
+                <Link href={`/p/${row.ownerPublicSlug}`} className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[rgb(243_248_247_/_0.68)] px-3.5 py-3 font-bold text-[var(--color-primary-hover)] hover:border-[rgb(var(--color-primary-rgb)_/_0.24)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]" target="_blank" rel="noreferrer">
                   <span>/p/{row.ownerPublicSlug}</span>
                   <ExternalLink aria-hidden="true" />
                 </Link>
               ) : (
-                <p className="br-admin-muted">Публичная owner-страница ещё не настроена.</p>
+                <p className="text-sm text-[var(--text-muted)]">Публичная страница владельца ещё не настроена.</p>
               )}
 
-              <div className="br-admin-card-actions">
+              <div className="grid gap-2.5">
                 <form action={togglePropertyFreezeAction}>
                   <input type="hidden" name="propertyId" value={row.propertyId} />
                   <input type="hidden" name="nextFrozen" value={row.isFrozen ? "false" : "true"} />

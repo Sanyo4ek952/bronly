@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCurrentAuthProfile, getPostLoginRedirect, getPrimaryRole } from "@/shared/api/supabase";
 import { createSeoMetadata } from "@/shared/lib/seo";
-import { BrandLogo } from "@/shared/ui";
+import { ButtonLink } from "@/shared/ui";
+import { AuthShell } from "@/widgets/auth-shell";
 
 type WelcomePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -71,30 +71,16 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
   }
 
   return (
-    <main className="br-auth-page">
-      <section className="br-auth-shell br-card">
-        <BrandLogo className="br-auth-shell__logo" />
-        <div className="br-auth-shell__grid">
-          <div className="br-auth-shell__intro">
-            <span className="br-chip">первый вход</span>
-            <h1 className="br-auth-shell__title">{title}</h1>
-            <p className="br-auth-shell__text">{subtitle}</p>
-          </div>
-
-          <div className="br-auth-panel">
-            <div className="br-auth-form">
+    <AuthShell eyebrow="Первый вход" title={title} description={subtitle} footer="Следующие шаги всегда доступны в чеклисте кабинета.">
+            <div className="grid gap-3">
               {steps.map((step, index) => (
-                <div key={step} className="br-auth-form__field">
-                  <strong>{index + 1}. {step}</strong>
+                <div key={step} className="grid grid-cols-[32px_minmax(0,1fr)] items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-subtle)] p-3.5">
+                  <span className="grid size-8 place-items-center rounded-full bg-[var(--color-primary-pale)] text-xs font-bold text-[var(--color-primary-hover)]">{index + 1}</span>
+                  <strong className="pt-1.5 text-sm leading-[1.45] text-[var(--text)]">{step}</strong>
                 </div>
               ))}
-              <Link href={nextHref} className="br-button br-button--primary br-button--full">
-                Перейти в кабинет
-              </Link>
+              <ButtonLink href={nextHref} fullWidth>Перейти в кабинет</ButtonLink>
             </div>
-          </div>
-        </div>
-      </section>
-    </main>
+    </AuthShell>
   );
 }

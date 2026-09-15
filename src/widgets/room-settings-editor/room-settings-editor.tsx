@@ -9,7 +9,7 @@ import {
   updateOwnerRoom,
   updateRoomSeasonalPrice,
   uploadRoomPhoto,
-} from "@/app/dashboard/properties/actions";
+} from "@/features/property/owner-mutations";
 import { RoomAmenitiesField } from "@/features/property/edit-room/ui/room-amenities-field";
 import { RoomFormSection } from "@/features/property/edit-room/ui/room-form-section";
 import type { OwnerRoomDetail } from "@/entities/room/model/types";

@@ -3,7 +3,8 @@ import Link from "next/link";
 
 import { forgotPasswordAction } from "@/app/auth/actions";
 import { createSeoMetadata } from "@/shared/lib/seo";
-import { BrandLogo, SubmitButton } from "@/shared/ui";
+import { InlineNotice, Input, SubmitButton } from "@/shared/ui";
+import { AuthShell } from "@/widgets/auth-shell";
 
 type ForgotPasswordPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -23,44 +24,20 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPasswor
   const success = typeof params.success === "string" ? params.success : "";
 
   return (
-    <main className="br-auth-page">
-      <section className="br-auth-shell br-card">
-        <BrandLogo className="br-auth-shell__logo" />
-        <div className="br-auth-shell__grid">
-          <div className="br-auth-shell__intro">
-            <span className="br-chip">восстановление доступа</span>
-            <h1 className="br-auth-shell__title">Сброс пароля</h1>
-            <p className="br-auth-shell__text">Отправим ссылку для смены пароля на ваш email.</p>
-          </div>
-
-          <div className="br-auth-panel">
-            {error ? (
-              <p className="br-card" style={{ marginBottom: 16 }}>
-                Не удалось отправить письмо. Попробуйте еще раз.
-              </p>
-            ) : null}
-            {success === "sent" ? (
-              <p className="br-card" style={{ marginBottom: 16 }}>
-                Письмо отправлено. Проверьте почту и перейдите по ссылке.
-              </p>
-            ) : null}
-
-            <form className="br-auth-form" action={forgotPasswordAction}>
-              <div className="br-auth-form__field">
-                <label className="br-label" htmlFor="email">
-                  Email
-                </label>
-                <input id="email" name="email" type="email" className="br-field" placeholder="name@example.com" required />
-              </div>
-              <SubmitButton fullWidth pendingLabel="Отправка">Отправить ссылку</SubmitButton>
-            </form>
-
-            <p className="br-auth-bottom">
-              Вспомнили пароль? <Link href="/login">Вернуться ко входу</Link>
-            </p>
-          </div>
-        </div>
-      </section>
-    </main>
+    <AuthShell
+      eyebrow="Восстановление доступа"
+      title="Сброс пароля"
+      description="Отправим ссылку для смены пароля на ваш email."
+      footer={<>Вспомнили пароль? <Link href="/login">Вернуться ко входу</Link></>}
+    >
+      {error ? <InlineNotice tone="error">Не удалось отправить письмо. Попробуйте еще раз.</InlineNotice> : null}
+      {success === "sent" ? (
+        <InlineNotice>Письмо отправлено. Проверьте почту и перейдите по ссылке.</InlineNotice>
+      ) : null}
+      <form className="grid gap-4" action={forgotPasswordAction}>
+        <Input id="email" name="email" type="email" label="Email" placeholder="name@example.com" required />
+        <SubmitButton fullWidth pendingLabel="Отправка">Отправить ссылку</SubmitButton>
+      </form>
+    </AuthShell>
   );
 }

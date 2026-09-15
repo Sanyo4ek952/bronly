@@ -1,32 +1,44 @@
 import { createSupabaseServerClient } from "@/shared/api/supabase";
 
 import type { CollectionRole } from "../model/types";
-import { getAccessibleProperty, getAccessibleRoom, requireProfileWithRole } from "./collection-access";
+import { getAccessibleProperty, getAccessibleRoom, getCollectionMutationAccess } from "./collection-access";
 import { generateUniqueCollectionSlug, getNextSortOrder, getOwnedCollectionForMutation } from "./collection-queries";
-import type { MutationResult } from "./collection-types";
+import type { CollectionEditableFields, MutationResult } from "./collection-types";
 
-export async function createCollection(input: { role: CollectionRole; title: string }): Promise<MutationResult> {
-  const profile = await requireProfileWithRole(input.role);
-  const title = input.title.trim();
+function normalizeEditableFields(input: CollectionEditableFields) {
+  return {
+    title: input.title.trim(),
+    guestLabel: input.guestLabel?.trim() ?? "",
+  };
+}
+
+function areEditableFieldsValid(input: ReturnType<typeof normalizeEditableFields>) {
+  return Boolean(input.title) && input.title.length <= 120 && input.guestLabel.length <= 160;
+}
+
+export async function createCollection(input: { role: CollectionRole } & CollectionEditableFields): Promise<MutationResult> {
+  const access = await getCollectionMutationAccess(input.role);
+  const profile = access.profile;
+  const fields = normalizeEditableFields(input);
 
   if (!profile) {
-    return { ok: false, reason: "unauthorized" };
+    return { ok: false, reason: access.reason ?? "unauthorized" };
   }
 
-  if (!title) {
+  if (!areEditableFieldsValid(fields)) {
     return { ok: false, reason: "validation" };
   }
 
   const supabase = await createSupabaseServerClient();
-  const slug = await generateUniqueCollectionSlug(title);
+  const slug = await generateUniqueCollectionSlug(fields.title);
   const { data, error } = await supabase
     .from("collections")
     .insert({
       creator_id: profile.id,
       creator_role: input.role,
       slug,
-      title,
-      guest_label: null,
+      title: fields.title,
+      guest_label: fields.guestLabel || null,
     })
     .select("id, slug")
     .maybeSingle();
@@ -45,16 +57,16 @@ export async function createCollection(input: { role: CollectionRole; title: str
 export async function renameCollection(input: {
   role: CollectionRole;
   collectionId: string;
-  title: string;
-}): Promise<MutationResult> {
-  const profile = await requireProfileWithRole(input.role);
-  const title = input.title.trim();
+} & CollectionEditableFields): Promise<MutationResult> {
+  const access = await getCollectionMutationAccess(input.role);
+  const profile = access.profile;
+  const fields = normalizeEditableFields(input);
 
   if (!profile) {
-    return { ok: false, reason: "unauthorized" };
+    return { ok: false, reason: access.reason ?? "unauthorized" };
   }
 
-  if (!input.collectionId || !title) {
+  if (!input.collectionId || !areEditableFieldsValid(fields)) {
     return { ok: false, reason: "validation" };
   }
 
@@ -64,11 +76,21 @@ export async function renameCollection(input: {
     return { ok: false, reason: "not_found" };
   }
 
+  if (ownedCollection.row.is_archived) {
+    return {
+      ok: false,
+      reason: "archived",
+      collectionId: input.collectionId,
+      collectionSlug: ownedCollection.row.slug,
+    };
+  }
+
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from("collections")
     .update({
-      title,
+      title: fields.title,
+      guest_label: fields.guestLabel || null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", input.collectionId);
@@ -89,10 +111,11 @@ export async function archiveCollection(input: {
   role: CollectionRole;
   collectionId: string;
 }): Promise<MutationResult> {
-  const profile = await requireProfileWithRole(input.role);
+  const access = await getCollectionMutationAccess(input.role);
+  const profile = access.profile;
 
   if (!profile) {
-    return { ok: false, reason: "unauthorized" };
+    return { ok: false, reason: access.reason ?? "unauthorized" };
   }
 
   if (!input.collectionId) {
@@ -103,6 +126,15 @@ export async function archiveCollection(input: {
 
   if (!ownedCollection) {
     return { ok: false, reason: "not_found" };
+  }
+
+  if (ownedCollection.row.is_archived) {
+    return {
+      ok: false,
+      reason: "archived",
+      collectionId: input.collectionId,
+      collectionSlug: ownedCollection.row.slug,
+    };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -131,10 +163,11 @@ export async function addPropertyToCollection(input: {
   collectionId: string;
   propertyId: string;
 }): Promise<MutationResult> {
-  const profile = await requireProfileWithRole(input.role);
+  const access = await getCollectionMutationAccess(input.role);
+  const profile = access.profile;
 
   if (!profile) {
-    return { ok: false, reason: "unauthorized" };
+    return { ok: false, reason: access.reason ?? "unauthorized" };
   }
 
   if (!input.collectionId || !input.propertyId) {
@@ -209,10 +242,11 @@ export async function addRoomToCollection(input: {
   collectionId: string;
   roomId: string;
 }): Promise<MutationResult> {
-  const profile = await requireProfileWithRole(input.role);
+  const access = await getCollectionMutationAccess(input.role);
+  const profile = access.profile;
 
   if (!profile) {
-    return { ok: false, reason: "unauthorized" };
+    return { ok: false, reason: access.reason ?? "unauthorized" };
   }
 
   if (!input.collectionId || !input.roomId) {
@@ -287,10 +321,11 @@ export async function removeCollectionItem(input: {
   collectionId: string;
   itemId: string;
 }): Promise<MutationResult> {
-  const profile = await requireProfileWithRole(input.role);
+  const access = await getCollectionMutationAccess(input.role);
+  const profile = access.profile;
 
   if (!profile) {
-    return { ok: false, reason: "unauthorized" };
+    return { ok: false, reason: access.reason ?? "unauthorized" };
   }
 
   if (!input.collectionId || !input.itemId) {
@@ -301,6 +336,15 @@ export async function removeCollectionItem(input: {
 
   if (!ownedCollection) {
     return { ok: false, reason: "not_found" };
+  }
+
+  if (ownedCollection.row.is_archived) {
+    return {
+      ok: false,
+      reason: "archived",
+      collectionId: input.collectionId,
+      collectionSlug: ownedCollection.row.slug,
+    };
   }
 
   const supabase = await createSupabaseServerClient();

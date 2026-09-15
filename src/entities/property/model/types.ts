@@ -113,6 +113,7 @@ export type DeprecatedPublicPropertyPageData = {
 };
 
 export type OwnerDashboardSummary = {
+  loadState: "ready" | "demo" | "unavailable";
   objects: number;
   rooms: number;
   activeRooms: number;

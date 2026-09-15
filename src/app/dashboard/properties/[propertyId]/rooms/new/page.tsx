@@ -78,7 +78,7 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
 
         <PropertySectionNav propertyId={property.id} active="rooms" />
 
-        {notice ? <InlineNotice>{notice}</InlineNotice> : null}
+        {notice ? <InlineNotice tone="error">{notice}</InlineNotice> : null}
         {subscription && roomUsageLabel ? (
           <InlineNotice tone="soft">
             Подписка: {roomUsageLabel}

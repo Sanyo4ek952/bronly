@@ -1,11 +1,12 @@
 import { cache } from "react";
 
-import { guestRequests } from "@/entities/request/model/mock";
 import type { AgentRequestItem, OwnerRequestItem } from "@/entities/request/model/types";
-import { getRoomById } from "@/entities/room/model/mock";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
+import { logServerConfigurationError, logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 import { createSupabaseServerClient } from "@/shared/api/supabase/server-auth";
 import type { SupabaseGuestRequestRow } from "@/shared/api/supabase/types";
+import { canAccessAgentMutations } from "@/shared/api/supabase/access-rules";
+import type { AuthProfile } from "@/shared/api/supabase/server-auth";
 
 import { mapAgentRequestItem, mapOwnerRequestItem, type RequestRoomMeta } from "./request-mappers";
 import { isAgentMediatedRequest, normalizeStatus } from "./request-rules";
@@ -17,42 +18,58 @@ export async function getRoomAndPropertyMeta(
   const roomIds = [...new Set(requestRows.map((request) => request.room_id))];
   const propertyIds = [...new Set(requestRows.map((request) => request.property_id).filter((value): value is string => Boolean(value)))];
 
-  const [{ data: roomRows }, { data: propertyRows }] = await Promise.all([
+  const [roomResult, propertyResult] = await Promise.all([
     roomIds.length
       ? supabase.from("rooms").select("id, title, price_per_night").in("id", roomIds)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
     propertyIds.length
       ? supabase.from("properties").select("id, title").in("id", propertyIds)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
   ]);
+
+  if (roomResult.error) {
+    throw roomResult.error;
+  }
+
+  if (propertyResult.error) {
+    throw propertyResult.error;
+  }
+
+  const roomRows = roomResult.data;
+  const propertyRows = propertyResult.data;
 
   const roomMap = new Map<string, RequestRoomMeta>(
     (roomRows ?? []).map((room) => [
-      room.id as string,
+      room.id,
       {
-        title: room.title as string,
+        title: room.title,
         pricePerNight: Number(room.price_per_night ?? 0),
       },
     ]),
   );
-  const propertyMap = new Map((propertyRows ?? []).map((property) => [property.id as string, property.title as string]));
+  const propertyMap = new Map((propertyRows ?? []).map((property) => [property.id, property.title]));
 
   return { roomMap, propertyMap };
 }
 
-export const getOwnerRequests = cache(async (): Promise<OwnerRequestItem[]> => {
+export const getOwnerRequests = cache(async (): Promise<OwnerRequestItem[] | null> => {
   if (!canUseSupabase()) {
-    return guestRequests;
+    logServerConfigurationError("owner_requests_supabase_not_configured");
+    return null;
   }
 
   try {
     const supabase = await createSupabaseServerClient();
-    const { data: requestRows } = await supabase
+    const { data: requestRows, error: requestError } = await supabase
       .from("guest_requests")
       .select("*")
       .order("created_at", { ascending: false });
 
-    const safeRows = ((requestRows ?? []) as SupabaseGuestRequestRow[]).filter(
+    if (requestError) {
+      throw requestError;
+    }
+
+    const safeRows = (requestRows ?? []).filter(
       (request) => !(isAgentMediatedRequest(request) && normalizeStatus(request.status) === "new"),
     );
     const { roomMap, propertyMap } = await getRoomAndPropertyMeta(supabase, safeRows);
@@ -60,51 +77,69 @@ export const getOwnerRequests = cache(async (): Promise<OwnerRequestItem[]> => {
     return safeRows.map((request) =>
       mapOwnerRequestItem(request, roomMap.get(request.room_id), propertyMap.get(request.property_id ?? "")),
     );
-  } catch {
-    return guestRequests;
+  } catch (error) {
+    logServerDataError("owner_requests_load_failed", error);
+    return null;
   }
 });
 
-export function getRequestRoom(roomId: string) {
-  return getRoomById(roomId);
-}
+export async function getAgentRequests(profile: AuthProfile): Promise<AgentRequestItem[] | null> {
+  if (!canAccessAgentMutations(profile)) {
+    return null;
+  }
 
-export async function getAgentRequests(profile: { id: string }): Promise<AgentRequestItem[]> {
   if (!canUseSupabase()) {
-    return [];
+    logServerConfigurationError("agent_requests_supabase_not_configured");
+    return null;
   }
 
   try {
     const supabase = createSupabaseAdminClient();
-    const { data: requestRows } = await supabase
+    const { data: requestRows, error: requestError } = await supabase
       .from("guest_requests")
       .select("*")
       .eq("agent_id", profile.id)
       .order("created_at", { ascending: false })
       .limit(20);
 
-    const safeRows = ((requestRows ?? []) as SupabaseGuestRequestRow[]).filter(
+    if (requestError) {
+      throw requestError;
+    }
+
+    const safeRows = (requestRows ?? []).filter(
       (request): request is SupabaseGuestRequestRow & { source: "agent" | "collection" } =>
         request.source === "agent" || request.source === "collection",
     );
     const roomIds = [...new Set(safeRows.map((request) => request.room_id))];
     const propertyIds = [...new Set(safeRows.map((request) => request.property_id).filter((value): value is string => Boolean(value)))];
-    const [{ data: roomRows }, { data: propertyRows }] = await Promise.all([
+    const [roomResult, propertyResult] = await Promise.all([
       roomIds.length
         ? supabase.from("rooms").select("id, title").in("id", roomIds)
-        : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
       propertyIds.length
         ? supabase.from("properties").select("id, title").in("id", propertyIds)
-        : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
-    const roomMap = new Map((roomRows ?? []).map((room) => [room.id as string, room.title as string]));
-    const propertyMap = new Map((propertyRows ?? []).map((property) => [property.id as string, property.title as string]));
+    if (roomResult.error) {
+      throw roomResult.error;
+    }
+
+    if (propertyResult.error) {
+      throw propertyResult.error;
+    }
+
+    const roomRows = roomResult.data;
+    const propertyRows = propertyResult.data;
+
+    const roomMap = new Map((roomRows ?? []).map((room) => [room.id, room.title]));
+    const propertyMap = new Map((propertyRows ?? []).map((property) => [property.id, property.title]));
 
     return safeRows.map((request) =>
       mapAgentRequestItem(request, profile.id, roomMap.get(request.room_id), propertyMap.get(request.property_id ?? "")),
     );
-  } catch {
-    return [];
+  } catch (error) {
+    logServerDataError("agent_requests_load_failed", error);
+    return null;
   }
 }

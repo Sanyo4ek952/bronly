@@ -7,22 +7,24 @@ import type { RoomLookupRow, UnifiedProposalTarget } from "./collaboration-types
 
 export async function getActiveAgentPropertyIds(profileId: string) {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("agent_property_links")
     .select("property_id")
     .eq("agent_id", profileId)
     .eq("status", "active");
+  if (error) throw error;
 
   return Array.from(new Set((data ?? []).map((row) => row.property_id as string)));
 }
 
 export async function getActiveAgentRoomIds(profileId: string) {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("agent_room_links")
     .select("room_id")
     .eq("agent_id", profileId)
     .eq("status", "active");
+  if (error) throw error;
 
   return Array.from(new Set((data ?? []).map((row) => row.room_id as string)));
 }
@@ -150,14 +152,19 @@ export async function resolveProposalTarget(input: {
   const { data: roomData } = await supabase
     .from("rooms")
     .select(
-      "id, owner_id, property_id, room_kind, title, subtitle, property_type, city, address, short_description, allow_agent_inquiries, properties(id, owner_id, title, city, address)",
+      "id, owner_id, property_id, room_kind, title, subtitle, property_type, city, address, short_description, price_per_night, allow_agent_inquiries, properties(id, owner_id, title, city, address)",
     )
     .eq("id", input.roomId)
     .eq("room_kind", "standalone_room")
     .maybeSingle();
-  const room = (roomData ?? null) as RoomLookupRow | null;
+  const room = roomData ?? null;
 
-  if (!room || !room.allow_agent_inquiries || room.owner_id === input.profileId) {
+  if (
+    !room
+    || room.room_kind !== "standalone_room"
+    || !room.allow_agent_inquiries
+    || room.owner_id === input.profileId
+  ) {
     return null;
   }
 

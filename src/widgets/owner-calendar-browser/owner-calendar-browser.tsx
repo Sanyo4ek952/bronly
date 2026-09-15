@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Dot, PencilLine } from "lucide-react";
 
-import { createRoomBusyRange, deleteRoomBusyRange, updateRoomBusyRange } from "@/app/dashboard/properties/actions";
+import { createRoomBusyRange, deleteRoomBusyRange, updateRoomBusyRange } from "@/features/property/owner-mutations";
 import type { OwnerBusyRange } from "@/entities/room";
 import { cn } from "@/shared/lib/cn";
 import { formatDateLabel } from "@/shared/lib/date";
@@ -26,7 +26,7 @@ import {
   startOfMonth,
   useTimelineVisibleDayCount,
   weekDays,
-} from "@/widgets/calendar/lib/calendar-helpers";
+} from "@/entities/room/model/calendar-helpers";
 
 type OwnerCalendarRoom = {
   id: string;
@@ -39,6 +39,7 @@ type OwnerCalendarBrowserProps = {
   propertyId?: string;
   rooms: OwnerCalendarRoom[];
   serverNotice?: string;
+  serverNoticeTone?: "default" | "error";
 };
 
 type ActiveEditorState =
@@ -117,7 +118,7 @@ function getDefaultTimelineAnchorKey(month: Date) {
   return isCurrentMonth ? formatDateKey(today) : formatDateKey(startOfMonth(month));
 }
 
-export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = "" }: OwnerCalendarBrowserProps) {
+export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = "", serverNoticeTone = "default" }: OwnerCalendarBrowserProps) {
   const [selectedRoomId, setSelectedRoomId] = useState(rooms[0]?.id ?? "");
   const [currentMonth, setCurrentMonth] = useState(() => {
     const today = new Date();
@@ -345,7 +346,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
 
   return (
     <section className={stackClass}>
-      {(serverNotice || localNotice) ? <InlineNotice>{serverNotice || localNotice}</InlineNotice> : null}
+      {(serverNotice || localNotice) ? <InlineNotice tone={localNotice ? "error" : serverNoticeTone}>{serverNotice || localNotice}</InlineNotice> : null}
 
       <section className={shellClass}>
         <div className={shellHeaderClass}>

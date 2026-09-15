@@ -3,11 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { isValidInclusiveDateRange } from "@/entities/room";
 import { createSupabaseServerClient } from "@/shared/api/supabase";
 import { getCheckbox, getNumber, getString } from "@/shared/lib/form-data";
 
 import { mapActionError } from "./lib/errors";
-import { requireOwnerMutationAccess } from "./lib/owner-access";
+import { requireOwnedRoom, requireOwnerMutationAccess } from "./lib/owner-access";
 import {
   buildPropertyPath,
   buildPropertyRoomPath,
@@ -38,13 +39,17 @@ function buildRoomRedirectTarget(formData: FormData, propertyId: string, roomId:
 export async function createRoomSeasonalPrice(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
   const roomId = getString(formData, "roomId");
-  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId));
+  const profile = await requireOwnerMutationAccess(
+    propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId),
+  );
   const startsOn = getString(formData, "startsOn");
   const endsOn = getString(formData, "endsOn");
 
-  if (!roomId || !startsOn || !endsOn || startsOn > endsOn) {
+  if (!roomId || !isValidInclusiveDateRange(startsOn, endsOn)) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "validation" }));
   }
+
+  await requireOwnedRoom(profile.id, roomId, propertyId || null, buildRoomRedirectTarget(formData, propertyId, roomId, {}));
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.from("room_seasonal_prices").insert({
@@ -73,14 +78,18 @@ export async function createRoomSeasonalPrice(formData: FormData) {
 export async function updateRoomSeasonalPrice(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
   const roomId = getString(formData, "roomId");
-  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId));
+  const profile = await requireOwnerMutationAccess(
+    propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId),
+  );
   const seasonalPriceId = getString(formData, "seasonalPriceId");
   const startsOn = getString(formData, "startsOn");
   const endsOn = getString(formData, "endsOn");
 
-  if (!roomId || !seasonalPriceId || !startsOn || !endsOn || startsOn > endsOn) {
+  if (!roomId || !seasonalPriceId || !isValidInclusiveDateRange(startsOn, endsOn)) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "validation" }));
   }
+
+  await requireOwnedRoom(profile.id, roomId, propertyId || null, buildRoomRedirectTarget(formData, propertyId, roomId, {}));
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase
@@ -91,7 +100,8 @@ export async function updateRoomSeasonalPrice(formData: FormData) {
       price_per_night: getNumber(formData, "pricePerNight", 0),
       is_active: getCheckbox(formData, "isActive"),
     })
-    .eq("id", seasonalPriceId);
+    .eq("id", seasonalPriceId)
+    .eq("room_id", roomId);
 
   if (error) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: mapActionError(error) }));
@@ -111,15 +121,19 @@ export async function updateRoomSeasonalPrice(formData: FormData) {
 export async function deleteRoomSeasonalPrice(formData: FormData) {
   const propertyId = getString(formData, "propertyId");
   const roomId = getString(formData, "roomId");
-  await requireOwnerMutationAccess(propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId));
+  const profile = await requireOwnerMutationAccess(
+    propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId),
+  );
   const seasonalPriceId = getString(formData, "seasonalPriceId");
 
   if (!roomId || !seasonalPriceId) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "delete" }));
   }
 
+  await requireOwnedRoom(profile.id, roomId, propertyId || null, buildRoomRedirectTarget(formData, propertyId, roomId, {}));
+
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("room_seasonal_prices").delete().eq("id", seasonalPriceId);
+  const { error } = await supabase.from("room_seasonal_prices").delete().eq("id", seasonalPriceId).eq("room_id", roomId);
 
   if (error) {
     redirect(buildRoomRedirectTarget(formData, propertyId, roomId, { error: "delete" }));

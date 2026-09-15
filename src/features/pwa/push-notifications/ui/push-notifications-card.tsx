@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
 
 import {
   getBrowserPushSupport,
   getExistingBrowserPushSubscription,
   subscribeBrowserToPush,
-  unsubscribeBrowserFromPush,
 } from "@/features/pwa/push-notifications/model/browser-push";
-import { Button } from "@/shared/ui";
+import { Button, InlineNotice, Panel } from "@/shared/ui";
 
 type PushNotificationsCardProps = {
   deliveryMode: "enabled" | "foundation_only";
@@ -20,6 +19,18 @@ type StatusMessage = {
   tone: "muted" | "warning";
   text: string;
 };
+
+function subscribeToBrowserSupport() {
+  return () => undefined;
+}
+
+function getBrowserPermissionSnapshot() {
+  return getBrowserPushSupport().permission;
+}
+
+function getServerPermissionSnapshot(): NotificationPermission | "unsupported" {
+  return "unsupported";
+}
 
 async function saveSubscription(payload: {
   endpoint: string;
@@ -58,15 +69,21 @@ export function PushNotificationsCard({
   hasServerSubscriptions,
   initialPushEnabled,
 }: PushNotificationsCardProps) {
-  const support = getBrowserPushSupport();
   const [isPending, startTransition] = useTransition();
   const [pushEnabled, setPushEnabled] = useState(initialPushEnabled);
   const [hasCurrentSubscription, setHasCurrentSubscription] = useState(false);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
-  const [permission, setPermission] = useState<NotificationPermission | "unsupported">(support.permission);
+  const browserPermission = useSyncExternalStore(
+    subscribeToBrowserSupport,
+    getBrowserPermissionSnapshot,
+    getServerPermissionSnapshot,
+  );
+  const [permissionOverride, setPermissionOverride] = useState<NotificationPermission | null>(null);
+  const permission = permissionOverride ?? browserPermission;
+  const isSupported = browserPermission !== "unsupported";
 
   useEffect(() => {
-    if (!support.isSupported) {
+    if (!isSupported) {
       return;
     }
     void getExistingBrowserPushSubscription()
@@ -76,7 +93,7 @@ export function PushNotificationsCard({
       .catch(() => {
         setHasCurrentSubscription(false);
       });
-  }, [support.isSupported, support.permission]);
+  }, [isSupported]);
 
   const isActive = pushEnabled && hasCurrentSubscription;
   const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
@@ -84,6 +101,11 @@ export function PushNotificationsCard({
   function handleEnable() {
     startTransition(async () => {
       try {
+        if (!isSupported) {
+          setStatusMessage({ tone: "warning", text: "Этот браузер не поддерживает push-уведомления." });
+          return;
+        }
+
         if (!vapidPublicKey) {
           setStatusMessage({
             tone: "warning",
@@ -100,7 +122,7 @@ export function PushNotificationsCard({
 
         setPushEnabled(true);
         setHasCurrentSubscription(true);
-        setPermission("granted");
+        setPermissionOverride("granted");
         setStatusMessage({
           tone: "muted",
           text:
@@ -110,7 +132,7 @@ export function PushNotificationsCard({
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Не удалось включить push-уведомления.";
-        setPermission(Notification.permission);
+        setPermissionOverride(Notification.permission);
         setStatusMessage({
           tone: "warning",
           text:
@@ -125,10 +147,15 @@ export function PushNotificationsCard({
   function handleDisable() {
     startTransition(async () => {
       try {
-        const result = await unsubscribeBrowserFromPush();
+        const subscription = await getExistingBrowserPushSubscription();
 
-        if (result.endpoint) {
-          await deleteSubscription(result.endpoint);
+        if (subscription?.endpoint) {
+          await deleteSubscription(subscription.endpoint);
+          const unsubscribed = await subscription.unsubscribe();
+
+          if (!unsubscribed) {
+            throw new Error("Браузер не смог отключить локальную push-подписку.");
+          }
         }
 
         setPushEnabled(false);
@@ -147,16 +174,16 @@ export function PushNotificationsCard({
   }
 
   return (
-    <section className="br-dashboard-block br-card">
-      <div className="br-dashboard-block__header">
+    <Panel className="grid gap-4 p-5 max-[640px]:p-4" surface="raised">
+      <div className="grid gap-1.5">
         <div>
-          <h2>Push-уведомления</h2>
-          <p>Получайте ключевые события MVP прямо в PWA на этом устройстве.</p>
+          <h2 className="text-xl font-semibold text-[var(--text)]">Push-уведомления</h2>
+          <p className="mt-1.5 text-sm leading-[1.5] text-[var(--text-muted)]">Получайте события по заявкам, предложениям и подписке прямо в PWA на этом устройстве.</p>
         </div>
       </div>
 
-      <div className="br-owner-stack">
-        <p className="br-owner-muted">
+      <div className="grid gap-3">
+        <p className="text-sm leading-[1.5] text-[var(--text-muted)]">
           {permission === "unsupported"
             ? "Этот браузер не поддерживает push-уведомления."
             : permission === "denied"
@@ -169,21 +196,23 @@ export function PushNotificationsCard({
         </p>
 
         {deliveryMode === "foundation_only" ? (
-          <div className="br-inline-notice">
+          <InlineNotice tone="warning">
             Подписка и запись доставок уже работают. Внешняя отправка push будет активирована после настройки серверных
             VAPID-ключей.
-          </div>
+          </InlineNotice>
         ) : null}
 
         {statusMessage ? (
-          <p className={statusMessage.tone === "warning" ? "br-owner-error" : "br-owner-muted"}>{statusMessage.text}</p>
+          <InlineNotice tone={statusMessage.tone === "warning" ? "warning" : "soft"} aria-live="polite">
+            {statusMessage.text}
+          </InlineNotice>
         ) : null}
 
-        <div className="br-owner-actions">
+        <div className="flex flex-wrap gap-2.5">
           <Button
             type="button"
             onClick={isActive ? handleDisable : handleEnable}
-            disabled={permission === "unsupported"}
+            disabled={!isSupported}
             isLoading={isPending}
             loadingLabel="Сохранение"
           >
@@ -191,6 +220,6 @@ export function PushNotificationsCard({
           </Button>
         </div>
       </div>
-    </section>
+    </Panel>
   );
 }

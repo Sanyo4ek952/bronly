@@ -60,8 +60,8 @@ export async function getMyTelegramNotificationStatus(): Promise<TelegramNotific
     supabase.from("telegram_notification_connections").select("*").eq("profile_id", profile.id).maybeSingle(),
   ]);
 
-  const settings = (settingsData as SupabaseNotificationSettingsRow | null) ?? null;
-  const connection = (connectionData as SupabaseTelegramNotificationConnectionRow | null) ?? null;
+  const settings = settingsData ?? null;
+  const connection = connectionData ?? null;
 
   return {
     isLinked: Boolean(connection?.telegram_chat_id && connection?.linked_at),
@@ -139,7 +139,7 @@ export async function bindTelegramChatFromStartMessage(input: {
     .eq("link_token_hash", tokenHash)
     .maybeSingle();
 
-  const connection = (connectionData as SupabaseTelegramNotificationConnectionRow | null) ?? null;
+  const connection = connectionData ?? null;
 
   if (!connection?.profile_id || !connection.link_token_expires_at) {
     return { ok: false as const, reason: "invalid_token" as const };

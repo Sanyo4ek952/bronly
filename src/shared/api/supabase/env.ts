@@ -21,6 +21,10 @@ export function getDemoPropertySlug() {
   return process.env.BRONLY_DEMO_PROPERTY_SLUG ?? DEFAULT_DEMO_PROPERTY_SLUG;
 }
 
+export function isDemoModeEnabled() {
+  return process.env.BRONLY_DEMO_MODE?.trim().toLowerCase() === "true";
+}
+
 export function getAppUrl() {
   return process.env.NEXT_PUBLIC_APP_URL;
 }

@@ -1,3 +1,4 @@
+import { addUtcDays, doesStayOverlapInclusiveDateRange, parseIsoDate } from "./date-ranges.ts";
 import type { OwnerBusyRange, OwnerSeasonalPrice, PublicRoom } from "@/entities/room/model/types";
 
 export type PublicStayFilters = {
@@ -19,23 +20,9 @@ type PricingRoom = {
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-function parseDate(value: string) {
-  if (!DATE_RE.test(value)) {
-    return null;
-  }
-
-  const date = new Date(`${value}T00:00:00.000Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
 
 function toDateString(date: Date) {
   return date.toISOString().slice(0, 10);
-}
-
-function addDays(date: Date, days: number) {
-  return new Date(date.getTime() + days * DAY_MS);
 }
 
 export function normalizePublicStayFilters(input: {
@@ -44,8 +31,8 @@ export function normalizePublicStayFilters(input: {
   adults?: string | number;
   rooms?: string | number;
 }): PublicStayFilters {
-  const checkInDate = parseDate(typeof input.checkIn === "string" ? input.checkIn : "");
-  const checkOutDate = parseDate(typeof input.checkOut === "string" ? input.checkOut : "");
+  const checkInDate = parseIsoDate(typeof input.checkIn === "string" ? input.checkIn : "");
+  const checkOutDate = parseIsoDate(typeof input.checkOut === "string" ? input.checkOut : "");
   const hasDates = Boolean(checkInDate && checkOutDate && checkInDate.getTime() < checkOutDate.getTime());
 
   const adultsRaw = typeof input.adults === "number" ? input.adults : Number.parseInt(input.adults ?? "", 10);
@@ -61,8 +48,8 @@ export function normalizePublicStayFilters(input: {
 }
 
 export function getNights(checkIn: string, checkOut: string) {
-  const checkInDate = parseDate(checkIn);
-  const checkOutDate = parseDate(checkOut);
+  const checkInDate = parseIsoDate(checkIn);
+  const checkOutDate = parseIsoDate(checkOut);
 
   if (!checkInDate || !checkOutDate || checkInDate.getTime() >= checkOutDate.getTime()) {
     return 0;
@@ -72,16 +59,7 @@ export function getNights(checkIn: string, checkOut: string) {
 }
 
 export function doesDateRangeOverlap(checkIn: string, checkOut: string, rangeStart: string, rangeEnd: string) {
-  const requestStart = parseDate(checkIn);
-  const requestEnd = parseDate(checkOut);
-  const busyStart = parseDate(rangeStart);
-  const busyEnd = parseDate(rangeEnd);
-
-  if (!requestStart || !requestEnd || !busyStart || !busyEnd) {
-    return false;
-  }
-
-  return requestStart.getTime() < busyEnd.getTime() && requestEnd.getTime() > busyStart.getTime();
+  return doesStayOverlapInclusiveDateRange(checkIn, checkOut, rangeStart, rangeEnd);
 }
 
 export function isRoomAvailableForDates(room: Pick<PricingRoom, "busyRanges">, checkIn: string, checkOut: string) {
@@ -96,7 +74,7 @@ export function calculateRoomPricing(room: PricingRoom, checkIn: string, checkOu
   const nights = getNights(checkIn, checkOut);
   const markupMultiplier = 1 + (room.agentMarkupPercent ?? 0) / 100;
   const nightlyPrices = Array.from({ length: nights }, (_, index) => {
-    const date = toDateString(addDays(parseDate(checkIn) as Date, index));
+    const date = toDateString(addUtcDays(parseIsoDate(checkIn) as Date, index));
     const seasonalPrice = getSeasonalPriceForDate(room.seasonalPrices, date);
     const baseNightPrice = Number(seasonalPrice?.pricePerNight ?? room.pricePerNight);
     const pricePerNight = Number((baseNightPrice * markupMultiplier).toFixed(2));

@@ -60,7 +60,7 @@ export default async function NewPropertyPage({ searchParams }: NewPropertyPageP
           </div>
         </div>
 
-        {message ? <InlineNotice>{message}</InlineNotice> : null}
+        {message ? <InlineNotice tone="error">{message}</InlineNotice> : null}
 
         <form action={createOwnerProperty} className={pageStackClass}>
           <OwnerPropertyFormFields />

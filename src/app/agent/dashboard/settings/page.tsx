@@ -1,12 +1,16 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { startTelegramNotificationLinkAction, updateProfileAction } from "@/app/auth/actions";
+import {
+  setTelegramNotificationsEnabledAction,
+  startTelegramNotificationLinkAction,
+  updateProfileAction,
+} from "@/app/auth/actions";
 import { getMyTelegramNotificationStatus } from "@/entities/notification";
 import { InstallAppCard } from "@/features/pwa/install-app";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { buildAgentPublicPath } from "@/shared/lib/public-links";
-import { SubmitButton } from "@/shared/ui";
+import { ButtonLink, InlineNotice, Input, Panel, SubmitButton } from "@/shared/ui";
+import { CopyLinkButton } from "@/widgets/property-admin";
 import { TelegramNotificationsCard } from "@/widgets/telegram-notifications-card";
 
 type AgentSettingsPageProps = {
@@ -14,18 +18,13 @@ type AgentSettingsPageProps = {
 };
 
 function getErrorMessage(error: string) {
-  if (error === "telegram-not-configured") {
-    return "Telegram-бот еще не настроен.";
-  }
-
-  if (error === "telegram-link") {
-    return "Не удалось создать ссылку для привязки Telegram.";
-  }
-
-  if (error) {
-    return "Не удалось сохранить изменения.";
-  }
-
+  if (error === "telegram-not-configured") return "Telegram-бот еще не настроен.";
+  if (error === "telegram-link") return "Не удалось создать ссылку для привязки Telegram.";
+  if (error === "telegram-setting") return "Не удалось изменить настройки Telegram-уведомлений.";
+  if (error === "validation") return "Укажите имя агента и проверьте остальные поля.";
+  if (error === "subscription") return "Профиль временно нельзя изменить, пока подписка не продлена.";
+  if (error === "unauthorized") return "Настройки доступны только для профиля агента.";
+  if (error) return "Не удалось сохранить изменения.";
   return "";
 }
 
@@ -36,72 +35,66 @@ export default async function AgentSettingsPage({ searchParams }: AgentSettingsP
     redirect("/login");
   }
 
-  const fallbackParams: Record<string, string | string[] | undefined> = {};
-  const params = await (searchParams ?? Promise.resolve(fallbackParams));
+  const params = await (searchParams ?? Promise.resolve<Record<string, string | string[] | undefined>>({}));
   const error = typeof params.error === "string" ? params.error : "";
   const success = typeof params.success === "string" ? params.success : "";
   const publicAgentPath = buildAgentPublicPath(profile.agentPublicId);
 
   return (
-    <section className="br-requests-layout">
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Профиль агента</h2>
-            <p>Контакты, которые гость видит по агентской ссылке.</p>
-          </div>
+    <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <Panel className="grid gap-5 p-5 max-[640px]:p-4" surface="raised">
+        <div className="grid gap-1.5">
+          <h1 className="text-[clamp(26px,4vw,34px)] font-bold leading-[1.05] tracking-[-0.035em] text-[var(--text)]">Профиль агента</h1>
+          <p className="text-sm leading-relaxed text-[var(--text-muted)]">Контакты, которые гость видит по вашей агентской ссылке.</p>
         </div>
-        {getErrorMessage(error) ? <p className="br-card" style={{ marginBottom: 16 }}>{getErrorMessage(error)}</p> : null}
-        {success === "saved" ? <p className="br-card" style={{ marginBottom: 16 }}>Профиль обновлен.</p> : null}
-        <form action={updateProfileAction}>
-          <input type="hidden" name="role" value="agent" />
-          <div className="br-settings-grid">
-            <div className="br-form-field">
-              <label className="br-label" htmlFor="display-name">Имя</label>
-              <input id="display-name" name="displayName" className="br-field" defaultValue={profile.displayName} />
-            </div>
-            <div className="br-form-field">
-              <label className="br-label" htmlFor="phone">Телефон</label>
-              <input id="phone" name="phone" className="br-field" defaultValue={profile.phone} />
-            </div>
-            <div className="br-form-field">
-              <label className="br-label" htmlFor="email">Email</label>
-              <input id="email" className="br-field" defaultValue={profile.email} disabled />
-            </div>
-            <div className="br-form-field">
-              <label className="br-label" htmlFor="telegram">Telegram</label>
-              <input id="telegram" name="telegram" className="br-field" defaultValue={profile.telegram} />
-            </div>
-            <div className="br-form-field">
-              <span className="br-label">Публичная ссылка</span>
-              {publicAgentPath ? (
-                <Link href={publicAgentPath} className="br-field" style={{ display: "block", textDecoration: "none" }}>
-                  {publicAgentPath}
-                </Link>
-              ) : (
-                <div className="br-field">Ссылка генерируется автоматически.</div>
-              )}
-            </div>
+
+        {getErrorMessage(error) ? <InlineNotice tone="error">{getErrorMessage(error)}</InlineNotice> : null}
+        {success === "saved" ? <InlineNotice>Профиль обновлен.</InlineNotice> : null}
+        {success === "telegram-enabled" ? <InlineNotice>Telegram-уведомления включены.</InlineNotice> : null}
+        {success === "telegram-disabled" ? <InlineNotice tone="soft">Telegram-уведомления отключены.</InlineNotice> : null}
+
+        <section className="grid gap-3 rounded-[20px] border border-[rgb(var(--color-primary-rgb)_/_0.16)] bg-[var(--color-primary-pale)] p-4">
+          <div className="grid gap-1.5">
+            <strong className="text-base text-[var(--text)]">Стабильная публичная ссылка</strong>
+            <p className="break-all text-sm leading-relaxed text-[var(--text-muted)]">
+              {publicAgentPath ?? "Ссылка создается автоматически и не редактируется вручную."}
+            </p>
           </div>
-          <div className="br-active-step__actions">
-            <Link href="/forgot-password" className="br-button br-button--secondary">Изменить пароль</Link>
+          <div className="flex flex-wrap gap-2.5">
+            <ButtonLink href={publicAgentPath ?? "#"} variant="secondary" disabled={!publicAgentPath}>Открыть витрину</ButtonLink>
+            {publicAgentPath ? <CopyLinkButton path={publicAgentPath} /> : null}
+          </div>
+        </section>
+
+        <form action={updateProfileAction} className="grid gap-5">
+          <input type="hidden" name="role" value="agent" />
+          <div className="grid gap-4 md:grid-cols-2">
+            <Input id="display-name" name="displayName" label="Имя" defaultValue={profile.displayName} required />
+            <Input id="phone" name="phone" type="tel" label="Телефон" defaultValue={profile.phone} />
+            <Input id="email" type="email" label="Email" defaultValue={profile.email} disabled />
+            <Input id="telegram" name="telegram" label="Telegram" placeholder="@username" defaultValue={profile.telegram} />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ButtonLink href="/forgot-password" variant="secondary" fullWidth>Изменить пароль</ButtonLink>
             <SubmitButton pendingLabel="Сохранение">Сохранить</SubmitButton>
           </div>
         </form>
-      </section>
+      </Panel>
 
-      <aside>
-        <TelegramNotificationsCard role="agent" status={telegramStatus} action={startTelegramNotificationLinkAction} />
-        <div style={{ height: 16 }} />
-        <section className="br-dashboard-block br-card">
-          <div className="br-dashboard-block__header">
-            <div>
-              <h2>Установка на главный экран</h2>
-              <p>Быстрый доступ к Bronly с телефона без App Store и Google Play.</p>
-            </div>
+      <aside className="grid gap-4">
+        <TelegramNotificationsCard
+          role="agent"
+          status={telegramStatus}
+          linkAction={startTelegramNotificationLinkAction}
+          toggleAction={setTelegramNotificationsEnabledAction}
+        />
+        <Panel className="grid gap-4 p-4" surface="raised">
+          <div className="grid gap-1.5">
+            <h2 className="text-lg font-semibold text-[var(--text)]">Установка на главный экран</h2>
+            <p className="text-sm leading-relaxed text-[var(--text-muted)]">Быстрый доступ к Bronly с телефона без App Store и Google Play.</p>
           </div>
           <InstallAppCard />
-        </section>
+        </Panel>
       </aside>
     </section>
   );

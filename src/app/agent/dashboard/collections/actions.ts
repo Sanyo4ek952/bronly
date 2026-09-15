@@ -61,6 +61,7 @@ export async function createAgentCollectionAction(formData: FormData) {
   const result = await createCollection({
     role: "agent",
     title: getString(formData, "title"),
+    guestLabel: getString(formData, "guestLabel"),
   });
 
   if (!result.ok) {
@@ -82,6 +83,7 @@ export async function renameAgentCollectionAction(formData: FormData) {
     role: "agent",
     collectionId,
     title: getString(formData, "title"),
+    guestLabel: getString(formData, "guestLabel"),
   });
 
   if (!result.ok) {

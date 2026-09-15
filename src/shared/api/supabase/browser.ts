@@ -2,6 +2,7 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 
+import type { Database } from "@/shared/api/supabase/database.types";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/shared/api/supabase/env";
 
 export function createSupabaseBrowserClient() {
@@ -12,5 +13,5 @@ export function createSupabaseBrowserClient() {
     throw new Error("Supabase browser environment variables are not configured.");
   }
 
-  return createBrowserClient(url, anonKey);
+  return createBrowserClient<Database>(url, anonKey);
 }

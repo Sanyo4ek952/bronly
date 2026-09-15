@@ -75,6 +75,7 @@ export default async function PropertyCalendarPage({ params, searchParams }: Pro
               busyRanges: room.busyRanges,
             }))}
             serverNotice={notice}
+            serverNoticeTone={error ? "error" : "default"}
           />
         ) : (
           <p className="text-sm leading-[1.5] text-[var(--color-muted)]">

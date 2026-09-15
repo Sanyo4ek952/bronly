@@ -14,9 +14,20 @@ type FieldWrapperProps = {
   className?: string;
   description?: string;
   error?: string;
+  descriptionId?: string;
+  errorId?: string;
 };
 
-function FieldWrapper({ label, htmlFor, children, className, description, error }: FieldWrapperProps) {
+function FieldWrapper({
+  label,
+  htmlFor,
+  children,
+  className,
+  description,
+  error,
+  descriptionId,
+  errorId,
+}: FieldWrapperProps) {
   return (
     <div className={cn("grid gap-1.5", className)}>
       {label ? (
@@ -25,21 +36,26 @@ function FieldWrapper({ label, htmlFor, children, className, description, error 
         </label>
       ) : null}
       {children}
-      {error ? <span className="text-xs leading-[1.45] text-[var(--danger)]">{error}</span> : null}
-      {!error && description ? <span className="text-xs leading-[1.45] text-[var(--text-muted)]">{description}</span> : null}
+      {error ? <span id={errorId} className="text-xs leading-[1.45] text-[var(--danger)]" role="alert">{error}</span> : null}
+      {!error && description ? <span id={descriptionId} className="text-xs leading-[1.45] text-[var(--text-muted)]">{description}</span> : null}
     </div>
   );
+}
+
+function getDescribedBy(messageId: string | undefined, describedBy: string | undefined) {
+  return [messageId, describedBy].filter(Boolean).join(" ") || undefined;
 }
 
 const fieldBaseClass = cn(
   "w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] text-[13px] leading-[1.45] text-[var(--text)]",
   "transition-[border-color,box-shadow,background-color] duration-[180ms]",
   "placeholder:text-[var(--text-subtle)]",
+  "hover:border-[var(--border-strong)]",
   "focus:outline-none focus:border-[rgb(var(--color-primary-rgb)_/_0.44)] focus:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.12)]",
   "disabled:cursor-not-allowed disabled:opacity-60",
 );
 
-type InputProps = InputHTMLAttributes<HTMLInputElement> & {
+export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
   wrapperClassName?: string;
   description?: string;
@@ -48,6 +64,9 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
 
 export function Input({ label, id, className, wrapperClassName, description, error, ...props }: InputProps) {
   const isFile = props.type === "file";
+  const errorId = error && id ? `${id}-error` : undefined;
+  const descriptionId = !error && description && id ? `${id}-description` : undefined;
+  const describedBy = getDescribedBy(errorId ?? descriptionId, props["aria-describedby"]);
 
   return (
     <FieldWrapper
@@ -56,9 +75,14 @@ export function Input({ label, id, className, wrapperClassName, description, err
       className={wrapperClassName}
       description={description}
       error={error}
+      descriptionId={descriptionId}
+      errorId={errorId}
     >
       <input
+        {...props}
         id={id}
+        aria-describedby={describedBy}
+        aria-errormessage={errorId}
         className={cn(
           fieldBaseClass,
           isFile ? "min-h-14 overflow-hidden p-2" : "min-h-10 px-3 py-2.5",
@@ -72,13 +96,12 @@ export function Input({ label, id, className, wrapperClassName, description, err
           className,
         )}
         aria-invalid={error ? true : props["aria-invalid"]}
-        {...props}
       />
     </FieldWrapper>
   );
 }
 
-type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
+export type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: string;
   wrapperClassName?: string;
   description?: string;
@@ -94,6 +117,10 @@ export function Textarea({
   error,
   ...props
 }: TextareaProps) {
+  const errorId = error && id ? `${id}-error` : undefined;
+  const descriptionId = !error && description && id ? `${id}-description` : undefined;
+  const describedBy = getDescribedBy(errorId ?? descriptionId, props["aria-describedby"]);
+
   return (
     <FieldWrapper
       label={label}
@@ -101,9 +128,14 @@ export function Textarea({
       className={wrapperClassName}
       description={description}
       error={error}
+      descriptionId={descriptionId}
+      errorId={errorId}
     >
       <textarea
+        {...props}
         id={id}
+        aria-describedby={describedBy}
+        aria-errormessage={errorId}
         className={cn(
           fieldBaseClass,
           "min-h-[110px] resize-y px-4 py-[14px]",
@@ -112,13 +144,12 @@ export function Textarea({
           className,
         )}
         aria-invalid={error ? true : props["aria-invalid"]}
-        {...props}
       />
     </FieldWrapper>
   );
 }
 
-type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
+export type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   label?: string;
   wrapperClassName?: string;
   options?: Array<{ label: string; value: string }>;
@@ -137,6 +168,10 @@ export function Select({
   children,
   ...props
 }: SelectProps) {
+  const errorId = error && id ? `${id}-error` : undefined;
+  const descriptionId = !error && description && id ? `${id}-description` : undefined;
+  const describedBy = getDescribedBy(errorId ?? descriptionId, props["aria-describedby"]);
+
   return (
     <FieldWrapper
       label={label}
@@ -144,9 +179,14 @@ export function Select({
       className={wrapperClassName}
       description={description}
       error={error}
+      descriptionId={descriptionId}
+      errorId={errorId}
     >
       <select
+        {...props}
         id={id}
+        aria-describedby={describedBy}
+        aria-errormessage={errorId}
         className={cn(
           fieldBaseClass,
           "min-h-10 appearance-none px-3 py-2.5",
@@ -155,7 +195,6 @@ export function Select({
           className,
         )}
         aria-invalid={error ? true : props["aria-invalid"]}
-        {...props}
       >
         {options
           ? options.map((option) => (

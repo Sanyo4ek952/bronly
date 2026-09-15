@@ -1,5 +1,5 @@
 import { buildRoomPhotoMap } from "@/entities/property/api/photo-utils";
-import { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
+import { mapBusyRange, mapSeasonalPrice, normalizeRoomKind } from "@/entities/room/model/mappers";
 import type { OwnerRoomDetail } from "@/entities/room/model/types";
 import { createSupabaseServerClient, getCurrentAuthProfile } from "@/shared/api/supabase/server-auth";
 import type {
@@ -24,7 +24,7 @@ export async function getOwnerRoomDetail(roomId: string): Promise<OwnerRoomDetai
     .eq("id", roomId)
     .eq("owner_id", profile.id)
     .maybeSingle();
-  const room = (roomData ?? null) as SupabaseRoomRow | null;
+  const room = roomData;
 
   if (!room) {
     return null;
@@ -43,16 +43,16 @@ export async function getOwnerRoomDetail(roomId: string): Promise<OwnerRoomDetai
     room.property_id ? supabase.from("properties").select("title, slug").eq("id", room.property_id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
 
-  const roomPhotoMap = buildRoomPhotoMap((roomPhotosResult.data ?? []) as SupabaseRoomPhotoRow[]);
-  const amenities = ((amenitiesResult.data ?? []) as SupabaseRoomAmenityRow[]).map((item) => item.label);
-  const seasonalPrices = ((seasonalResult.data ?? []) as SupabaseRoomSeasonalPriceRow[]).map(mapSeasonalPrice);
-  const busyRanges = ((busyResult.data ?? []) as SupabaseRoomBusyRangeRow[]).map(mapBusyRange);
-  const property = propertyResult.data as { title?: string; slug?: string } | null;
+  const roomPhotoMap = buildRoomPhotoMap(roomPhotosResult.data ?? []);
+  const amenities = (amenitiesResult.data ?? []).map((item) => item.label);
+  const seasonalPrices = (seasonalResult.data ?? []).map(mapSeasonalPrice);
+  const busyRanges = (busyResult.data ?? []).map(mapBusyRange);
+  const property = propertyResult.data;
 
   return {
     id: room.id,
     ownerId: room.owner_id,
-    kind: room.room_kind,
+    kind: normalizeRoomKind(room.room_kind),
     propertyId: room.property_id,
     slug: room.slug,
     title: room.title,

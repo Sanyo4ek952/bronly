@@ -3,11 +3,12 @@ import { createSupabaseAdminClient, requireAppUrl } from "@/shared/api/supabase"
 import type {
   SupabaseReferralInviteRow,
   SupabaseReferralRewardRow,
-  SupabaseSubscriptionRow,
   SupabaseUserRoleRow,
 } from "@/shared/api/supabase";
+import { logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 import { formatDateTimeLabel } from "@/shared/lib";
 
+import { isReferralInviteAvailable } from "../model/rules";
 import type {
   ReferralApprovalStatus,
   ReferralInviteIntent,
@@ -16,6 +17,8 @@ import type {
   ReferralInviteSummary,
   ReferralMilestoneType,
   ReferralQueueItem,
+  ReferralRegistrationIntent,
+  ReferralReviewResult,
 } from "../model/types";
 
 function getBaseUrl() {
@@ -104,7 +107,10 @@ function getReferralTarget(role: ReferralInviteRole) {
 }
 
 function mapInviteRow(
-  row: SupabaseReferralInviteRow,
+  row: Pick<
+    SupabaseReferralInviteRow,
+    "id" | "token" | "inviter_profile_id" | "status" | "used_by_profile_id" | "used_at" | "created_at"
+  >,
   inviterName: string,
   inviterRole: ReferralInviteRole,
   inviteeRole: ReferralInviteRole,
@@ -146,9 +152,13 @@ export async function getOrCreateReferralInvite(input: {
   inviterRole: ReferralInviteRole;
   inviteeRole: ReferralInviteRole;
 }): Promise<ReferralInviteSummary | null> {
+  if (!input.profile.roles.includes(input.inviterRole)) {
+    return null;
+  }
+
   const admin = createSupabaseAdminClient();
   const { intent } = getInviteIntent(input.inviteeRole);
-  const { data: existingData } = await admin
+  const findExistingInvite = () => admin
     .from("referral_invites")
     .select("*")
     .eq("inviter_profile_id", input.profile.id)
@@ -161,14 +171,38 @@ export async function getOrCreateReferralInvite(input: {
     .limit(1)
     .maybeSingle();
 
-  const existing = (existingData ?? null) as SupabaseReferralInviteRow | null;
+  const { data: existingData, error: existingError } = await findExistingInvite();
 
-  if (existing) {
+  if (existingError) {
+    logServerDataError("referral_invite_lookup_failed", existingError);
+    return null;
+  }
+
+  const existing = existingData ?? null;
+
+  if (existing && isReferralInviteAvailable({
+    status: existing.status,
+    usedByProfileId: existing.used_by_profile_id,
+    expiresAt: existing.expires_at,
+  })) {
     return mapInviteRow(existing, input.profile.displayName, input.inviterRole, input.inviteeRole, intent);
   }
 
+  if (existing) {
+    const { error: expireError } = await admin
+      .from("referral_invites")
+      .update({ status: "expired", updated_at: new Date().toISOString() })
+      .eq("id", existing.id)
+      .eq("status", "active");
+
+    if (expireError) {
+      logServerDataError("referral_invite_expire_failed", expireError, { inviteId: existing.id });
+      return null;
+    }
+  }
+
   const nowIso = new Date().toISOString();
-  const { data } = await admin
+  const { data, error } = await admin
     .from("referral_invites")
     .insert({
       token: crypto.randomUUID().replace(/-/g, ""),
@@ -183,7 +217,25 @@ export async function getOrCreateReferralInvite(input: {
     .select("*")
     .single();
 
-  const created = (data ?? null) as SupabaseReferralInviteRow | null;
+  if (error) {
+    if (error.code === "23505") {
+      const { data: concurrentData, error: concurrentError } = await findExistingInvite();
+      const concurrent = concurrentData ?? null;
+
+      if (!concurrentError && concurrent) {
+        return mapInviteRow(concurrent, input.profile.displayName, input.inviterRole, input.inviteeRole, intent);
+      }
+    }
+
+    logServerDataError("referral_invite_create_failed", error, {
+      inviterProfileId: input.profile.id,
+      inviterRole: input.inviterRole,
+      inviteeRole: input.inviteeRole,
+    });
+    return null;
+  }
+
+  const created = data ?? null;
   if (!created) {
     return null;
   }
@@ -193,11 +245,16 @@ export async function getOrCreateReferralInvite(input: {
 
 export async function getReferralInvitePageData(token: string): Promise<ReferralInvitePageData> {
   const admin = createSupabaseAdminClient();
-  const { data } = await admin
+  const { data, error } = await admin
     .from("referral_invites")
     .select("*, profiles!referral_invites_inviter_profile_id_fkey(display_name)")
     .eq("token", token)
     .maybeSingle();
+
+  if (error) {
+    logServerDataError("referral_invite_page_lookup_failed", error);
+    throw new Error("Referral invite data is unavailable.");
+  }
 
   const row = (data ?? null) as
     | (SupabaseReferralInviteRow & {
@@ -224,12 +281,61 @@ export async function getReferralInvitePageData(token: string): Promise<Referral
     row.intent,
   );
   const target = getReferralTarget(row.invitee_role);
+  const canRegister = isReferralInviteAvailable({
+    status: row.status,
+    usedByProfileId: row.used_by_profile_id,
+    expiresAt: row.expires_at,
+  });
+
+  if (!canRegister && row.status !== "used") {
+    return {
+      invite: null,
+      canRegister: false,
+      targetHref: "/register",
+      targetLabel: "Создать аккаунт",
+    };
+  }
 
   return {
     invite,
-    canRegister: row.status === "active" && !row.used_by_profile_id,
+    canRegister,
     targetHref: target.href,
     targetLabel: target.label,
+  };
+}
+
+export async function getReferralRegistrationIntent(token: string): Promise<ReferralRegistrationIntent | null> {
+  if (!token) {
+    return null;
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("referral_invites")
+    .select("token, invitee_role, status, used_by_profile_id, expires_at")
+    .eq("token", token)
+    .maybeSingle();
+
+  if (error) {
+    logServerDataError("referral_registration_intent_lookup_failed", error);
+    return null;
+  }
+
+  if (
+    !data
+    || (data.invitee_role !== "owner" && data.invitee_role !== "agent")
+    || !isReferralInviteAvailable({
+      status: data.status,
+      usedByProfileId: data.used_by_profile_id,
+      expiresAt: data.expires_at,
+    })
+  ) {
+    return null;
+  }
+
+  return {
+    inviteToken: data.token,
+    inviteeRole: data.invitee_role,
   };
 }
 
@@ -239,41 +345,21 @@ export async function consumeReferralInviteForProfile(input: {
   inviteeRole: ReferralInviteRole;
 }) {
   const admin = createSupabaseAdminClient();
-  const { data } = await admin
-    .from("referral_invites")
-    .select("*")
-    .eq("token", input.inviteToken)
-    .maybeSingle();
-  const invite = (data ?? null) as SupabaseReferralInviteRow | null;
+  const { data, error } = await admin.rpc("consume_referral_invite", {
+    p_invite_token: input.inviteToken,
+    p_invited_profile_id: input.invitedProfileId,
+    p_invitee_role: input.inviteeRole,
+  });
 
-  if (!invite || invite.inviter_role === "admin" || invite.invitee_role === "admin") {
+  if (error) {
+    logServerDataError("referral_invite_consume_failed", error, {
+      invitedProfileId: input.invitedProfileId,
+      inviteeRole: input.inviteeRole,
+    });
     return false;
   }
 
-  if (invite.invitee_role !== input.inviteeRole) {
-    return false;
-  }
-
-  if (invite.inviter_profile_id === input.invitedProfileId) {
-    return false;
-  }
-
-  if (invite.used_by_profile_id && invite.used_by_profile_id !== input.invitedProfileId) {
-    return false;
-  }
-
-  const nowIso = new Date().toISOString();
-  const { error } = await admin
-    .from("referral_invites")
-    .update({
-      status: "used",
-      used_by_profile_id: input.invitedProfileId,
-      used_at: nowIso,
-      updated_at: nowIso,
-    })
-    .eq("id", invite.id);
-
-  return !error;
+  return data === true;
 }
 
 async function createPendingReferralReward(input: {
@@ -281,45 +367,20 @@ async function createPendingReferralReward(input: {
   milestoneType: ReferralMilestoneType;
 }) {
   const admin = createSupabaseAdminClient();
-  const { data: existingRewardData } = await admin
-    .from("referral_rewards")
-    .select("id")
-    .eq("invited_profile_id", input.invitedProfileId)
-    .maybeSingle();
-
-  if (existingRewardData?.id) {
-    return false;
-  }
-
-  const { data: inviteData } = await admin
-    .from("referral_invites")
-    .select("*")
-    .eq("used_by_profile_id", input.invitedProfileId)
-    .eq("status", "used")
-    .order("used_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const invite = (inviteData ?? null) as SupabaseReferralInviteRow | null;
-
-  if (!invite) {
-    return false;
-  }
-
-  const nowIso = new Date().toISOString();
-  const { error } = await admin.from("referral_rewards").insert({
-    invite_id: invite.id,
-    inviter_profile_id: invite.inviter_profile_id,
-    invited_profile_id: input.invitedProfileId,
-    milestone_type: input.milestoneType,
-    milestone_reached_at: nowIso,
-    approval_status: "pending",
-    reward_days: 10,
-    applied_role_contexts: [],
-    created_at: nowIso,
-    updated_at: nowIso,
+  const { data, error } = await admin.rpc("record_referral_milestone", {
+    p_invited_profile_id: input.invitedProfileId,
+    p_milestone_type: input.milestoneType,
   });
 
-  return !error;
+  if (error) {
+    logServerDataError("referral_milestone_record_failed", error, {
+      invitedProfileId: input.invitedProfileId,
+      milestoneType: input.milestoneType,
+    });
+    return false;
+  }
+
+  return data === true;
 }
 
 export async function markOwnerReferralMilestone(profileId: string) {
@@ -338,11 +399,15 @@ export async function markAgentReferralMilestone(profileId: string) {
 
 export async function getPendingReferralQueue(): Promise<ReferralQueueItem[]> {
   const admin = createSupabaseAdminClient();
-  const { data } = await admin
+  const { data, error } = await admin
     .from("referral_rewards")
     .select("*, referral_invites(token), inviter:profiles!referral_rewards_inviter_profile_id_fkey(display_name), invited:profiles!referral_rewards_invited_profile_id_fkey(display_name)")
     .eq("approval_status", "pending")
     .order("milestone_reached_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
 
   const rows = (data ?? []) as Array<
     SupabaseReferralRewardRow & {
@@ -357,8 +422,12 @@ export async function getPendingReferralQueue(): Promise<ReferralQueueItem[]> {
   }
 
   const inviterIds = Array.from(new Set(rows.map((row) => row.inviter_profile_id)));
-  const { data: roleRowsData } = await admin.from("user_roles").select("*").in("profile_id", inviterIds);
-  const roleRows = (roleRowsData ?? []) as SupabaseUserRoleRow[];
+  const { data: roleRowsData, error: roleRowsError } = await admin.from("user_roles").select("*").in("profile_id", inviterIds);
+
+  if (roleRowsError) {
+    throw roleRowsError;
+  }
+  const roleRows = roleRowsData ?? [];
   const rolesByProfile = new Map<string, Array<"owner" | "agent">>();
 
   for (const row of roleRows) {
@@ -387,98 +456,36 @@ export async function getPendingReferralQueue(): Promise<ReferralQueueItem[]> {
   }));
 }
 
-async function extendSubscriptionsForProfile(profileId: string, roleContexts: Array<"owner" | "agent">, rewardDays: number) {
-  const admin = createSupabaseAdminClient();
-  const now = new Date();
-  const { data } = await admin
-    .from("subscriptions")
-    .select("*")
-    .eq("profile_id", profileId)
-    .in("role_context", roleContexts);
-
-  const rows = (data ?? []) as SupabaseSubscriptionRow[];
-  const rowByRole = new Map(rows.map((row) => [row.role_context, row] as const));
-  const appliedRoleContexts: Array<"owner" | "agent"> = [];
-
-  for (const roleContext of roleContexts) {
-    const existing = rowByRole.get(roleContext);
-    const baseDate = existing?.paid_until ? new Date(existing.paid_until) : now;
-    const nextPaidUntil = new Date(Math.max(baseDate.getTime(), now.getTime()));
-    nextPaidUntil.setDate(nextPaidUntil.getDate() + rewardDays);
-
-    const payload = {
-      profile_id: profileId,
-      role_context: roleContext,
-      status: "active",
-      plan_name: existing?.plan_name ?? "MVP",
-      active_room_limit: existing?.active_room_limit ?? null,
-      trial_ends_at: existing?.trial_ends_at ?? null,
-      grace_ends_at: null,
-      paid_until: nextPaidUntil.toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error } = await admin.from("subscriptions").upsert(payload, { onConflict: "profile_id,role_context" });
-    if (!error) {
-      appliedRoleContexts.push(roleContext);
-    }
-  }
-
-  return appliedRoleContexts;
-}
-
 export async function reviewReferralReward(input: {
   rewardId: string;
   decision: Exclude<ReferralApprovalStatus, "pending">;
   adminProfileId: string;
-}) {
+}): Promise<ReferralReviewResult | null> {
   const admin = createSupabaseAdminClient();
-  const { data } = await admin
-    .from("referral_rewards")
-    .select("*")
-    .eq("id", input.rewardId)
-    .maybeSingle();
-  const reward = (data ?? null) as SupabaseReferralRewardRow | null;
+  const { data, error } = await admin.rpc("admin_review_referral_reward", {
+    p_reward_id: input.rewardId,
+    p_decision: input.decision,
+    p_actor_profile_id: input.adminProfileId,
+  });
 
-  if (!reward || reward.approval_status !== "pending") {
-    return false;
+  if (error) {
+    logServerDataError("referral_reward_review_failed", error, {
+      rewardId: input.rewardId,
+      decision: input.decision,
+      adminProfileId: input.adminProfileId,
+    });
+    return null;
   }
 
-  const nowIso = new Date().toISOString();
+  const allowedResults = new Set<ReferralReviewResult>([
+    "approved",
+    "rejected",
+    "already_approved",
+    "already_rejected",
+    "conflict_approved",
+    "conflict_rejected",
+    "not_found",
+  ]);
 
-  if (input.decision === "rejected") {
-    const { error } = await admin
-      .from("referral_rewards")
-      .update({
-        approval_status: "rejected",
-        rejected_at: nowIso,
-        approved_by_admin_id: input.adminProfileId,
-        updated_at: nowIso,
-      })
-      .eq("id", reward.id);
-
-    return !error;
-  }
-
-  const { data: roleRowsData } = await admin
-    .from("user_roles")
-    .select("role")
-    .eq("profile_id", reward.inviter_profile_id)
-    .in("role", ["owner", "agent"]);
-  const roleRows = (roleRowsData ?? []) as Array<{ role: "owner" | "agent" }>;
-  const roleContexts = Array.from(new Set(roleRows.map((row) => row.role)));
-  const appliedRoleContexts = await extendSubscriptionsForProfile(reward.inviter_profile_id, roleContexts, reward.reward_days);
-
-  const { error } = await admin
-    .from("referral_rewards")
-    .update({
-      approval_status: "approved",
-      approved_by_admin_id: input.adminProfileId,
-      approved_at: nowIso,
-      applied_role_contexts: appliedRoleContexts,
-      updated_at: nowIso,
-    })
-    .eq("id", reward.id);
-
-  return !error;
+  return allowedResults.has(data as ReferralReviewResult) ? data as ReferralReviewResult : null;
 }

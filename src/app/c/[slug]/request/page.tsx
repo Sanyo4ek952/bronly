@@ -10,6 +10,7 @@ import {
 } from "@/features/request/submit-request/model/public-request-ui";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import { createSeoMetadata, getSearchString, readSearchParams } from "@/shared/lib";
+import { InlineNotice } from "@/shared/ui";
 import { PublicUnavailableState } from "@/widgets/public-page";
 import { PublicRequestPageFrame } from "@/widgets/public-request";
 
@@ -72,7 +73,7 @@ export default async function PublicCollectionRequestPage({ params, searchParams
       description="Заполните короткую форму, чтобы отправить заявку по выбранному конкретному номеру из этой подборки."
       closeHref={`/c/${pageData.collection.slug}`}
       warningText={pageData.publicWarningText}
-      notice={<p className="br-inline-notice br-inline-notice--soft">Подборка помогает выбрать вариант, но заявка всегда отправляется только по конкретному номеру.</p>}
+      notice={<InlineNotice tone="soft">Подборка помогает выбрать вариант, но заявка всегда отправляется только по конкретному номеру.</InlineNotice>}
     >
       <GuestRequestForm
         propertySlug={selectedSection?.property.slug}

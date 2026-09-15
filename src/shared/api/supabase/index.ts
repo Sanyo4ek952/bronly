@@ -15,8 +15,14 @@ export {
   hasConfiguredTelegramBot,
   hasConfiguredWebPush,
   hasSupabaseServerEnv,
+  isDemoModeEnabled,
   requireAppUrl,
 } from "@/shared/api/supabase/env";
+export {
+  getSafeServerErrorDiagnostic,
+  logServerConfigurationError,
+  logServerDataError,
+} from "@/shared/api/supabase/server-diagnostics";
 export { createSupabaseAdminClient, canUseSupabase } from "@/shared/api/supabase/server";
 export { createSupabaseBrowserClient } from "@/shared/api/supabase/browser";
 export { ensureAuthUserProfile } from "@/shared/api/supabase/ensure-profile";
@@ -30,8 +36,10 @@ export {
   getPrimaryRole,
 } from "@/shared/api/supabase/server-auth";
 export type { AuthProfile, AuthRole } from "@/shared/api/supabase/server-auth";
+export type { Database, Enums, Json, Tables, TablesInsert, TablesUpdate } from "@/shared/api/supabase/database.types";
 export type {
   SupabaseAgentPropertyLinkRow,
+  SupabaseCollectionEventRow,
   SupabaseCollectionItemRow,
   SupabaseCollectionRow,
   SupabaseGuestRequestRow,

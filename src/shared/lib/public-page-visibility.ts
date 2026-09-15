@@ -1,4 +1,4 @@
-export type PublicUnavailableReason = "subscription_expired" | "admin_hidden";
+export type PublicUnavailableReason = "subscription_expired" | "admin_hidden" | "service_unavailable";
 
 type PublicUnavailableVariant = "ownerPage" | "ownerRequest" | "agent" | "collection";
 
@@ -10,6 +10,14 @@ export function getPublicUnavailableContent(
     return {
       title: "Страница временно недоступна",
       description: "Публичная ссылка временно скрыта. Попробуйте открыть ее позже.",
+      showLogin: false,
+    };
+  }
+
+  if (reason === "service_unavailable") {
+    return {
+      title: "Страница временно недоступна",
+      description: "Не удалось загрузить данные. Попробуйте открыть страницу ещё раз позже.",
       showLogin: false,
     };
   }

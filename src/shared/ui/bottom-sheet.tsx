@@ -11,11 +11,11 @@ const CLOSE_DURATION_MS = 220;
 const DRAG_CLOSE_RATIO = 0.25;
 const DRAG_CLOSE_VELOCITY = 0.6;
 
-type BottomSheetRenderApi = {
+export type BottomSheetRenderApi = {
   close: () => void;
 };
 
-type BottomSheetProps = {
+export type BottomSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
@@ -24,6 +24,7 @@ type BottomSheetProps = {
   dialogId?: string;
   titleId?: string;
   className?: string;
+  rootClassName?: string;
   bodyClassName?: string;
   children: ReactNode | ((api: BottomSheetRenderApi) => ReactNode);
 };
@@ -51,13 +52,16 @@ export function BottomSheet({
   dialogId,
   titleId,
   className,
+  rootClassName,
   bodyClassName,
   children,
 }: BottomSheetProps) {
   const generatedDialogId = useId();
   const generatedTitleId = useId();
+  const generatedDescriptionId = useId();
   const resolvedDialogId = dialogId ?? `sheet-${generatedDialogId}`;
   const resolvedTitleId = titleId ?? `sheet-title-${generatedTitleId}`;
+  const resolvedDescriptionId = description ? `sheet-description-${generatedDescriptionId}` : undefined;
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<DragState>({
@@ -67,6 +71,7 @@ export function BottomSheet({
     started: false,
   });
   const closeTimerRef = useRef<number | null>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
   const [phase, setPhase] = useState<SheetPhase>(open ? "open" : "closed");
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -135,6 +140,35 @@ export function BottomSheet({
       return undefined;
     }
 
+    restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    return () => {
+      restoreFocusRef.current?.focus();
+      restoreFocusRef.current = null;
+    };
+  }, [isRendered]);
+
+  useEffect(() => {
+    if (phase !== "open") {
+      return undefined;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      const firstFocusable = sheetRef.current?.querySelector<HTMLElement>(
+        'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+      );
+
+      (firstFocusable ?? sheetRef.current)?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [phase]);
+
+  useEffect(() => {
+    if (!isRendered) {
+      return undefined;
+    }
+
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -152,6 +186,37 @@ export function BottomSheet({
       if (event.key === "Escape") {
         setCloseStartOffset(0);
         onOpenChange(false);
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const sheet = sheetRef.current;
+      if (!sheet) {
+        return;
+      }
+
+      const focusable = Array.from(sheet.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+      ));
+
+      if (focusable.length === 0) {
+        event.preventDefault();
+        sheet.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
       }
     };
 
@@ -274,11 +339,16 @@ export function BottomSheet({
   const content = typeof children === "function" ? children({ close }) : children;
   const sheetStyle = isDragging || isSettling
     ? { transform: `translateY(${dragOffset}px)` }
-    : { ["--br-sheet-close-start" as string]: `${closeStartOffset}px` };
+    : { ["--sheet-close-start" as string]: `${closeStartOffset}px` };
 
   return (
     <div
-      className="br-bottom-sheet-backdrop"
+      className={cn(
+        "group fixed inset-0 z-40 flex items-end justify-stretch bg-[rgb(15_23_42_/_0.28)] pt-6 backdrop-blur-xl",
+        "data-[state=opening]:animate-[sheet-fade-in_220ms_ease_forwards] data-[state=open]:animate-[sheet-fade-in_220ms_ease_forwards]",
+        "data-[state=closing]:animate-[sheet-fade-out_220ms_ease_forwards]",
+        rootClassName,
+      )}
       data-state={phase}
       role="presentation"
       onClick={close}
@@ -287,15 +357,20 @@ export function BottomSheet({
         id={resolvedDialogId}
         ref={sheetRef}
         className={cn(
-          "br-bottom-sheet br-card",
-          isDragging && "br-bottom-sheet--dragging",
-          isSettling && "br-bottom-sheet--settling",
+          "mt-auto grid max-h-[min(82vh,720px)] w-full translate-y-[calc(100%+24px)] touch-pan-x gap-3.5 overflow-hidden rounded-t-[22px] border border-[var(--border)] bg-[var(--surface)] p-3.5 pb-[calc(14px+var(--safe-area-bottom))] shadow-[var(--shadow-lg)]",
+          "group-data-[state=opening]:animate-[sheet-enter_220ms_ease_forwards] group-data-[state=open]:translate-y-0 group-data-[state=closing]:animate-[sheet-close_220ms_ease_forwards]",
+          "max-[390px]:rounded-t-[20px] max-[390px]:p-3 max-[390px]:pb-[calc(12px+var(--safe-area-bottom))]",
+          "max-[360px]:rounded-t-[18px] max-[360px]:p-2.5 max-[360px]:pb-[calc(10px+var(--safe-area-bottom))]",
+          isDragging && "transition-none",
+          isSettling && "transition-transform duration-200 ease-out",
           className,
         )}
         style={sheetStyle}
         role="dialog"
         aria-modal="true"
         aria-labelledby={resolvedTitleId}
+        aria-describedby={resolvedDescriptionId}
+        tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -307,17 +382,17 @@ export function BottomSheet({
           }
         }}
       >
-        <div className="br-bottom-sheet__gesture-zone">
-          <div className="br-bottom-sheet__handle" aria-hidden="true" />
+        <div className="grid gap-3.5">
+          <div className="mx-auto h-[5px] w-[52px] rounded-full bg-[rgb(17_29_27_/_0.14)]" aria-hidden="true" />
 
-          <div className="br-bottom-sheet__header">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 id={resolvedTitleId}>{title}</h2>
-              {description ? <p>{description}</p> : null}
+              <h2 id={resolvedTitleId} className="text-xl font-bold leading-[1.1] text-[var(--text)]">{title}</h2>
+              {description ? <p id={resolvedDescriptionId} className="mt-1.5 text-sm leading-[1.5] text-[var(--text-muted)]">{description}</p> : null}
             </div>
             <IconButton
               type="button"
-              className="br-bottom-sheet__close"
+              className="shrink-0"
               aria-label={closeLabel}
               onClick={close}
             >
@@ -326,7 +401,7 @@ export function BottomSheet({
           </div>
         </div>
 
-        <div ref={bodyRef} className={cn("br-bottom-sheet__body", bodyClassName)}>
+        <div ref={bodyRef} className={cn("grid gap-2.5 overflow-auto pr-0.5", bodyClassName)}>
           {content}
         </div>
       </section>

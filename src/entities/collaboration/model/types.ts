@@ -3,6 +3,7 @@ import type { PublicRoom, PublicStayFilters } from "@/entities/room";
 import type { PublicUnavailableReason } from "@/shared/lib/public-page-visibility";
 
 export type AgentDashboardSummary = {
+  loadState: "ready" | "unavailable";
   activeCollaborations: number;
   incomingRequests: number;
   completedDeals: number;

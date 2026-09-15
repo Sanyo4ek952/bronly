@@ -1,6 +1,4 @@
-import Link from "next/link";
-
-import { Button, Input } from "@/shared/ui";
+import { Button, ButtonLink, InlineNotice, Input, Panel, SectionSubtitle, SectionTitle } from "@/shared/ui";
 
 import { getCollectionFeedbackMessage } from "./collection-feedback";
 
@@ -30,37 +28,47 @@ export function CollectionCreateSection({
   const message = getCollectionFeedbackMessage(success, error);
 
   return (
-    <section className="br-owner-stack">
+    <div className="grid gap-4">
       {pageNav}
 
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>{title}</h2>
-            <p>{description}</p>
-          </div>
+      <Panel className="grid gap-5" padding="lg">
+        <div className="grid gap-1.5">
+          <SectionTitle>{title}</SectionTitle>
+          <SectionSubtitle>{description}</SectionSubtitle>
         </div>
 
-        {message ? <div className="br-inline-notice">{message}</div> : null}
+        {message ? <InlineNotice>{message}</InlineNotice> : null}
 
-        <form action={action} className="br-owner-editor br-owner-editor--muted">
-          <div className="br-owner-editor__header">
-            <div>
+        <form action={action}>
+          <Panel className="grid gap-5" padding="lg" surface="subtle">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="grid gap-1">
               <strong>Новая коллекция</strong>
-              <p>Название можно сразу задать под конкретного гостя.</p>
+              <p className="text-sm leading-relaxed text-[var(--text-muted)]">Внутреннее название помогает найти коллекцию, а название для гостя показывается по публичной ссылке.</p>
             </div>
-            <Link href={backHref} className="br-button br-button--secondary">
+            <ButtonLink href={backHref} variant="secondary">
               К списку коллекций
-            </Link>
+            </ButtonLink>
           </div>
-          <div className="br-form-grid br-form-grid--single-action">
-            <Input id="collection-title" name="title" label="Название коллекции" placeholder={fieldPlaceholder} />
-            <div className="br-owner-actions br-owner-actions--end">
-              <Button type="submit">Создать коллекцию</Button>
-            </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Input id="collection-title" name="title" label="Название в кабинете" placeholder={fieldPlaceholder} maxLength={120} required />
+            <Input
+              id="collection-guest-label"
+              name="guestLabel"
+              label="Название для гостя"
+              placeholder="Например, Варианты для Анны"
+              description="Необязательно. Если оставить пустым, гость увидит название из кабинета."
+              maxLength={160}
+            />
           </div>
+
+          <div className="flex justify-end">
+            <Button type="submit">Создать коллекцию</Button>
+          </div>
+          </Panel>
         </form>
-      </section>
-    </section>
+      </Panel>
+    </div>
   );
 }

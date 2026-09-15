@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { ButtonLink, SectionHeader } from "@/shared/ui";
+import { ButtonLink, Panel } from "@/shared/ui";
 
 type OwnerDashboardActionSectionProps = {
   title: string;
@@ -30,17 +30,18 @@ export function OwnerDashboardActionSection({
   );
 
   return (
-    <section className="br-dashboard-block br-card br-owner-dashboard-action-section">
-      <SectionHeader
-        title={title}
-        description={description}
-        actions={actionPlacement === "header" ? actionButton : undefined}
-        className="br-dashboard-block__header mb-4"
-      />
+    <Panel className="grid gap-4 p-5 max-[640px]:p-4" surface="raised">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="grid gap-1.5">
+          <h2 className="text-xl font-semibold leading-[1.15] text-[var(--text)]">{title}</h2>
+          <p className="max-w-[52rem] text-sm leading-[1.55] text-[var(--text-muted)]">{description}</p>
+        </div>
+        {actionPlacement === "header" ? actionButton : null}
+      </div>
 
       {children}
 
-      {actionPlacement === "footer" ? <div className="br-owner-actions">{actionButton}</div> : null}
-    </section>
+      {actionPlacement === "footer" ? <div className="flex flex-wrap gap-2.5">{actionButton}</div> : null}
+    </Panel>
   );
 }

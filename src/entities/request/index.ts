@@ -2,10 +2,10 @@ export {
   createGuestRequest,
   getAgentRequests,
   getOwnerRequests,
-  getRequestRoom,
   requestAgentCompletion,
   transferAgentRequestToOwner,
   transitionOwnerRequestStatus,
 } from "@/entities/request/api/request-data";
-export { formatRequestStatus, guestRequests } from "@/entities/request/model/mock";
+export { mapGuestRequestFailureToPublicError } from "@/entities/request/model/request-result";
+export type { GuestRequestFailureReason, PublicRequestErrorCode } from "@/entities/request/model/request-result";
 export type { AgentRequestItem, GuestRequest, OwnerRequestItem } from "@/entities/request/model/types";

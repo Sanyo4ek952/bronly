@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 import type { PublicPropertySummary } from "@/entities/property";
-import { SectionSubtitle, SectionTitle } from "@/shared/ui";
+import { Panel, SectionSubtitle, SectionTitle } from "@/shared/ui";
 import { PublicRoomBrowser } from "@/widgets/public-room-browser";
 
 type PublicPropertySectionProps = {
@@ -20,20 +20,20 @@ function PropertyTitle({ as, children }: { as: "h2" | "h3"; children: string }) 
 
 function PublicPropertyGallery({ property }: { property: PublicPropertySummary }) {
   if (!property.photos.length) {
-    return <div className="br-public-property-gallery__empty" aria-hidden="true" />;
+    return <div className="min-h-[220px] rounded-[20px] bg-[linear-gradient(135deg,#b8dbe2_0%,#88bdd0_45%,#d6e3d5_78%,#cab69d_100%)]" aria-hidden="true" />;
   }
 
   return (
-    <div className="br-public-property-gallery" aria-label={`Галерея объекта ${property.shortTitle}`}>
+    <div className="grid auto-cols-[minmax(260px,76vw)] grid-flow-col gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]" aria-label={`Галерея объекта ${property.shortTitle}`}>
       {property.photos.map((photo, index) => (
-        <div key={photo.id} className="br-public-property-gallery__item">
+        <div key={photo.id} className="min-h-[220px] overflow-hidden rounded-[20px] bg-[var(--surface-subtle)]">
           <Image
             src={photo.url}
             alt={index === 0 ? property.title : `${property.title} — фото ${index + 1}`}
             width={1200}
             height={900}
             unoptimized
-            className="br-public-property-gallery__image"
+            className="h-full w-full object-cover"
           />
         </div>
       ))}
@@ -47,11 +47,11 @@ function PropertyChipList({ title, items }: { title: string; items: string[] }) 
   }
 
   return (
-    <section className="br-public-property-detail__section">
-      <h4>{title}</h4>
-      <div className="br-public-property-detail__chips">
+    <section className="grid gap-4">
+      <h4 className="text-lg font-extrabold leading-tight">{title}</h4>
+      <div className="flex flex-wrap gap-2.5">
         {items.map((item) => (
-          <span key={item} className="br-public-property-detail__chip">
+          <span key={item} className="inline-flex min-h-9 items-center rounded-full border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.88)] px-3 py-2 text-sm leading-snug">
             {item}
           </span>
         ))}
@@ -75,29 +75,29 @@ export function PublicPropertySection({
   const hasFullDescription = Boolean(property.fullDescription.trim());
 
   return (
-    <article className="br-public-property-section br-card br-card--raised">
-      <div className="br-dashboard-block__header">
-        <div className="br-section-copy">
+    <Panel as="article" className="grid gap-[18px] border-[rgb(var(--color-primary-rgb)_/_0.10)] shadow-[var(--shadow-md)]" surface="raised" padding="lg">
+      <div>
+        <div className="grid gap-1.5">
           <PropertyTitle as={titleAs}>{property.shortTitle}</PropertyTitle>
           <SectionSubtitle>{addressLine}</SectionSubtitle>
         </div>
       </div>
 
       {hasDetailedMode ? (
-        <div className="br-public-property-detail">
+        <div className="grid gap-4">
           <PublicPropertyGallery property={property} />
 
-          <div className="br-public-property-detail__content">
-            <div className="br-public-property-detail__intro">
-              <div className="br-public-property-detail__eyebrow">{property.propertyType}</div>
-              {hasShortDescription ? <p>{property.shortDescription}</p> : null}
-              {!hasShortDescription && hasFullDescription ? <p>{property.fullDescription}</p> : null}
+          <div className="grid gap-4 pt-1">
+            <div className="grid gap-4">
+              <div className="inline-flex min-h-8 w-fit items-center rounded-full bg-[rgb(var(--color-primary-rgb)_/_0.10)] px-3 text-xs font-bold text-[var(--color-primary-hover)]">{property.propertyType}</div>
+              {hasShortDescription ? <p className="text-sm leading-relaxed text-[var(--color-muted)]">{property.shortDescription}</p> : null}
+              {!hasShortDescription && hasFullDescription ? <p className="text-sm leading-relaxed text-[var(--color-muted)]">{property.fullDescription}</p> : null}
             </div>
 
             {hasShortDescription && hasFullDescription ? (
-              <section className="br-public-property-detail__section">
-                <h4>Описание объекта</h4>
-                <p>{property.fullDescription}</p>
+              <section className="grid gap-4">
+                <h4 className="text-lg font-extrabold leading-tight">Описание объекта</h4>
+                <p className="text-sm leading-relaxed text-[var(--color-muted)]">{property.fullDescription}</p>
               </section>
             ) : null}
 
@@ -117,10 +117,10 @@ export function PublicPropertySection({
           showFilter={showFilter}
         />
       ) : (
-        <div className="br-public-property-section__empty br-card br-card--subtle">
+        <Panel className="mt-4" surface="subtle" padding="md">
           {emptyRoomsText}
-        </div>
+        </Panel>
       )}
-    </article>
+    </Panel>
   );
 }

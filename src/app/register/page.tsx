@@ -3,9 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { signUpAction } from "@/app/auth/actions";
+import { getReferralRegistrationIntent } from "@/entities/referral";
 import { getCurrentAuthProfile, getPostLoginRedirect } from "@/shared/api/supabase";
 import { createSeoMetadata } from "@/shared/lib/seo";
-import { BrandLogo, SubmitButton } from "@/shared/ui";
+import { InlineNotice, Input, Select, SubmitButton } from "@/shared/ui";
+import { AuthShell } from "@/widgets/auth-shell";
 
 export const metadata: Metadata = createSeoMetadata({
   title: "Регистрация",
@@ -45,95 +47,60 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
   const error = typeof params.error === "string" ? params.error : "";
   const invite = typeof params.invite === "string" ? params.invite : "";
   const next = typeof params.next === "string" ? params.next : "";
-  const requestedRole =
+  const inviteIntent = invite ? await getReferralRegistrationIntent(invite) : null;
+  const requestedRoleFromQuery =
     typeof params.role === "string" && (params.role === "owner" || params.role === "agent")
       ? params.role
       : "owner";
+  const requestedRole = inviteIntent?.inviteeRole ?? requestedRoleFromQuery;
+  const invalidInvite = Boolean(invite && !inviteIntent);
 
   return (
-    <main className="br-auth-page">
-      <section className="br-auth-shell br-card">
-        <BrandLogo className="br-auth-shell__logo" />
-        <div className="br-auth-shell__grid">
-          <div className="br-auth-shell__intro">
-            <span className="br-chip">Старт для владельца или агента</span>
-            <h1 className="br-auth-shell__title">Создайте аккаунт</h1>
-            <p className="br-auth-shell__text">
-              Запустите свою витрину, добавьте объекты, номера и начните принимать заявки по персональной ссылке.
-            </p>
-          </div>
-
-          <div className="br-auth-panel">
+    <AuthShell
+      eyebrow="Старт для владельца или агента"
+      title="Создайте аккаунт"
+      description="Запустите свою витрину, добавьте объекты, номера и начните принимать заявки по персональной ссылке."
+      footer={<>Уже есть аккаунт? <Link href={buildLoginHref(invite, next)}>Войти</Link></>}
+    >
             {error ? (
-              <p className="br-card" style={{ marginBottom: 16 }}>
-                Не удалось создать аккаунт. Проверьте поля и попробуйте еще раз.
-              </p>
+              <InlineNotice tone="error">
+                {error === "invite"
+                  ? "Приглашение недоступно или уже использовано. Попросите отправить новую ссылку."
+                  : "Не удалось создать аккаунт. Проверьте поля и попробуйте еще раз."}
+              </InlineNotice>
             ) : null}
 
-            <form className="br-auth-form" action={signUpAction}>
+            <form className="grid gap-4" action={signUpAction}>
               <input type="hidden" name="invite" value={invite} />
               <input type="hidden" name="next" value={next} />
 
-              <div className="br-auth-form__field">
-                <label className="br-label" htmlFor="display-name">
-                  Имя
-                </label>
-                <input id="display-name" name="displayName" type="text" className="br-field" placeholder="Иван Иванов" required />
-              </div>
-              <div className="br-auth-form__field">
-                <label className="br-label" htmlFor="role">
-                  Роль
-                </label>
-                <select id="role" name="role" className="br-field" defaultValue={requestedRole}>
-                  <option value="owner">Владелец</option>
-                  <option value="agent">Агент</option>
-                </select>
-              </div>
-              <div className="br-auth-form__field">
-                <label className="br-label" htmlFor="register-email">
-                  Email
-                </label>
-                <input
-                  id="register-email"
-                  name="email"
-                  type="email"
-                  className="br-field"
-                  placeholder="name@example.com"
-                  required
-                />
-              </div>
-              <div className="br-auth-form__field">
-                <label className="br-label" htmlFor="phone">
-                  Телефон
-                </label>
-                <input id="phone" name="phone" type="tel" className="br-field" placeholder="+7 (900) 123-45-67" />
-              </div>
-              <div className="br-auth-form__field">
-                <label className="br-label" htmlFor="register-password">
-                  Пароль
-                </label>
-                <input
-                  id="register-password"
-                  name="password"
-                  type="password"
-                  className="br-field"
-                  placeholder="Минимум 8 символов"
-                  required
-                />
-              </div>
-              <label className="br-check">
-                <input name="acceptedTerms" type="checkbox" required />
-                <span>Я принимаю пользовательское соглашение и политику конфиденциальности.</span>
+              <Input id="display-name" name="displayName" type="text" label="Имя" placeholder="Иван Иванов" required />
+              {inviteIntent ? (
+                <>
+                  <input type="hidden" name="role" value={requestedRole} />
+                  <Input
+                    id="role"
+                    label="Роль по приглашению"
+                    value={requestedRole === "agent" ? "Агент" : "Владелец"}
+                    readOnly
+                    description="Роль зафиксирована персональным приглашением."
+                  />
+                </>
+              ) : (
+                <Select id="role" name="role" label="Роль" defaultValue={requestedRole}>
+                    <option value="owner">Владелец</option>
+                    <option value="agent">Агент</option>
+                </Select>
+              )}
+              <Input id="register-email" name="email" type="email" label="Email" placeholder="name@example.com" required />
+              <Input id="phone" name="phone" type="tel" label="Телефон" placeholder="+7 (900) 123-45-67" />
+              <Input id="register-password" name="password" type="password" label="Пароль" description="Минимум 8 символов." placeholder="Минимум 8 символов" minLength={8} required />
+              <label className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-subtle)] p-3.5 text-sm leading-[1.45] text-[var(--text-muted)]">
+                <input className="mt-0.5 size-[18px] shrink-0 accent-[var(--color-primary)]" name="acceptedTerms" type="checkbox" required />
+                <span>Я принимаю пользовательское соглашение и политику конфиденциальности</span>
               </label>
-              <SubmitButton fullWidth pendingLabel="Регистрация">Зарегистрироваться</SubmitButton>
+              <SubmitButton fullWidth pendingLabel="Регистрация" disabled={invalidInvite}>Зарегистрироваться</SubmitButton>
             </form>
-
-            <p className="br-auth-bottom">
-              Уже есть аккаунт? <Link href={buildLoginHref(invite, next)}>Войти</Link>
-            </p>
-          </div>
-        </div>
-      </section>
-    </main>
+    </AuthShell>
   );
 }

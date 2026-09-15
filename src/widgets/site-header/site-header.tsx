@@ -4,7 +4,7 @@ import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-import { AppIcon, BottomSheet, BrandLogo, IconButton } from "@/shared/ui";
+import { AppIcon, BottomSheet, BrandLogo, ButtonLink, IconButton } from "@/shared/ui";
 
 const navItems = [
   { href: "#capabilities", label: "Возможности" },
@@ -17,32 +17,32 @@ export function SiteHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <header className="br-header">
+    <header className="flex items-center justify-between gap-6 py-5 max-[640px]:py-4">
       <BrandLogo />
 
-      <nav className="br-nav" aria-label="Основная навигация">
+      <nav className="flex items-center gap-5 text-sm font-semibold text-[var(--color-text)] max-[900px]:hidden" aria-label="Основная навигация">
         {navItems.map((item) => (
-          <a key={item.href} href={item.href}>
+          <a key={item.href} href={item.href} className="transition-colors hover:text-[var(--color-primary)]">
             {item.label}
           </a>
         ))}
       </nav>
 
-      <div className="br-header__actions">
-        <Link href="/login" className="br-login-link">
+      <div className="flex items-center gap-3.5 max-[900px]:hidden">
+        <Link href="/login" className="text-sm font-semibold text-[var(--color-text)] transition-colors hover:text-[var(--color-primary)]">
           Войти
         </Link>
-        <Link href="/register" className="br-button br-button--primary">
+        <ButtonLink href="/register">
           Попробовать бесплатно
-        </Link>
+        </ButtonLink>
       </div>
 
       <IconButton
         type="button"
-        className="br-header__menu-toggle"
+        className="hidden shrink-0 max-[900px]:grid"
         aria-label="Открыть меню"
         aria-expanded={isMobileMenuOpen}
-        aria-controls="br-site-mobile-menu"
+        aria-controls="site-mobile-menu"
         onClick={() => setIsMobileMenuOpen(true)}
       >
         <AppIcon icon={Menu} aria-hidden="true" />
@@ -51,21 +51,21 @@ export function SiteHeader() {
       <BottomSheet
         open={isMobileMenuOpen}
         onOpenChange={setIsMobileMenuOpen}
-        dialogId="br-site-mobile-menu"
-        titleId="br-site-mobile-menu-title"
+        dialogId="site-mobile-menu"
+        titleId="site-mobile-menu-title"
         title="Меню"
         description="Быстрый доступ к разделам и входу в Bronly."
         closeLabel="Закрыть меню"
-        className="br-header-mobile-sheet"
+        className="gap-[18px]"
       >
         {({ close }) => (
           <>
-            <nav className="br-header-mobile-sheet__nav" aria-label="Основная навигация">
+            <nav className="grid gap-2.5" aria-label="Основная навигация">
               {navItems.map((item) => (
                 <a
                   key={item.href}
                   href={item.href}
-                  className="br-header-mobile-sheet__link"
+                  className="inline-flex min-h-[52px] items-center rounded-2xl px-3.5 text-[15px] font-semibold text-[var(--color-text)] transition-colors hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary-hover)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]"
                   onClick={close}
                 >
                   {item.label}
@@ -73,13 +73,17 @@ export function SiteHeader() {
               ))}
             </nav>
 
-            <div className="br-header-mobile-sheet__actions">
-              <Link href="/login" className="br-button br-button--secondary br-button--full" onClick={close}>
+            <div className="grid gap-2.5">
+              <Link
+                href="/login"
+                className="inline-flex min-h-10 w-full items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-4 text-[13px] font-bold transition hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.24)] hover:bg-[var(--color-primary-pale)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]"
+                onClick={close}
+              >
                 Войти
               </Link>
               <Link
                 href="/register"
-                className="br-button br-button--primary br-button--full"
+                className="inline-flex min-h-10 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--accent)] px-4 text-[13px] font-bold text-white transition hover:-translate-y-px hover:bg-[var(--accent-strong)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]"
                 onClick={close}
               >
                 Попробовать бесплатно

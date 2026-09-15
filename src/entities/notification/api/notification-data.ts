@@ -1,10 +1,12 @@
 import { createSupabaseAdminClient } from "@/shared/api/supabase/server";
+import { logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 import { createSupabaseServerClient, getCurrentAuthProfile } from "@/shared/api/supabase/server-auth";
 import type { SupabaseNotificationRow } from "@/shared/api/supabase/types";
 import { formatDateTimeLabel } from "@/shared/lib/date";
 
 import type { NotificationEventType, NotificationListItem, NotificationPayload } from "@/entities/notification/model/types";
 import { fanOutNotificationDeliveries } from "@/entities/notification/api/notification-delivery";
+import { getNotificationDestinationPath } from "@/entities/notification/model/notification-rules";
 
 function formatSubscriptionStatusLabel(status?: NotificationPayload["subscriptionStatus"]) {
   switch (status) {
@@ -115,7 +117,7 @@ function mapNotificationItem(row: SupabaseNotificationRow): NotificationListItem
     createdAtLabel: formatDateTimeLabel(row.created_at),
     isRead: Boolean(row.read_at),
     readAt: row.read_at,
-    linkPath: payload.linkPath ?? null,
+    linkPath: getNotificationDestinationPath(row.event_type, payload.roleContext, payload.linkPath),
     linkLabel: copy.linkLabel,
   };
 }
@@ -123,6 +125,7 @@ function mapNotificationItem(row: SupabaseNotificationRow): NotificationListItem
 export async function createInAppNotification(input: {
   recipientId: string;
   eventType: NotificationEventType;
+  idempotencyKey: string;
   payload?: NotificationPayload;
 }) {
   return createNotificationEvent(input);
@@ -131,30 +134,45 @@ export async function createInAppNotification(input: {
 export async function createNotificationEvent(input: {
   recipientId: string;
   eventType: NotificationEventType;
+  idempotencyKey: string;
   payload?: NotificationPayload;
 }) {
-  const admin = createSupabaseAdminClient();
-  const payload = input.payload ?? {};
-  const { data, error } = await admin
-    .from("notifications")
-    .insert({
-      recipient_id: input.recipientId,
-      channel: "in_app",
-      event_type: input.eventType,
-      payload,
-    })
-    .select("*")
-    .single();
-
-  if (error) {
-    return { ok: false as const, reason: "save_failed" as const };
-  }
-
-  const notification = data as SupabaseNotificationRow;
-  const copy = getNotificationCopy(notification.event_type, notification.payload ?? {});
-
   try {
-    await fanOutNotificationDeliveries({
+    const admin = createSupabaseAdminClient();
+    const payload: NotificationPayload = {
+      ...(input.payload ?? {}),
+      linkPath: getNotificationDestinationPath(input.eventType, input.payload?.roleContext),
+    };
+    const { data, error } = await admin
+      .from("notifications")
+      .upsert(
+        {
+          recipient_id: input.recipientId,
+          channel: "in_app",
+          event_type: input.eventType,
+          idempotency_key: input.idempotencyKey,
+          payload,
+        },
+        {
+          onConflict: "recipient_id,event_type,idempotency_key",
+          ignoreDuplicates: true,
+        },
+      )
+      .select("*")
+      .maybeSingle();
+
+    if (error) {
+      logServerDataError("in_app_notification_save_failed", error, { eventType: input.eventType });
+      return { ok: false as const, reason: "save_failed" as const };
+    }
+
+    if (!data) {
+      return { ok: true as const, deduplicated: true as const };
+    }
+
+    const notification = data as SupabaseNotificationRow;
+    const copy = getNotificationCopy(notification.event_type, notification.payload ?? {});
+    const deliveryResults = await fanOutNotificationDeliveries({
       notification: {
         id: notification.id,
         recipient_id: notification.recipient_id,
@@ -163,11 +181,22 @@ export async function createNotificationEvent(input: {
       },
       copy,
     });
-  } catch {
-    // In-app notification remains the source of truth even if push delivery is not ready.
-  }
 
-  return { ok: true as const };
+    for (const result of deliveryResults) {
+      if (result.status === "rejected") {
+        logServerDataError("notification_delivery_channel_failed", result.reason, {
+          eventType: notification.event_type,
+          channel: result.channel,
+          notificationId: notification.id,
+        });
+      }
+    }
+
+    return { ok: true as const, deduplicated: false as const };
+  } catch (error) {
+    logServerDataError("notification_pipeline_failed", error, { eventType: input.eventType });
+    return { ok: false as const, reason: "save_failed" as const };
+  }
 }
 
 export async function getUnreadNotificationCount() {
@@ -178,10 +207,14 @@ export async function getUnreadNotificationCount() {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { count } = await supabase
+  const { count, error } = await supabase
     .from("notifications")
     .select("*", { count: "exact", head: true })
     .is("read_at", null);
+
+  if (error) {
+    throw error;
+  }
 
   return count ?? 0;
 }
@@ -194,11 +227,15 @@ export async function getMyNotifications(): Promise<NotificationListItem[]> {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("notifications")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(50);
+
+  if (error) {
+    throw error;
+  }
 
   const rows = ((data ?? []) as SupabaseNotificationRow[]).sort((left, right) => {
     if (left.read_at && !right.read_at) {
@@ -231,6 +268,7 @@ export async function markNotificationRead(notificationId: string) {
     .is("read_at", null);
 
   if (error) {
+    logServerDataError("notification_mark_read_failed", error);
     return { ok: false as const, reason: "save_failed" as const };
   }
 
@@ -252,6 +290,7 @@ export async function markAllNotificationsRead() {
     .is("read_at", null);
 
   if (error) {
+    logServerDataError("notifications_mark_all_read_failed", error);
     return { ok: false as const, reason: "save_failed" as const };
   }
 

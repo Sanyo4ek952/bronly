@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { getPublicCollectionPageData, recordPublicCollectionOpen } from "@/entities/collection";
+import { getPublicCollectionPageData } from "@/entities/collection";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import {
   createSeoMetadata,
@@ -11,9 +11,11 @@ import {
   toTelegramHref,
   toWhatsAppHref,
 } from "@/shared/lib";
-import { ButtonLink } from "@/shared/ui";
+import { ButtonLink, InlineNotice, Panel, StatusPill } from "@/shared/ui";
 import { PublicBrandSlot, PublicHero, PublicPageHeader, PublicUnavailableState } from "@/widgets/public-page";
-import { PublicRoomBrowser } from "@/widgets/public-room-browser";
+import { PublicRoomBrowser, PublicStayFilter } from "@/widgets/public-room-browser";
+
+import { CollectionOpenTracker } from "./collection-open-tracker";
 
 type PublicCollectionPageProps = {
   params: Promise<{ slug: string }>;
@@ -30,20 +32,18 @@ function formatCollectionStaySummary(filters: {
   const guestsLabel = `${filters.adults} ${filters.adults === 1 ? "гость" : filters.adults < 5 ? "гостя" : "гостей"}`;
   const roomsLabel = `${filters.rooms} ${filters.rooms === 1 ? "комната" : filters.rooms < 5 ? "комнаты" : "комнат"}`;
 
-  if (!filters.hasDates) {
-    return `${guestsLabel} • ${roomsLabel}`;
-  }
-
-  return `${filters.checkIn} - ${filters.checkOut} • ${guestsLabel} • ${roomsLabel}`;
+  return filters.hasDates
+    ? `${filters.checkIn} — ${filters.checkOut} • ${guestsLabel} • ${roomsLabel}`
+    : `${guestsLabel} • ${roomsLabel}`;
 }
 
 export async function generateMetadata({ params }: PublicCollectionPageProps): Promise<Metadata> {
   const { slug } = await params;
   const pageData = await getPublicCollectionPageData(slug);
-  const title = pageData?.collection?.title ? `${pageData.collection.title} — подборка вариантов` : "Подборка вариантов проживания";
+  const publicTitle = pageData?.collection?.guestLabel || pageData?.collection?.title;
 
   return createSeoMetadata({
-    title,
+    title: publicTitle ? `${publicTitle} — подборка вариантов` : "Подборка вариантов проживания",
     description: "Персональная подборка объектов и номеров по прямой ссылке. Страница доступна для просмотра, но не индексируется в поиске.",
     path: `/c/${encodeURIComponent(slug)}`,
     index: false,
@@ -65,28 +65,42 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
 
   if (pageData.publicUnavailableReason || !pageData.collection || !pageData.contact) {
     const unavailable = getPublicUnavailableContent("collection", pageData.publicUnavailableReason);
-
     return <PublicUnavailableState title={unavailable.title} description={unavailable.description} />;
   }
 
-  await recordPublicCollectionOpen(slug);
-
   const { collection, contact, sections, standaloneRooms, filters, publicWarningText } = pageData;
-  const heroPhoto = sections[0]?.property.photos[0];
+  const heroPhoto = sections[0]?.property.photos[0] ?? standaloneRooms[0]?.room.photos[0];
   const staySummary = formatCollectionStaySummary(filters);
-  const firstRequestHref = sections[0]
-    ? `/c/${collection.slug}/request?propertySlug=${encodeURIComponent(sections[0].property.slug)}`
-    : standaloneRooms[0]
-      ? `/c/${collection.slug}/request?roomId=${encodeURIComponent(standaloneRooms[0].room.id)}`
-      : `/c/${collection.slug}`;
+  const publicTitle = collection.guestLabel || collection.title;
+  const defaultSection = sections.find((section) => section.rooms.some((room) => room.isAvailableForFilter)) ?? sections[0];
+  const defaultRoom = defaultSection?.rooms.find((room) => room.isAvailableForFilter)
+    ?? defaultSection?.rooms[0]
+    ?? standaloneRooms.find((item) => item.room.isAvailableForFilter)?.room
+    ?? standaloneRooms[0]?.room
+    ?? null;
+  const requestParams = defaultRoom ? new URLSearchParams({ roomId: defaultRoom.id }) : null;
+
+  if (requestParams && defaultSection?.rooms.some((room) => room.id === defaultRoom?.id)) {
+    requestParams.set("propertySlug", defaultSection.property.slug);
+  }
+  if (requestParams && filters.hasDates) {
+    requestParams.set("checkIn", filters.checkIn);
+    requestParams.set("checkOut", filters.checkOut);
+  }
+  if (requestParams) {
+    requestParams.set("adults", String(filters.adults));
+    requestParams.set("rooms", String(filters.rooms));
+  }
+  const firstRequestHref = requestParams ? `/c/${collection.slug}/request?${requestParams.toString()}` : null;
 
   return (
-    <main className="br-page">
-      <div className="br-container">
+    <main className="min-h-screen bg-[var(--color-page)] pb-[var(--safe-area-bottom)]">
+      <CollectionOpenTracker slug={collection.slug} />
+      <div className="mx-auto w-[calc(100%-40px)] max-w-[1440px] py-5 sm:py-7">
         <PublicPageHeader
-          actions={<ButtonLink href={firstRequestHref}>Перейти к заявке</ButtonLink>}
+          actions={firstRequestHref ? <ButtonLink href={firstRequestHref}>Оставить заявку</ButtonLink> : null}
           navigation={
-            <nav className="br-nav" aria-label="Навигация коллекции">
+            <nav className="flex w-full flex-wrap items-center justify-start gap-2.5 text-sm font-semibold [&_a]:inline-flex [&_a]:min-h-[38px] [&_a]:items-center [&_a]:rounded-full [&_a]:border [&_a]:border-[var(--color-border)] [&_a]:bg-[rgb(255_255_255_/_0.86)] [&_a]:px-[14px] [&_a]:font-bold [&_a]:transition [&_a]:hover:-translate-y-px [&_a]:hover:border-[rgb(var(--color-primary-rgb)_/_0.28)] [&_a]:hover:bg-[var(--color-primary-pale)] [&_a]:focus-visible:outline-none [&_a]:focus-visible:ring-4 [&_a]:focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)] max-[640px]:[&_a]:w-full max-[640px]:[&_a]:justify-center" aria-label="Навигация коллекции">
               <a href="#collection-rooms">Варианты</a>
               <a href="#collection-contact">Контакты</a>
               <a href="#collection-request-flow">Как работает заявка</a>
@@ -98,140 +112,61 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
 
         <PublicHero
           imageUrl={heroPhoto?.url}
-          imageAlt={collection.title}
-          eyebrow="Персональная подборка"
-          title={collection.title}
-          description={collection.guestLabel || "Подборка вариантов по прямой ссылке для конкретного гостя."}
+          imageAlt={publicTitle}
+          eyebrow={collection.creatorRole === "agent" ? "Подборка агента" : "Подборка владельца"}
+          title={publicTitle}
+          description="Персональная подборка по прямой ссылке. Здесь нет общего каталога или рекомендаций за пределами выбранных вариантов."
           summary={
-            <>
-              <p className="br-collection-public-copy">
-                Эта подборка показывает только выбранные варианты. Перед отправкой заявки нужно выбрать конкретный номер.
-              </p>
-              <div className="br-public-collection-summary">
-                <div className="br-public-collection-summary__item">
-                  <span>Подборка</span>
-                  <strong>{collection.title}</strong>
-                </div>
-                <div className="br-public-collection-summary__item">
-                  <span>{filters.hasDates ? "Даты, гости и комнаты" : "Текущие параметры"}</span>
-                  <strong>{staySummary}</strong>
-                </div>
-              </div>
-            </>
-          }
-          notice={
-            <div className="br-inline-notice br-inline-notice--soft br-public-collection-notice">
-              Заявка отправляется по конкретному номеру. Даже если в подборку добавлен объект целиком, перед заявкой всё равно нужно выбрать номер.
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Panel as="div" className="grid gap-1" padding="md" surface="subtle">
+                <span className="text-xs text-[var(--text-muted)]">Подборка</span>
+                <strong>{publicTitle}</strong>
+              </Panel>
+              <Panel as="div" className="grid gap-1" padding="md" surface="subtle">
+                <span className="text-xs text-[var(--text-muted)]">{filters.hasDates ? "Даты, гости и комнаты" : "Текущие параметры"}</span>
+                <strong>{staySummary}</strong>
+              </Panel>
             </div>
           }
+          notice={<InlineNotice tone="soft">Даже если объект добавлен целиком, заявка отправляется только по выбранному конкретному номеру.</InlineNotice>}
           actions={
             <>
-              <div id="collection-contact" className="br-public-contact-chips">
-                {contact.phone ? (
-                  <a href={toPhoneHref(contact.phone)} className="br-public-contact-chip">
-                    {contact.phone}
-                  </a>
-                ) : null}
-                {contact.whatsapp ? (
-                  <a href={toWhatsAppHref(contact.whatsapp)} className="br-public-contact-chip" target="_blank" rel="noreferrer">
-                    WhatsApp
-                  </a>
-                ) : null}
-                {contact.telegram ? (
-                  <a href={toTelegramHref(contact.telegram)} className="br-public-contact-chip" target="_blank" rel="noreferrer">
-                    Telegram
-                  </a>
-                ) : null}
+              <div id="collection-contact" className="flex flex-wrap gap-2.5">
+                {contact.phone ? <ContactLink href={toPhoneHref(contact.phone)}>{contact.phone}</ContactLink> : null}
+                {contact.whatsapp ? <ContactLink href={toWhatsAppHref(contact.whatsapp)} external>WhatsApp</ContactLink> : null}
+                {contact.telegram ? <ContactLink href={toTelegramHref(contact.telegram)} external>Telegram</ContactLink> : null}
               </div>
-              <ButtonLink href={firstRequestHref}>Перейти к заявке</ButtonLink>
+              {firstRequestHref ? <ButtonLink href={firstRequestHref}>Оставить заявку на номер</ButtonLink> : null}
             </>
           }
         />
 
-        {publicWarningText ? (
-          <div className="br-inline-notice" style={{ marginTop: 18 }}>
-            {publicWarningText}
-          </div>
-        ) : null}
+        {publicWarningText ? <InlineNotice className="mt-[18px]" tone="warning">{publicWarningText}</InlineNotice> : null}
 
-        <section id="collection-rooms" className="br-section br-section--public">
-          <div className="br-section-heading">
-            <h2>Варианты в этой подборке</h2>
-            <p>Здесь показаны только выбранные варианты по этой ссылке. Заявка всегда отправляется на конкретный номер, а не на объект целиком.</p>
+        <section id="collection-rooms" className="grid gap-6 py-9 sm:py-12">
+          <div className="grid gap-3">
+            <h2 className="text-[clamp(1.7rem,2.6vw,2.5rem)] font-extrabold leading-tight">Варианты в этой подборке</h2>
+            <p className="max-w-3xl text-sm leading-relaxed text-[var(--color-muted)]">Показаны только выбранные объекты и номера. Цены рассчитаны из актуальных базовых, сезонных и, для агентской подборки, агентских условий.</p>
           </div>
 
-          <form className="br-public-filter br-card" method="get">
-            <label className="br-form-field">
-              <span className="br-label">Заезд</span>
-              <input id="collection-check-in" name="checkIn" type="date" className="br-field" defaultValue={filters.checkIn} />
-            </label>
-            <label className="br-form-field">
-              <span className="br-label">Выезд</span>
-              <input id="collection-check-out" name="checkOut" type="date" className="br-field" defaultValue={filters.checkOut} />
-            </label>
-            <label className="br-form-field">
-              <span className="br-label">Гости</span>
-              <select id="collection-adults" name="adults" className="br-field" defaultValue={String(filters.adults)}>
-                {Array.from({ length: 8 }, (_, index) => {
-                  const value = String(index + 1);
-                  return (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  );
-                })}
-              </select>
-            </label>
-            <label className="br-form-field">
-              <span className="br-label">Комнаты</span>
-              <select id="collection-rooms-filter" name="rooms" className="br-field" defaultValue={String(filters.rooms)}>
-                {Array.from({ length: 5 }, (_, index) => {
-                  const value = String(index + 1);
-                  return (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  );
-                })}
-              </select>
-            </label>
-            <div className="br-public-filter__actions">
-              <button type="submit" className="br-button br-button--primary br-button--full">
-                Уточнить доступность
-              </button>
-              <ButtonLink href={`/c/${collection.slug}`} variant="secondary" fullWidth>
-                Сбросить
-              </ButtonLink>
-            </div>
-          </form>
-
-          {filters.hasDates ? (
-            <div className="br-inline-notice" style={{ marginTop: 18 }}>
-              Показана доступность с {filters.checkIn} по {filters.checkOut}. Итоговая сумма считается по ночам.
-            </div>
-          ) : null}
+          <PublicStayFilter publicBaseHref={`/c/${collection.slug}`} filters={filters} resetHref={`/c/${collection.slug}`} />
 
           {sections.length || standaloneRooms.length ? (
-            <div className="br-owner-stack" style={{ marginTop: 24 }}>
+            <div className="grid gap-6">
               {sections.map((section) => (
-                <article key={section.property.id} className="br-card br-collection-public-section br-card--raised">
-                  <div className="br-dashboard-block__header">
-                    <div>
-                      <h3>{section.property.shortTitle}</h3>
-                      <p>
-                        {section.property.city}, {section.property.address}
-                      </p>
+                <Panel key={section.property.id} as="article" className="grid gap-[18px] border-[rgb(var(--color-primary-rgb)_/_0.10)] shadow-[var(--shadow-md)]" padding="lg" surface="raised">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="grid gap-1">
+                      <h3 className="text-[clamp(1.3rem,2vw,1.75rem)] font-extrabold">{section.property.shortTitle}</h3>
+                      <p className="text-sm text-[var(--color-muted)]">{section.property.city}, {section.property.address}</p>
                     </div>
-                    <span className="br-collection-public-badge">
-                      {section.sourceKinds.includes("property") ? "Объект в подборке" : "Номер в подборке"}
-                    </span>
+                    <StatusPill variant="neutral">{section.sourceKinds.includes("property") ? "Объект в подборке" : "Номер в подборке"}</StatusPill>
                   </div>
-                  <p className="br-collection-public-section__hint">
+                  <p className="text-sm leading-relaxed text-[var(--color-muted)]">
                     {section.sourceKinds.includes("property")
-                      ? "Объект добавлен в подборку целиком, но перед заявкой гость всё равно выбирает конкретный номер."
-                      : "В этом блоке подборки заявка отправляется только по конкретному номеру."}
+                      ? "Объект добавлен целиком: выберите один из его активных номеров перед заявкой."
+                      : "В этом блоке заявка отправляется только по конкретному номеру."}
                   </p>
-
                   <PublicRoomBrowser
                     publicBaseHref={`/c/${collection.slug}`}
                     propertySlug={section.property.slug}
@@ -240,24 +175,22 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
                     showFilter={false}
                     showStickyCta
                     selectedRoomTitle="Выбранный номер из подборки"
-                    selectedRoomDescription="Эта заявка будет создана на конкретный номер из персональной подборки."
-                    selectionHint="Сначала выберите номер из подборки, затем переходите к заявке по нему."
+                    selectedRoomDescription="Заявка будет создана на этот конкретный номер."
+                    selectionHint="Сначала выберите номер из подборки, затем переходите к заявке."
                     cardActionLabel="Перейти к заявке по номеру"
                   />
-                </article>
+                </Panel>
               ))}
 
               {standaloneRooms.length ? (
-                <article className="br-card br-collection-public-section br-card--raised">
-                  <div className="br-dashboard-block__header">
-                    <div>
-                      <h3>Отдельные номера в подборке</h3>
-                      <p>Самостоятельные варианты размещения без привязки к объекту.</p>
+                <Panel as="article" className="grid gap-[18px] border-[rgb(var(--color-primary-rgb)_/_0.10)] shadow-[var(--shadow-md)]" padding="lg" surface="raised">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="grid gap-1">
+                      <h3 className="text-[clamp(1.3rem,2vw,1.75rem)] font-extrabold">Отдельные номера в подборке</h3>
+                      <p className="text-sm text-[var(--color-muted)]">Самостоятельные варианты размещения без привязки к объекту.</p>
                     </div>
-                    <span className="br-collection-public-badge">Номера в подборке</span>
+                    <StatusPill variant="neutral">Номера в подборке</StatusPill>
                   </div>
-                  <p className="br-collection-public-section__hint">Для каждого варианта заявка отправляется только по конкретному номеру.</p>
-
                   <PublicRoomBrowser
                     publicBaseHref={`/c/${collection.slug}`}
                     rooms={standaloneRooms.map((item) => item.room)}
@@ -265,37 +198,50 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
                     showFilter={false}
                     showStickyCta
                     selectedRoomTitle="Выбранный номер из подборки"
-                    selectedRoomDescription="Эта заявка будет создана на конкретный номер из персональной подборки."
-                    selectionHint="Выберите номер из подборки и переходите к заявке только по нему."
+                    selectedRoomDescription="Заявка будет создана на этот конкретный номер."
+                    selectionHint="Выберите номер и переходите к заявке только по нему."
                     cardActionLabel="Перейти к заявке по номеру"
                   />
-                </article>
+                </Panel>
               ) : null}
             </div>
           ) : (
-            <section className="br-dashboard-block br-card" style={{ marginTop: 24 }}>
-              <div className="br-dashboard-block__header">
-                <div>
-                  <h3>В этой подборке пока нет доступных номеров</h3>
-                  <p>Попробуйте открыть ссылку позже или уточните даты.</p>
-                </div>
-              </div>
-            </section>
+            <Panel as="section" padding="lg" surface="subtle">
+              <h3 className="text-xl font-extrabold">В этой подборке пока нет доступных номеров</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">Свяжитесь с автором подборки или откройте ссылку позже.</p>
+            </Panel>
           )}
         </section>
 
-        <section id="collection-request-flow" className="br-public-request-flow br-card">
-          <div className="br-section-heading">
-            <h2>Как работает заявка</h2>
-            <p>Подборка помогает выбрать вариант, но Bronly не подтверждает проживание от имени сервиса.</p>
+        <Panel id="collection-request-flow" as="section" className="mb-10 grid gap-[18px] border-[rgb(var(--color-primary-rgb)_/_0.10)] shadow-[var(--shadow-md)]" padding="lg" surface="raised">
+          <div className="grid gap-3">
+            <h2 className="text-[clamp(1.4rem,2vw,1.9rem)] font-extrabold leading-tight">Как работает заявка</h2>
+            <p className="text-sm leading-relaxed text-[var(--color-muted)]">Bronly не подтверждает проживание от имени сервиса.</p>
           </div>
-          <ol className="br-public-request-flow__list">
+          <ol className="grid list-decimal gap-3 pl-6 marker:font-extrabold marker:text-[var(--color-primary-hover)]">
             <li>Уточните даты, гостей и количество комнат.</li>
             <li>Выберите конкретный номер из этой подборки.</li>
-            <li>Отправьте заявку по выбранному номеру, и с вами свяжутся для уточнения доступности.</li>
+            <li>Отправьте заявку, и с вами свяжутся для уточнения доступности.</li>
           </ol>
-        </section>
+        </Panel>
       </div>
     </main>
+  );
+}
+
+function ContactLink({ href, external = false, children }: { href?: string; external?: boolean; children: React.ReactNode }) {
+  if (!href) {
+    return null;
+  }
+
+  return (
+    <a
+      className="inline-flex min-h-[38px] items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.90)] px-[14px] text-sm font-bold transition hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.28)] hover:bg-[var(--color-primary-pale)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]"
+      href={href}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noreferrer" : undefined}
+    >
+      {children}
+    </a>
   );
 }

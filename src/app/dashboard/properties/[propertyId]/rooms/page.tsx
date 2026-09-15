@@ -89,7 +89,7 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
         actions={<ButtonLink href={`/dashboard/properties/${property.id}/rooms/new`}>Добавить номер</ButtonLink>}
         notice={
           <>
-            {notice ? <InlineNotice>{notice}</InlineNotice> : null}
+            {notice ? <InlineNotice tone={error ? "error" : "default"}>{notice}</InlineNotice> : null}
             {subscription && roomUsageLabel ? (
               <InlineNotice tone="soft">
                 Подписка: {roomUsageLabel}

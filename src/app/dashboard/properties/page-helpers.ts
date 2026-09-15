@@ -167,7 +167,3 @@ export function getCalendarNotice(error: string, success: string) {
       return "";
   }
 }
-
-export function formatMoney(value: number) {
-  return `${value.toLocaleString("ru-RU")} ₽`;
-}

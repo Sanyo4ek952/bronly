@@ -9,13 +9,14 @@ import type {
   PublicPropertySection,
   PublicPropertySummary,
 } from "@/entities/property/model/types";
-import { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
+import { mapBusyRange, mapSeasonalPrice, normalizeRoomKind } from "@/entities/room/model/mappers";
 import { buildPublicRoomQuote, normalizePublicStayFilters, type PublicStayFilters } from "@/entities/room";
 import { rooms as mockRooms } from "@/entities/room/model/mock";
 import type { OwnerBusyRange, OwnerSeasonalPrice, PublicRoom, RoomPhoto } from "@/entities/room/model/types";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
-import { getDemoPropertySlug } from "@/shared/api/supabase/env";
+import { getDemoPropertySlug, isDemoModeEnabled } from "@/shared/api/supabase/env";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
+import { logServerConfigurationError, logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 import type { PublicUnavailableReason } from "@/shared/lib/public-page-visibility";
 import type {
   SupabasePropertyPhotoRow,
@@ -35,6 +36,12 @@ type PublicOwnerRow = {
   telegram: string | null;
   is_public_hidden_by_admin: boolean;
 };
+
+type MaybePublicOwnerRow = Omit<PublicOwnerRow, "slug"> & { slug: string | null };
+
+function isPublicOwnerRow(row: MaybePublicOwnerRow | null): row is PublicOwnerRow {
+  return Boolean(row?.slug);
+}
 
 type OwnerPublicSlugResolution = {
   ownerSlug: string;
@@ -96,7 +103,7 @@ function mapRoomRow(
   return {
     id: room.id,
     ownerId: room.owner_id,
-    kind: room.room_kind,
+    kind: normalizeRoomKind(room.room_kind),
     title: room.title,
     subtitle: room.subtitle ?? "",
     propertySlug: null,
@@ -163,6 +170,7 @@ function toPublicFallbackData(filters: PublicStayFilters): PublicPropertyPageDat
           houseRules: mockProperty.houseRules,
         },
         rooms: mockRooms
+          .filter((room) => room.status === "active")
           .map((room) =>
             buildPublicRoomQuote(
               {
@@ -214,40 +222,62 @@ export const resolveOwnerPublicSlug = cache(async (slug: string): Promise<OwnerP
   const normalizedSlug = normalizePublicSlug(slug);
 
   if (!canUseSupabase()) {
-    return normalizedSlug === getDemoPropertySlug()
-      ? {
-          ownerSlug: normalizedSlug,
-          matchedPropertySlug: null,
-          shouldRedirect: false,
-        }
-      : null;
+    if (isDemoModeEnabled() && normalizedSlug !== getDemoPropertySlug()) {
+      return null;
+    }
+
+    return {
+      ownerSlug: normalizedSlug,
+      matchedPropertySlug: null,
+      shouldRedirect: false,
+    };
   }
 
   try {
     const supabase = createSupabaseAdminClient();
-    const { data: ownerData } = await supabase.from("profiles").select("slug").eq("slug", normalizedSlug).maybeSingle();
+    const { data: ownerData, error: ownerError } = await supabase
+      .from("profiles")
+      .select("slug")
+      .eq("slug", normalizedSlug)
+      .maybeSingle();
+
+    if (ownerError) {
+      throw ownerError;
+    }
 
     if (ownerData?.slug) {
       return {
-        ownerSlug: ownerData.slug as string,
+        ownerSlug: ownerData.slug,
         matchedPropertySlug: null,
         shouldRedirect: ownerData.slug !== normalizedSlug,
       };
     }
 
-    const { data: propertyData } = await supabase
+    const { data: propertyData, error: propertyError } = await supabase
       .from("properties")
       .select("slug, owner_id")
       .eq("slug", normalizedSlug)
       .maybeSingle();
+
+    if (propertyError) {
+      throw propertyError;
+    }
     const propertyRow = (propertyData ?? null) as Pick<SupabasePropertyRow, "slug" | "owner_id"> | null;
 
     if (!propertyRow) {
       return null;
     }
 
-    const { data: profileData } = await supabase.from("profiles").select("slug").eq("id", propertyRow.owner_id).maybeSingle();
-    const ownerSlug = (profileData?.slug as string | undefined) ?? "";
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("slug")
+      .eq("id", propertyRow.owner_id)
+      .maybeSingle();
+
+    if (profileError) {
+      throw profileError;
+    }
+    const ownerSlug = profileData?.slug ?? "";
 
     if (!ownerSlug) {
       return null;
@@ -258,8 +288,13 @@ export const resolveOwnerPublicSlug = cache(async (slug: string): Promise<OwnerP
       matchedPropertySlug: propertyRow.slug,
       shouldRedirect: ownerSlug !== normalizedSlug,
     };
-  } catch {
-    return null;
+  } catch (error) {
+    logServerDataError("owner_public_slug_resolution_failed", error);
+    return {
+      ownerSlug: normalizedSlug,
+      matchedPropertySlug: null,
+      shouldRedirect: false,
+    };
   }
 });
 
@@ -277,20 +312,29 @@ export const getPublicPropertyPageData = cache(
     const filters = normalizePublicStayFilters(filterInput);
 
     if (!canUseSupabase()) {
-      return normalizedSlug === getDemoPropertySlug() ? toPublicFallbackData(filters) : null;
+      if (isDemoModeEnabled()) {
+        return normalizedSlug === getDemoPropertySlug() ? toPublicFallbackData(filters) : null;
+      }
+
+      logServerConfigurationError("owner_public_page_supabase_not_configured");
+      return buildUnavailablePageData(filters, "service_unavailable");
     }
 
     try {
       const supabase = createSupabaseAdminClient();
-      const { data: ownerData } = await supabase
+      const { data: ownerData, error: ownerError } = await supabase
         .from("profiles")
         .select("id, slug, display_name, phone, whatsapp, telegram, is_public_hidden_by_admin")
         .eq("slug", normalizedSlug)
         .maybeSingle();
 
-      const ownerRow = (ownerData ?? null) as PublicOwnerRow | null;
+      if (ownerError) {
+        throw ownerError;
+      }
 
-      if (!ownerRow) {
+      const ownerRow = ownerData ?? null;
+
+      if (!isPublicOwnerRow(ownerRow)) {
         return null;
       }
 
@@ -304,7 +348,7 @@ export const getPublicPropertyPageData = cache(
         return buildUnavailablePageData(filters, "admin_hidden");
       }
 
-      const { data: propertyRows } = await supabase
+      const { data: propertyRows, error: propertyError } = await supabase
         .from("properties")
         .select("*")
         .eq("owner_id", ownerRow.id)
@@ -312,54 +356,73 @@ export const getPublicPropertyPageData = cache(
         .eq("is_frozen", false)
         .order("created_at", { ascending: true });
 
-      const safePropertyRows = (propertyRows ?? []) as SupabasePropertyRow[];
-
-      if (!safePropertyRows.length) {
-        return {
-          owner: mapPublicOwner(ownerRow),
-          properties: [],
-          standaloneRooms: [],
-          filters,
-          publicUnavailableReason: null,
-          publicWarningText: subscription.publicWarningText,
-        };
+      if (propertyError) {
+        throw propertyError;
       }
 
+      const safePropertyRows = propertyRows ?? [];
+
       const propertyIds = safePropertyRows.map((property) => property.id);
-      const [{ data: roomRows }, { data: featureRows }, { data: ruleRows }, { data: propertyPhotoRows }] = await Promise.all([
+      const [propertyChildren, standaloneRoomResult] = await Promise.all([
+        propertyIds.length
+          ? Promise.all([
+              supabase
+                .from("rooms")
+                .select("*")
+                .in("property_id", propertyIds)
+                .eq("is_active", true)
+                .order("title", { ascending: true }),
+              supabase
+                .from("property_features")
+                .select("property_id, label, sort_order")
+                .in("property_id", propertyIds)
+                .order("sort_order", { ascending: true }),
+              supabase
+                .from("property_rules")
+                .select("property_id, label, sort_order")
+                .in("property_id", propertyIds)
+                .order("sort_order", { ascending: true }),
+              supabase
+                .from("property_photos")
+                .select("*")
+                .in("property_id", propertyIds)
+                .order("sort_order", { ascending: true })
+                .order("created_at", { ascending: true }),
+            ])
+          : Promise.resolve([
+              { data: [], error: null },
+              { data: [], error: null },
+              { data: [], error: null },
+              { data: [], error: null },
+            ]),
         supabase
           .from("rooms")
           .select("*")
-          .in("property_id", propertyIds)
+          .eq("owner_id", ownerRow.id)
+          .eq("room_kind", "standalone_room")
           .eq("is_active", true)
           .order("title", { ascending: true }),
-        supabase
-          .from("property_features")
-          .select("property_id, label, sort_order")
-          .in("property_id", propertyIds)
-          .order("sort_order", { ascending: true }),
-        supabase
-          .from("property_rules")
-          .select("property_id, label, sort_order")
-          .in("property_id", propertyIds)
-          .order("sort_order", { ascending: true }),
-        supabase
-          .from("property_photos")
-          .select("*")
-          .in("property_id", propertyIds)
-          .order("sort_order", { ascending: true })
-          .order("created_at", { ascending: true }),
       ]);
-      const { data: standaloneRoomRows } = await supabase
-        .from("rooms")
-        .select("*")
-        .eq("owner_id", ownerRow.id)
-        .eq("room_kind", "standalone_room")
-        .eq("is_active", true)
-        .order("title", { ascending: true });
+      const [roomResult, featureResult, ruleResult, propertyPhotoResult] = propertyChildren;
+      const { data: standaloneRoomRows, error: standaloneRoomError } = standaloneRoomResult;
 
-      const safeRoomRows = (roomRows ?? []) as SupabaseRoomRow[];
-      const safeStandaloneRoomRows = (standaloneRoomRows ?? []) as SupabaseRoomRow[];
+      for (const result of [roomResult, featureResult, ruleResult, propertyPhotoResult]) {
+        if (result.error) {
+          throw result.error;
+        }
+      }
+
+      if (standaloneRoomError) {
+        throw standaloneRoomError;
+      }
+
+      const roomRows = roomResult.data;
+      const featureRows = featureResult.data;
+      const ruleRows = ruleResult.data;
+      const propertyPhotoRows = propertyPhotoResult.data;
+
+      const safeRoomRows = roomRows ?? [];
+      const safeStandaloneRoomRows = standaloneRoomRows ?? [];
       const roomIds = [...safeRoomRows, ...safeStandaloneRoomRows].map((room) => room.id);
       const [amenitiesResult, seasonalResult, busyResult, roomPhotosResult] = roomIds.length
         ? await Promise.all([
@@ -386,7 +449,18 @@ export const getPublicPropertyPageData = cache(
               .order("sort_order", { ascending: true })
               .order("created_at", { ascending: true }),
           ])
-        : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
+        : [
+            { data: [], error: null },
+            { data: [], error: null },
+            { data: [], error: null },
+            { data: [], error: null },
+          ];
+
+      for (const result of [amenitiesResult, seasonalResult, busyResult, roomPhotosResult]) {
+        if (result.error) {
+          throw result.error;
+        }
+      }
 
       const featureMap = new Map<string, string[]>();
       const ruleMap = new Map<string, string[]>();
@@ -395,37 +469,37 @@ export const getPublicPropertyPageData = cache(
       const busyMap = new Map<string, OwnerBusyRange[]>();
 
       for (const item of featureRows ?? []) {
-        const current = featureMap.get(item.property_id as string) ?? [];
-        current.push(item.label as string);
-        featureMap.set(item.property_id as string, current);
+        const current = featureMap.get(item.property_id) ?? [];
+        current.push(item.label);
+        featureMap.set(item.property_id, current);
       }
 
       for (const item of ruleRows ?? []) {
-        const current = ruleMap.get(item.property_id as string) ?? [];
-        current.push(item.label as string);
-        ruleMap.set(item.property_id as string, current);
+        const current = ruleMap.get(item.property_id) ?? [];
+        current.push(item.label);
+        ruleMap.set(item.property_id, current);
       }
 
       for (const item of amenitiesResult.data ?? []) {
-        const current = amenityMap.get(item.room_id as string) ?? [];
-        current.push(item.label as string);
-        amenityMap.set(item.room_id as string, current);
+        const current = amenityMap.get(item.room_id) ?? [];
+        current.push(item.label);
+        amenityMap.set(item.room_id, current);
       }
 
-      for (const item of (seasonalResult.data ?? []) as SupabaseRoomSeasonalPriceRow[]) {
+      for (const item of seasonalResult.data ?? []) {
         const current = seasonalMap.get(item.room_id) ?? [];
         current.push(mapSeasonalPrice(item));
         seasonalMap.set(item.room_id, current);
       }
 
-      for (const item of (busyResult.data ?? []) as SupabaseRoomBusyRangeRow[]) {
+      for (const item of busyResult.data ?? []) {
         const current = busyMap.get(item.room_id) ?? [];
         current.push(mapBusyRange(item));
         busyMap.set(item.room_id, current);
       }
 
-      const propertyPhotoMap = buildPropertyPhotoMap((propertyPhotoRows ?? []) as SupabasePropertyPhotoRow[]);
-      const roomPhotoMap = buildRoomPhotoMap((roomPhotosResult.data ?? []) as SupabaseRoomPhotoRow[]);
+      const propertyPhotoMap = buildPropertyPhotoMap(propertyPhotoRows ?? []);
+      const roomPhotoMap = buildRoomPhotoMap(roomPhotosResult.data ?? []);
       const roomsByProperty = new Map<string, PublicRoom[]>();
 
       for (const room of safeRoomRows) {
@@ -486,8 +560,9 @@ export const getPublicPropertyPageData = cache(
         publicUnavailableReason: null,
         publicWarningText: subscription.publicWarningText,
       };
-    } catch {
-      return null;
+    } catch (error) {
+      logServerDataError("owner_public_page_load_failed", error);
+      return buildUnavailablePageData(filters, "service_unavailable");
     }
   },
 );

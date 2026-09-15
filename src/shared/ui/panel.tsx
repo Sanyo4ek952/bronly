@@ -2,10 +2,10 @@ import type { HTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/shared/lib/cn";
 
-type PanelSurface = "default" | "subtle" | "raised";
-type PanelPadding = "none" | "sm" | "md" | "lg";
+export type PanelSurface = "default" | "subtle" | "raised";
+export type PanelPadding = "none" | "sm" | "md" | "lg";
 
-type PanelProps = HTMLAttributes<HTMLElement> & {
+export type PanelProps = HTMLAttributes<HTMLElement> & {
   as?: "section" | "article" | "aside" | "div";
   children: ReactNode;
   surface?: PanelSurface;

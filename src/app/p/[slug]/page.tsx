@@ -15,8 +15,9 @@ import {
   toTelegramHref,
   toWhatsAppHref,
 } from "@/shared/lib";
-import { ButtonLink } from "@/shared/ui";
-import { PublicRoomBrowser } from "@/widgets/public-room-browser";
+import { ButtonLink, InlineNotice, Panel } from "@/shared/ui";
+import { PublicPropertySection } from "@/widgets/public-property-section";
+import { PublicRoomBrowser, PublicStayFilter } from "@/widgets/public-room-browser";
 import { PublicBrandSlot, PublicHero, PublicPageHeader, PublicUnavailableState } from "@/widgets/public-page";
 
 type PublicPropertyPageProps = {
@@ -185,12 +186,12 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: toJsonLd(ownerJsonLd) }} />
-      <main className="br-page">
-        <div className="br-container">
+      <main className="min-h-screen bg-[var(--color-page)] pb-[var(--safe-area-bottom)]">
+        <div className="mx-auto w-[calc(100%-40px)] max-w-[1440px] py-5 sm:py-7">
           <PublicPageHeader
             actions={firstRequestHref ? <ButtonLink href={firstRequestHref}>Оставить заявку</ButtonLink> : null}
             navigation={
-              <nav className="br-nav" aria-label="Навигация публичной страницы владельца">
+              <nav className="flex w-full flex-wrap items-center justify-start gap-2.5 text-sm font-semibold [&_a]:inline-flex [&_a]:min-h-[38px] [&_a]:items-center [&_a]:rounded-full [&_a]:border [&_a]:border-[var(--color-border)] [&_a]:bg-[rgb(255_255_255_/_0.86)] [&_a]:px-[14px] [&_a]:font-bold [&_a]:transition [&_a]:hover:-translate-y-px [&_a]:hover:border-[rgb(var(--color-primary-rgb)_/_0.28)] [&_a]:hover:bg-[var(--color-primary-pale)] [&_a]:focus-visible:outline-none [&_a]:focus-visible:ring-4 [&_a]:focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)] max-[640px]:[&_a]:w-full max-[640px]:[&_a]:justify-center" aria-label="Навигация публичной страницы владельца">
                 <a href="#owner-filter">Подобрать номер</a>
                 <a href="#owner-contact">Контакты</a>
                 <a href="#owner-request-flow">Как работает заявка</a>
@@ -208,19 +209,19 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
             description={buildOwnerHeroDescription(allRooms, owner.displayName)}
             actions={
               <>
-                <div id="owner-contact" className="br-public-contact-chips">
+                <div id="owner-contact" className="flex flex-wrap gap-2.5">
                   {owner.phone ? (
-                    <a className="br-public-contact-chip" href={toPhoneHref(owner.phone)}>
+                    <a className="inline-flex min-h-[38px] items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.90)] px-[14px] text-sm font-bold transition hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.28)] hover:bg-[var(--color-primary-pale)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]" href={toPhoneHref(owner.phone)}>
                       {owner.phone}
                     </a>
                   ) : null}
                   {owner.whatsapp ? (
-                    <a className="br-public-contact-chip" href={toWhatsAppHref(owner.whatsapp)} target="_blank" rel="noreferrer">
+                    <a className="inline-flex min-h-[38px] items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.90)] px-[14px] text-sm font-bold transition hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.28)] hover:bg-[var(--color-primary-pale)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]" href={toWhatsAppHref(owner.whatsapp)} target="_blank" rel="noreferrer">
                       WhatsApp
                     </a>
                   ) : null}
                   {owner.telegram ? (
-                    <a className="br-public-contact-chip" href={toTelegramHref(owner.telegram)} target="_blank" rel="noreferrer">
+                    <a className="inline-flex min-h-[38px] items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.90)] px-[14px] text-sm font-bold transition hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.28)] hover:bg-[var(--color-primary-pale)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]" href={toTelegramHref(owner.telegram)} target="_blank" rel="noreferrer">
                       {owner.telegram}
                     </a>
                   ) : null}
@@ -230,47 +231,75 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
             }
           />
 
-          {publicWarningText ? <div className="br-inline-notice" style={{ marginTop: 18 }}>{publicWarningText}</div> : null}
+          {publicWarningText ? <InlineNotice className="mt-[18px]" tone="warning">{publicWarningText}</InlineNotice> : null}
 
-          <section id="owner-filter" className="br-section br-section--public">
-            <div className="br-section-heading">
-              <h2>Подберите номер</h2>
-              <p>Фильтр работает по всей витрине владельца. Заявка всегда создаётся на конкретный номер.</p>
+          <section id="owner-filter" className="grid gap-6 py-9 sm:py-12">
+            <div className="grid gap-3">
+              <h2 className="text-[clamp(1.7rem,2.6vw,2.5rem)] font-extrabold leading-tight">Подберите номер</h2>
+              <p className="max-w-3xl text-sm leading-relaxed text-[var(--color-muted)]">Фильтр работает только по вариантам этого владельца. Заявка всегда создаётся на конкретный номер.</p>
             </div>
 
+            <PublicStayFilter publicBaseHref={`/p/${owner.slug}`} filters={filters} resetHref={`/p/${owner.slug}`} />
+
             {allRooms.length ? (
-              <PublicRoomBrowser
-                publicBaseHref={`/p/${owner.slug}`}
-                rooms={allRooms}
-                filters={filters}
-                resetHref={`/p/${owner.slug}`}
-                showFilter
-                showSelectedRoomSummary
-                showStickyCta
-              />
+              <div className="grid gap-8">
+                {pageData.properties.length ? (
+                  <section className="grid gap-[18px]" aria-labelledby="owner-properties-title">
+                    <div className="grid gap-2">
+                      <h2 id="owner-properties-title" className="text-[clamp(1.4rem,2vw,1.9rem)] font-extrabold leading-tight">Объекты владельца</h2>
+                      <p className="text-sm leading-relaxed text-[var(--color-muted)]">В каждом объекте показаны только его активные номера.</p>
+                    </div>
+                    {pageData.properties.map((section) => (
+                      <PublicPropertySection
+                        key={section.property.id}
+                        publicBaseHref={`/p/${owner.slug}`}
+                        property={section.property}
+                        rooms={section.rooms}
+                        filters={filters}
+                        titleAs="h3"
+                      />
+                    ))}
+                  </section>
+                ) : null}
+
+                {pageData.standaloneRooms.length ? (
+                  <Panel as="section" className="grid gap-[18px] border-[rgb(var(--color-primary-rgb)_/_0.10)] shadow-[var(--shadow-md)]" surface="raised" padding="lg">
+                    <div className="grid gap-2">
+                      <h2 className="text-[clamp(1.4rem,2vw,1.9rem)] font-extrabold leading-tight">Отдельные номера</h2>
+                      <p className="text-sm leading-relaxed text-[var(--color-muted)]">Эти варианты не привязаны к объекту и имеют собственный адрес.</p>
+                    </div>
+                    <PublicRoomBrowser
+                      publicBaseHref={`/p/${owner.slug}`}
+                      rooms={pageData.standaloneRooms}
+                      filters={filters}
+                      showFilter={false}
+                    />
+                  </Panel>
+                ) : null}
+              </div>
             ) : (
-              <section className="br-dashboard-block br-card">
-                <div className="br-dashboard-block__header">
+              <Panel as="section" surface="subtle" padding="lg">
+                <div>
                   <div>
-                    <h3>Пока нет доступных вариантов</h3>
-                    <p>Владелец ещё не опубликовал объекты или отдельные номера для этой ссылки.</p>
+                    <h3 className="text-xl font-extrabold">Пока нет доступных вариантов</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">Владелец ещё не опубликовал объекты или отдельные номера для этой ссылки.</p>
                   </div>
                 </div>
-              </section>
+              </Panel>
             )}
           </section>
 
-          <section id="owner-request-flow" className="br-public-request-flow br-card">
-            <div className="br-section-heading">
-              <h2>Как работает заявка</h2>
-              <p>Bronly не подтверждает проживание от имени сервиса. Владелец свяжется с вами напрямую.</p>
+          <Panel id="owner-request-flow" as="section" className="mb-10 grid gap-[18px] border-[rgb(var(--color-primary-rgb)_/_0.10)] shadow-[var(--shadow-md)]" surface="raised" padding="lg">
+            <div className="grid gap-3">
+              <h2 className="text-[clamp(1.4rem,2vw,1.9rem)] font-extrabold leading-tight">Как работает заявка</h2>
+              <p className="text-sm leading-relaxed text-[var(--color-muted)]">Bronly не подтверждает проживание от имени сервиса. Владелец свяжется с вами напрямую.</p>
             </div>
-            <ol className="br-public-request-flow__list">
+            <ol className="grid list-decimal gap-3 pl-6 marker:font-extrabold marker:text-[var(--color-primary-hover)]">
               <li>Выберите конкретный номер по датам, гостям и комнатам.</li>
               <li>Оставьте заявку на выбранный номер.</li>
               <li>Владелец свяжется с вами для уточнения доступности и деталей проживания.</li>
             </ol>
-          </section>
+          </Panel>
         </div>
       </main>
     </>

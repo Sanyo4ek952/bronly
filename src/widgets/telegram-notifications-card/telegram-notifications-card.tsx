@@ -1,55 +1,65 @@
 import type { TelegramNotificationStatus } from "@/entities/notification/api/telegram-link";
 import { formatDateTimeLabel } from "@/shared/lib/date";
-import { SubmitButton } from "@/shared/ui";
+import { Panel, SubmitButton } from "@/shared/ui";
 
 type TelegramNotificationsCardProps = {
   role: "owner" | "agent";
   status: TelegramNotificationStatus;
-  action: (formData: FormData) => Promise<void>;
+  linkAction: (formData: FormData) => Promise<void>;
+  toggleAction: (formData: FormData) => Promise<void>;
 };
 
-export function TelegramNotificationsCard({ role, status, action }: TelegramNotificationsCardProps) {
-  const linkedLabel = status.username ? `@${status.username}` : status.chatId ? `chat ${status.chatId}` : "Не привязан";
+export function TelegramNotificationsCard({ role, status, linkAction, toggleAction }: TelegramNotificationsCardProps) {
+  const linkedLabel = status.username ? `@${status.username}` : status.isLinked ? "Подключен" : "Не привязан";
 
   return (
-    <section className="br-dashboard-block br-card">
-      <div className="br-dashboard-block__header">
-        <div>
-          <h2>Telegram-уведомления</h2>
-          <p>Канал для событий по заявкам, предложениям агентов и подписке.</p>
-        </div>
+    <Panel className="grid gap-4 p-4" surface="raised">
+      <div className="grid gap-1.5">
+        <h2 className="text-lg font-semibold text-[var(--text)]">Telegram-уведомления</h2>
+        <p className="text-sm leading-[1.5] text-[var(--text-muted)]">Канал для событий по заявкам, предложениям агентов и подписке.</p>
       </div>
-      <div className="br-toggle-list">
-        <div className="br-toggle">
-          <span>Статус канала</span>
+      <div className="grid overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)]">
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-3.5 py-3 text-sm">
+          <span className="text-[var(--text-muted)]">Статус канала</span>
           <strong>{status.isLinked ? "Привязан" : "Не привязан"}</strong>
         </div>
-        <div className="br-toggle">
-          <span>Чат</span>
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-3.5 py-3 text-sm">
+          <span className="text-[var(--text-muted)]">Аккаунт</span>
           <strong>{linkedLabel}</strong>
         </div>
-        <div className="br-toggle">
-          <span>Отправка</span>
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-3.5 py-3 text-sm">
+          <span className="text-[var(--text-muted)]">Отправка</span>
           <strong>{status.telegramEnabled ? "Включена" : "Выключена"}</strong>
         </div>
         {status.linkedAt ? (
-          <div className="br-toggle">
-            <span>Привязан</span>
+          <div className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm">
+            <span className="text-[var(--text-muted)]">Привязан</span>
             <strong>{formatDateTimeLabel(status.linkedAt)}</strong>
           </div>
         ) : null}
       </div>
-      <p style={{ marginTop: 16 }}>
+      <p className="text-sm leading-[1.5] text-[var(--text-muted)]">
         {status.botConfigured
           ? "Откройте бота Bronly и нажмите Start. После привязки уведомления будут приходить в этот чат."
           : "Бот Telegram еще не настроен в окружении. In-app и PWA push продолжают работать."}
       </p>
-      <form action={action} style={{ marginTop: 16 }}>
-        <input type="hidden" name="role" value={role} />
-        <SubmitButton variant="secondary" disabled={!status.botConfigured} pendingLabel="Переход">
-          {status.isLinked ? "Перепривязать Telegram" : "Привязать Telegram"}
-        </SubmitButton>
-      </form>
-    </section>
+      <div className="flex flex-wrap gap-2.5">
+        <form action={linkAction}>
+          <input type="hidden" name="role" value={role} />
+          <SubmitButton variant="secondary" disabled={!status.botConfigured} pendingLabel="Переход">
+            {status.isLinked ? "Перепривязать Telegram" : "Привязать Telegram"}
+          </SubmitButton>
+        </form>
+        {status.isLinked ? (
+          <form action={toggleAction}>
+            <input type="hidden" name="role" value={role} />
+            <input type="hidden" name="enabled" value={status.telegramEnabled ? "false" : "true"} />
+            <SubmitButton variant="ghost" pendingLabel="Сохранение">
+              {status.telegramEnabled ? "Отключить канал" : "Включить канал"}
+            </SubmitButton>
+          </form>
+        ) : null}
+      </div>
+    </Panel>
   );
 }

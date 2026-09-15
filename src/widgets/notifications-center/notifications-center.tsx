@@ -1,7 +1,5 @@
-import Link from "next/link";
-
 import type { NotificationListItem } from "@/entities/notification";
-import { SectionHeader, SubmitButton } from "@/shared/ui";
+import { ButtonLink, Panel, SectionHeader, StatusPill, SubmitButton } from "@/shared/ui";
 
 type NotificationsCenterProps = {
   items: NotificationListItem[];
@@ -21,65 +19,74 @@ export function NotificationsCenter({
   const unreadCount = items.filter((item) => !item.isRead).length;
 
   return (
-    <section className="br-dashboard-block br-card">
+    <Panel className="grid gap-5 p-5 max-[640px]:p-4" surface="raised">
       <SectionHeader
         title={title}
         description={description}
-        className="br-dashboard-block__header"
+        className="items-start gap-3 max-[640px]:items-stretch"
         actions={
           unreadCount ? (
             <form action={onMarkAllReadAction}>
-              <SubmitButton variant="secondary" pendingLabel="РћР±РЅРѕРІР»РµРЅРёРµ">РћС‚РјРµС‚РёС‚СЊ РІСЃРµ РїСЂРѕС‡РёС‚Р°РЅРЅС‹РјРё</SubmitButton>
+              <SubmitButton variant="secondary" pendingLabel="Обновление">
+                Отметить все прочитанными
+              </SubmitButton>
             </form>
           ) : undefined
         }
       />
 
       {items.length ? (
-        <div className="br-notification-list">
+        <div className="grid gap-3">
           {items.map((item) => (
-            <article
+            <Panel
+              as="article"
               key={item.id}
-              className={`br-notification-card br-card${item.isRead ? "" : " br-notification-card--unread"}`}
+              className={item.isRead
+                ? "grid gap-4 p-4 shadow-none"
+                : "grid gap-4 border-[rgb(var(--color-primary-rgb)_/_0.24)] bg-[var(--color-primary-pale)] p-4 shadow-none"}
             >
-              <div className="br-notification-card__top">
-                <div className="br-notification-card__copy">
-                  <div className="br-notification-card__title-row">
-                    <strong>{item.title}</strong>
-                    {!item.isRead ? <span className="br-notification-dot" aria-label="РќРѕРІРѕРµ СѓРІРµРґРѕРјР»РµРЅРёРµ" /> : null}
+              <div className="flex items-start justify-between gap-3 max-[640px]:flex-col">
+                <div className="grid min-w-0 gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <strong className="text-sm text-[var(--text)]">{item.title}</strong>
+                    {!item.isRead ? <StatusPill variant="new">Новое</StatusPill> : null}
                   </div>
-                  <p>{item.description}</p>
+                  <p className="text-sm leading-[1.5] text-[var(--text-muted)]">{item.description}</p>
                 </div>
-                <time className="br-notification-card__time" dateTime={item.createdAt}>
+                <time className="shrink-0 text-xs text-[var(--text-muted)]" dateTime={item.createdAt}>
                   {item.createdAtLabel}
                 </time>
               </div>
 
-              <div className="br-notification-card__actions">
+              <div className="flex flex-wrap items-center justify-between gap-2.5 max-[640px]:items-stretch">
                 {item.linkPath && item.linkLabel ? (
-                  <Link href={item.linkPath} className="br-button br-button--secondary">
+                  <ButtonLink href={item.linkPath} variant="secondary" size="sm">
                     {item.linkLabel}
-                  </Link>
-                ) : null}
+                  </ButtonLink>
+                ) : <span />}
 
                 {!item.isRead ? (
                   <form action={onMarkReadAction}>
                     <input type="hidden" name="notificationId" value={item.id} />
-                    <SubmitButton pendingLabel="РћР±РЅРѕРІР»РµРЅРёРµ">РћС‚РјРµС‚РёС‚СЊ РїСЂРѕС‡РёС‚Р°РЅРЅС‹Рј</SubmitButton>
+                    <SubmitButton size="sm" pendingLabel="Обновление">
+                      Отметить прочитанным
+                    </SubmitButton>
                   </form>
                 ) : (
-                  <span className="br-notification-card__read-label">РџСЂРѕС‡РёС‚Р°РЅРѕ</span>
+                  <StatusPill variant="neutral">Прочитано</StatusPill>
                 )}
               </div>
-            </article>
+            </Panel>
           ))}
         </div>
       ) : (
-        <div className="br-empty-state">
-          <strong>РџРѕРєР° РЅРµС‚ СѓРІРµРґРѕРјР»РµРЅРёР№</strong>
-          <p className="br-owner-muted">РќРѕРІС‹Рµ СЃРѕР±С‹С‚РёСЏ РїРѕ Р·Р°СЏРІРєР°Рј, РїСЂРµРґР»РѕР¶РµРЅРёСЏРј Рё РїРѕРґРїРёСЃРєРµ РїРѕСЏРІСЏС‚СЃСЏ Р·РґРµСЃСЊ.</p>
+        <div className="grid gap-1.5 rounded-[var(--radius-lg)] border border-dashed border-[var(--border)] bg-[var(--surface-subtle)] p-5 text-center">
+          <strong className="text-sm text-[var(--text)]">Пока нет уведомлений</strong>
+          <p className="text-sm leading-[1.5] text-[var(--text-muted)]">
+            Новые события по заявкам, предложениям и подписке появятся здесь.
+          </p>
         </div>
       )}
-    </section>
+    </Panel>
   );
 }

@@ -5,6 +5,7 @@ export type CollectionRole = "owner" | "agent";
 export type CollectionSummary = {
   id: string;
   title: string;
+  guestLabel: string;
   slug: string;
   isArchived: boolean;
   itemCount: number;

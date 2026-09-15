@@ -1,6 +1,7 @@
 import { calculateRoomPricing, normalizePublicStayFilters, type PublicStayFilters } from "@/entities/room/model/pricing";
 import type { PublicRoom } from "@/entities/room/model/types";
 import { formatDateLabel } from "@/shared/lib/date";
+import { formatRubles } from "@/shared/lib/money";
 
 export type PublicRequestContextKind = "owner" | "agent" | "collection-owner" | "collection-agent";
 export type PublicRequestErrorScope = "owner" | "agent" | "collection";
@@ -31,10 +32,6 @@ export type ResolvedRequestRoomSelection = {
   error: string;
   requestedRoomIsValid: boolean;
 };
-
-function formatMoney(value: number) {
-  return `${Math.round(value).toLocaleString("ru-RU")} ₽`;
-}
 
 function formatGuestsLabel(count: number) {
   return `${count} гост${count === 1 ? "ь" : count < 5 ? "я" : "ей"}`;
@@ -68,6 +65,8 @@ export function getPublicRequestErrorText(scope: PublicRequestErrorScope, error:
         : "Выбранный номер больше недоступен. Проверьте выбор и попробуйте снова.";
     case "availability":
       return "На выбранные даты у номера есть занятые даты. Выберите другой период или номер.";
+    case "suitability":
+      return "Номер не подходит по количеству гостей или комнат. Измените параметры проживания или выберите другой номер.";
     case "property":
       return scope === "collection"
         ? "Объект больше недоступен в этой подборке."
@@ -78,6 +77,8 @@ export function getPublicRequestErrorText(scope: PublicRequestErrorScope, error:
         : "Новые заявки по этой ссылке сейчас не принимаются.";
     case "validation":
       return "Проверьте имя, телефон, номер и даты проживания.";
+    case "service":
+      return "Сервис заявок временно недоступен. Данные не отправлены — попробуйте ещё раз позже.";
     default:
       return "Проверьте поля формы и попробуйте ещё раз.";
   }
@@ -106,7 +107,10 @@ export function buildPublicRequestSummary(
     checkOut: filters.hasDates ? formatDateLabel(filters.checkOut) : undefined,
     guestsLabel: formatGuestsLabel(filters.adults),
     roomsLabel: formatRoomsLabel(filters.rooms),
-    priceLabel: filters.hasDates && pricing.totalPrice != null ? formatMoney(pricing.totalPrice) : `${formatMoney(pricing.displayPricePerNight)} / ночь`,
+    priceLabel:
+      filters.hasDates && pricing.totalPrice != null
+        ? formatRubles(Math.round(pricing.totalPrice))
+        : `${formatRubles(Math.round(pricing.displayPricePerNight))} / ночь`,
     priceCaption: filters.hasDates && pricing.nights > 0 ? `${pricing.nights} ноч.` : "Цена за ночь",
     requestLabel: "Заявка будет отправлена на конкретный номер.",
   };

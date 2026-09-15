@@ -3,11 +3,12 @@ import { cache } from "react";
 import type { PublicAgentPageData, PublicAgentPropertySection } from "@/entities/collaboration/model/types";
 import { buildPropertyPhotoMap, buildRoomPhotoMap, withLegacyPropertyCover } from "@/entities/property/api/photo-utils";
 import { aggregateRoomAmenities, resolvePublicPropertyDetailMode } from "@/entities/property/model/public-property";
-import { buildPublicRoomQuote, normalizePublicStayFilters } from "@/entities/room";
-import { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
+import { buildPublicRoomQuote, normalizePublicStayFilters, type PublicStayFilters } from "@/entities/room";
+import { mapBusyRange, mapSeasonalPrice, normalizeRoomKind } from "@/entities/room/model/mappers";
 import type { OwnerBusyRange, OwnerSeasonalPrice, PublicRoom, RoomPhoto } from "@/entities/room/model/types";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase/server";
+import { logServerConfigurationError, logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 import type { PublicUnavailableReason } from "@/shared/lib/public-page-visibility";
 import type {
   SupabasePropertyPhotoRow,
@@ -43,6 +44,18 @@ function getAgentPublicUnavailableReason(input: {
   return null;
 }
 
+function buildServiceUnavailableAgentData(filters: PublicStayFilters): PublicAgentPageData {
+  return {
+    agent: null,
+    properties: [],
+    standaloneRooms: [],
+    filters,
+    publicUnavailableReason: "service_unavailable",
+    publicWarningText: null,
+    shouldRedirectToCanonical: false,
+  };
+}
+
 function getSingleRow<T>(value: T | T[] | null): T | null {
   if (Array.isArray(value)) {
     return value[0] ?? null;
@@ -62,7 +75,7 @@ function mapRoomRow(
   return {
     id: room.id,
     ownerId: room.owner_id,
-    kind: room.room_kind,
+    kind: normalizeRoomKind(room.room_kind),
     title: room.title,
     subtitle: room.subtitle ?? "",
     propertyTitle: room.property_id ? undefined : room.property_type ?? "Отдельный номер",
@@ -84,9 +97,9 @@ function mapRoomRow(
       timezone: room.timezone ?? "",
       shortDescription: room.short_description ?? "",
       fullDescription: room.full_description ?? "",
-      phone: room.phone ?? "",
-      whatsapp: room.whatsapp ?? "",
-      telegram: room.telegram ?? "",
+      phone: "",
+      whatsapp: "",
+      telegram: "",
       checkInTime: room.check_in_time ?? "",
       checkOutTime: room.check_out_time ?? "",
       allowAgentInquiries: room.allow_agent_inquiries,
@@ -97,12 +110,16 @@ function mapRoomRow(
 
 async function hasAgentRole(profileId: string) {
   const supabase = createSupabaseAdminClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("user_roles")
     .select("profile_id")
     .eq("profile_id", profileId)
     .eq("role", "agent")
     .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
 
   return Boolean(data);
 }
@@ -112,11 +129,15 @@ async function resolvePublicAgentProfile(identifier: string): Promise<{
   matchedByLegacySlug: boolean;
 } | null> {
   const supabase = createSupabaseAdminClient();
-  const { data: publicIdData } = await supabase
+  const { data: publicIdData, error: publicIdError } = await supabase
     .from("profiles")
     .select("id, slug, agent_public_id, display_name, phone, telegram, is_public_hidden_by_admin")
     .eq("agent_public_id", identifier)
     .maybeSingle();
+
+  if (publicIdError) {
+    throw publicIdError;
+  }
 
   const publicIdMatch = (publicIdData ?? null) as ResolvedAgentProfile | null;
 
@@ -131,11 +152,15 @@ async function resolvePublicAgentProfile(identifier: string): Promise<{
     };
   }
 
-  const { data: legacySlugData } = await supabase
+  const { data: legacySlugData, error: legacySlugError } = await supabase
     .from("profiles")
     .select("id, slug, agent_public_id, display_name, phone, telegram, is_public_hidden_by_admin")
     .eq("slug", identifier)
     .maybeSingle();
+
+  if (legacySlugError) {
+    throw legacySlugError;
+  }
 
   const legacySlugMatch = (legacySlugData ?? null) as ResolvedAgentProfile | null;
 
@@ -159,11 +184,12 @@ export const getPublicAgentPageData = cache(
       rooms?: string | number;
     } = {},
   ): Promise<PublicAgentPageData | null> => {
-    if (!canUseSupabase()) {
-      return null;
-    }
-
     const filters = normalizePublicStayFilters(filterInput);
+
+    if (!canUseSupabase()) {
+      logServerConfigurationError("agent_public_page_supabase_not_configured");
+      return buildServiceUnavailableAgentData(filters);
+    }
 
     try {
       const resolvedAgent = await resolvePublicAgentProfile(agentIdentifier);
@@ -187,22 +213,24 @@ export const getPublicAgentPageData = cache(
 
       if (publicUnavailableReason) {
         return {
-          agent: null,
+          agent: {
+            id: agent.id,
+            publicId: agent.agent_public_id,
+            legacySlug: agent.slug,
+            displayName: agent.display_name,
+            phone: "",
+            telegram: "",
+          },
           properties: [],
           standaloneRooms: [],
           filters,
           publicUnavailableReason,
           publicWarningText: null,
-          shouldRedirectToCanonical: false,
+          shouldRedirectToCanonical: matchedByLegacySlug,
         };
       }
 
-      const [
-        { data: linkedPropertyRows },
-        { data: linkedStandaloneRoomRows },
-        { data: ownPropertyRows },
-        { data: ownStandaloneRoomRows },
-      ] = await Promise.all([
+      const inventoryResults = await Promise.all([
         supabase.from("agent_property_links").select("property_id").eq("agent_id", agent.id).eq("status", "active"),
         supabase.from("agent_room_links").select("room_id").eq("agent_id", agent.id).eq("status", "active"),
         supabase.from("properties").select("*").eq("owner_id", agent.id).eq("published", true).eq("is_frozen", false),
@@ -214,16 +242,37 @@ export const getPublicAgentPageData = cache(
           .eq("is_active", true),
       ]);
 
+      for (const result of inventoryResults) {
+        if (result.error) {
+          throw result.error;
+        }
+      }
+
+      const [
+        { data: linkedPropertyRows },
+        { data: linkedStandaloneRoomRows },
+        { data: ownPropertyRows },
+        { data: ownStandaloneRoomRows },
+      ] = inventoryResults;
+
       const linkedPropertyIds = (linkedPropertyRows ?? []).map((row) => row.property_id as string);
       const linkedStandaloneRoomIds = (linkedStandaloneRoomRows ?? []).map((row) => row.room_id as string);
       const [linkedPropertiesResult, linkedStandaloneRoomsResult] = await Promise.all([
         linkedPropertyIds.length
           ? supabase.from("properties").select("*").in("id", linkedPropertyIds).eq("published", true).eq("is_frozen", false)
-          : Promise.resolve({ data: [] }),
+          : Promise.resolve({ data: [], error: null }),
         linkedStandaloneRoomIds.length
           ? supabase.from("rooms").select("*").in("id", linkedStandaloneRoomIds).eq("room_kind", "standalone_room").eq("is_active", true)
-          : Promise.resolve({ data: [] }),
+          : Promise.resolve({ data: [], error: null }),
       ]);
+
+      if (linkedPropertiesResult.error) {
+        throw linkedPropertiesResult.error;
+      }
+
+      if (linkedStandaloneRoomsResult.error) {
+        throw linkedStandaloneRoomsResult.error;
+      }
 
       const rawPropertyMap = new Map<string, SupabasePropertyRow>();
       for (const property of (ownPropertyRows ?? []) as SupabasePropertyRow[]) {
@@ -279,10 +328,10 @@ export const getPublicAgentPageData = cache(
 
       const propertyIds = safeProperties.map((property) => property.id);
       const allRoomIds = safeStandaloneRooms.map((room) => room.id);
-      const [{ data: propertyRoomRows }, { data: propertyPhotoRows }, { data: featureRows }, { data: ruleRows }] = await Promise.all([
+      const propertyAssetResults = await Promise.all([
         propertyIds.length
           ? supabase.from("rooms").select("*").in("property_id", propertyIds).eq("is_active", true).order("title", { ascending: true })
-          : Promise.resolve({ data: [] }),
+          : Promise.resolve({ data: [], error: null }),
         propertyIds.length
           ? supabase
               .from("property_photos")
@@ -290,22 +339,30 @@ export const getPublicAgentPageData = cache(
               .in("property_id", propertyIds)
               .order("sort_order", { ascending: true })
               .order("created_at", { ascending: true })
-          : Promise.resolve({ data: [] }),
+          : Promise.resolve({ data: [], error: null }),
         propertyIds.length
           ? supabase
               .from("property_features")
               .select("property_id, label, sort_order")
               .in("property_id", propertyIds)
               .order("sort_order", { ascending: true })
-          : Promise.resolve({ data: [] }),
+          : Promise.resolve({ data: [], error: null }),
         propertyIds.length
           ? supabase
               .from("property_rules")
               .select("property_id, label, sort_order")
               .in("property_id", propertyIds)
               .order("sort_order", { ascending: true })
-          : Promise.resolve({ data: [] }),
+          : Promise.resolve({ data: [], error: null }),
       ]);
+
+      for (const result of propertyAssetResults) {
+        if (result.error) {
+          throw result.error;
+        }
+      }
+
+      const [{ data: propertyRoomRows }, { data: propertyPhotoRows }, { data: featureRows }, { data: ruleRows }] = propertyAssetResults;
       const safePropertyRoomRows = (propertyRoomRows ?? []) as SupabaseRoomRow[];
       const roomIds = [...safePropertyRoomRows.map((room) => room.id), ...allRoomIds];
 
@@ -331,7 +388,19 @@ export const getPublicAgentPageData = cache(
               .order("sort_order", { ascending: true })
               .order("created_at", { ascending: true }),
           ])
-        : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
+        : [
+            { data: [], error: null },
+            { data: [], error: null },
+            { data: [], error: null },
+            { data: [], error: null },
+            { data: [], error: null },
+          ];
+
+      for (const result of [amenitiesResult, seasonalResult, busyResult, markupResult, roomPhotosResult]) {
+        if (result.error) {
+          throw result.error;
+        }
+      }
 
       const featureMap = new Map<string, string[]>();
       const ruleMap = new Map<string, string[]>();
@@ -418,9 +487,9 @@ export const getPublicAgentPageData = cache(
               timezone: property.timezone,
               shortDescription: property.short_description ?? "",
               fullDescription: property.full_description ?? "",
-              phone: property.phone ?? "",
-              whatsapp: property.whatsapp ?? "",
-              telegram: property.telegram ?? "",
+              phone: "",
+              whatsapp: "",
+              telegram: "",
               checkInTime: property.check_in_time ?? "",
               checkOutTime: property.check_out_time ?? "",
               photos: withLegacyPropertyCover(propertyPhotoMap.get(property.id) ?? [], property.cover_image_url),
@@ -465,8 +534,9 @@ export const getPublicAgentPageData = cache(
         publicWarningText: agentSubscription.publicWarningText,
         shouldRedirectToCanonical: matchedByLegacySlug,
       };
-    } catch {
-      return null;
+    } catch (error) {
+      logServerDataError("agent_public_page_load_failed", error);
+      return buildServiceUnavailableAgentData(filters);
     }
   },
 );
@@ -486,7 +556,6 @@ export async function getAgentRequestContext(agentIdentifier: string, propertySl
       agentPublicId: pageData.agent.publicId,
       propertySlug: null,
       roomId: standaloneRoom.id,
-      agentMarkupPercent: standaloneRoom.agentMarkupPercent ?? 0,
     };
   }
 
@@ -506,6 +575,5 @@ export async function getAgentRequestContext(agentIdentifier: string, propertySl
     agentPublicId: pageData.agent.publicId,
     propertySlug: propertySection.property.slug,
     roomId: room.id,
-    agentMarkupPercent: room.agentMarkupPercent ?? 0,
   };
 }

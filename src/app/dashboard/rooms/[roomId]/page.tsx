@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { getOwnerRoomDetail } from "@/entities/room";
+import { getOwnerRoomDetail } from "@/entities/room/api/owner-room-detail";
 import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
 import { RoomDetailPage } from "@/widgets/room-detail-page/room-detail-page";
 

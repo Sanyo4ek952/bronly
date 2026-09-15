@@ -4,11 +4,15 @@ import {
   getAgentActiveCollaborations,
   getAgentOutgoingProposals,
   type AgentCollaborationItem,
-  type CollaborationContact,
-  type CollaborationTargetSummary,
 } from "@/entities/collaboration";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
-import { Button, Input } from "@/shared/ui";
+import { formatRubles } from "@/shared/lib/money";
+import { Button, InlineNotice, Input, Panel, SectionHeader, StatusPill } from "@/shared/ui";
+import {
+  CollaborationContactLinks,
+  CollaborationTargets,
+  getTargetFormatLabel,
+} from "@/widgets/collaboration-details";
 
 import { saveAgentRoomMarkupAction } from "./actions";
 
@@ -16,163 +20,76 @@ type AgentCollaborationsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-function formatMoney(value: number) {
-  return `${Math.round(value).toLocaleString("ru-RU")} ₽`;
-}
-
 function getMessage(success: string, error: string) {
-  if (success === "saved") {
-    return "Надбавка агента сохранена.";
-  }
-
-  if (error === "not_allowed") {
-    return "Надбавку можно задавать только для своих номеров или для номеров по активному сотрудничеству.";
-  }
-
-  if (error === "validation") {
-    return "Проверьте значение надбавки и попробуйте снова.";
-  }
-
-  if (error === "unauthorized") {
-    return "Нужен вход в аккаунт агента.";
-  }
-
-  if (error) {
-    return "Не удалось сохранить надбавку агента. Попробуйте еще раз.";
-  }
-
+  if (success === "saved") return "Надбавка агента сохранена.";
+  if (error === "subscription") return "Надбавку временно нельзя изменить, пока подписка не продлена.";
+  if (error === "not_allowed") return "Надбавка доступна только для своих номеров или номеров по активному сотрудничеству.";
+  if (error === "validation") return "Укажите надбавку от 0 до 999,99%.";
+  if (error === "unauthorized") return "Нужен вход в аккаунт агента.";
+  if (error) return "Не удалось сохранить надбавку агента. Попробуйте еще раз.";
   return "";
-}
-
-function getTargetFormatLabel(targetType: CollaborationTargetSummary["targetType"]) {
-  return targetType === "property" ? "Формат: объект" : "Формат: отдельный номер";
-}
-
-function ContactLinks({ contact }: { contact: CollaborationContact }) {
-  if (!contact.phone && !contact.whatsapp && !contact.telegram) {
-    return <span>Контакты владельца скрыты или не заполнены.</span>;
-  }
-
-  return (
-    <div className="br-owner-stack" style={{ gap: 8 }}>
-      {contact.phone ? (
-        <a href={`tel:${contact.phone}`} className="br-button br-button--secondary br-button--sm">
-          {contact.phone}
-        </a>
-      ) : null}
-      {contact.whatsapp ? (
-        <a href={contact.whatsapp} className="br-button br-button--secondary br-button--sm">
-          WhatsApp
-        </a>
-      ) : null}
-      {contact.telegram ? (
-        <a
-          href={contact.telegram.startsWith("http") ? contact.telegram : `https://t.me/${contact.telegram.replace(/^@/, "")}`}
-          className="br-button br-button--secondary br-button--sm"
-        >
-          Telegram
-        </a>
-      ) : null}
-    </div>
-  );
-}
-
-function CollaborationTargets({ targets }: { targets: CollaborationTargetSummary[] }) {
-  return (
-    <div className="br-owner-stack" style={{ gap: 8 }}>
-      {targets.map((target) => (
-        <div key={`${target.targetType}-${target.id}`} className="br-owner-editor br-owner-editor--muted">
-          <strong>{target.targetTitle}</strong>
-          <p>{getTargetFormatLabel(target.targetType)}</p>
-        </div>
-      ))}
-    </div>
-  );
 }
 
 function ActiveCollaborationCard({ item }: { item: AgentCollaborationItem }) {
   return (
-    <article className="br-request-item" style={{ alignItems: "stretch" }}>
-      <div className="br-request-item__avatar">{item.ownerName[0] ?? "В"}</div>
-      <div className="br-request-item__body" style={{ width: "100%" }}>
-        <strong>{item.title}</strong>
-        <span>{item.ownerName}</span>
-        <span className="br-request-item__status">{item.statusLabel}</span>
-
-        <div className="br-owner-stack" style={{ marginTop: 12 }}>
-          <div>
-            <strong>Контакты владельца</strong>
-            <div style={{ marginTop: 8 }}>
-              {item.ownerContactVisible ? (
-                <ContactLinks contact={item.ownerContact} />
-              ) : (
-                <span>Владелец не открыл контакты для этого сотрудничества.</span>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <strong>На какие объекты заключена договоренность</strong>
-            <div style={{ marginTop: 8 }}>
-              <CollaborationTargets targets={item.targets} />
-            </div>
-          </div>
-
-          <div className="br-owner-editor br-owner-editor--muted">
-            <strong>Условия сотрудничества</strong>
-            <p>{item.terms}</p>
-          </div>
-
-          {item.rooms.length ? (
-            <div className="br-owner-stack" style={{ marginTop: 4 }}>
-              {item.rooms.map((room) => (
-                <form
-                  key={room.id}
-                  action={saveAgentRoomMarkupAction}
-                  className="br-owner-editor br-owner-editor--muted"
-                >
-                  <input type="hidden" name="roomId" value={room.id} />
-                  <div className="br-owner-editor__header">
-                    <div>
-                      <strong>{room.title}</strong>
-                      <p>{room.subtitle || "Номер доступен в агентской витрине."}</p>
-                    </div>
-                  </div>
-                  <div className="br-property-form__grid">
-                    <Input
-                      id={`room-base-price-${room.id}`}
-                      label="Базовая цена владельца"
-                      value={formatMoney(room.basePricePerNight)}
-                      readOnly
-                      disabled
-                    />
-                    <Input
-                      id={`room-markup-${room.id}`}
-                      name="markupPercent"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      label="Надбавка агента, %"
-                      defaultValue={String(room.agentMarkupPercent)}
-                    />
-                    <Input
-                      id={`room-agent-price-${room.id}`}
-                      label="Итоговая цена агента за ночь"
-                      value={formatMoney(room.agentPricePerNight)}
-                      readOnly
-                      disabled
-                    />
-                  </div>
-                  <div className="br-owner-actions">
-                    <Button type="submit">Сохранить надбавку</Button>
-                  </div>
-                </form>
-              ))}
-            </div>
-          ) : null}
+    <Panel as="article" className="grid gap-5 p-5 max-[640px]:p-4" surface="raised">
+      <div className="flex items-start gap-3">
+        <span className="grid size-11 shrink-0 place-items-center rounded-[16px] bg-[rgb(var(--color-primary-rgb)_/_0.10)] text-sm font-extrabold text-[var(--color-primary-hover)]">
+          {item.ownerName[0] ?? "В"}
+        </span>
+        <div className="grid min-w-0 flex-1 gap-1">
+          <h3 className="text-lg font-bold leading-tight text-[var(--text)]">{item.title}</h3>
+          <p className="text-sm text-[var(--text-muted)]">Владелец: {item.ownerName}</p>
         </div>
+        <StatusPill variant="active">{item.statusLabel}</StatusPill>
       </div>
-    </article>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="grid content-start gap-2">
+          <strong className="text-sm text-[var(--text)]">Контакты владельца</strong>
+          {item.ownerContactVisible ? (
+            <CollaborationContactLinks contact={item.ownerContact} emptyText="Контакты владельца не заполнены." />
+          ) : (
+            <p className="text-sm leading-relaxed text-[var(--text-muted)]">Владелец не открыл контакты для этого сотрудничества.</p>
+          )}
+        </section>
+        <section className="grid content-start gap-2">
+          <strong className="text-sm text-[var(--text)]">Цели сотрудничества</strong>
+          <CollaborationTargets targets={item.targets} />
+        </section>
+      </div>
+
+      <Panel className="grid gap-1 rounded-[18px]" surface="subtle" padding="md">
+        <strong className="text-sm text-[var(--text)]">Условия сотрудничества</strong>
+        <p className="text-sm leading-relaxed text-[var(--text-muted)]">{item.terms}</p>
+      </Panel>
+
+      {item.rooms.length ? (
+        <section className="grid gap-3">
+          <div className="grid gap-1">
+            <strong className="text-sm text-[var(--text)]">Цены агента</strong>
+            <p className="text-xs leading-relaxed text-[var(--text-muted)]">Базовая цена владельца доступна только для чтения. В витрине показывается итоговая цена с вашей надбавкой.</p>
+          </div>
+          {item.rooms.map((room) => (
+            <form key={room.id} action={saveAgentRoomMarkupAction} className="grid gap-4 rounded-[20px] border border-[var(--border)] bg-[var(--surface-subtle)] p-4">
+              <input type="hidden" name="roomId" value={room.id} />
+              <div className="grid gap-1">
+                <strong className="text-sm text-[var(--text)]">{room.title}</strong>
+                <p className="text-xs leading-relaxed text-[var(--text-muted)]">{room.subtitle || "Номер доступен в агентской витрине."}</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <Input id={`room-base-price-${room.id}`} label="Базовая цена владельца" value={formatRubles(Math.round(room.basePricePerNight))} readOnly disabled />
+                <Input id={`room-markup-${room.id}`} name="markupPercent" type="number" min="0" max="999.99" step="0.01" label="Надбавка агента, %" defaultValue={String(room.agentMarkupPercent)} required />
+                <Input id={`room-agent-price-${room.id}`} label="Итоговая цена агента за ночь" value={formatRubles(Math.round(room.agentPricePerNight))} readOnly disabled />
+              </div>
+              <div className="flex justify-end">
+                <Button type="submit">Сохранить надбавку</Button>
+              </div>
+            </form>
+          ))}
+        </section>
+      ) : null}
+    </Panel>
   );
 }
 
@@ -183,81 +100,67 @@ export default async function AgentCollaborationsPage({ searchParams }: AgentCol
     redirect("/login");
   }
 
-  const fallbackParams: Record<string, string | string[] | undefined> = {};
-  const params = await (searchParams ?? Promise.resolve(fallbackParams));
-  const success = typeof params.success === "string" ? params.success : "";
-  const error = typeof params.error === "string" ? params.error : "";
-  const [activeCollaborations, outgoingProposals] = await Promise.all([
+  const [activeCollaborations, outgoingProposals, params] = await Promise.all([
     getAgentActiveCollaborations(profile),
     getAgentOutgoingProposals(profile),
+    searchParams ?? Promise.resolve<Record<string, string | string[] | undefined>>({}),
   ]);
-  const proposalItems = outgoingProposals.filter((item) => item.status !== "active");
+
+  if (!activeCollaborations || !outgoingProposals) {
+    return (
+      <InlineNotice title="Не удалось загрузить сотрудничества" tone="warning" aria-live="polite">
+        Данные временно недоступны. Попробуйте обновить страницу позже.
+      </InlineNotice>
+    );
+  }
+
+  const success = typeof params.success === "string" ? params.success : "";
+  const error = typeof params.error === "string" ? params.error : "";
   const message = getMessage(success, error);
+  const proposalItems = outgoingProposals.filter((item) => item.status !== "active");
 
   return (
-    <section className="br-owner-stack">
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Связи с владельцами</h2>
-            <p>Здесь видны отправленные предложения и активные сотрудничества по объектам и отдельным номерам.</p>
-          </div>
-        </div>
+    <div className="grid gap-4">
+      <Panel className="grid gap-4 p-5 max-[640px]:p-4" surface="raised">
+        <SectionHeader title="Связи с владельцами" description="Отправленные предложения и активные сотрудничества по объектам и отдельным номерам." />
+        <InlineNotice tone="soft">Агент задает только свою надбавку. Объект, номер, фото, календарь и базовая цена владельца остаются только для чтения.</InlineNotice>
+        {message ? <InlineNotice tone={error ? "error" : "default"}>{message}</InlineNotice> : null}
+      </Panel>
 
-        <div className="br-inline-notice br-inline-notice--soft">
-          Агент задает только свою надбавку. Базовая цена владельца показывается для чтения и не редактируется.
-        </div>
-
-        {message ? <div className="br-inline-notice">{message}</div> : null}
-      </section>
-
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Активные сотрудничества</h2>
-            <p>Контакты владельца, условия сотрудничества и объекты, по которым уже есть активная договоренность.</p>
-          </div>
-        </div>
-
+      <section className="grid gap-4">
+        <SectionHeader title="Активные сотрудничества" description="Контакты, условия и варианты, по которым владелец уже принял предложение." />
         {activeCollaborations.length ? (
-          <div className="br-requests-list">
-            {activeCollaborations.map((item) => (
-              <ActiveCollaborationCard key={`${item.targetType}-${item.id}`} item={item} />
-            ))}
+          <div className="grid gap-4">
+            {activeCollaborations.map((item) => <ActiveCollaborationCard key={`${item.targetType}-${item.id}`} item={item} />)}
           </div>
         ) : (
-          <p>Пока нет активных связей с владельцами.</p>
+          <Panel className="p-5 text-sm text-[var(--text-muted)]" surface="subtle">Пока нет активных связей с владельцами.</Panel>
         )}
       </section>
 
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Отправленные предложения</h2>
-            <p>Здесь остаются предложения, которые еще ожидают решения или были отклонены.</p>
-          </div>
-        </div>
-
+      <Panel className="grid gap-4 p-5 max-[640px]:p-4" surface="raised">
+        <SectionHeader title="Отправленные предложения" description="Предложения, которые ожидают решения владельца или были отклонены." />
         {proposalItems.length ? (
-          <div className="br-requests-list">
+          <div className="grid gap-3 lg:grid-cols-2">
             {proposalItems.map((item) => (
-              <article key={`${item.targetType}-${item.id}`} className="br-request-item">
-                <div className="br-request-item__avatar">{item.ownerName[0] ?? "В"}</div>
-                <div className="br-request-item__body">
-                  <strong>{item.title}</strong>
-                  <span>{getTargetFormatLabel(item.targetType)}</span>
-                  <span>Владелец: {item.ownerName}</span>
-                  <span>{item.createdAt}</span>
-                  <span>{item.message || "Сообщение не добавлено."}</span>
-                  <span className="br-request-item__status">{item.statusLabel}</span>
+              <Panel key={`${item.targetType}-${item.id}`} as="article" className="grid gap-3 rounded-[20px]" surface="subtle" padding="md">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="grid gap-1">
+                    <strong>{item.title}</strong>
+                    <span className="text-xs text-[var(--text-muted)]">{getTargetFormatLabel(item.targetType)}</span>
+                  </div>
+                  <StatusPill variant={item.status === "pending" ? "pending" : "inactive"}>{item.statusLabel}</StatusPill>
                 </div>
-              </article>
+                <p className="text-sm text-[var(--text-muted)]">Владелец: {item.ownerName}</p>
+                <p className="text-xs text-[var(--text-muted)]">{item.createdAt}</p>
+                <p className="text-sm leading-relaxed text-[var(--text)]">{item.message || "Сообщение не добавлено."}</p>
+              </Panel>
             ))}
           </div>
         ) : (
-          <p>Пока нет отправленных предложений владельцам.</p>
+          <p className="text-sm text-[var(--text-muted)]">Пока нет отправленных предложений владельцам.</p>
         )}
-      </section>
-    </section>
+      </Panel>
+    </div>
   );
 }

@@ -3,9 +3,7 @@ export { AdminPageHeader } from "@/widgets/property-admin/admin-page-header";
 export { AdminPageLayout } from "@/widgets/property-admin/admin-page-layout";
 export { CopyLinkButton } from "@/widgets/property-admin/copy-link-button";
 export { DangerZone } from "@/widgets/property-admin/danger-zone";
-export { FormSectionAccordion } from "@/widgets/property-admin/form-section-accordion";
 export { FormSectionCard } from "@/widgets/property-admin/form-section-card";
-export { ObjectCard } from "@/widgets/property-admin/object-card";
 export { ObjectStats } from "@/widgets/property-admin/object-stats";
 export { ObjectSummaryCard } from "@/widgets/property-admin/object-summary-card";
 export { ObjectTabs } from "@/widgets/property-admin/object-tabs";
@@ -14,6 +12,5 @@ export { PropertyInventoryBrowser } from "@/widgets/property-admin/property-inve
 export { PropertyCard } from "@/widgets/property-admin/property-card";
 export { PropertyQuickActions } from "@/widgets/property-admin/property-quick-actions";
 export { PropertyStatusBadge } from "@/widgets/property-admin/property-status-badge";
-export { SearchAndFilterBar } from "@/widgets/property-admin/search-and-filter-bar";
 export { StatusBadge } from "@/widgets/property-admin/status-badge";
 export { StickyActions } from "@/widgets/property-admin/sticky-actions";

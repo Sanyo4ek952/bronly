@@ -5,8 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
-import { cn } from "@/shared/lib/cn";
 import type { OwnerInventoryDashboardItem } from "@/entities/property";
+import { cn } from "@/shared/lib/cn";
+import { formatRubles } from "@/shared/lib/money";
 
 import { AgentCollaborationToggle } from "./agent-collaboration-toggle";
 import { inventoryMenuButtonClass, inventoryMenuListClass } from "./property-inventory-ui";
@@ -22,7 +23,7 @@ function formatMoney(value: number | null) {
     return "—";
   }
 
-  return `от ${value.toLocaleString("ru-RU")} ₽`;
+  return `от ${formatRubles(value)}`;
 }
 
 function getItemHref(item: OwnerInventoryDashboardItem) {

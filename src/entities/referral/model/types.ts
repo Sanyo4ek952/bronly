@@ -5,6 +5,14 @@ export type ReferralInviteIntent = "join_app" | "collaboration";
 export type ReferralInviteStatus = "active" | "used" | "revoked" | "expired";
 export type ReferralMilestoneType = "owner_inventory_created" | "agent_first_active_collaboration";
 export type ReferralApprovalStatus = "pending" | "approved" | "rejected";
+export type ReferralReviewResult =
+  | "approved"
+  | "rejected"
+  | "already_approved"
+  | "already_rejected"
+  | "conflict_approved"
+  | "conflict_rejected"
+  | "not_found";
 
 export type ReferralInviteSummary = {
   id: string;
@@ -30,6 +38,11 @@ export type ReferralInvitePageData = {
   canRegister: boolean;
   targetHref: string;
   targetLabel: string;
+};
+
+export type ReferralRegistrationIntent = {
+  inviteToken: string;
+  inviteeRole: ReferralInviteRole;
 };
 
 export type ReferralQueueItem = {

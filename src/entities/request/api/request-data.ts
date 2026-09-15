@@ -1,4 +1,4 @@
-export { getAgentRequests, getOwnerRequests, getRequestRoom } from "./request-queries";
+export { getAgentRequests, getOwnerRequests } from "./request-queries";
 export {
   createGuestRequest,
   requestAgentCompletion,

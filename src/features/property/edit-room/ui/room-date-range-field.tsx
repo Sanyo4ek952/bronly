@@ -14,7 +14,7 @@ import {
   normalizeDateRange,
   parseDateKey,
   weekDays,
-} from "@/widgets/calendar/lib/calendar-helpers";
+} from "@/entities/room/model/calendar-helpers";
 
 type RoomDateRangeFieldProps = {
   label?: string;

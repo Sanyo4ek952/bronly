@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 import type { OwnerRequestItem } from "@/entities/request";
-import { toPhoneHref, toWhatsAppHref } from "@/shared/lib";
-import { BottomSheet, Button, Select, StatusPill, Tabs } from "@/shared/ui";
+import { formatRubles, toPhoneHref, toWhatsAppHref } from "@/shared/lib";
+import { BottomSheet, Button, ButtonLink, InlineNotice, Panel, Select, StatusPill, Tabs } from "@/shared/ui";
 
 type RequestsBrowserProps = {
   requests: OwnerRequestItem[];
@@ -31,6 +31,10 @@ const requestStatuses = [
   { label: "Отклонена", value: "rejected" },
   { label: "Завершена", value: "completed" },
 ] as const;
+
+function isRequestStatusFilter(value: string): value is RequestStatusFilter {
+  return requestStatuses.some((item) => item.value === value);
+}
 
 function getRequestStatusVariant(status: OwnerRequestItem["status"]) {
   switch (status) {
@@ -98,9 +102,9 @@ function RequestStatusActions({
   const size = compact ? "sm" : "md";
 
   return (
-    <div className="br-request-status-actions">
+    <div className="grid gap-2 sm:grid-cols-2">
       {request.status === "new" || request.status === "transferred_to_owner" ? (
-        <form action={acceptAction} className="br-request-status-actions__item">
+        <form action={acceptAction}>
           <input type="hidden" name="requestId" value={request.id} />
           <Button type="submit" size={size} fullWidth>
             Принять владельцем
@@ -109,7 +113,7 @@ function RequestStatusActions({
       ) : null}
 
       {request.status === "accepted_by_owner" ? (
-        <form action={completeAction} className="br-request-status-actions__item">
+        <form action={completeAction}>
           <input type="hidden" name="requestId" value={request.id} />
           <Button type="submit" size={size} fullWidth>
             Отметить завершенной
@@ -118,7 +122,7 @@ function RequestStatusActions({
       ) : null}
 
       {request.status !== "completed" && request.status !== "rejected" ? (
-        <form action={rejectAction} className="br-request-status-actions__item">
+        <form action={rejectAction}>
           <input type="hidden" name="requestId" value={request.id} />
           <Button type="submit" variant="danger" size={size} fullWidth>
             Отклонить
@@ -137,16 +141,16 @@ function RequestDetail({
   compactActions = false,
 }: RequestActionProps & { compactActions?: boolean }) {
   return (
-    <div className="br-request-detail">
-      <div className="br-request-detail__header">
+    <div className="grid gap-4">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h3>{request.guestName}</h3>
-          <p>{request.phone}</p>
+          <h3 className="text-lg font-bold text-[var(--text)]">{request.guestName}</h3>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">{request.phone}</p>
         </div>
         <StatusPill variant={getRequestStatusVariant(request.status)}>{getRequestStatusLabel(request.status)}</StatusPill>
       </div>
 
-      <dl className="br-request-detail__grid">
+      <dl className="grid grid-cols-2 gap-3 max-[520px]:grid-cols-1 [&>div]:grid [&>div]:gap-1 [&>div]:rounded-2xl [&>div]:bg-[var(--surface-subtle)] [&>div]:p-3 [&_dd]:text-sm [&_dd]:font-semibold [&_dt]:text-xs [&_dt]:text-[var(--text-muted)]">
         <div>
           <dt>Источник</dt>
           <dd>{getRequestSourceLabel(request.source)}</dd>
@@ -181,22 +185,22 @@ function RequestDetail({
         </div>
         <div>
           <dt>Сумма</dt>
-          <dd>{request.totalPrice.toLocaleString("ru-RU")} ₽</dd>
+          <dd>{formatRubles(request.totalPrice)}</dd>
         </div>
         <div>
           <dt>Цена в заявке</dt>
-          <dd>{`${request.quotedPricePerNight.toLocaleString("ru-RU")} ₽ / ночь`}</dd>
+          <dd>{`${formatRubles(request.quotedPricePerNight)} / ночь`}</dd>
         </div>
         <div>
           <dt>Базовая цена номера</dt>
-          <dd>{`${request.basePricePerNight.toLocaleString("ru-RU")} ₽ / ночь`}</dd>
+          <dd>{`${formatRubles(request.basePricePerNight)} / ночь`}</dd>
         </div>
       </dl>
 
       {request.status === "accepted_by_owner" && request.completionRequestedAt ? (
-        <p className="br-inline-notice br-inline-notice--soft br-request-detail__notice">
+        <InlineNotice tone="soft">
           Агент просит отметить эту заявку завершенной.
-        </p>
+        </InlineNotice>
       ) : null}
 
       <RequestStatusActions
@@ -248,17 +252,15 @@ export function RequestsBrowser({
 
   return (
     <>
-      <div className="br-dashboard-block__header">
-        <div>
-          <h2>Заявки</h2>
-          <p>Просматривайте запросы на проживание и вручную обновляйте их статус.</p>
-        </div>
+      <div className="grid min-w-0 gap-1.5">
+        <h2 className="text-[var(--section-title-size)] leading-[1.12] tracking-[-0.03em]">Заявки</h2>
+        <p className="max-w-[68ch] text-[13px] leading-[1.55] text-[var(--text-muted)]">Просматривайте запросы на проживание и вручную обновляйте их статус.</p>
       </div>
 
-      <div className="br-request-filters">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-end">
         <Tabs
           ariaLabel="Статусы заявок"
-          className="br-request-filters__tabs"
+          className="overflow-x-auto flex-nowrap pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>button]:whitespace-nowrap"
           items={requestStatuses.map((item) => ({
             ...item,
             label:
@@ -267,11 +269,15 @@ export function RequestsBrowser({
                 : `${item.label} (${requestsForCounts.filter((request) => request.status === item.value).length})`,
           }))}
           value={statusFilter}
-          onChange={(value) => setStatusFilter(value as RequestStatusFilter)}
+          onChange={(value) => {
+            if (isRequestStatusFilter(value)) {
+              setStatusFilter(value);
+            }
+          }}
         />
 
         <Select
-          className="br-select-inline br-request-filters__select"
+          className="min-h-10"
           value={selectedRoomId}
           onChange={(event) => setSelectedRoomId(event.target.value)}
           options={[{ value: "all", label: "Все номера" }, ...roomOptions]}
@@ -279,73 +285,74 @@ export function RequestsBrowser({
       </div>
 
       {filteredRequests.length === 0 ? (
-        <div className="br-empty-state">
+        <Panel className="grid gap-1.5 p-5 text-center" padding="none" surface="subtle">
           <strong>Подходящих заявок пока нет</strong>
-          <p>Попробуйте сменить фильтр по статусу или номеру.</p>
-        </div>
+          <p className="text-sm text-[var(--text-muted)]">Попробуйте сменить фильтр по статусу или номеру.</p>
+        </Panel>
       ) : (
-        <div className="br-requests-layout">
-          <div className="br-request-cards">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+          <div className="grid gap-3">
             {filteredRequests.map((item) => {
               const telHref = toPhoneHref(item.phone);
               const whatsappHref = toWhatsAppHref(item.phone);
 
               return (
-                <article key={item.id} className="br-request-card br-card">
+                <Panel key={item.id} as="article" className="overflow-hidden shadow-[var(--shadow-sm)]">
                   <button
                     type="button"
-                    className="br-request-card__summary"
+                    className="grid w-full gap-3 bg-transparent p-4 text-left text-inherit transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]"
                     onClick={() => setPreferredActiveRequestId(item.id)}
                   >
-                    <div className="br-request-card__summary-top">
-                      <div className="br-request-card__identity">
-                        <div className="br-request-card__avatar">{getInitial(item.guestName)}</div>
-                        <div className="br-request-card__identity-copy">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--color-primary-soft)] font-extrabold text-[var(--color-primary-hover)]">{getInitial(item.guestName)}</div>
+                        <div className="grid min-w-0 gap-0.5">
                           <strong>{item.guestName}</strong>
-                          <span>{item.phone}</span>
+                          <span className="text-sm text-[var(--text-muted)]">{item.phone}</span>
                         </div>
                       </div>
                       <StatusPill variant={getRequestStatusVariant(item.status)}>{getRequestStatusLabel(item.status)}</StatusPill>
                     </div>
 
-                    <div className="br-request-card__summary-grid">
-                      <div className="br-request-card__fact">
+                    <div className="grid grid-cols-2 gap-3 max-[520px]:grid-cols-1">
+                      <div className="grid gap-1">
                         <span>Даты</span>
                         <strong>{`${item.checkIn} - ${item.checkOut}`}</strong>
                       </div>
-                      <div className="br-request-card__fact">
+                      <div className="grid gap-1">
                         <span>Номер</span>
                         <strong>{item.roomTitle}</strong>
                       </div>
-                      <div className="br-request-card__fact">
+                      <div className="grid gap-1">
                         <span>Сумма</span>
-                        <strong>{item.totalPrice.toLocaleString("ru-RU")} ₽</strong>
+                        <strong>{formatRubles(item.totalPrice)}</strong>
                       </div>
-                      <div className="br-request-card__fact">
+                      <div className="grid gap-1">
                         <span>Источник</span>
                         <strong>{getRequestSourceLabel(item.source)}</strong>
                       </div>
                     </div>
 
-                    <p className="br-request-card__subtitle">{getPropertyLabel(item.propertyTitle)}</p>
+                    <p className="text-sm text-[var(--text-muted)]">{getPropertyLabel(item.propertyTitle)}</p>
                   </button>
 
-                  <div className="br-request-card__actions">
-                    <div className="br-request-card__contact-actions">
+                  <div className="grid gap-3 border-t border-[var(--border)] p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+                    <div className="flex flex-wrap gap-2">
                       {telHref ? (
-                        <a href={telHref} className="br-button br-button--secondary br-button--sm">
+                        <ButtonLink href={telHref} variant="secondary" size="sm">
                           Позвонить
-                        </a>
+                        </ButtonLink>
                       ) : null}
                       {whatsappHref ? (
-                        <a
+                        <ButtonLink
                           href={whatsappHref}
-                          className="br-button br-button--secondary br-button--sm"
+                          variant="secondary"
+                          size="sm"
                           target="_blank"
                           rel="noreferrer"
                         >
                           WhatsApp
-                        </a>
+                        </ButtonLink>
                       ) : null}
                       <Button
                         type="button"
@@ -368,20 +375,20 @@ export function RequestsBrowser({
                       compact
                     />
                   </div>
-                </article>
+                </Panel>
               );
             })}
           </div>
 
           {activeRequest ? (
-            <aside className="br-request-detail-panel br-card">
+            <Panel as="aside" className="sticky top-4 hidden p-4 xl:block" padding="none">
               <RequestDetail
                 request={activeRequest}
                 acceptAction={acceptAction}
                 rejectAction={rejectAction}
                 completeAction={completeAction}
               />
-            </aside>
+            </Panel>
           ) : null}
         </div>
       )}
@@ -396,7 +403,7 @@ export function RequestsBrowser({
         title={sheetRequest ? sheetRequest.guestName : "Заявка"}
         description={sheetRequest ? `${sheetRequest.checkIn} - ${sheetRequest.checkOut}` : undefined}
         closeLabel="Закрыть детали заявки"
-        bodyClassName="br-request-sheet__body"
+        bodyClassName="pb-1"
       >
         {sheetRequest ? (
           <RequestDetail

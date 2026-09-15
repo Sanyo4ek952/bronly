@@ -16,8 +16,10 @@ import {
   redactAuthEmail,
   requireAppUrl,
 } from "@/shared/api/supabase";
-import { createTelegramLinkSession } from "@/entities/notification";
+import { createTelegramLinkSession, setTelegramNotificationsEnabled } from "@/entities/notification";
+import { getReferralRegistrationIntent } from "@/entities/referral";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
+import { consumeAuthReferralInvite } from "@/features/auth/consume-auth-referral-invite";
 
 type RegisterRole = "owner" | "agent";
 
@@ -156,13 +158,20 @@ export async function signUpAction(formData: FormData) {
   const phone = getString(formData, "phone");
   const password = getString(formData, "password");
   const requestedRole = getString(formData, "role");
-  const role = isRegisterRole(requestedRole) ? requestedRole : "owner";
   const inviteToken = getString(formData, "invite");
   const acceptedTerms = formData.get("acceptedTerms");
 
   if (!displayName || !email || !password || !acceptedTerms || (requestedRole && !isRegisterRole(requestedRole))) {
     redirect("/register?error=validation");
   }
+
+  const inviteIntent = inviteToken ? await getReferralRegistrationIntent(inviteToken) : null;
+
+  if (inviteToken && !inviteIntent) {
+    redirect(`/register?error=invite&invite=${encodeURIComponent(inviteToken)}`);
+  }
+
+  const role = inviteIntent?.inviteeRole ?? (isRegisterRole(requestedRole) ? requestedRole : "owner");
 
   const supabase = await createSupabaseServerClient();
   const slug = slugify(displayName);
@@ -200,6 +209,11 @@ export async function signUpAction(formData: FormData) {
 
   if (data.session) {
     const profile = await getCurrentAuthProfile();
+
+    if (!profile || (data.user && !(await consumeAuthReferralInvite(data.user, profile.id)))) {
+      redirect("/login?error=profile");
+    }
+
     redirect(inviteToken ? nextPath : getPostSignupRedirect(profile?.roles ?? [role]));
   }
 
@@ -251,12 +265,6 @@ export async function resendConfirmationEmailAction(formData: FormData) {
   }
 
   redirect(`/check-email?${query}&success=sent`);
-}
-
-export async function signOutAction() {
-  const supabase = await createSupabaseServerClient();
-  await supabase.auth.signOut();
-  redirect("/login");
 }
 
 export async function forgotPasswordAction(formData: FormData) {
@@ -319,7 +327,7 @@ export async function updateProfileAction(formData: FormData) {
 
   const profile = await getCurrentAuthProfile();
 
-  if (!profile || !displayName) {
+  if (!profile || !displayName || (role !== "owner" && role !== "agent") || !profile.roles.includes(role)) {
     redirect(`${getSettingsTargetPath(role)}?error=validation`);
   }
 
@@ -374,4 +382,18 @@ export async function startTelegramNotificationLinkAction(formData: FormData) {
   }
 
   redirect(result.url);
+}
+
+export async function setTelegramNotificationsEnabledAction(formData: FormData) {
+  const role = getString(formData, "role");
+  const targetPath = getSettingsTargetPath(role);
+  const enabled = getString(formData, "enabled") === "true";
+  const result = await setTelegramNotificationsEnabled(enabled);
+
+  if (!result.ok) {
+    redirect(`${targetPath}?error=telegram-setting`);
+  }
+
+  revalidatePath(targetPath);
+  redirect(`${targetPath}?success=${enabled ? "telegram-enabled" : "telegram-disabled"}`);
 }

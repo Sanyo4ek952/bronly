@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { Button } from "@/shared/ui";
+
 type InstallState = "unsupported" | "ios" | "prompt" | "installed";
 
 type BeforeInstallPromptEvent = Event & {
@@ -119,18 +121,20 @@ export function InstallAppCard() {
   };
 
   return (
-    <div className="br-pwa-card" aria-live="polite">
-      <strong>{installState === "installed" ? "Приложение установлено" : "Установить приложение"}</strong>
-      <p>{description}</p>
+    <div className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-subtle)] p-3.5" aria-live="polite">
+      <strong className="text-sm text-[var(--text)]">{installState === "installed" ? "Приложение установлено" : "Установить приложение"}</strong>
+      <p className="text-sm leading-[1.5] text-[var(--text-muted)]">{description}</p>
       {installState === "prompt" ? (
-        <button
-          className="br-button br-button--secondary br-button--full"
+        <Button
+          variant="secondary"
+          fullWidth
           type="button"
           onClick={handleInstall}
-          disabled={isPromptPending}
+          isLoading={isPromptPending}
+          loadingLabel="Открываем установку"
         >
-          {isPromptPending ? "Открываем установку..." : "Установить приложение"}
-        </button>
+          Установить приложение
+        </Button>
       ) : null}
     </div>
   );

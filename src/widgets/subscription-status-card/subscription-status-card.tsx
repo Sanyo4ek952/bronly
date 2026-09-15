@@ -1,6 +1,6 @@
 import type { SubscriptionRuntimeState } from "@/entities/subscription";
 import { formatDateLabel } from "@/shared/lib/date";
-import { ButtonLink, Panel, StatCard, StatusPill } from "@/shared/ui";
+import { ButtonLink, InlineNotice, Panel, StatCard, StatusPill } from "@/shared/ui";
 
 type SubscriptionStatusCardProps = {
   subscription: SubscriptionRuntimeState;
@@ -69,7 +69,7 @@ function getWarning(subscription: SubscriptionRuntimeState) {
   }
 
   if (subscription.status === "expired") {
-    return "Доступ ограничен до ручного продления администратором. Публичные страницы могут быть скрыты, а новые заявки временно ограничены.";
+    return "Доступ ограничен до ручного продления администратором. Публичная страница скрыта, новые заявки и изменения данных временно остановлены.";
   }
 
   return null;
@@ -81,10 +81,10 @@ function getPublicSurfaceLabel(roleContext: SubscriptionRuntimeState["roleContex
 
 function getPublicSurfaceAvailabilityLabel(roleContext: SubscriptionRuntimeState["roleContext"], isAllowed: boolean) {
   if (roleContext === "agent") {
-    return isAllowed ? "Доступна" : "Может быть скрыта";
+    return isAllowed ? "Доступна" : "Скрыта";
   }
 
-  return isAllowed ? "Доступны" : "Могут быть скрыты";
+  return isAllowed ? "Доступны" : "Скрыты";
 }
 
 function getSubscriptionDescription(roleContext: SubscriptionRuntimeState["roleContext"]) {
@@ -94,30 +94,30 @@ function getSubscriptionDescription(roleContext: SubscriptionRuntimeState["roleC
 }
 
 export function SubscriptionOverviewCard({ subscription, href }: SubscriptionOverviewCardProps) {
+  const rows = [
+    { label: "Действует до", value: getValidityLabel(subscription.validUntil) },
+    { label: "План", value: subscription.planName },
+    { label: "Активные номера", value: getRoomUsageLabel(subscription.activeRoomCount, subscription.roomLimit) },
+  ];
+
   return (
-    <article className="br-summary-card br-card">
-      <div className="br-summary-card__header">
-        <strong>Подписка</strong>
-        <span className="br-summary-card__badge">{subscription.statusLabel}</span>
+    <Panel as="article" className="grid content-between gap-4 p-5" surface="raised">
+      <div className="flex items-center justify-between gap-3">
+        <strong className="text-lg text-[var(--text)]">Подписка</strong>
+        <StatusPill variant={getStatusVariant(subscription.status)}>{subscription.statusLabel}</StatusPill>
       </div>
-      <div className="br-summary-card__rows">
-        <div className="br-summary-card__row">
-          <span>Действует до</span>
-          <strong>{getValidityLabel(subscription.validUntil)}</strong>
-        </div>
-        <div className="br-summary-card__row">
-          <span>План</span>
-          <strong>{subscription.planName}</strong>
-        </div>
-        <div className="br-summary-card__row">
-          <span>Активные номера</span>
-          <strong>{getRoomUsageLabel(subscription.activeRoomCount, subscription.roomLimit)}</strong>
-        </div>
+      <div className="grid overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)]">
+        {rows.map((row) => (
+          <div key={row.label} className="grid gap-1.5 border-b border-[var(--border)] px-3.5 py-3 last:border-b-0 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-center">
+            <span className="text-xs text-[var(--text-muted)]">{row.label}</span>
+            <strong className="text-sm text-[var(--text)]">{row.value}</strong>
+          </div>
+        ))}
       </div>
       <ButtonLink href={href} variant={subscription.status === "expired" ? "primary" : "secondary"} fullWidth>
         Открыть подписку
       </ButtonLink>
-    </article>
+    </Panel>
   );
 }
 
@@ -129,21 +129,34 @@ export function SubscriptionStatusCard({ subscription, backHref, backLabel }: Su
   const paidUntilLabel = subscription.paidUntil ? formatDateLabel(subscription.paidUntil) : null;
   const graceUntilLabel = subscription.graceEndsAt ? formatDateLabel(subscription.graceEndsAt) : null;
   const publicSurfaceLabel = getPublicSurfaceLabel(subscription.roleContext);
+  const renewalSteps = [
+    ["Шаг 1", "Оплатите доступ вне автоматического платежного контура."],
+    ["Шаг 2", "Свяжитесь с администратором и подтвердите оплату."],
+    ["Шаг 3", "Администратор вручную продлит доступ."],
+  ] as const;
+  const accessRows = [
+    ["Лимит активных номеров", subscription.isRoomLimitReached ? "Исчерпан" : "Доступен"],
+    [publicSurfaceLabel, getPublicSurfaceAvailabilityLabel(subscription.roleContext, subscription.isPublicAllowed)],
+    ["Новые заявки", subscription.isRequestIntakeAllowed ? "Принимаются" : "Не принимаются"],
+    ["Изменения в кабинете", subscription.isMutationAllowed ? "Доступны" : "Остановлены"],
+  ] as const;
 
   return (
-    <section className="br-owner-stack">
-      {warning ? <div className="br-inline-notice">{warning}</div> : null}
+    <section className="grid gap-5">
+      {warning ? <InlineNotice tone="warning">{warning}</InlineNotice> : null}
 
-      <section className="br-dashboard-block br-card">
-        <div className="br-dashboard-block__header">
-          <div>
-            <h2>Подписка</h2>
-            <p>{getSubscriptionDescription(subscription.roleContext)}</p>
+      <Panel className="grid gap-5 p-5 max-[640px]:p-4" surface="raised">
+        <div className="flex items-start justify-between gap-4 max-[640px]:flex-col">
+          <div className="grid gap-1.5">
+            <h1 className="text-2xl font-extrabold leading-tight text-[var(--text)]">Подписка</h1>
+            <p className="max-w-2xl text-sm leading-[1.55] text-[var(--text-muted)]">
+              {getSubscriptionDescription(subscription.roleContext)}
+            </p>
           </div>
           <StatusPill variant={getStatusVariant(subscription.status)}>{subscription.statusLabel}</StatusPill>
         </div>
 
-        <section className="br-summary-grid">
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <StatCard title="Статус" value={subscription.statusLabel} subtitle="Текущий статус подписки" />
           <StatCard title="План" value={subscription.planName} subtitle="План и лимит по активным номерам" />
           <StatCard
@@ -169,66 +182,48 @@ export function SubscriptionStatusCard({ subscription, backHref, backLabel }: Su
             subtitle="Показываем только когда доступ уже нужно продлить"
           />
         </section>
-      </section>
+      </Panel>
 
-      <section className="br-requests-layout">
-        <Panel className="br-dashboard-block">
-          <div className="br-dashboard-block__header">
-            <div>
-              <h2>Как продлить в MVP</h2>
-              <p>Продление доступа выполняется вручную. Онлайн-оплаты в кабинете сейчас нет.</p>
-            </div>
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+        <Panel className="grid content-start gap-4 p-5" surface="raised">
+          <div className="grid gap-1.5">
+            <h2 className="text-xl font-semibold leading-tight text-[var(--text)]">Как продлить в MVP</h2>
+            <p className="text-sm leading-[1.55] text-[var(--text-muted)]">
+              Продление доступа выполняется вручную. Онлайн-оплаты в кабинете сейчас нет.
+            </p>
           </div>
 
-          <div className="br-summary-card__rows">
-            <div className="br-summary-card__row">
-              <span>Шаг 1</span>
-              <strong>Оплатите доступ вне автоматического платежного контура.</strong>
-            </div>
-            <div className="br-summary-card__row">
-              <span>Шаг 2</span>
-              <strong>Свяжитесь с администратором и подтвердите оплату.</strong>
-            </div>
-            <div className="br-summary-card__row">
-              <span>Шаг 3</span>
-              <strong>Администратор вручную продлит доступ.</strong>
-            </div>
+          <div className="grid overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)]">
+            {renewalSteps.map(([label, value]) => (
+              <div key={label} className="grid gap-1.5 border-b border-[var(--border)] px-4 py-3 last:border-b-0 sm:grid-cols-[72px_minmax(0,1fr)] sm:items-center">
+                <span className="text-xs text-[var(--text-muted)]">{label}</span>
+                <strong className="text-sm leading-[1.45] text-[var(--text)]">{value}</strong>
+              </div>
+            ))}
           </div>
         </Panel>
 
-        <aside className="br-dashboard-block br-card">
-          <div className="br-dashboard-block__header">
-            <div>
-              <h2>Что важно сейчас</h2>
-              <p>Только MVP-правила без отдельного billing cabinet.</p>
-            </div>
+        <Panel as="aside" className="grid content-start gap-4 p-5" surface="raised">
+          <div className="grid gap-1.5">
+            <h2 className="text-xl font-semibold leading-tight text-[var(--text)]">Что доступно сейчас</h2>
+            <p className="text-sm leading-[1.55] text-[var(--text-muted)]">Ограничения применяются одинаково во всех точках входа.</p>
           </div>
 
-          <div className="br-toggle-list">
-            <div className="br-summary-card__row">
-              <span>Лимит активных номеров</span>
-              <strong>{subscription.isRoomLimitReached ? "Исчерпан" : "Доступен"}</strong>
-            </div>
-            <div className="br-summary-card__row">
-              <span>{publicSurfaceLabel}</span>
-              <strong>{getPublicSurfaceAvailabilityLabel(subscription.roleContext, subscription.isPublicAllowed)}</strong>
-            </div>
-            <div className="br-summary-card__row">
-              <span>Новые заявки</span>
-              <strong>{subscription.isRequestIntakeAllowed ? "Принимаются" : "Временно ограничены"}</strong>
-            </div>
-            <div className="br-summary-card__row">
-              <span>Изменения в кабинете</span>
-              <strong>{subscription.isMutationAllowed ? "Доступны" : "Временно остановлены"}</strong>
-            </div>
+          <div className="grid overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)]">
+            {accessRows.map(([label, value]) => (
+              <div key={label} className="grid gap-1.5 border-b border-[var(--border)] px-4 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <span className="text-sm text-[var(--text-muted)]">{label}</span>
+                <strong className="text-sm text-[var(--text)]">{value}</strong>
+              </div>
+            ))}
           </div>
 
-          <p className="br-owner-muted">{roomLimitNote}</p>
+          <p className="text-sm leading-[1.55] text-[var(--text-muted)]">{roomLimitNote}</p>
 
           <ButtonLink href={backHref} variant="secondary" fullWidth>
             {backLabel}
           </ButtonLink>
-        </aside>
+        </Panel>
       </section>
     </section>
   );

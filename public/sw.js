@@ -6,6 +6,20 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+function getSafeClientUrl(value, fallback) {
+  try {
+    const url = new URL(value || fallback, self.location.origin);
+
+    if (url.origin !== self.location.origin) {
+      return fallback;
+    }
+
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return fallback;
+  }
+}
+
 self.addEventListener("push", (event) => {
   const payload = (() => {
     if (!event.data) {
@@ -26,7 +40,7 @@ self.addEventListener("push", (event) => {
     badge: payload.badge || "/icon",
     tag: payload.tag || undefined,
     data: {
-      url: payload.url || "/dashboard/notifications",
+      url: getSafeClientUrl(payload.url, "/dashboard/notifications"),
     },
   };
 
@@ -36,10 +50,11 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const targetUrl =
+  const requestedUrl =
     event.notification.data && event.notification.data.url
       ? event.notification.data.url
       : "/dashboard/notifications";
+  const targetUrl = getSafeClientUrl(requestedUrl, "/dashboard/notifications");
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {

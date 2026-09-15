@@ -2,12 +2,19 @@
 
 import { redirect } from "next/navigation";
 
-import { createGuestRequest } from "@/entities/request";
+import { createGuestRequest, mapGuestRequestFailureToPublicError } from "@/entities/request";
 import { encodePublicPathSegment } from "@/shared/lib/public-links";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+function getPositiveInteger(formData: FormData, key: string) {
+  const rawValue = getString(formData, key);
+  const value = Number(rawValue);
+
+  return Number.isInteger(value) && value > 0 ? value : Number.NaN;
 }
 
 function buildRequestPath(publicSlug: string, state: Record<string, string>) {
@@ -31,8 +38,9 @@ export async function submitGuestRequestAction(formData: FormData) {
   const roomId = getString(formData, "roomId");
   const publicSlug = getString(formData, "publicSlug");
   const propertySlug = getString(formData, "propertySlug");
-  const adultsCount = Number.parseInt(getString(formData, "adultsCount"), 10) || 1;
-  const roomsCount = Number.parseInt(getString(formData, "roomsCount"), 10) || 1;
+  const adultsCount = getPositiveInteger(formData, "adultsCount");
+  const roomsCount = getPositiveInteger(formData, "roomsCount");
+  const hasPrivacyConsent = getString(formData, "privacyConsent") === "on";
   const baseState = {
     propertySlug,
     roomId,
@@ -42,7 +50,17 @@ export async function submitGuestRequestAction(formData: FormData) {
     rooms: String(roomsCount),
   };
 
-  if (!guestName || !guestPhone || !checkIn || !checkOut || !roomId || !publicSlug) {
+  if (
+    !guestName ||
+    !guestPhone ||
+    !checkIn ||
+    !checkOut ||
+    !roomId ||
+    !publicSlug ||
+    !Number.isInteger(adultsCount) ||
+    !Number.isInteger(roomsCount) ||
+    !hasPrivacyConsent
+  ) {
     redirect(buildRequestPath(publicSlug || "owner", { ...baseState, error: "validation" }));
   }
 
@@ -60,18 +78,7 @@ export async function submitGuestRequestAction(formData: FormData) {
   });
 
   if (!result.ok) {
-    const error =
-      result.reason === "room_not_found"
-        ? "room"
-        : result.reason === "availability_failed"
-          ? "availability"
-          : result.reason === "room_not_suitable" || result.reason === "validation_failed"
-            ? "validation"
-            : result.reason === "property_not_found"
-              ? "property"
-              : result.reason === "subscription_expired"
-                ? "subscription"
-                : "save";
+    const error = mapGuestRequestFailureToPublicError(result.reason);
     redirect(buildRequestPath(publicSlug, { ...baseState, error }));
   }
 

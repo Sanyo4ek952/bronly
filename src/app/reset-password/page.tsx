@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { updatePasswordAction } from "@/app/auth/actions";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { createSeoMetadata } from "@/shared/lib/seo";
-import { BrandLogo, SubmitButton } from "@/shared/ui";
+import { InlineNotice, Input, SubmitButton } from "@/shared/ui";
+import { AuthShell } from "@/widgets/auth-shell";
 
 type ResetPasswordPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -29,41 +31,22 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
   const error = typeof params.error === "string" ? params.error : "";
 
   return (
-    <main className="br-auth-page">
-      <section className="br-auth-shell br-card">
-        <BrandLogo className="br-auth-shell__logo" />
-        <div className="br-auth-shell__grid">
-          <div className="br-auth-shell__intro">
-            <span className="br-chip">обновление пароля</span>
-            <h1 className="br-auth-shell__title">Новый пароль</h1>
-            <p className="br-auth-shell__text">Задайте новый пароль для аккаунта Bronly.</p>
-          </div>
-
-          <div className="br-auth-panel">
-            {error ? (
-              <p className="br-card" style={{ marginBottom: 16 }}>
-                Не удалось обновить пароль. Убедитесь, что пароли совпадают и содержат минимум 8 символов.
-              </p>
-            ) : null}
-
-            <form className="br-auth-form" action={updatePasswordAction}>
-              <div className="br-auth-form__field">
-                <label className="br-label" htmlFor="password">
-                  Новый пароль
-                </label>
-                <input id="password" name="password" type="password" className="br-field" placeholder="Минимум 8 символов" required />
-              </div>
-              <div className="br-auth-form__field">
-                <label className="br-label" htmlFor="confirm-password">
-                  Повторите пароль
-                </label>
-                <input id="confirm-password" name="confirmPassword" type="password" className="br-field" placeholder="Повторите пароль" required />
-              </div>
-              <SubmitButton fullWidth pendingLabel="Сохранение">Сохранить пароль</SubmitButton>
-            </form>
-          </div>
-        </div>
-      </section>
-    </main>
+    <AuthShell
+      eyebrow="Обновление пароля"
+      title="Новый пароль"
+      description="Задайте новый пароль для аккаунта Bronly."
+      footer={<Link href="/login">Вернуться ко входу</Link>}
+    >
+      {error ? (
+        <InlineNotice tone="error">
+          Не удалось обновить пароль. Убедитесь, что пароли совпадают и содержат минимум 8 символов.
+        </InlineNotice>
+      ) : null}
+      <form className="grid gap-4" action={updatePasswordAction}>
+        <Input id="password" name="password" type="password" label="Новый пароль" placeholder="Минимум 8 символов" required />
+        <Input id="confirm-password" name="confirmPassword" type="password" label="Повторите пароль" placeholder="Повторите пароль" required />
+        <SubmitButton fullWidth pendingLabel="Сохранение">Сохранить пароль</SubmitButton>
+      </form>
+    </AuthShell>
   );
 }

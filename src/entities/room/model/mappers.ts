@@ -1,5 +1,9 @@
-import type { OwnerBusyRange, OwnerSeasonalPrice } from "@/entities/room/model/types";
+import type { OwnerBusyRange, OwnerSeasonalPrice, RoomKind } from "@/entities/room/model/types";
 import type { SupabaseRoomBusyRangeRow, SupabaseRoomSeasonalPriceRow } from "@/shared/api/supabase/types";
+
+export function normalizeRoomKind(value: string): RoomKind {
+  return value === "standalone_room" ? "standalone_room" : "property_room";
+}
 
 export function mapSeasonalPrice(row: SupabaseRoomSeasonalPriceRow): OwnerSeasonalPrice {
   return {

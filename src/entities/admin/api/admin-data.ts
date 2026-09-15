@@ -14,6 +14,8 @@ import type {
   AdminSubscriptionsPageData,
 } from "@/entities/admin/model/types";
 import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase";
+import type { Database } from "@/shared/api/supabase/database.types";
+import { logServerConfigurationError, logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 import { buildAgentPublicPath, buildOwnerPublicPath } from "@/shared/lib";
 import type {
   SupabaseCollectionRow,
@@ -57,18 +59,15 @@ type AdminSnapshot = {
   reviewsPageData: AdminReviewsPageData;
 };
 
+type DatabaseCollectionRow = Database["public"]["Tables"]["collections"]["Row"];
+
+function isAdminCollectionRow(row: DatabaseCollectionRow): row is SupabaseCollectionRow {
+  return row.creator_role === "owner" || row.creator_role === "agent";
+}
+
 async function getAdminRecords(): Promise<AdminRecords> {
   const admin = createSupabaseAdminClient();
-  const [
-    { data: profileRows },
-    { data: roleRows },
-    { data: propertyRows },
-    { data: roomRows },
-    { data: subscriptionRows },
-    { data: guestRequestRows },
-    { data: collectionRows },
-    pendingReferralRewards,
-  ] = await Promise.all([
+  const results = await Promise.all([
     admin.from("profiles").select("*").order("created_at", { ascending: true }),
     admin.from("user_roles").select("*"),
     admin.from("properties").select("*").order("created_at", { ascending: false }),
@@ -77,80 +76,48 @@ async function getAdminRecords(): Promise<AdminRecords> {
     admin.from("guest_requests").select("*").order("created_at", { ascending: false }),
     admin.from("collections").select("*"),
     getPendingReferralQueue(),
-  ]);
+  ] as const);
+  const [profileResult, roleResult, propertyResult, roomResult, subscriptionResult, guestRequestResult, collectionResult] = results;
+
+  for (const result of results.slice(0, 7)) {
+    if ("error" in result && result.error) {
+      throw result.error;
+    }
+  }
+
+  const pendingReferralRewards = results[7];
+  const collections = collectionResult.data ?? [];
+
+  if (!collections.every(isAdminCollectionRow)) {
+    throw new Error("Admin collection data contains an unsupported creator role.");
+  }
 
   return {
-    profiles: (profileRows ?? []) as SupabaseProfileRow[],
-    roles: (roleRows ?? []) as SupabaseUserRoleRow[],
-    properties: (propertyRows ?? []) as SupabasePropertyRow[],
-    rooms: (roomRows ?? []) as SupabaseRoomRow[],
-    subscriptions: (subscriptionRows ?? []) as SupabaseSubscriptionRow[],
-    guestRequests: (guestRequestRows ?? []) as SupabaseGuestRequestRow[],
-    collections: (collectionRows ?? []) as SupabaseCollectionRow[],
+    profiles: profileResult.data ?? [],
+    roles: roleResult.data ?? [],
+    properties: propertyResult.data ?? [],
+    rooms: roomResult.data ?? [],
+    subscriptions: subscriptionResult.data ?? [],
+    guestRequests: guestRequestResult.data ?? [],
+    collections,
     pendingReferralRewards,
-  };
-}
-
-function getEmptySnapshot(): AdminSnapshot {
-  const emptyDashboardData: AdminDashboardData = {
-    userCount: 0,
-    ownerCount: 0,
-    agentCount: 0,
-    dualRoleCount: 0,
-    propertyCount: 0,
-    roomCount: 0,
-    requestCount: 0,
-    ownerRequestCount: 0,
-    agentRequestCount: 0,
-    transferredRequestCount: 0,
-    completedRequestCount: 0,
-    collectionCount: 0,
-    paidUserCount: 0,
-    activeSubscriptionCount: 0,
-    expiringSoonCount: 0,
-    frozenPropertyCount: 0,
-    users: [],
-    subscriptions: [],
-    properties: [],
-    pendingReferralRewards: [],
-  };
-
-  return {
-    dashboardData: emptyDashboardData,
-    overviewData: {
-      ...emptyDashboardData,
-      hiddenProfileCount: 0,
-      pendingReferralCount: 0,
-      expiringSubscriptions: [],
-      frozenProperties: [],
-      hiddenUsers: [],
-      pendingReferralRewards: [],
-    },
-    usersPageData: {
-      users: [],
-      hiddenProfileCount: 0,
-    },
-    subscriptionsPageData: {
-      subscriptions: [],
-      expiringSoonCount: 0,
-      activeSubscriptionCount: 0,
-    },
-    propertiesPageData: {
-      properties: [],
-      frozenPropertyCount: 0,
-    },
-    reviewsPageData: {
-      pendingReferralRewards: [],
-    },
   };
 }
 
 const getAdminSnapshot = cache(async (): Promise<AdminSnapshot> => {
   if (!canUseSupabase()) {
-    return getEmptySnapshot();
+    logServerConfigurationError("admin_dashboard_supabase_not_configured");
+    throw new Error("Admin data source is unavailable.");
   }
 
-  const records = await getAdminRecords();
+  let records: AdminRecords;
+
+  try {
+    records = await getAdminRecords();
+  } catch (error) {
+    logServerDataError("admin_dashboard_load_failed", error);
+    throw new Error("Admin data source is unavailable.");
+  }
   const rolesByProfile = new Map<string, string[]>();
 
   for (const role of records.roles) {
@@ -320,12 +287,10 @@ const getAdminSnapshot = cache(async (): Promise<AdminSnapshot> => {
     };
   });
 
-  const activeSubscriptionCount = subscriptions.filter(
-    (item) => item.status === "active" || item.status === "manual",
-  ).length;
+  const activeSubscriptionCount = subscriptions.filter((item) => item.status === "active").length;
   const paidUserCount = new Set(
     subscriptions
-      .filter((item) => item.status === "active" || item.status === "manual")
+      .filter((item) => item.status === "active")
       .map((item) => item.profileId),
   ).size;
   const expiringSubscriptions = subscriptions.filter((item) => isExpiringSoon(item.validUntil));

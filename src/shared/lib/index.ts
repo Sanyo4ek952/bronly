@@ -9,6 +9,7 @@ export {
 export type { DashboardBreadcrumbItem } from "@/shared/lib/dashboard-page-nav";
 export { formatDateLabel, formatDateTimeLabel } from "@/shared/lib/date";
 export { getCheckbox, getInteger, getNumber, getString, splitLines } from "@/shared/lib/form-data";
+export { formatRubles } from "@/shared/lib/money";
 export { getRussianPluralForm } from "@/shared/lib/pluralize";
 export { buildAgentPublicPath, buildCollectionPublicPath, buildOwnerPublicPath } from "@/shared/lib/public-links";
 export { buildSearchParams, getSearchString, readFeedbackSearchParams, readSearchParams } from "@/shared/lib/query-params";

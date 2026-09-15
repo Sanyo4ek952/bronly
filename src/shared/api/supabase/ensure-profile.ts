@@ -1,8 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 
-import { consumeReferralInviteForProfile } from "@/entities/referral";
 import { createSupabaseAdminClient } from "@/shared/api/supabase/server";
-import type { AuthRole } from "@/shared/api/supabase/server-auth";
 
 function slugify(value: string) {
   return (
@@ -49,15 +47,19 @@ function addDays(baseDate: Date, days: number) {
   return nextDate;
 }
 
-export async function ensureAuthUserProfile(user: User): Promise<boolean> {
+export async function ensureAuthUserProfile(user: User): Promise<string | null> {
   const admin = createSupabaseAdminClient();
   const { data: existing } = await admin.from("profiles").select("id").eq("auth_user_id", user.id).maybeSingle();
+  const metadata = user.user_metadata ?? {};
+  const role: "agent" | "owner" =
+    typeof metadata.role === "string" && (metadata.role === "agent" || metadata.role === "owner")
+      ? metadata.role
+      : "owner";
 
   if (existing?.id) {
-    return true;
+    return existing.id;
   }
 
-  const metadata = user.user_metadata ?? {};
   const displayName =
     (typeof metadata.display_name === "string" && metadata.display_name) ||
     (typeof metadata.full_name === "string" && metadata.full_name) ||
@@ -67,11 +69,6 @@ export async function ensureAuthUserProfile(user: User): Promise<boolean> {
     (typeof metadata.phone === "string" && metadata.phone) ||
     (typeof metadata.phone_number === "string" && metadata.phone_number) ||
     null;
-  const role = (
-    typeof metadata.role === "string" && (metadata.role === "agent" || metadata.role === "owner")
-      ? metadata.role
-      : "owner"
-  ) as AuthRole;
   const requestedSlug =
     (typeof metadata.slug === "string" && metadata.slug) || slugify(displayName);
   const slug = await resolveUniqueSlug(admin, slugify(requestedSlug));
@@ -92,7 +89,7 @@ export async function ensureAuthUserProfile(user: User): Promise<boolean> {
     .single();
 
   if (profileError || !profile?.id) {
-    return false;
+    return null;
   }
 
   const { error: roleError } = await admin.from("user_roles").upsert(
@@ -104,7 +101,7 @@ export async function ensureAuthUserProfile(user: User): Promise<boolean> {
   );
 
   if (roleError) {
-    return false;
+    return null;
   }
 
   const now = new Date();
@@ -124,18 +121,8 @@ export async function ensureAuthUserProfile(user: User): Promise<boolean> {
   );
 
   if (subscriptionError) {
-    return false;
+    return null;
   }
 
-  const inviteToken = typeof metadata.referral_invite_token === "string" ? metadata.referral_invite_token : "";
-
-  if (inviteToken) {
-    await consumeReferralInviteForProfile({
-      inviteToken,
-      invitedProfileId: profile.id,
-      inviteeRole: role === "agent" ? "agent" : "owner",
-    });
-  }
-
-  return true;
+  return profile.id;
 }

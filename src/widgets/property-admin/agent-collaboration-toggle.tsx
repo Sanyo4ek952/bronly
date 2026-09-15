@@ -4,7 +4,7 @@ import { useTransition } from "react";
 
 import { cn } from "@/shared/lib/cn";
 
-import { toggleOwnerInventoryAgentInquiries } from "@/app/dashboard/properties/actions";
+import { toggleOwnerInventoryAgentInquiries } from "@/features/property/owner-mutations";
 
 type AgentCollaborationToggleProps = {
   targetId: string;
