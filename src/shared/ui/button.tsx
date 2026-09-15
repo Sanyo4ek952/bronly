@@ -50,7 +50,7 @@ function getVariantClass(variant: ButtonVariant) {
         "hover:border-[rgb(var(--color-primary-rgb)_/_0.24)] hover:bg-[var(--color-primary-pale)] hover:text-[var(--text)]",
       );
     default:
-      return "bg-[var(--accent)] text-white hover:bg-[var(--accent-strong)]";
+      return "bg-[var(--accent)] !text-white hover:bg-[var(--accent-strong)]";
   }
 }
 
