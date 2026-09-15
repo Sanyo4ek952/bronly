@@ -1,6 +1,6 @@
 "use client";
 
-import { BedDouble, Copy, Mail, MoreHorizontal, Tag, TrendingUp } from "lucide-react";
+import { Copy, MoreHorizontal } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -14,17 +14,7 @@ import { inventoryMenuButtonClass, inventoryMenuListClass } from "./property-inv
 import { PropertyQuickActions } from "./property-quick-actions";
 import { PropertyStatusBadge } from "./property-status-badge";
 
-type PropertyCardProps = {
-  item: OwnerInventoryDashboardItem;
-};
-
-function formatMoney(value: number | null) {
-  if (value == null) {
-    return "—";
-  }
-
-  return `от ${formatRubles(value)}`;
-}
+type PropertyCardProps = { item: OwnerInventoryDashboardItem };
 
 function getItemHref(item: OwnerInventoryDashboardItem) {
   return item.kind === "property" ? `/dashboard/properties/${item.id}/rooms` : `/dashboard/rooms/${item.id}`;
@@ -36,233 +26,92 @@ function getSettingsHref(item: OwnerInventoryDashboardItem) {
 
 function getMenuLinks(item: OwnerInventoryDashboardItem) {
   const settingsHref = getSettingsHref(item);
-
   return [
     { href: settingsHref, label: "Настройки" },
     { href: getItemHref(item), label: item.kind === "property" ? "Номера объекта" : "Открыть номер" },
-    {
-      href: item.publicHref ?? settingsHref,
-      label: item.publicHref ? "Публичная страница" : "Настройки профиля",
-      external: Boolean(item.publicHref),
-    },
+    { href: item.publicHref ?? settingsHref, label: item.publicHref ? "Публичная страница" : "Настройки профиля", external: Boolean(item.publicHref) },
   ];
 }
 
-const statClass = cn(
-  "grid min-h-[74px] items-center gap-2.5 border-l border-[rgb(16_24_40_/_0.08)] px-4 py-[14px]",
-  "[grid-template-columns:28px_minmax(0,1fr)] first:border-l-0",
-  "max-[520px]:min-h-[54px] max-[520px]:border-l-0 max-[520px]:px-1.5 max-[520px]:py-2.5",
-  "max-[520px]:[grid-template-columns:22px_minmax(0,1fr)]",
-);
+function formatRoomRatio(item: OwnerInventoryDashboardItem) {
+  return `${item.roomCount} / ${item.activeRoomCount}`;
+}
+
+function formatPrice(value: number | null) {
+  return value == null ? "—" : `от ${formatRubles(value)}`;
+}
 
 export function PropertyCard({ item }: PropertyCardProps) {
   const [copied, setCopied] = useState(false);
-  const metaLabel = item.kind === "property" ? item.propertyType : `${item.propertyType} • Отдельный номер`;
-  const menuLinks = getMenuLinks(item);
+  const metaLabel = item.kind === "property" ? item.propertyType : `${item.propertyType} · Отдельный номер`;
 
   async function handleCopy() {
-    if (!item.publicHref) {
-      return;
-    }
-
+    if (!item.publicHref) return;
     await navigator.clipboard.writeText(`${window.location.origin}${item.publicHref}`);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
   }
 
+  const metrics = [
+    { label: item.kind === "property" ? "номера / активны" : "номер / активен", value: formatRoomRatio(item) },
+    { label: "за сутки", value: formatPrice(item.minPrice) },
+    { label: "новые заявки", value: String(item.newRequestsCount) },
+    { label: "активность", value: `${item.activityScore}%` },
+  ];
+
   return (
-    <article
-      className={cn(
-        "grid overflow-hidden rounded-3xl border border-[rgb(16_24_40_/_0.08)] bg-white p-3 [box-shadow:0_10px_28px_rgb(16_24_40_/_0.06)]",
-        "[grid-template-areas:'media_head'_'media_stats'_'media_link'_'media_footer'] [grid-template-columns:168px_minmax(0,1fr)] gap-x-[18px] gap-y-[14px]",
-        "max-[960px]:[grid-template-columns:144px_minmax(0,1fr)] max-[960px]:gap-x-4 max-[960px]:gap-y-3",
-        "max-[720px]:[grid-template-columns:128px_minmax(0,1fr)] max-[720px]:p-2.5 max-[720px]:gap-x-[14px] max-[720px]:gap-y-3",
-        "max-[520px]:rounded-[20px] max-[520px]:p-2.5 max-[520px]:gap-x-3 max-[520px]:gap-y-2.5",
-        "max-[520px]:[grid-template-areas:'media_head'_'stats_stats'_'link_link'_'footer_footer'] max-[520px]:[grid-template-columns:94px_minmax(0,1fr)]",
-      )}
-    >
+    <article className="grid grid-cols-[154px_minmax(0,1fr)] gap-[17px] rounded-[22px] border border-[var(--border)] bg-[var(--surface)] p-3 shadow-[var(--shadow-sm)] max-[720px]:grid-cols-1 max-[720px]:gap-3 max-[720px]:p-2.5">
       <Link
         href={getItemHref(item)}
-        className={cn(
-          "relative block min-h-[250px] overflow-hidden rounded-[18px] bg-[linear-gradient(135deg,#d6ebe7_0%,#b4d7d5_40%,#f0e4d2_100%)] [grid-area:media]",
-          "max-[960px]:min-h-[208px] max-[720px]:min-h-[176px] max-[520px]:min-h-[86px] max-[520px]:rounded-[14px]",
-        )}
+        className="relative min-h-[210px] overflow-hidden rounded-2xl bg-[linear-gradient(145deg,var(--surface-muted),var(--surface-subtle))] focus-visible:outline-none focus-visible:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.16)] max-[720px]:min-h-[154px] max-[350px]:min-h-[132px]"
       >
         {item.coverImageUrl ? (
-          <Image
-            src={item.coverImageUrl}
-            alt={item.title}
-            width={960}
-            height={640}
-            unoptimized
-            sizes="(min-width: 1280px) 20vw, (min-width: 900px) 30vw, 100vw"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div
-            className="h-full w-full bg-[linear-gradient(135deg,#bfdde3_0%,#d9e5dc_52%,#ece1d5_100%)]"
-            aria-hidden="true"
-          />
-        )}
+          <Image src={item.coverImageUrl} alt={item.title} width={960} height={640} unoptimized sizes="(min-width: 1080px) 154px, 100vw" className="h-full w-full object-cover" />
+        ) : <span className="block h-full w-full" aria-hidden="true" />}
       </Link>
 
-      <div className="flex min-w-0 items-start justify-between gap-3 pt-1 [grid-area:head] max-[520px]:pt-0.5">
-        <div className="grid min-w-0 flex-1 gap-2.5 max-[520px]:gap-2">
-          <div className="flex items-start gap-3 max-[720px]:flex-wrap max-[520px]:grid max-[520px]:gap-2">
-            <strong className="block text-[clamp(22px,2vw,34px)] leading-[1.12] tracking-[-0.02em] text-[var(--text)]">
-              {item.title}
-            </strong>
+      <div className="grid min-w-0 content-start">
+        <div className="flex items-start justify-between gap-4 px-1 pb-3 pt-1 max-[520px]:grid max-[520px]:gap-2">
+          <div className="min-w-0">
+            <h3 className="text-[22px] font-bold leading-[1.15] tracking-[-0.025em] text-[var(--text)] max-[520px]:text-xl">{item.title}</h3>
+            <p className="mt-1.5 text-xs text-[var(--text-muted)]">{[metaLabel, item.city].filter(Boolean).join(" · ")}</p>
+            {item.address ? <p className="mt-1 text-xs text-[var(--text-subtle)]">{item.address}</p> : null}
           </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-sm leading-[1.3] text-[var(--text-subtle)]">
-            <span>{metaLabel}</span>
-            {item.city ? (
-              <>
-                <span className="h-[5px] w-[5px] rounded-full bg-[rgb(16_24_40_/_0.24)]" aria-hidden="true" />
-                <span>{item.city}</span>
-              </>
-            ) : null}
-          </div>
+          <PropertyStatusBadge status={item.status} label={item.statusLabel} />
         </div>
 
-        <PropertyStatusBadge status={item.status} label={item.statusLabel} />
-      </div>
+        <dl className="grid grid-cols-4 border-y border-[var(--border)] max-[520px]:grid-cols-2">
+          {metrics.map((metric, index) => (
+            <div key={metric.label} className={cn("border-r border-[var(--border)] px-3 py-2.5 last:border-r-0 max-[520px]:border-b max-[520px]:px-1.5", index % 2 === 1 && "max-[520px]:border-r-0", index >= 2 && "max-[520px]:border-b-0")}>
+              <dt className="text-[10px] text-[var(--text-muted)]">{metric.label}</dt>
+              <dd className="mt-1 text-sm font-bold text-[var(--text)]">{metric.value}</dd>
+            </div>
+          ))}
+        </dl>
 
-      <div className="grid grid-cols-4 items-stretch border-y border-[rgb(16_24_40_/_0.08)] [grid-area:stats] max-[520px]:grid-cols-3 max-[520px]:border-t-0">
-        <div className={statClass}>
-          <div className="flex min-h-full items-center justify-center text-[var(--text-subtle)]">
-            <BedDouble aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.9} />
+        <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] px-1 py-2.5 max-[720px]:grid max-[720px]:gap-2.5">
+          <div className="grid min-w-0 gap-0.5">
+            <span className="text-[10px] text-[var(--text-muted)]">Публичная ссылка</span>
+            <span className="flex min-w-0 items-center gap-1.5">
+              <strong className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs text-[var(--accent-strong)]">{item.publicLabel ?? "Сначала заполните публичный профиль"}</strong>
+              <button type="button" className="grid size-7 flex-none place-items-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--accent-strong)] focus-visible:outline-none focus-visible:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.12)] disabled:cursor-not-allowed disabled:opacity-50" disabled={!item.publicHref} aria-label={copied ? "Скопировано" : `Копировать публичную ссылку ${item.title}`} onClick={() => void handleCopy()}>
+                <Copy aria-hidden="true" className="size-4" strokeWidth={1.9} />
+              </button>
+              <span className="sr-only" aria-live="polite">{copied ? "Ссылка скопирована" : ""}</span>
+            </span>
           </div>
-          <div className="grid min-w-0 gap-1">
-            <div className="min-w-0 text-[var(--text-muted)]">
-              <span className="block text-xs leading-[1.2] max-[520px]:text-[11px]">Номеров</span>
-            </div>
-            <div className="flex min-w-0 items-center gap-3">
-              <strong className="min-w-0 text-[15px] leading-[1.2] tracking-[-0.01em] text-[var(--text)] max-[520px]:text-base">
-                {item.roomCount}
-              </strong>
-            </div>
-          </div>
+          <AgentCollaborationToggle targetId={item.id} targetKind={item.kind} checked={item.allowAgentInquiries} activeCollaborationsCount={item.activeCollaborationsCount} itemTitle={item.title} />
         </div>
 
-        <div className={statClass}>
-          <div className="flex min-h-full items-center justify-center text-[var(--text-subtle)]">
-            <Mail aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.9} />
-          </div>
-          <div className="grid min-w-0 gap-1">
-            <div className="min-w-0 text-[var(--text-muted)]">
-              <span className="block text-xs leading-[1.2] max-[520px]:text-[11px]">Новые заявки</span>
-            </div>
-            <div className="flex min-w-0 items-center gap-3">
-              <strong className="min-w-0 text-[15px] leading-[1.2] tracking-[-0.01em] text-[var(--text)] max-[520px]:text-base">
-                {item.newRequestsCount}
-              </strong>
-            </div>
-          </div>
-        </div>
-
-        <div className={statClass}>
-          <div className="flex min-h-full items-center justify-center text-[var(--text-subtle)]">
-            <Tag aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.9} />
-          </div>
-          <div className="grid min-w-0 gap-1">
-            <div className="min-w-0 text-[var(--text-muted)]">
-              <span className="block text-xs leading-[1.2] max-[520px]:text-[11px]">Цена от</span>
-            </div>
-            <div className="flex min-w-0 items-center gap-3">
-              <strong className="min-w-0 text-[15px] leading-[1.2] tracking-[-0.01em] text-[var(--text)] max-[520px]:text-base">
-                {formatMoney(item.minPrice)}
-              </strong>
-            </div>
-          </div>
-        </div>
-
-        <div className={cn(statClass, "max-[520px]:col-span-3 max-[520px]:border-t max-[520px]:px-0")}>
-          <div className="flex min-h-full items-center justify-center text-[var(--text-subtle)]">
-            <TrendingUp aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.9} />
-          </div>
-          <div className="grid min-w-0 gap-1">
-            <div className="min-w-0 text-[var(--text-muted)]">
-              <span className="block text-xs leading-[1.2] max-[520px]:text-[11px]">Активность</span>
-            </div>
-            <div className="flex min-w-0 items-center gap-3">
-              <strong className="min-w-0 text-[15px] leading-[1.2] tracking-[-0.01em] text-[var(--text)] max-[520px]:text-base">
-                {item.activityScore}%
-              </strong>
-              <span className="inline-flex h-[18px] w-11 text-[#39a95a] max-[520px]:w-10" aria-hidden="true">
-                <svg viewBox="0 0 44 18" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-full w-full">
-                  <path
-                    d="M1.5 13.5L8.5 11L14 15.5L21 5.5L28 8.5L34.5 7L42.5 2.5"
-                    stroke="currentColor"
-                    strokeWidth="2.25"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex min-h-10 items-center justify-between gap-4 border-b border-[rgb(16_24_40_/_0.08)] pt-0.5 [grid-area:link] max-[520px]:grid max-[520px]:gap-2">
-        <div className="grid min-w-0 flex-1 justify-items-start gap-0.5">
-          <span className="text-[11px] leading-[1.2] text-[rgb(16_24_40_/_0.56)]">Публичная ссылка</span>
-          <div className="inline-flex min-w-0 max-w-full items-center gap-1 max-[520px]:gap-1.5">
-            <strong className="inline-block min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm leading-[1.2] text-[var(--color-primary-hover)] min-[521px]:max-w-[520px]">
-              {item.publicLabel ?? "Сначала заполните публичный профиль"}
-            </strong>
-            <button
-              type="button"
-              className={cn(
-                "inline-flex size-[22px] min-h-[22px] min-w-[22px] flex-none items-center justify-center rounded-md border-0 bg-transparent p-0 font-semibold text-[rgb(16_24_40_/_0.64)]",
-                "transition-[background-color,color,transform] duration-[180ms] hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary-hover)]",
-                "disabled:cursor-not-allowed disabled:opacity-55 max-[520px]:size-6 max-[520px]:min-h-6 max-[520px]:min-w-6",
-              )}
-              disabled={!item.publicHref}
-              aria-label={copied ? "Скопировано" : "Копировать публичную ссылку"}
-              title={copied ? "Скопировано" : "Копировать публичную ссылку"}
-              onClick={() => void handleCopy()}
-            >
-              <Copy aria-hidden="true" className="h-4 w-4" strokeWidth={1.9} />
-              <span className="sr-only">{copied ? "Скопировано" : "Копировать"}</span>
-            </button>
-          </div>
-        </div>
-
-        <AgentCollaborationToggle
-          targetId={item.id}
-          targetKind={item.kind}
-          checked={item.allowAgentInquiries}
-        />
-      </div>
-
-      <div className="grid gap-2.5 [grid-area:footer]">
-        <div className="flex items-stretch justify-between gap-3 max-[520px]:gap-2">
+        <div className="flex items-stretch gap-2 px-1 pb-0.5 pt-2.5 max-[520px]:gap-1.5">
           <PropertyQuickActions item={item} />
-
-          <details className="relative">
-            <summary
-              className={cn(
-                inventoryMenuButtonClass,
-                "list-none cursor-pointer text-[var(--text-subtle)] [&::-webkit-details-marker]:hidden",
-                "max-[520px]:size-[54px] max-[520px]:min-h-[54px] max-[520px]:min-w-[54px]",
-              )}
-              aria-label={`Действия для ${item.title}`}
-            >
-              <MoreHorizontal aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.9} />
+          <details className="relative flex-none">
+            <summary className={cn(inventoryMenuButtonClass, "list-none cursor-pointer [&::-webkit-details-marker]:hidden")} aria-label={`Действия для ${item.title}`}>
+              <MoreHorizontal aria-hidden="true" className="size-[18px]" strokeWidth={1.9} />
             </summary>
             <div className={inventoryMenuListClass}>
-              {menuLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  target={link.external ? "_blank" : undefined}
-                  rel={link.external ? "noreferrer" : undefined}
-                  className="rounded-xl px-3 py-2.5 text-sm text-[var(--text)] transition-colors duration-[180ms] hover:bg-[var(--color-primary-pale)]"
-                >
-                  {link.label}
-                </Link>
+              {getMenuLinks(item).map((link) => (
+                <Link key={link.label} href={link.href} target={link.external ? "_blank" : undefined} rel={link.external ? "noreferrer" : undefined} className="rounded-xl px-3 py-2.5 text-sm text-[var(--text)] transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgb(var(--color-primary-rgb)_/_0.14)]">{link.label}</Link>
               ))}
             </div>
           </details>

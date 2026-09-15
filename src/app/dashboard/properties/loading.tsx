@@ -1,37 +1,21 @@
 function ShimmerBlock({ className }: { className: string }) {
   return (
-    <div
-      className={`relative overflow-hidden bg-[linear-gradient(180deg,rgb(255_255_255_/_0.9),rgb(247_250_250_/_0.85))] after:absolute after:inset-0 after:bg-[linear-gradient(90deg,transparent,rgb(255_255_255_/_0.74),transparent)] after:content-[''] after:animate-[propertyInventoryShimmer_1.4s_linear_infinite] ${className}`}
-    />
+    <div className={`relative overflow-hidden bg-[var(--surface-subtle)] after:absolute after:inset-0 after:animate-[propertyInventoryShimmer_1.4s_linear_infinite] after:bg-[linear-gradient(90deg,transparent,rgb(255_255_255_/_0.72),transparent)] after:content-[''] ${className}`} />
   );
 }
 
 export default function PropertiesLoading() {
   return (
-    <section className="grid gap-4 max-[520px]:gap-3" aria-label="Загрузка объектов">
-      <ShimmerBlock className="min-h-40 rounded-[28px] border border-[rgb(var(--color-primary-rgb)_/_0.10)]" />
-
-      <div className="grid grid-cols-5 gap-3 max-[960px]:grid-cols-2 max-[720px]:grid-cols-2 max-[520px]:gap-3">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <ShimmerBlock
-            key={index}
-            className="min-h-24 rounded-[22px] border border-[var(--border)] max-[720px]:min-h-[74px] max-[520px]:min-h-[88px]"
-          />
-        ))}
+    <section className="grid gap-6 max-[720px]:gap-5" aria-label="Загрузка объектов и номеров" aria-busy="true">
+      <div className="flex items-end justify-between gap-6 max-[720px]:grid">
+        <div className="grid gap-3"><ShimmerBlock className="h-3 w-36 rounded-full" /><ShimmerBlock className="h-11 w-72 max-w-full rounded-xl" /><ShimmerBlock className="h-4 w-[420px] max-w-full rounded-full" /></div>
+        <div className="flex gap-2.5 max-[720px]:grid max-[720px]:grid-cols-2 max-[420px]:grid-cols-1"><ShimmerBlock className="h-[46px] w-40 rounded-[14px] max-[720px]:w-full" /><ShimmerBlock className="h-[46px] w-40 rounded-[14px] max-[720px]:w-full" /></div>
       </div>
-
-      <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-4 max-[1180px]:grid-cols-1">
-        <div className="grid gap-4 max-[520px]:gap-3">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <ShimmerBlock key={index} className="min-h-[280px] rounded-[26px] border border-[rgb(16_24_40_/_0.08)]" />
-          ))}
-        </div>
-
-        <aside className="grid gap-4 max-[1180px]:grid-cols-3 max-[960px]:grid-cols-2 max-[720px]:hidden">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <ShimmerBlock key={index} className="min-h-[180px] rounded-3xl border border-[rgb(var(--color-primary-rgb)_/_0.10)]" />
-          ))}
-        </aside>
+      <ShimmerBlock className="h-[96px] rounded-[24px] max-[720px]:h-[190px]" />
+      <ShimmerBlock className="h-[70px] rounded-[18px] border border-[var(--border)]" />
+      <div className="grid grid-cols-[minmax(0,1fr)_272px] gap-[30px] max-[1180px]:grid-cols-1">
+        <div className="grid gap-[14px]"><ShimmerBlock className="h-8 w-48 rounded-lg" /><ShimmerBlock className="min-h-[238px] rounded-[22px] border border-[var(--border)]" /><ShimmerBlock className="min-h-[238px] rounded-[22px] border border-[var(--border)]" /></div>
+        <ShimmerBlock className="min-h-[260px] rounded-[22px] max-[1180px]:hidden" />
       </div>
     </section>
   );

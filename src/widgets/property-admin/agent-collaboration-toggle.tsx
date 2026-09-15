@@ -10,12 +10,16 @@ type AgentCollaborationToggleProps = {
   targetId: string;
   targetKind: "property" | "standalone_room";
   checked: boolean;
+  activeCollaborationsCount?: number;
+  itemTitle?: string;
 };
 
 export function AgentCollaborationToggle({
   targetId,
   targetKind,
   checked,
+  activeCollaborationsCount = 0,
+  itemTitle = "варианта",
 }: AgentCollaborationToggleProps) {
   const [isPending, startTransition] = useTransition();
 
@@ -34,12 +38,16 @@ export function AgentCollaborationToggle({
   }
 
   return (
-    <label className="inline-flex flex-none items-center justify-end gap-2 whitespace-nowrap max-[960px]:justify-between max-[520px]:w-full">
-      <span className="inline-flex items-center text-right max-[960px]:text-left">
-        <span className="text-[11px] font-medium leading-[1.1] text-[rgb(16_24_40_/_0.56)] max-[520px]:text-xs">
-          Сотрудничество с агентами
+    <label className="inline-flex flex-none items-center justify-end gap-2.5 whitespace-nowrap max-[720px]:w-full max-[720px]:justify-between">
+      <span className="grid gap-0.5 text-right max-[720px]:text-left">
+        <span className="text-[11px] font-semibold leading-[1.1] text-[var(--text-subtle)]">
+          Предложения агентов
         </span>
-        <small className="hidden">{checked ? "Включено" : "Выключено"}</small>
+        <small className="text-[10px] leading-none text-[var(--text-muted)]">
+          {activeCollaborationsCount > 0
+            ? `${activeCollaborationsCount} ${activeCollaborationsCount === 1 ? "активное" : "активных"}`
+            : checked ? "Открыты" : "Закрыты"}
+        </small>
       </span>
 
       <span
@@ -47,13 +55,14 @@ export function AgentCollaborationToggle({
           "relative inline-flex h-6 w-[42px] flex-none items-center rounded-full bg-[rgb(16_24_40_/_0.16)] p-[2px] transition-[background-color,opacity] duration-[180ms]",
           checked && "bg-[var(--color-primary)]",
           isPending && "opacity-80",
+          "has-[:focus-visible]:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.12)]",
         )}
       >
         <input
           type="checkbox"
           className="absolute inset-0 m-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
           checked={checked}
-          aria-label="Сотрудничество с агентами"
+          aria-label={`Предложения агентов для ${itemTitle}`}
           disabled={isPending}
           onChange={(event) => handleChange(event.target.checked)}
         />

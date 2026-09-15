@@ -34,9 +34,10 @@ export const inventoryGradientButtonClass = cn(
 
 export const inventorySurfaceButtonClass = cn(
   "inline-flex min-h-11 items-center justify-center rounded-[14px] border px-[14px]",
-  "border-[var(--color-border)] bg-white text-[var(--color-text)]",
+  "border-[var(--border)] bg-[var(--surface)] text-[var(--text)]",
   "transition-[background-color,border-color,color,transform,box-shadow] duration-[180ms]",
   "hover:border-[rgb(var(--color-primary-rgb)_/_0.24)] hover:bg-[var(--color-primary-pale)] active:translate-y-0",
+  "focus-visible:outline-none focus-visible:border-[rgb(var(--color-primary-rgb)_/_0.44)] focus-visible:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.12)]",
 );
 
 export const inventoryIconButtonClass = cn(
@@ -46,10 +47,10 @@ export const inventoryIconButtonClass = cn(
 
 export const inventoryMenuButtonClass = cn(
   inventorySurfaceButtonClass,
-  "size-11 min-h-11 min-w-11 p-0 text-[rgb(16_24_40_/_0.64)]",
+  "size-10 min-h-10 min-w-10 p-0 text-[var(--text-muted)]",
 );
 
 export const inventoryMenuListClass = cn(
   "absolute right-0 top-[calc(100%+8px)] z-10 grid min-w-[190px] gap-0 rounded-2xl border",
-  "border-[var(--color-border)] bg-[rgb(255_255_255_/_0.98)] p-2.5 [box-shadow:var(--shadow-md)]",
+  "border-[var(--border)] bg-[var(--surface)] p-2.5 [box-shadow:var(--shadow-md)]",
 );

@@ -9,11 +9,10 @@ export function PropertyStatusBadge({ status, label }: PropertyStatusBadgeProps)
   return (
     <span
       className={cn(
-        "inline-flex min-h-[34px] flex-none items-center justify-center gap-[7px] self-start whitespace-nowrap rounded-full px-3 text-xs font-bold",
-        status === "published" && "bg-[#eaf7ee] text-[#15803d]",
-        status === "draft" && "bg-[#fff7e6] text-[#b54708]",
-        status === "archived" && "bg-[rgb(16_24_40_/_0.08)] text-[var(--text-subtle)]",
-        "max-[520px]:min-h-[30px] max-[520px]:px-2.5",
+        "inline-flex min-h-[30px] flex-none items-center justify-center gap-[7px] self-start whitespace-nowrap rounded-full px-2.5 text-[11px] font-bold",
+        status === "published" && "bg-[var(--color-success-soft)] text-[var(--color-success-ink)]",
+        status === "draft" && "bg-[var(--color-warning-soft)] text-[var(--color-warning-ink)]",
+        status === "archived" && "bg-[var(--surface-subtle)] text-[var(--text-subtle)]",
       )}
     >
       <span className="h-2 w-2 rounded-full bg-current opacity-95" aria-hidden="true" />

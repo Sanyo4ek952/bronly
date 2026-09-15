@@ -1,33 +1,13 @@
 "use client";
 
-import {
-  Archive,
-  Building2,
-  CheckCircle2,
-  ChevronDown,
-  FileText,
-  Home,
-  Mail,
-  Plus,
-  Search,
-  SlidersHorizontal,
-} from "lucide-react";
-import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { Archive, CheckCircle2, FileText, Home, Mail, Plus, SlidersHorizontal } from "lucide-react";
+import { useMemo, useState } from "react";
 
-import { cn } from "@/shared/lib/cn";
 import type { OwnerInventoryDashboardData, OwnerInventoryDashboardItem } from "@/entities/property";
-import { BottomSheet, InlineNotice } from "@/shared/ui";
+import { cn } from "@/shared/lib/cn";
+import { BottomSheet, Button, ButtonLink, IconButton, InlineNotice, Input, Select } from "@/shared/ui";
 
 import { PropertyCard } from "./property-card";
-import {
-  inventoryFieldClass,
-  inventoryGradientButtonClass,
-  inventoryIconButtonClass,
-  inventoryPrimaryButtonClass,
-  inventorySecondaryButtonClass,
-  inventorySelectClass,
-} from "./property-inventory-ui";
 
 type PropertyInventoryBrowserProps = {
   data: OwnerInventoryDashboardData;
@@ -38,117 +18,108 @@ type PropertyInventoryBrowserProps = {
 type StatusFilter = "all" | "published" | "draft" | "archived";
 type SortMode = "newest" | "alphabetical" | "requests" | "activity";
 
-function matchesQuery(item: OwnerInventoryDashboardItem, query: string) {
-  if (!query.trim()) {
-    return true;
-  }
+const statusOptions = [
+  { label: "Все статусы", value: "all" },
+  { label: "Опубликованные", value: "published" },
+  { label: "Черновики", value: "draft" },
+  { label: "Архив", value: "archived" },
+];
 
+const sortOptions = [
+  { label: "Сначала новые", value: "newest" },
+  { label: "По названию", value: "alphabetical" },
+  { label: "По заявкам", value: "requests" },
+  { label: "По активности", value: "activity" },
+];
+
+function matchesQuery(item: OwnerInventoryDashboardItem, query: string) {
+  if (!query.trim()) return true;
   const haystack = [item.title, item.propertyType, item.city, item.address].join(" ").toLowerCase();
   return haystack.includes(query.trim().toLowerCase());
 }
 
 function sortItems(items: OwnerInventoryDashboardItem[], sort: SortMode) {
-  const sorted = [...items];
-
-  sorted.sort((left, right) => {
-    if (sort === "alphabetical") {
-      return left.title.localeCompare(right.title, "ru");
-    }
-
-    if (sort === "requests") {
-      if (right.newRequestsCount !== left.newRequestsCount) {
-        return right.newRequestsCount - left.newRequestsCount;
-      }
-
-      return right.createdAt.localeCompare(left.createdAt);
-    }
-
-    if (sort === "activity") {
-      if (right.activityScore !== left.activityScore) {
-        return right.activityScore - left.activityScore;
-      }
-
-      return right.createdAt.localeCompare(left.createdAt);
-    }
-
+  return [...items].sort((left, right) => {
+    if (sort === "alphabetical") return left.title.localeCompare(right.title, "ru");
+    if (sort === "requests") return right.newRequestsCount - left.newRequestsCount || right.createdAt.localeCompare(left.createdAt);
+    if (sort === "activity") return right.activityScore - left.activityScore || right.createdAt.localeCompare(left.createdAt);
     return right.createdAt.localeCompare(left.createdAt);
   });
-
-  return sorted;
 }
 
-function getStatusCards(data: OwnerInventoryDashboardData["summary"]) {
+function getSummaryItems(data: OwnerInventoryDashboardData["summary"]) {
   return [
-    { key: "total", label: "Всего вариантов", value: data.totalCount, icon: Home, tone: "blue" as const },
-    { key: "published", label: "Опубликовано", value: data.publishedCount, icon: CheckCircle2, tone: "green" as const },
-    { key: "draft", label: "Черновики", value: data.draftCount, icon: FileText, tone: "amber" as const },
-    { key: "archived", label: "Архив", value: data.archivedCount, icon: Archive, tone: "slate" as const },
-    { key: "requests", label: "Новые заявки", value: data.newRequestsCount, icon: Mail, tone: "blue" as const },
+    { key: "total", label: "Всего вариантов", value: data.totalCount, icon: Home },
+    { key: "published", label: "Опубликовано", value: data.publishedCount, icon: CheckCircle2 },
+    { key: "draft", label: "Черновики", value: data.draftCount, icon: FileText },
+    { key: "archived", label: "В архиве", value: data.archivedCount, icon: Archive },
+    { key: "requests", label: "Новые заявки", value: data.newRequestsCount, icon: Mail },
   ];
 }
 
-function getSortOptions() {
-  return [
-    { label: "Сначала новые", value: "newest" },
-    { label: "По названию", value: "alphabetical" },
-    { label: "По заявкам", value: "requests" },
-    { label: "По активности", value: "activity" },
-  ];
+function formatCount(count: number, one: string, few: string, many: string) {
+  const mod100 = count % 100;
+  const mod10 = count % 10;
+  if (mod100 >= 11 && mod100 <= 14) return `${count} ${many}`;
+  if (mod10 === 1) return `${count} ${one}`;
+  if (mod10 >= 2 && mod10 <= 4) return `${count} ${few}`;
+  return `${count} ${many}`;
 }
 
-function getStatusOptions() {
-  return [
-    { label: "Все", value: "all" },
-    { label: "Опубликованные", value: "published" },
-    { label: "Черновики", value: "draft" },
-    { label: "Архив", value: "archived" },
-  ];
-}
+function InventoryGroup({ items, kind }: { items: OwnerInventoryDashboardItem[]; kind: "property" | "standalone_room" }) {
+  if (!items.length) return null;
+  const isProperty = kind === "property";
 
-function formatRatioLabel(complete: number, total: number) {
-  return `${complete}/${total}`;
-}
-
-function SelectControl(props: {
-  id: string;
-  value: string;
-  options: Array<{ label: string; value: string }>;
-  onChange: (value: string) => void;
-}) {
   return (
-    <div className="relative min-w-0">
-      <select
-        id={props.id}
-        className={inventorySelectClass}
-        value={props.value}
-        onChange={(event) => props.onChange(event.target.value)}
-      >
-        {props.options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown
-        aria-hidden="true"
-        className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]"
-        strokeWidth={2}
-      />
-    </div>
+    <section aria-labelledby={`inventory-${kind}-title`}>
+      <header className="mb-3 flex items-end justify-between gap-4 max-[520px]:items-start">
+        <div className="grid gap-1">
+          <h2 id={`inventory-${kind}-title`} className="text-[21px] font-bold leading-tight tracking-[-0.025em] text-[var(--text)]">
+            {isProperty ? "Объекты" : "Самостоятельные номера"}
+          </h2>
+          <p className="text-xs text-[var(--text-muted)] max-[520px]:hidden">
+            {isProperty ? "Варианты размещения, внутри которых есть номера" : "Номера со своим адресом, не привязанные к объекту"}
+          </p>
+        </div>
+        <span className="shrink-0 text-xs font-extrabold text-[var(--accent-strong)]">
+          {isProperty ? formatCount(items.length, "объект", "объекта", "объектов") : formatCount(items.length, "номер", "номера", "номеров")}
+        </span>
+      </header>
+      <div className="grid gap-[14px]">
+        {items.map((item) => <PropertyCard key={`${item.kind}-${item.id}`} item={item} />)}
+      </div>
+    </section>
   );
 }
 
-function getStatCardToneClass(tone: "blue" | "green" | "amber" | "slate") {
-  switch (tone) {
-    case "green":
-      return "bg-[rgb(34_197_94_/_0.12)] text-[rgb(22_163_74)]";
-    case "amber":
-      return "bg-[rgb(245_158_11_/_0.13)] text-[rgb(217_119_6)]";
-    case "slate":
-      return "bg-[rgb(148_163_184_/_0.14)] text-[rgb(100_116_139)]";
-    default:
-      return "bg-[rgb(37_99_235_/_0.12)] text-[rgb(29_78_216)]";
-  }
+function ReadinessAside({ data }: { data: OwnerInventoryDashboardData["rightPanel"] }) {
+  const rows: Array<[string, { complete: number; total: number }]> = [
+    ["Описание и фото", data.completionBreakdown.descriptionAndPhotos],
+    ["Удобства и услуги", data.completionBreakdown.amenitiesAndServices],
+    ["Цены и номера", data.completionBreakdown.pricesAndRooms],
+  ];
+
+  return (
+    <aside className="sticky top-6 rounded-[22px] bg-[var(--surface)] p-[21px] shadow-[var(--shadow-md)] max-[1180px]:hidden">
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="text-[19px] font-bold leading-tight tracking-[-0.02em] text-[var(--text)]">Готовность витрины</h2>
+        <strong className="text-2xl font-bold text-[var(--accent-strong)]">{data.averageCompletenessPercent}%</strong>
+      </div>
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--surface-subtle)]" aria-hidden="true">
+        <span className="block h-full rounded-full bg-[var(--accent)]" style={{ width: `${data.averageCompletenessPercent}%` }} />
+      </div>
+      <p className="mb-3 mt-2 text-[11px] text-[var(--text-muted)]">Средняя заполненность объектов и номеров</p>
+      {rows.map(([label, ratio]) => (
+        <div key={label} className="flex justify-between gap-3 border-t border-[var(--border)] py-3 text-xs">
+          <span className="text-[var(--text-muted)]">{label}</span>
+          <strong className="text-[var(--text)]">{ratio.complete}/{ratio.total}</strong>
+        </div>
+      ))}
+      <ButtonLink href="/dashboard/settings" variant="ghost" className="mt-1 justify-start px-0 !text-[var(--accent-strong)]">
+        Открыть публичную страницу →
+      </ButtonLink>
+    </aside>
+  );
 }
 
 export function PropertyInventoryBrowser({ data, feedback = null, feedbackTone = "default" }: PropertyInventoryBrowserProps) {
@@ -156,305 +127,70 @@ export function PropertyInventoryBrowser({ data, feedback = null, feedbackTone =
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sort, setSort] = useState<SortMode>("newest");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const searchRef = useRef<HTMLInputElement | null>(null);
 
-  const filteredItems = useMemo(() => {
-    const matches = data.items.filter((item) => {
-      if (!matchesQuery(item, query)) {
-        return false;
-      }
+  const filteredItems = useMemo(() => sortItems(data.items.filter((item) => {
+    return matchesQuery(item, query) && (statusFilter === "all" || item.status === statusFilter);
+  }), sort), [data.items, query, sort, statusFilter]);
+  const propertyItems = filteredItems.filter((item) => item.kind === "property");
+  const standaloneItems = filteredItems.filter((item) => item.kind === "standalone_room");
+  const hasActiveFilters = Boolean(query.trim()) || statusFilter !== "all";
 
-      if (statusFilter !== "all" && item.status !== statusFilter) {
-        return false;
-      }
-
-      return true;
-    });
-
-    return sortItems(matches, sort);
-  }, [data.items, query, sort, statusFilter]);
-
-  const statusCards = getStatusCards(data.summary);
-  const completion = data.rightPanel.completionBreakdown;
+  function resetFilters() {
+    setQuery("");
+    setStatusFilter("all");
+    setSort("newest");
+  }
 
   return (
-    <div className="grid gap-4 max-[520px]:gap-3">
-      <section
-        className={cn(
-          "grid gap-[18px] rounded-[28px] border border-[rgb(var(--color-primary-rgb)_/_0.10)] px-[22px] py-[22px]",
-          "bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(248_250_250_/_0.96))] [box-shadow:var(--shadow-sm)]",
-          "max-[720px]:px-4 max-[720px]:py-[18px]",
-        )}
-      >
-        <div className="flex items-start justify-between gap-4 max-[720px]:items-center">
-          <div className="grid gap-2">
-            <div className="grid gap-2">
-              <h1 className="text-[clamp(28px,4vw,32px)] leading-[1.02] tracking-[-0.04em] text-[var(--text)] max-[520px]:text-2xl">
-                Объекты и номера
-              </h1>
-              <p className="max-w-[680px] text-[var(--text-muted)] max-[720px]:hidden">
-                Управляйте объектами, отдельными номерами, ссылками и публикацией в одном кабинете владельца.
-              </p>
-            </div>
-          </div>
-
-          <div className="hidden gap-2 max-[720px]:inline-flex">
-            <button
-              type="button"
-              aria-label="Открыть поиск"
-              className={inventoryIconButtonClass}
-              onClick={() => searchRef.current?.focus()}
-            >
-              <Search aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={2} />
-            </button>
-            <button
-              type="button"
-              aria-label="Открыть фильтры"
-              className={inventoryIconButtonClass}
-              onClick={() => setIsFiltersOpen(true)}
-            >
-              <SlidersHorizontal aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={2} />
-            </button>
-          </div>
+    <div className="grid gap-6 max-[720px]:gap-5">
+      <header className="flex items-end justify-between gap-7 max-[720px]:grid max-[720px]:items-start">
+        <div>
+          <p className="mb-1.5 text-[11px] font-extrabold tracking-[0.11em] text-[var(--accent-strong)]">ИНВЕНТАРЬ ВЛАДЕЛЬЦА</p>
+          <h1 className="text-[clamp(32px,3.5vw,46px)] font-semibold leading-[1.05] tracking-[-0.045em] text-[var(--text)] max-[520px]:text-[30px]">Объекты и номера</h1>
+          <p className="mt-2.5 max-w-[650px] text-sm text-[var(--text-muted)]">Управляйте вариантами размещения, их готовностью и показом гостям.</p>
         </div>
-
-        <div className="flex min-w-0 items-start justify-between gap-4 max-[1280px]:grid max-[720px]:hidden">
-          <div className="grid min-w-0 flex-1 grid-cols-[minmax(240px,1.25fr)_repeat(2,minmax(160px,0.42fr))] gap-3">
-            <label className="min-w-0" htmlFor="properties-search">
-              <input
-                id="properties-search"
-                ref={searchRef}
-                className={inventoryFieldClass}
-                type="search"
-                placeholder="Поиск по объектам"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </label>
-
-            <SelectControl
-              id="properties-status"
-              value={statusFilter}
-              options={getStatusOptions()}
-              onChange={(value) => setStatusFilter(value as StatusFilter)}
-            />
-
-            <SelectControl
-              id="properties-sort"
-              value={sort}
-              options={getSortOptions()}
-              onChange={(value) => setSort(value as SortMode)}
-            />
-          </div>
-
-          <div className="flex shrink-0 justify-end gap-2.5">
-            <Link href="/dashboard/rooms/new" className={cn(inventorySecondaryButtonClass, "min-h-11")}>Отдельный номер</Link>
-            <Link href="/dashboard/properties/new" className={cn(inventoryPrimaryButtonClass, "min-h-11 gap-2.5 px-[18px]")}>
-              <Plus aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={2.2} />
-              <span>Добавить объект</span>
-            </Link>
-          </div>
+        <div className="flex shrink-0 gap-2.5 max-[720px]:grid max-[720px]:w-full max-[720px]:grid-cols-2 max-[420px]:grid-cols-1">
+          <ButtonLink href="/dashboard/rooms/new" variant="secondary" className="min-h-[46px] px-[18px]">Отдельный номер</ButtonLink>
+          <ButtonLink href="/dashboard/properties/new" className="min-h-[46px] px-[18px]"><Plus aria-hidden="true" className="size-[18px]" strokeWidth={2.2} />Добавить объект</ButtonLink>
         </div>
+      </header>
 
-        <div className="hidden gap-2.5 max-[720px]:grid max-[720px]:grid-cols-2 max-[420px]:grid-cols-1">
-          <Link href="/dashboard/properties/new" className={cn(inventoryPrimaryButtonClass, "w-full")}>
-            <Plus aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={2.2} />
-            <span>Добавить объект</span>
-          </Link>
-          <Link href="/dashboard/rooms/new" className={cn(inventorySecondaryButtonClass, "w-full")}>Отдельный номер</Link>
-        </div>
+      {feedback ? <InlineNotice tone={feedbackTone}>{feedback}</InlineNotice> : null}
 
-        {feedback ? <InlineNotice tone={feedbackTone}>{feedback}</InlineNotice> : null}
-      </section>
-
-      <div className="grid grid-cols-5 gap-3 max-[960px]:grid-cols-2 max-[720px]:grid-cols-2 max-[520px]:gap-3">
-        {statusCards.map((card) => {
-          const Icon = card.icon;
-
+      <section className="grid grid-cols-5 rounded-[24px] bg-[var(--surface-muted)] px-2 py-[22px] shadow-[0_14px_38px_rgb(var(--color-primary-rgb)_/_0.06)] max-[720px]:grid-cols-2 max-[720px]:px-[14px] max-[720px]:py-2" aria-label="Сводка по объектам и номерам">
+        {getSummaryItems(data.summary).map((item, index) => {
+          const Icon = item.icon;
           return (
-            <article
-              key={card.key}
-              className={cn(
-                "grid min-h-[78px] grid-cols-[40px_minmax(0,1fr)] items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] px-[14px] py-3 [box-shadow:var(--shadow-sm)]",
-                "max-[720px]:min-h-[74px] max-[720px]:grid-cols-[36px_minmax(0,1fr)] max-[720px]:px-3 max-[720px]:py-3",
-                "max-[520px]:min-h-[88px] max-[520px]:grid-cols-[42px_minmax(0,1fr)] max-[520px]:px-[14px] max-[520px]:py-[14px]",
-                card.key === "requests" && "max-[720px]:col-span-2",
-              )}
-            >
-              <div
-                className={cn(
-                  "grid h-10 w-10 place-items-center rounded-xl max-[720px]:h-9 max-[720px]:w-9 max-[520px]:h-[42px] max-[520px]:w-[42px] max-[520px]:rounded-[14px]",
-                  getStatCardToneClass(card.tone),
-                )}
-              >
-                <Icon aria-hidden="true" className="h-5 w-5 max-[720px]:h-[18px] max-[720px]:w-[18px]" strokeWidth={2} />
-              </div>
-              <div className="grid min-w-0 gap-1.5">
-                <span className="text-xs font-medium leading-[1.25] text-[var(--text-muted)]">{card.label}</span>
-                <strong className="text-[26px] leading-none text-[var(--text)] max-[720px]:text-2xl max-[520px]:text-2xl">
-                  {card.value}
-                </strong>
-              </div>
-            </article>
+            <div key={item.key} className={cn("border-r border-[rgb(var(--color-primary-rgb)_/_0.18)] px-5 last:border-r-0", "max-[720px]:border-b max-[720px]:px-2.5 max-[720px]:py-3", index % 2 === 1 && "max-[720px]:border-r-0", index >= 2 && index < 4 && "max-[720px]:border-b-0", item.key === "requests" && "max-[720px]:col-span-2 max-[720px]:border-t max-[720px]:border-r-0 max-[720px]:border-b-0") }>
+              <div className="flex items-center gap-2"><Icon aria-hidden="true" className="size-4 text-[var(--accent-strong)]" strokeWidth={2} /><strong className="text-[28px] font-semibold leading-none text-[var(--text)] max-[720px]:text-2xl">{item.value}</strong></div>
+              <span className="mt-2 block text-[11px] text-[var(--text-subtle)]">{item.label}</span>
+            </div>
           );
         })}
-      </div>
+      </section>
 
-      <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-4 max-[1180px]:grid-cols-1">
-        <div className="grid gap-4 max-[520px]:gap-3">
-          {filteredItems.length ? (
-            <div className="grid gap-4 max-[520px]:gap-3">
-              {filteredItems.map((item) => (
-                <PropertyCard key={`${item.kind}-${item.id}`} item={item} />
-              ))}
-            </div>
-          ) : (
-            <section className="grid justify-items-start gap-[14px] rounded-3xl border border-[rgb(var(--color-primary-rgb)_/_0.10)] bg-[var(--surface)] px-6 py-6 [box-shadow:var(--shadow-sm)]">
-              <div className="grid h-14 w-14 place-items-center rounded-[18px] bg-[rgb(var(--color-primary-rgb)_/_0.10)] text-[var(--color-primary-hover)]">
-                <Building2 aria-hidden="true" className="h-7 w-7" strokeWidth={2} />
-              </div>
-              <div className="grid gap-2">
-                <h2 className="text-xl font-bold leading-[1.15] text-[var(--text)]">
-                  {data.items.length ? "По этому фильтру ничего не найдено" : "У вас пока нет объектов и номеров"}
-                </h2>
-                <p className="text-[var(--text-muted)]">
-                  {data.items.length
-                    ? "Попробуйте изменить поиск, статус или сортировку, чтобы увидеть нужные карточки."
-                    : "Создайте объект с номерами или отдельный номер и получите публичную ссылку для гостей."}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2.5">
-                <Link href="/dashboard/properties/new" className={inventoryPrimaryButtonClass}>Добавить объект</Link>
-                <Link href="/dashboard/rooms/new" className={inventorySecondaryButtonClass}>Создать отдельный номер</Link>
-              </div>
+      <section className="grid grid-cols-[minmax(220px,1fr)_180px_190px] gap-2.5 rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-3 shadow-[var(--shadow-sm)] max-[720px]:grid-cols-[minmax(0,1fr)_44px] max-[720px]:p-2" aria-label="Поиск и фильтры">
+        <Input id="properties-search" type="search" aria-label="Поиск по объектам и номерам" placeholder="Название, город или адрес" value={query} onChange={(event) => setQuery(event.target.value)} className="min-h-11 bg-[var(--bg)]" />
+        <Select id="properties-status" aria-label="Статус" options={statusOptions} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)} className="min-h-11 bg-[var(--bg)] max-[720px]:hidden" />
+        <Select id="properties-sort" aria-label="Сортировка" options={sortOptions} value={sort} onChange={(event) => setSort(event.target.value as SortMode)} className="min-h-11 bg-[var(--bg)] max-[720px]:hidden" />
+        <IconButton type="button" aria-label="Открыть фильтры" aria-expanded={isFiltersOpen} className="hidden size-11 rounded-[13px] bg-[var(--bg)] shadow-none max-[720px]:grid" onClick={() => setIsFiltersOpen(true)}><SlidersHorizontal aria-hidden="true" className="size-[18px]" strokeWidth={2} /></IconButton>
+      </section>
+
+      <div className="grid grid-cols-[minmax(0,1fr)_272px] items-start gap-[30px] max-[1180px]:grid-cols-1">
+        <div className="grid gap-7">
+          {filteredItems.length ? <><InventoryGroup items={propertyItems} kind="property" /><InventoryGroup items={standaloneItems} kind="standalone_room" /></> : (
+            <section className="grid justify-items-start gap-[14px] rounded-[22px] bg-[var(--surface)] p-6 shadow-[var(--shadow-sm)]">
+              <div className="grid size-14 place-items-center rounded-[18px] bg-[var(--surface-muted)] text-[var(--accent-strong)]"><Home aria-hidden="true" className="size-7" strokeWidth={2} /></div>
+              <div className="grid gap-2"><h2 className="text-xl font-bold leading-tight text-[var(--text)]">{data.items.length ? "По этому фильтру ничего не найдено" : "У вас пока нет объектов и номеров"}</h2><p className="max-w-2xl text-sm text-[var(--text-muted)]">{data.items.length ? "Измените запрос или статус, чтобы увидеть нужные варианты." : "Создайте объект с номерами или самостоятельный номер и получите публичную ссылку для гостей."}</p></div>
+              {hasActiveFilters ? <Button variant="secondary" onClick={resetFilters}>Сбросить фильтры</Button> : <div className="flex flex-wrap gap-2.5 max-[420px]:grid max-[420px]:w-full"><ButtonLink href="/dashboard/properties/new">Добавить объект</ButtonLink><ButtonLink href="/dashboard/rooms/new" variant="secondary">Создать отдельный номер</ButtonLink></div>}
             </section>
           )}
         </div>
-
-        <aside className="grid gap-4 max-[1180px]:grid-cols-3 max-[960px]:grid-cols-2 max-[720px]:hidden">
-          <section
-            className={cn(
-              "grid gap-[14px] rounded-3xl border border-[rgb(var(--color-primary-rgb)_/_0.10)] px-[18px] py-[18px]",
-              "bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(248_250_250_/_0.96))] [box-shadow:var(--shadow-sm)]",
-            )}
-          >
-            <div className="flex items-center justify-between gap-2.5">
-              <h2 className="text-lg font-bold leading-[1.15] text-[var(--text)]">Быстрые действия</h2>
-            </div>
-            <div className="grid gap-2.5">
-              <Link href="/dashboard/properties/new" className={inventoryGradientButtonClass}>
-                <Plus aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={2.2} />
-                <span>Добавить объект</span>
-              </Link>
-              <Link href="/dashboard/rooms/new" className={inventorySecondaryButtonClass}>
-                <span>Создать номер</span>
-              </Link>
-              <Link href="/dashboard/settings" className={inventorySecondaryButtonClass}>
-                <span>Открыть публичную страницу</span>
-              </Link>
-            </div>
-          </section>
-
-          <section
-            className={cn(
-              "grid gap-[14px] rounded-3xl border border-[rgb(var(--color-primary-rgb)_/_0.10)] px-[18px] py-[18px]",
-              "bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(248_250_250_/_0.96))] [box-shadow:var(--shadow-sm)]",
-            )}
-          >
-            <div className="flex items-center justify-between gap-2.5">
-              <h2 className="text-lg font-bold leading-[1.15] text-[var(--text)]">Подсказка</h2>
-            </div>
-            <p className="text-[var(--text-muted)]">
-              Заполните фото и описание, чтобы повысить конверсию и получать больше заявок по вашим ссылкам.
-            </p>
-          </section>
-
-          <section
-            className={cn(
-              "grid gap-[14px] rounded-3xl border border-[rgb(var(--color-primary-rgb)_/_0.10)] px-[18px] py-[18px]",
-              "bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(248_250_250_/_0.96))] [box-shadow:var(--shadow-sm)]",
-            )}
-          >
-            <div className="flex items-center justify-between gap-2.5">
-              <h2 className="text-lg font-bold leading-[1.15] text-[var(--text)]">Заполненность профилей</h2>
-              <strong className="text-xl font-bold text-[var(--color-primary-hover)]">
-                {data.rightPanel.averageCompletenessPercent}%
-              </strong>
-            </div>
-            <div className="grid grid-cols-[108px_minmax(0,1fr)] items-center gap-[14px]">
-              <div
-                className="grid h-[108px] w-[108px] place-items-center rounded-full shadow-[inset_0_0_0_1px_rgb(var(--color-primary-rgb)_/_0.10)]"
-                style={{
-                  background: `radial-gradient(circle at center, #fff 0 42px, transparent 43px), conic-gradient(var(--color-primary) ${data.rightPanel.averageCompletenessPercent}%, rgb(var(--color-primary-rgb) / 12%) 0)`,
-                }}
-              >
-                <span className="text-xl font-extrabold text-[var(--color-primary-hover)]">
-                  {data.rightPanel.averageCompletenessPercent}%
-                </span>
-              </div>
-
-              <div className="grid gap-2.5">
-                <div className="flex min-h-[42px] items-center justify-between gap-3 rounded-[14px] border border-[var(--color-border)] bg-[rgb(248_250_250_/_0.9)] px-[14px]">
-                  <span className="text-[13px] text-[var(--text-muted)]">Описание и фото</span>
-                  <strong className="text-[13px] text-[var(--text)]">
-                    {formatRatioLabel(completion.descriptionAndPhotos.complete, completion.descriptionAndPhotos.total)}
-                  </strong>
-                </div>
-                <div className="flex min-h-[42px] items-center justify-between gap-3 rounded-[14px] border border-[var(--color-border)] bg-[rgb(248_250_250_/_0.9)] px-[14px]">
-                  <span className="text-[13px] text-[var(--text-muted)]">Удобства и услуги</span>
-                  <strong className="text-[13px] text-[var(--text)]">
-                    {formatRatioLabel(completion.amenitiesAndServices.complete, completion.amenitiesAndServices.total)}
-                  </strong>
-                </div>
-                <div className="flex min-h-[42px] items-center justify-between gap-3 rounded-[14px] border border-[var(--color-border)] bg-[rgb(248_250_250_/_0.9)] px-[14px]">
-                  <span className="text-[13px] text-[var(--text-muted)]">Цены и номера</span>
-                  <strong className="text-[13px] text-[var(--text)]">
-                    {formatRatioLabel(completion.pricesAndRooms.complete, completion.pricesAndRooms.total)}
-                  </strong>
-                </div>
-              </div>
-            </div>
-          </section>
-        </aside>
+        <ReadinessAside data={data.rightPanel} />
       </div>
 
-      <BottomSheet
-        open={isFiltersOpen}
-        onOpenChange={setIsFiltersOpen}
-        title="Фильтры"
-        description="Поиск, статус и сортировка для списка объектов."
-        closeLabel="Закрыть фильтры"
-        rootClassName="min-[721px]:hidden"
-      >
-        {({ close }) => (
-          <>
-            <label className="min-w-0" htmlFor="properties-search-mobile">
-              <input
-                id="properties-search-mobile"
-                className={inventoryFieldClass}
-                type="search"
-                placeholder="Поиск по объектам"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </label>
-            <SelectControl
-              id="properties-status-mobile"
-              value={statusFilter}
-              options={getStatusOptions()}
-              onChange={(value) => setStatusFilter(value as StatusFilter)}
-            />
-            <SelectControl
-              id="properties-sort-mobile"
-              value={sort}
-              options={getSortOptions()}
-              onChange={(value) => setSort(value as SortMode)}
-            />
-            <button type="button" className={cn(inventoryPrimaryButtonClass, "w-full")} onClick={close}>
-              Показать результаты
-            </button>
-          </>
-        )}
+      <BottomSheet open={isFiltersOpen} onOpenChange={setIsFiltersOpen} title="Фильтры" description="Выберите статус и порядок списка. Поиск остаётся доступен на странице." closeLabel="Закрыть фильтры" rootClassName="min-[721px]:hidden">
+        {({ close }) => <><Select id="properties-status-mobile" label="Статус" options={statusOptions} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)} className="min-h-11" /><Select id="properties-sort-mobile" label="Сортировка" options={sortOptions} value={sort} onChange={(event) => setSort(event.target.value as SortMode)} className="min-h-11" /><Button fullWidth onClick={close}>Показать результаты</Button></>}
       </BottomSheet>
     </div>
   );
