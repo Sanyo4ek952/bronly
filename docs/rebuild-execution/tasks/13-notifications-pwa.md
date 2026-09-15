@@ -20,4 +20,3 @@
 - ESLint измененных файлов
 - browser PWA smoke-test
 - production build
-

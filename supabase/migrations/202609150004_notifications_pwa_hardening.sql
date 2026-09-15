@@ -58,4 +58,3 @@ alter table public.notification_deliveries
 
 create unique index if not exists notification_deliveries_target_idx
   on public.notification_deliveries(notification_id, channel, delivery_target_key);
-

@@ -26,4 +26,3 @@
 - RLS smoke-tests при доступной локальной базе
 - browser smoke-test критических сценариев и mobile viewport
 - graphify update ./src
-

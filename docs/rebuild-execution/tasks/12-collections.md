@@ -20,4 +20,3 @@
 - ESLint измененных файлов
 - browser smoke-test owner и agent коллекций
 - production build
-

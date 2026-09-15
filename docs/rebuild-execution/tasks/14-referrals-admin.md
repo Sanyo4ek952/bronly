@@ -21,4 +21,3 @@
 - RLS/admin smoke-tests
 - browser smoke-test приглашения и очереди
 - production build
-

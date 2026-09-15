@@ -16,4 +16,3 @@
 
 - npm run check:encoding
 - ручная сверка терминов по docs/product/terminology.md
-

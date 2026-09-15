@@ -21,4 +21,3 @@
 - ESLint измененных файлов
 - browser smoke-test полного owner flow
 - production build после завершения всего среза
-

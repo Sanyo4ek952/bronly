@@ -19,4 +19,3 @@
 - TypeScript
 - ESLint измененных файлов
 - ручной smoke-test конфигурации без Supabase
-

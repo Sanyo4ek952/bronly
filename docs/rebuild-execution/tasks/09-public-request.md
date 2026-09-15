@@ -21,4 +21,3 @@
 - browser smoke-test успешного и ошибочного guest flow
 - mobile visual check
 - production build
-

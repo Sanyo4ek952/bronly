@@ -19,4 +19,3 @@
 - новый целевой test script
 - npx --no-install tsc --noEmit --incremental false
 - ESLint только для измененных TS/TSX-файлов
-

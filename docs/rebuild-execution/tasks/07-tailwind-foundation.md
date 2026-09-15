@@ -22,4 +22,3 @@
 - production build
 - визуальная проверка примитивов на узком и широком viewport
 - npm run check:encoding
-

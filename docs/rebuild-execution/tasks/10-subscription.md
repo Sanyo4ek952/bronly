@@ -20,4 +20,3 @@
 - ESLint измененных файлов
 - owner/agent subscription smoke-tests
 - production build
-

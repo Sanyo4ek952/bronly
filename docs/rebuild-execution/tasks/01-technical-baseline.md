@@ -19,4 +19,3 @@
 - npx --no-install tsc --noEmit --incremental false
 - npm run build
 - npm run check:encoding
-
