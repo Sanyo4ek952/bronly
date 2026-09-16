@@ -31,7 +31,7 @@
 | D51 | `/forgot-password` | verified: recovery form и feedback states |
 | D52 | `/invite/[token]` | verified: role-bound invite и unavailable state |
 | D53 | `/login` | verified: role-aware login, recovery и redirect context |
-| D54 | `/p/[slug]` | pending |
+| D54 | `/p/[slug]` | verified: owner storefront с базовыми ценами и direct request |
 | D55 | `/p/[slug]/request` | pending |
 | D56 | `/p/[slug]/request/success` | pending |
 | D57 | `/register` | pending |
