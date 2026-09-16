@@ -26,7 +26,7 @@
 | D46 | `/a/[slug]/request/success` | verified: agent success flow и ручные следующие шаги |
 | D47 | `/c/[slug]` | verified: персональная подборка без общего каталога |
 | D48 | `/c/[slug]/request` | verified: заявка на конкретный номер из подборки |
-| D49 | `/c/[slug]/request/success` | pending |
+| D49 | `/c/[slug]/request/success` | verified: collection success flow и role-specific шаги |
 | D50 | `/check-email` | pending |
 | D51 | `/forgot-password` | pending |
 | D52 | `/invite/[token]` | pending |
