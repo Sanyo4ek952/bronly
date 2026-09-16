@@ -2,8 +2,9 @@ import { redirect } from "next/navigation";
 
 import { getAgentAvailableProperties } from "@/entities/collaboration";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
-import { Button, InlineNotice, Panel, SectionHeader, Textarea } from "@/shared/ui";
+import { Button, InlineNotice, Panel, Textarea } from "@/shared/ui";
 import { getTargetFormatLabel } from "@/widgets/collaboration-details";
+import { AdminPageHeader } from "@/widgets/property-admin";
 
 import { submitAgentProposalAction } from "./actions";
 
@@ -45,18 +46,20 @@ export default async function AgentOpportunitiesPage({ searchParams }: AgentOppo
   const success = typeof params.success === "string" ? params.success : "";
 
   return (
-    <div className="grid gap-4">
-      <Panel className="grid gap-4 p-5 max-[640px]:p-4" surface="raised">
-        <SectionHeader
-          title="К сотрудничеству"
-          description="Объекты и отдельные номера, по которым владельцы готовы рассмотреть предложение агента."
-        />
+    <div className="grid min-w-0 gap-6 max-[720px]:gap-5">
+      <AdminPageHeader
+        variant="plain"
+        title="К сотрудничеству"
+        description="Объекты и отдельные номера, по которым владельцы готовы рассмотреть предложение агента."
+      />
+
+      <div className="grid gap-3">
         <InlineNotice tone="soft">
           Отправка предложения не дает права редактировать данные владельца. Доступ к витрине и календарю появится только после принятия.
         </InlineNotice>
         {getErrorMessage(error) ? <InlineNotice tone="error">{getErrorMessage(error)}</InlineNotice> : null}
         {success === "sent" ? <InlineNotice>Предложение отправлено владельцу.</InlineNotice> : null}
-      </Panel>
+      </div>
 
       {inventory.length ? (
         <div className="grid gap-4 lg:grid-cols-2">
