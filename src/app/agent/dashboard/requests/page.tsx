@@ -4,7 +4,8 @@ import { requestAgentCompletionAction, transferAgentRequestAction } from "@/app/
 import { getAgentRequests, type AgentRequestItem } from "@/entities/request";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { toPhoneHref } from "@/shared/lib";
-import { Button, ButtonLink, InlineNotice, Panel, SectionHeader, StatusPill } from "@/shared/ui";
+import { Button, ButtonLink, InlineNotice, Panel, StatusPill } from "@/shared/ui";
+import { AdminPageHeader, ObjectStats } from "@/widgets/property-admin";
 
 type AgentRequestsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -58,13 +59,34 @@ export default async function AgentRequestsPage({ searchParams }: AgentRequestsP
   const success = typeof params.success === "string" ? params.success : "";
   const error = typeof params.error === "string" ? params.error : "";
   const actionMessage = getActionMessage(success, error);
+  const newRequestCount = requests.filter((item) => item.status === "new").length;
+  const transferredRequestCount = requests.filter((item) => item.status === "transferred_to_owner").length;
 
   return (
-    <div className="grid gap-4">
-      <Panel className="grid gap-4 p-5 max-[640px]:p-4" surface="raised">
-        <SectionHeader title="Агентские заявки" description="Запросы, которые пришли по вашей публичной ссылке или коллекциям." />
-        <InlineNotice tone="soft">Новая агентская заявка скрыта от владельца, пока вы не нажмете «Передать владельцу». Завершить сделку может только владелец.</InlineNotice>
+    <div className="grid min-w-0 gap-6 max-[720px]:gap-5">
+      <AdminPageHeader
+        variant="plain"
+        title="Агентские заявки"
+        description="Запросы, которые пришли по вашей публичной ссылке или коллекциям."
+      />
+
+      <div className="grid gap-3">
+        <InlineNotice tone="soft">
+          Новая агентская заявка скрыта от владельца, пока вы не нажмете «Передать владельцу». Завершить сделку может только владелец.
+        </InlineNotice>
         {actionMessage ? <InlineNotice tone={error ? "error" : "default"}>{actionMessage}</InlineNotice> : null}
+      </div>
+
+      <Panel padding="md" aria-label="Сводка агентских заявок">
+        <ObjectStats
+          compact
+          stackOnMobile={false}
+          items={[
+            { label: "Все заявки", value: String(requests.length) },
+            { label: "Новые", value: String(newRequestCount), tone: "accent" },
+            { label: "Переданы", value: String(transferredRequestCount) },
+          ]}
+        />
       </Panel>
 
       {requests.length ? (
