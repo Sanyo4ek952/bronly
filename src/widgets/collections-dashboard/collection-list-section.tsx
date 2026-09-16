@@ -134,12 +134,14 @@ function OwnerCollectionList({
                   >
                     <div className="min-w-0 max-[760px]:col-span-4">
                       <div className="flex min-w-0 items-start gap-2.5 max-[760px]:justify-between">
-                        <strong className="min-w-0 text-base leading-snug max-[340px]:text-[15px]">{collection.title}</strong>
+                        <strong className="min-w-0 [overflow-wrap:anywhere] text-base leading-snug max-[340px]:text-[15px]">{collection.title}</strong>
                         <StatusPill variant={collection.isArchived ? "inactive" : "active"}>
                           {collection.isArchived ? "Архив" : "Активна"}
                         </StatusPill>
                       </div>
-                      {collection.guestLabel ? <p className="mt-1.5 text-xs leading-relaxed text-[var(--text-muted)]">Для гостя: {collection.guestLabel}</p> : null}
+                      {collection.guestLabel ? (
+                        <p className="mt-1.5 [overflow-wrap:anywhere] text-xs leading-relaxed text-[var(--text-muted)]">Для гостя: {collection.guestLabel}</p>
+                      ) : null}
                     </div>
 
                     <div className="min-w-0 max-[760px]:border-r max-[760px]:border-[var(--border)] max-[760px]:pr-2">
