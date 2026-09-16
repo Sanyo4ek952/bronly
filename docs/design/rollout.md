@@ -22,7 +22,7 @@
 | D42 | `/admin/subscriptions` | verified: существующий mobile-first redesign и route-specific контракт |
 | D43 | `/admin/users` | verified: существующий mobile-first redesign и route-specific контракт |
 | D44 | `/a/[slug]` | verified: существующий public redesign и route-specific контракт |
-| D45 | `/a/[slug]/request` | pending |
+| D45 | `/a/[slug]/request` | verified: agent request flow и route-specific контракт |
 | D46 | `/a/[slug]/request/success` | pending |
 | D47 | `/c/[slug]` | pending |
 | D48 | `/c/[slug]/request` | pending |
