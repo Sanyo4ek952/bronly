@@ -27,7 +27,7 @@
 | D47 | `/c/[slug]` | verified: персональная подборка без общего каталога |
 | D48 | `/c/[slug]/request` | verified: заявка на конкретный номер из подборки |
 | D49 | `/c/[slug]/request/success` | verified: collection success flow и role-specific шаги |
-| D50 | `/check-email` | pending |
+| D50 | `/check-email` | verified: confirmation states и invite-контекст |
 | D51 | `/forgot-password` | pending |
 | D52 | `/invite/[token]` | pending |
 | D53 | `/login` | pending |
