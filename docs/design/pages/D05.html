@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>D05 — Календарь занятости владельца</title>
+  <style>
+    :root{--sand:#fbf7f0;--sand-100:#f6eee2;--cream:#fffaf3;--white:#fff;--text:#20211f;--subtle:#454842;--muted:#6f716b;--border:#e5d9ca;--sage:#547f70;--sage-strong:#315f54;--sage-pale:#edf7f2;--amber:#d99a2b;--amber-pale:#faead0;--focus:#7c6fd6}
+    *{box-sizing:border-box}
+    html{font-family:Manrope,Inter,system-ui,sans-serif;background:var(--sand);color:var(--text)}
+    body{margin:0;min-width:0;background:radial-gradient(circle at 85% 0,rgb(84 127 112 / 8%),transparent 28rem),var(--sand)}
+    button,a{font:inherit}
+    button{color:inherit}
+    a{color:inherit;text-decoration:none}
+    :focus-visible{outline:3px solid rgb(84 127 112 / 28%);outline-offset:3px}
+    .app{width:calc(100% - 48px);max-width:1400px;margin:24px auto 40px;display:grid;grid-template-columns:232px minmax(0,1fr);gap:28px}
+    .sidebar{min-height:calc(100vh - 64px);padding:24px 18px;border:1px solid var(--border);border-radius:28px;background:rgb(255 250 243 / 92%);display:grid;align-content:start;gap:28px}
+    .brand{font-size:24px;font-weight:800;letter-spacing:-.05em}.brand span{color:var(--sage)}
+    .nav{display:grid;gap:6px}.nav a{min-height:44px;display:flex;align-items:center;gap:11px;padding:0 13px;border-radius:14px;color:var(--muted);font-size:14px;font-weight:700}.nav a.active{background:var(--sage-pale);color:var(--sage-strong)}
+    .nav-dot{width:18px;height:18px;border:1.5px solid currentColor;border-radius:6px}
+    main{min-width:0;padding:13px 0 0}
+    .page{display:grid;gap:26px}
+    .hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,310px);align-items:end;gap:32px;padding:10px 3px 0}
+    .eyebrow{margin:0 0 12px;color:var(--sage-strong);font-size:11px;font-weight:850;letter-spacing:.13em}
+    h1{margin:0;font-size:clamp(36px,4vw,54px);line-height:1;letter-spacing:-.055em;font-weight:650}
+    .lead{max-width:690px;margin:16px 0 0;color:var(--subtle);font-size:15px;line-height:1.65}
+    .hint{border-left:2px solid var(--sage);padding:3px 0 3px 16px;color:var(--muted);font-size:13px;line-height:1.55}.hint strong{display:block;margin-bottom:4px;color:var(--text)}
+    .controls{display:grid;gap:20px;padding:22px 2px;border-block:1px solid var(--border)}
+    .month-row,.month-actions,.window-actions,.filters,.group-actions,.legend{display:flex;align-items:center;gap:9px}
+    .month-row{justify-content:space-between}.month-title{display:grid;gap:3px}.month-title strong{font-size:22px;letter-spacing:-.025em}.month-title span{color:var(--muted);font-size:12px}
+    .icon-btn,.btn,.chip{border:1px solid var(--border);background:var(--cream);cursor:pointer;font-weight:750}.icon-btn{width:44px;height:44px;border-radius:50%;font-size:20px}.btn{min-height:44px;border-radius:999px;padding:0 18px}.btn.primary{border-color:var(--sage);background:var(--sage);color:#fff}.btn.small{min-height:38px;padding:0 14px;font-size:12px}.chip{min-height:40px;white-space:nowrap;border-radius:999px;padding:0 15px;color:var(--muted);font-size:13px}.chip.active{border-color:var(--sage);background:var(--sage-pale);color:var(--sage-strong)}
+    .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0}.metric{min-width:0;padding:2px 22px}.metric:first-child{padding-left:0}.metric+.metric{border-left:1px solid var(--border)}.metric dt{margin-top:7px;color:var(--muted);font-size:12px}.metric dd{margin:0;font-size:23px;font-weight:750;letter-spacing:-.035em}.metric dd.compact{font-size:17px}.metric small{display:block;margin-top:3px;color:var(--muted);font-size:11px;font-weight:500}
+    .filter-block{display:grid;gap:11px}.filter-label{font-size:12px;font-weight:750}.filters{max-width:100%;overflow-x:auto;padding:2px 2px 5px;scrollbar-width:thin}
+    .calendar{min-width:0;overflow:hidden;border:1px solid var(--border);border-radius:24px;background:rgb(255 250 243 / 94%)}
+    .calendar-head{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px;border-bottom:1px solid var(--border)}
+    .window-title{display:grid;gap:3px}.window-title strong{font-size:15px}.window-title span{color:var(--muted);font-size:11px}
+    .scroll-note{display:none;margin:0;padding:12px 16px 0;color:var(--muted);font-size:11px}
+    .calendar-scroll{max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-color:var(--sage) transparent}
+    .calendar-grid{min-width:910px}
+    .dates,.room-row{display:grid;grid-template-columns:210px repeat(10,minmax(52px,1fr));gap:0}
+    .dates{position:sticky;top:0;z-index:4;border-bottom:1px solid var(--border);background:var(--cream)}
+    .date-spacer,.date{min-height:58px}.date-spacer{position:sticky;left:0;z-index:5;background:var(--cream);border-right:1px solid var(--border)}.date{display:grid;place-items:center;border-right:1px solid rgb(229 217 202 / 72%);color:var(--muted);font-size:10px}.date strong{display:block;color:var(--text);font-size:13px}.date.today{background:var(--sage-pale);color:var(--sage-strong)}.date.today strong{color:var(--sage-strong)}
+    .group{border-bottom:1px solid var(--border)}.group:last-child{border-bottom:0}.group-head{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px}.group-name{display:flex;min-width:0;align-items:center;gap:12px}.group-icon{width:40px;height:40px;flex:0 0 auto;display:grid;place-items:center;border-radius:13px;background:var(--sage-pale);color:var(--sage-strong);font-weight:800}.group-name h2{margin:0;font-size:17px;letter-spacing:-.02em}.group-name p{margin:4px 0 0;color:var(--muted);font-size:12px}
+    .room-row{min-height:78px;border-top:1px solid rgb(229 217 202 / 76%)}
+    .room-link{position:sticky;left:0;z-index:3;display:grid;align-content:center;min-width:0;padding:12px 16px;background:var(--cream);border-right:1px solid var(--border)}.room-link strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.room-link small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:4px;color:var(--muted);font-size:10px}.room-link:hover strong{color:var(--sage-strong)}
+    .cell{min-width:0;border-right:1px solid rgb(229 217 202 / 70%);background:rgb(255 255 255 / 68%);padding:9px 4px}.cell.busy{background:var(--amber-pale)}.cell.today{box-shadow:inset 0 0 0 2px var(--sage)}.range{display:block;min-height:58px;padding:8px 7px;border-radius:9px;background:var(--amber);color:var(--text);font-size:10px;line-height:1.25}.range strong,.range span{display:block;overflow:hidden;text-overflow:ellipsis}.range strong{white-space:nowrap}.range span{margin-top:4px;opacity:.9}
+    .qa-fixture{display:grid;gap:12px;padding:18px 0;border-block:1px solid var(--border)}.qa-fixture h2{margin:0;font-size:17px}.qa-fixture p{margin:0;color:var(--muted);font-size:12px;line-height:1.5}.qa-scroll{max-width:100%;overflow-x:auto;border:1px solid var(--border);border-radius:18px;background:var(--cream)}.qa-row{display:grid;grid-template-columns:210px minmax(0,1fr);min-width:910px;min-height:78px}.qa-label{position:sticky;left:0;z-index:2;display:grid;align-content:center;padding:12px 16px;border-right:1px solid var(--border);background:var(--cream)}.qa-label strong{font-size:13px}.qa-label small{margin-top:4px;color:var(--muted);font-size:10px}.qa-track{position:relative;min-height:78px}.qa-cells,.qa-bars{position:absolute;inset:0;display:grid;grid-template-columns:repeat(10,minmax(52px,1fr))}.qa-cell{border-right:1px solid var(--border);background:rgb(255 255 255 / 68%)}.qa-bars{pointer-events:none;top:50%;bottom:auto;transform:translateY(-50%)}.qa-range{pointer-events:auto;display:grid;min-width:0;min-height:58px;align-content:center;overflow:hidden;border-radius:9px;background:var(--amber);padding:6px 8px;color:var(--text);font-size:10px;line-height:1.25}.qa-range strong,.qa-range span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.qa-range span{margin-top:4px;opacity:.9}
+    .legend{flex-wrap:wrap;padding:15px 20px;border-top:1px solid var(--border);color:var(--muted);font-size:11px}.legend span{display:inline-flex;align-items:center;gap:6px}.swatch{width:10px;height:10px;border-radius:50%;background:white;border:1px solid var(--border)}.swatch.busy{background:var(--amber)}.swatch.today{background:var(--sage)}
+    .bottom-nav{display:none}
+    .hidden{display:none!important}
+    @media(max-width:1080px){.app{width:calc(100% - 32px);grid-template-columns:1fr}.sidebar{display:none}main{padding-top:0}}
+    @media(max-width:640px){body{padding-bottom:84px}.app{width:calc(100% - 24px);margin:16px auto 24px}.page{gap:20px}.hero{grid-template-columns:1fr;gap:18px;padding-top:2px}.eyebrow{margin-bottom:9px}h1{font-size:36px}.lead{margin-top:12px;font-size:14px}.hint{max-width:none}.controls{gap:16px;padding-block:17px}.month-row{align-items:flex-start;gap:14px}.month-actions{flex-wrap:wrap;justify-content:flex-end}.month-actions .btn{order:3;width:100%;min-height:40px}.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.metric{padding:0 10px}.metric:first-child{padding-left:0}.metric dd{font-size:20px}.metric dd.compact{font-size:13px;line-height:1.25}.metric dt{font-size:10px;line-height:1.3}.metric small{display:none}.calendar{border-radius:19px}.calendar-head{align-items:flex-start;padding:15px 14px}.window-actions{gap:6px}.window-actions .icon-btn{width:40px;height:40px}.scroll-note{display:block}.calendar-grid{min-width:800px}.dates,.room-row{grid-template-columns:178px repeat(10,minmax(52px,1fr))}.group-head{align-items:flex-start;padding:16px 14px}.group-actions{align-items:stretch;flex-direction:column}.group-actions .btn{min-height:36px}.group-name p{line-height:1.4}.legend{padding:13px 14px}.bottom-nav{position:fixed;z-index:20;left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,1fr);min-height:64px;padding:7px;border:1px solid var(--border);border-radius:20px;background:rgb(255 250 243 / 96%);box-shadow:0 14px 40px rgb(49 58 51 / 14%);backdrop-filter:blur(14px)}.bottom-nav a{display:grid;place-items:center;align-content:center;gap:4px;border-radius:13px;color:var(--muted);font-size:9px;font-weight:750}.bottom-nav a.active{background:var(--sage-pale);color:var(--sage-strong)}.bottom-nav i{width:17px;height:17px;border:1.5px solid currentColor;border-radius:5px}}
+    @media(max-width:340px){h1{font-size:32px}.app{width:calc(100% - 20px)}.month-title strong{font-size:19px}.metric{padding-inline:7px}.metric dd{font-size:18px}.metric dd.compact{font-size:11px}.group-head{display:grid}.group-actions{display:grid;grid-template-columns:1fr 1fr}.filters{margin-right:-3px}.bottom-nav{left:5px;right:5px}.bottom-nav a{font-size:8px}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="Навигация владельца">
+      <div class="brand">bron<span>ly</span></div>
+      <nav class="nav">
+        <a href="#"><span class="nav-dot"></span>Главная</a>
+        <a href="#"><span class="nav-dot"></span>Номера</a>
+        <a class="active" href="#"><span class="nav-dot"></span>Календарь</a>
+        <a href="#"><span class="nav-dot"></span>Заявки</a>
+        <a href="#"><span class="nav-dot"></span>Коллекции</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="page">
+        <header class="hero">
+          <div>
+            <p class="eyebrow">КАЛЕНДАРЬ ЗАНЯТОСТИ</p>
+            <h1>Все даты — в одном обзоре</h1>
+            <p class="lead">Проверяйте занятость объектов и отдельных номеров, переключайте месяц и переходите к нужному календарю для точечного редактирования.</p>
+          </div>
+          <p class="hint"><strong>Обзор без случайных изменений</strong>На этой странице даты доступны для просмотра. Редактирование открывается в календаре объекта или номера.</p>
+        </header>
+
+        <section class="controls" aria-label="Управление календарём">
+          <div class="month-row">
+            <div class="month-title"><strong id="month-name">Сентябрь 2026</strong><span>1 — 30 сентября 2026</span></div>
+            <div class="month-actions">
+              <button class="icon-btn" id="prev-month" aria-label="Предыдущий месяц">‹</button>
+              <button class="btn" id="today-month">Текущий месяц</button>
+              <button class="icon-btn" id="next-month" aria-label="Следующий месяц">›</button>
+            </div>
+          </div>
+          <dl class="metrics">
+            <div class="metric"><dd id="rooms-count">4</dd><dt>Номера в обзоре</dt><small>После фильтров</small></div>
+            <div class="metric"><dd id="busy-count">3</dd><dt>Заняты в месяце</dt><small>Есть занятые даты</small></div>
+            <div class="metric"><dd class="compact">18 — 21 сен</dd><dt>Ближайший период</dt><small>Заявка Анны</small></div>
+          </dl>
+          <div class="filter-block">
+            <span class="filter-label">Показать размещения</span>
+            <div class="filters" aria-label="Тип размещения">
+              <button class="chip active" data-kind="all" aria-pressed="true">Все</button>
+              <button class="chip" data-kind="property" aria-pressed="false">Объекты</button>
+              <button class="chip" data-kind="standalone" aria-pressed="false">Отдельные номера</button>
+            </div>
+            <div class="filters" aria-label="Группа календаря">
+              <button class="chip active" data-group="all" aria-pressed="true">Все группы</button>
+              <button class="chip" data-group="sea" aria-pressed="false">Дом у моря · 2</button>
+              <button class="chip" data-group="forest" aria-pressed="false">Лесной двор · 1</button>
+              <button class="chip" data-group="standalone" aria-pressed="false">Отдельные номера · 1</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="calendar" aria-label="Общий календарь кабинета">
+          <div class="calendar-head">
+            <div class="window-title"><strong>14 — 23 сентября</strong><span>10 дней в видимом окне</span></div>
+            <div class="window-actions"><button class="icon-btn" aria-label="Показать предыдущие дни">‹</button><button class="icon-btn" aria-label="Показать следующие дни">›</button></div>
+          </div>
+          <p class="scroll-note" id="scroll-help">Прокрутите сетку по горизонтали, чтобы увидеть другие даты.</p>
+          <div class="calendar-scroll" tabindex="0" aria-label="Сетка занятости по номерам. Прокручивается по горизонтали." aria-describedby="scroll-help">
+            <div class="calendar-grid">
+              <div class="dates"><div class="date-spacer"></div><div class="date"><strong>14</strong>пн</div><div class="date"><strong>15</strong>вт</div><div class="date today"><strong>16</strong>ср</div><div class="date"><strong>17</strong>чт</div><div class="date"><strong>18</strong>пт</div><div class="date"><strong>19</strong>сб</div><div class="date"><strong>20</strong>вс</div><div class="date"><strong>21</strong>пн</div><div class="date"><strong>22</strong>вт</div><div class="date"><strong>23</strong>ср</div></div>
+
+              <section class="group" data-kind-value="property" data-group-value="sea">
+                <div class="group-head"><div class="group-name"><span class="group-icon">Д</span><div><h2>Дом у моря</h2><p>Сочи, ул. Приморская, 18</p></div></div><div class="group-actions"><a class="btn small" href="#">Открыть объект</a><a class="btn primary small" href="#">Редактировать даты</a></div></div>
+                <div class="room-row"><a class="room-link" href="#"><strong>Студия с террасой</strong><small>2 гостя · 1 занятый диапазон</small></a><div class="cell"></div><div class="cell"></div><div class="cell today"></div><div class="cell"></div><div class="cell busy"><a class="range" href="#"><strong>Заявка Анны</strong><span>18 — 21 сен</span></a></div><div class="cell busy"></div><div class="cell busy"></div><div class="cell busy"></div><div class="cell"></div><div class="cell"></div></div>
+                <div class="room-row"><a class="room-link" href="#"><strong>Семейный номер</strong><small>4 гостя · Свободные даты</small></a><div class="cell"></div><div class="cell"></div><div class="cell today"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+              </section>
+
+              <section class="group" data-kind-value="property" data-group-value="forest">
+                <div class="group-head"><div class="group-name"><span class="group-icon">Л</span><div><h2>Лесной двор</h2><p>Красная Поляна, ул. Заповедная, 7</p></div></div><div class="group-actions"><a class="btn small" href="#">Открыть объект</a><a class="btn primary small" href="#">Редактировать даты</a></div></div>
+                <div class="room-row"><a class="room-link" href="#"><strong>Шале с видом</strong><small>3 гостя · 1 занятый диапазон</small></a><div class="cell busy"><a class="range" href="#"><strong>Личное</strong><span>13 — 16 сен</span></a></div><div class="cell busy"></div><div class="cell busy today"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+              </section>
+
+              <section class="group" data-kind-value="standalone" data-group-value="standalone">
+                <div class="group-head"><div class="group-name"><span class="group-icon">Н</span><div><h2>Отдельные номера</h2><p>Номера без объекта в общем календаре кабинета</p></div></div></div>
+                <div class="room-row"><a class="room-link" href="#"><strong>Апартаменты в центре</strong><small>2 гостя · 1 занятый диапазон</small></a><div class="cell"></div><div class="cell"></div><div class="cell today"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell busy"><a class="range" href="#"><strong>Недоступно</strong><span>20 — 22 сен</span></a></div><div class="cell busy"></div><div class="cell busy"></div><div class="cell"></div></div>
+              </section>
+            </div>
+          </div>
+          <div class="legend" aria-label="Обозначения"><span><i class="swatch"></i>Свободно</span><span><i class="swatch busy"></i>Занятые даты</span><span><i class="swatch today"></i>Сегодня</span></div>
+        </section>
+
+        <section class="qa-fixture" aria-labelledby="qa-fixture-title">
+          <div><h2 id="qa-fixture-title">QA fixture диапазонов</h2><p>Только изолированный макет: однодневный, соседний и длинный непересекающиеся диапазоны. В production эти данные не добавляются.</p></div>
+          <div class="qa-scroll" tabindex="0" aria-label="Тестовая календарная строка с крайними случаями">
+            <div class="qa-row">
+              <div class="qa-label"><strong>Тестовый номер</strong><small>Только визуальная fixture</small></div>
+              <div class="qa-track">
+                <div class="qa-cells"><i class="qa-cell"></i><i class="qa-cell"></i><i class="qa-cell"></i><i class="qa-cell"></i><i class="qa-cell"></i><i class="qa-cell"></i><i class="qa-cell"></i><i class="qa-cell"></i><i class="qa-cell"></i><i class="qa-cell"></i></div>
+                <div class="qa-bars">
+                  <a class="qa-range" data-qa-range="single" href="#" style="grid-column:2 / span 1"><strong>Однодневный диапазон с очень длинной пометкой</strong><span>15 сен</span></a>
+                  <a class="qa-range" data-qa-range="adjacent" href="#" style="grid-column:3 / span 2"><strong>Соседний диапазон</strong><span>16 — 17 сен</span></a>
+                  <a class="qa-range" data-qa-range="long" href="#" style="grid-column:6 / span 4"><strong>Очень длинная пометка, которая должна оставаться внутри строки номера</strong><span>19 — 22 сен</span></a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <nav class="bottom-nav" aria-label="Мобильная навигация"><a href="#"><i></i>Главная</a><a href="#"><i></i>Номера</a><a class="active" href="#"><i></i>Календарь</a><a href="#"><i></i>Заявки</a><a href="#"><i></i>Ещё</a></nav>
+  <script>
+    const kindButtons=[...document.querySelectorAll('[data-kind]')];
+    const groupButtons=[...document.querySelectorAll('[data-group]')];
+    const groups=[...document.querySelectorAll('[data-kind-value]')];
+    let kind='all';let group='all';
+    function render(){let roomCount=0;let busyCount=0;groups.forEach(section=>{const show=(kind==='all'||section.dataset.kindValue===kind)&&(group==='all'||section.dataset.groupValue===group);section.classList.toggle('hidden',!show);if(show){roomCount+=section.querySelectorAll('.room-row').length;busyCount+=section.querySelectorAll('.room-row:has(.busy)').length;}});document.querySelector('#rooms-count').textContent=roomCount;document.querySelector('#busy-count').textContent=busyCount;}
+    kindButtons.forEach(button=>button.addEventListener('click',()=>{kind=button.dataset.kind;group='all';kindButtons.forEach(item=>{const active=item===button;item.classList.toggle('active',active);item.setAttribute('aria-pressed',String(active));});groupButtons.forEach((item,index)=>{item.classList.toggle('active',index===0);item.setAttribute('aria-pressed',String(index===0));});render();}));
+    groupButtons.forEach(button=>button.addEventListener('click',()=>{group=button.dataset.group;groupButtons.forEach(item=>{const active=item===button;item.classList.toggle('active',active);item.setAttribute('aria-pressed',String(active));});render();}));
+    const names=['Август 2026','Сентябрь 2026','Октябрь 2026'];let month=1;
+    document.querySelector('#prev-month').addEventListener('click',()=>{month=Math.max(0,month-1);document.querySelector('#month-name').textContent=names[month];});
+    document.querySelector('#next-month').addEventListener('click',()=>{month=Math.min(2,month+1);document.querySelector('#month-name').textContent=names[month];});
+    document.querySelector('#today-month').addEventListener('click',()=>{month=1;document.querySelector('#month-name').textContent=names[month];});
+  </script>
+</body>
+</html>
