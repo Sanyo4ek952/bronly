@@ -4,6 +4,7 @@ import { FormSection, Input, Textarea } from "@/shared/ui";
 
 type OwnerPropertyFormFieldsProps = {
   property?: OwnerPropertyDetail | null;
+  presentation?: "default" | "create";
 };
 
 function renderChecked(value: boolean | undefined) {
@@ -21,14 +22,23 @@ const toggleRowClass = cn(
   "max-[640px]:min-h-[52px]",
 );
 
-export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsProps) {
+export function OwnerPropertyFormFields({ property, presentation = "default" }: OwnerPropertyFormFieldsProps) {
+  const isCreatePresentation = presentation === "create";
+  const sectionProps = isCreatePresentation
+    ? {
+        variant: "plain" as const,
+        className: "!rounded-none !border-0 !bg-transparent !px-0 !py-6 first:!pt-0 last:!pb-0",
+        bodyClassName: "gap-4",
+      }
+    : { variant: "accordion" as const };
+
   return (
-    <div className={stackClass}>
+    <div className={isCreatePresentation ? "grid divide-y divide-[var(--border)]" : stackClass}>
       <FormSection
         id="overview"
         title="Основные данные"
         description="Название, тип объекта, адрес и описания, которые видит владелец и гость."
-        variant="accordion"
+        {...sectionProps}
       >
         <div className={propertyFormGridClass}>
           <Input id="property-title" name="title" label="Название объекта" defaultValue={property?.title ?? ""} />
@@ -64,7 +74,7 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
         id="contacts"
         title="Контакты"
         description="Каналы связи владельца для быстрой связи и публичной страницы."
-        variant="accordion"
+        {...sectionProps}
       >
         <div className={inlineFieldsClass}>
           <Input id="property-phone" name="phone" label="Телефон" defaultValue={property?.phone ?? ""} />
@@ -76,7 +86,7 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
         id="rules"
         title="Правила и особенности"
         description="Время заезда, выезда, особенности объекта и правила проживания."
-        variant="accordion"
+        {...sectionProps}
       >
         <div className={inlineFieldsClass}>
           <Input id="property-check-in" name="checkInTime" label="Заезд" defaultValue={property?.checkInTime ?? ""} />
@@ -103,7 +113,7 @@ export function OwnerPropertyFormFields({ property }: OwnerPropertyFormFieldsPro
         id="contacts-visibility"
         title="Публикация"
         description="Настройки видимости объекта и условий сотрудничества с агентами."
-        variant="accordion"
+        {...sectionProps}
       >
         <div className={toggleListClass}>
           <label className={toggleRowClass}>
