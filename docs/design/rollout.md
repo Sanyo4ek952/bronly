@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | D29 | `/agent/dashboard/collections` | route-specific контракт восстановлен; shared implementation уже внедрён |
 | D30 | `/agent/dashboard/collections/[collectionId]` | route-specific контракт готов; shared implementation уже внедрён |
-| D31 | `/agent/dashboard/collections/new` | pending route-specific audit |
+| D31 | `/agent/dashboard/collections/new` | route-specific контракт готов; shared implementation уже внедрён |
 | D32 | `/agent/dashboard/deals` | implementation существует, pending canonical D32 contract |
 | D33 | `/agent/dashboard/notifications` | pending route-specific audit |
 | D34 | `/agent/dashboard/opportunities` | implementation существует, pending canonical D34 contract |
