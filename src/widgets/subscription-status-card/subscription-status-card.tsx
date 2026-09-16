@@ -6,6 +6,7 @@ type SubscriptionStatusCardProps = {
   subscription: SubscriptionRuntimeState;
   backHref: string;
   backLabel: string;
+  presentation?: "default" | "owner";
 };
 
 type SubscriptionOverviewCardProps = {
@@ -93,6 +94,162 @@ function getSubscriptionDescription(roleContext: SubscriptionRuntimeState["roleC
     : "Статус доступа, лимит активных номеров и ручное продление в рамках MVP.";
 }
 
+function OwnerSubscriptionStatus({
+  subscription,
+  backHref,
+  backLabel,
+}: Omit<SubscriptionStatusCardProps, "presentation">) {
+  const warning = getWarning(subscription);
+  const usageLabel = getRoomUsageLabel(subscription.activeRoomCount, subscription.roomLimit);
+  const roomLimitNote = getRoomLimitNote(subscription);
+  const validUntilLabel = getValidityLabel(subscription.validUntil);
+  const paidUntilLabel = subscription.paidUntil ? formatDateLabel(subscription.paidUntil) : "Нет даты";
+  const graceUntilLabel = subscription.graceEndsAt ? formatDateLabel(subscription.graceEndsAt) : "Не действует";
+  const accessRows = [
+    {
+      label: "Лимит активных номеров",
+      value: subscription.isRoomLimitReached ? "Исчерпан" : "Доступен",
+      isAllowed: !subscription.isRoomLimitReached,
+    },
+    { label: "Публичные страницы", value: subscription.isPublicAllowed ? "Доступны" : "Скрыты", isAllowed: subscription.isPublicAllowed },
+    {
+      label: "Новые заявки",
+      value: subscription.isRequestIntakeAllowed ? "Принимаются" : "Не принимаются",
+      isAllowed: subscription.isRequestIntakeAllowed,
+    },
+    {
+      label: "Изменения в кабинете",
+      value: subscription.isMutationAllowed ? "Доступны" : "Остановлены",
+      isAllowed: subscription.isMutationAllowed,
+    },
+  ] as const;
+  const renewalSteps = [
+    "Оплатите доступ вне автоматического платежного контура.",
+    "Свяжитесь с администратором и подтвердите оплату.",
+    "Администратор вручную продлит доступ.",
+  ] as const;
+
+  return (
+    <section className="grid gap-6 max-[640px]:gap-5">
+      <header className="grid max-w-[720px] gap-2">
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[var(--accent)]">Доступ к сервису</p>
+        <h1 className="text-[clamp(32px,5vw,46px)] font-bold leading-[1.02] tracking-[-0.04em] text-[var(--text)]">Подписка</h1>
+        <p className="text-sm leading-[1.6] text-[var(--text-muted)]">
+          Следите за сроком доступа и лимитом активных номеров. Продление в MVP подтверждает администратор вручную.
+        </p>
+      </header>
+
+      {warning ? <InlineNotice tone="warning">{warning}</InlineNotice> : null}
+
+      <Panel
+        className="min-w-0 overflow-hidden border-[rgb(var(--color-primary-rgb)_/_0.18)] !bg-[linear-gradient(135deg,var(--surface-muted),var(--surface)_72%)] shadow-[var(--shadow-md)]"
+        aria-labelledby="owner-subscription-plan-title"
+      >
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-7 p-7 max-[640px]:grid-cols-1 max-[640px]:gap-5 max-[640px]:px-4 max-[640px]:py-5">
+          <div className="grid min-w-0 gap-2.5">
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-[var(--text-muted)]">Текущий план</span>
+            <div className="flex min-w-0 flex-wrap items-center gap-2.5 max-[640px]:items-start">
+              <h2
+                id="owner-subscription-plan-title"
+                className="[overflow-wrap:anywhere] text-[28px] font-bold leading-[1.1] tracking-[-0.03em] text-[var(--text)] max-[640px]:w-full max-[640px]:text-2xl"
+              >
+                {subscription.planName}
+              </h2>
+              <StatusPill variant={getStatusVariant(subscription.status)}>{subscription.statusLabel}</StatusPill>
+            </div>
+            <p className="max-w-[620px] text-sm leading-[1.55] text-[var(--text-muted)]">
+              Доступ к кабинету, публичным страницам и новым заявкам определяется текущим статусом подписки.
+            </p>
+          </div>
+
+          <div className="min-w-[180px] border-l border-[rgb(var(--color-primary-rgb)_/_0.2)] pl-7 max-[640px]:min-w-0 max-[640px]:border-l-0 max-[640px]:border-t max-[640px]:pl-0 max-[640px]:pt-5">
+            <span className="block text-[11px] font-extrabold uppercase tracking-[0.1em] text-[var(--text-muted)]">Активные номера</span>
+            <strong className="mt-2 block [overflow-wrap:anywhere] text-[32px] font-extrabold leading-none tracking-[-0.04em] text-[var(--text)]">
+              {usageLabel}
+            </strong>
+            <small className="mt-2 block text-xs leading-[1.45] text-[var(--text-muted)]">
+              {subscription.roomLimit == null
+                ? "Лимит не ограничен текущей настройкой"
+                : subscription.isRoomLimitReached
+                  ? "Лимит активных номеров исчерпан"
+                  : `Доступно еще ${subscription.remainingRoomSlots ?? 0} ${getActiveRoomWord(subscription.remainingRoomSlots ?? 0)}`}
+            </small>
+          </div>
+        </div>
+
+        <dl className="grid grid-cols-3 border-t border-[rgb(var(--color-primary-rgb)_/_0.16)] max-[640px]:grid-cols-1 max-[640px]:px-4">
+          {[
+            ["Действует до", validUntilLabel],
+            ["Оплачено до", paidUntilLabel],
+            ["Grace period", graceUntilLabel],
+          ].map(([label, value]) => (
+            <div
+              key={label}
+              className="min-w-0 border-r border-[rgb(var(--color-primary-rgb)_/_0.16)] px-7 py-[18px] last:border-r-0 max-[640px]:border-b max-[640px]:border-r-0 max-[640px]:px-0 max-[640px]:py-4 max-[640px]:last:border-b-0"
+            >
+              <dt className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-[var(--text-muted)]">{label}</dt>
+              <dd className="mt-2 [overflow-wrap:anywhere] text-sm font-bold leading-[1.45] text-[var(--text)]">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </Panel>
+
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(310px,0.8fr)]">
+        <Panel className="grid min-w-0 gap-5 p-6 max-[640px]:p-4" surface="raised" aria-labelledby="owner-subscription-access-title">
+          <div className="grid gap-1.5">
+            <h2 id="owner-subscription-access-title" className="text-2xl font-bold tracking-[-0.025em] text-[var(--text)]">
+              Что доступно сейчас
+            </h2>
+            <p className="text-sm leading-[1.55] text-[var(--text-muted)]">Ограничения применяются одинаково во всех точках входа.</p>
+          </div>
+
+          <dl className="border-t border-[var(--border)]">
+            {accessRows.map((row) => (
+              <div
+                key={row.label}
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-[var(--border)] py-4 max-[520px]:grid-cols-1 max-[520px]:gap-1.5"
+              >
+                <dt className="min-w-0 text-sm leading-[1.5] text-[var(--text-muted)]">{row.label}</dt>
+                <dd className="flex min-w-0 items-center justify-end gap-2 text-right text-sm font-bold leading-[1.45] text-[var(--text)] max-[520px]:justify-start max-[520px]:text-left">
+                  <span
+                    className={row.isAllowed ? "size-2 shrink-0 rounded-full bg-[var(--success)]" : "size-2 shrink-0 rounded-full bg-[var(--danger)]"}
+                    aria-hidden="true"
+                  />
+                  <span className="[overflow-wrap:anywhere]">{row.value}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+
+          <p className="text-sm leading-[1.55] text-[var(--text-muted)]">{roomLimitNote}</p>
+        </Panel>
+
+        <Panel as="aside" className="grid min-w-0 gap-5 p-6 max-[640px]:p-4" surface="raised" aria-labelledby="owner-subscription-renewal-title">
+          <div className="grid gap-1.5">
+            <h2 id="owner-subscription-renewal-title" className="text-2xl font-bold tracking-[-0.025em] text-[var(--text)]">Как продлить</h2>
+            <p className="text-sm leading-[1.55] text-[var(--text-muted)]">Онлайн-оплаты в кабинете сейчас нет.</p>
+          </div>
+
+          <ol className="m-0 grid list-none p-0 [counter-reset:renewal-step]">
+            {renewalSteps.map((step) => (
+              <li
+                key={step}
+                className="grid grid-cols-[30px_minmax(0,1fr)] gap-3 border-t border-[var(--border)] py-4 last:border-b before:grid before:size-[30px] before:place-items-center before:rounded-full before:bg-[var(--surface-muted)] before:text-xs before:font-extrabold before:text-[var(--accent-strong)] before:[content:counter(renewal-step)] before:[counter-increment:renewal-step]"
+              >
+                <strong className="min-w-0 [overflow-wrap:anywhere] text-sm leading-[1.5] text-[var(--text)]">{step}</strong>
+              </li>
+            ))}
+          </ol>
+        </Panel>
+      </div>
+
+      <ButtonLink href={backHref} variant="secondary" className="min-h-11 justify-self-start max-[420px]:w-full">
+        {backLabel}
+      </ButtonLink>
+    </section>
+  );
+}
+
 export function SubscriptionOverviewCard({ subscription, href }: SubscriptionOverviewCardProps) {
   const rows = [
     { label: "Действует до", value: getValidityLabel(subscription.validUntil) },
@@ -121,7 +278,11 @@ export function SubscriptionOverviewCard({ subscription, href }: SubscriptionOve
   );
 }
 
-export function SubscriptionStatusCard({ subscription, backHref, backLabel }: SubscriptionStatusCardProps) {
+export function SubscriptionStatusCard({ subscription, backHref, backLabel, presentation = "default" }: SubscriptionStatusCardProps) {
+  if (presentation === "owner") {
+    return <OwnerSubscriptionStatus subscription={subscription} backHref={backHref} backLabel={backLabel} />;
+  }
+
   const warning = getWarning(subscription);
   const usageLabel = getRoomUsageLabel(subscription.activeRoomCount, subscription.roomLimit);
   const roomLimitNote = getRoomLimitNote(subscription);

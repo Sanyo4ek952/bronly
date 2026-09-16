@@ -11,5 +11,12 @@ export default async function OwnerSubscriptionPage() {
 
   const subscription = await getSubscriptionRuntimeState(profile.id, "owner");
 
-  return <SubscriptionStatusCard subscription={subscription} backHref="/dashboard" backLabel="Вернуться на главную" />;
+  return (
+    <SubscriptionStatusCard
+      subscription={subscription}
+      backHref="/dashboard"
+      backLabel="Вернуться на главную"
+      presentation="owner"
+    />
+  );
 }

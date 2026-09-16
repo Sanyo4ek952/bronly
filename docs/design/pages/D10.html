@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>D10 — Подписка владельца</title>
+  <style>
+    :root { --ink:#20211f; --muted:#6f716b; --line:#eadccb; --paper:#fffaf3; --bg:#fbf7f0; --sand:#f7efe4; --sage:#edf7f2; --green:#477668; --green-dark:#315f54; --warn:#8a5a18; --warn-bg:#fff5df; --danger:#8b4039; --danger-bg:#fff0ed; --shadow:0 18px 42px rgba(43,55,48,.08); --radius:22px; }
+    * { box-sizing:border-box; }
+    html { background:var(--bg); color:var(--ink); font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin:0; min-width:280px; }
+    button, a { font:inherit; -webkit-tap-highlight-color:transparent; }
+    button:focus-visible, a:focus-visible { outline:3px solid rgba(71,118,104,.3); outline-offset:3px; }
+    a { color:inherit; }
+    h1, h2, p, dl, dd { margin:0; }
+    .shell { min-height:100vh; display:grid; grid-template-columns:248px minmax(0,1fr); }
+    .sidebar { position:sticky; top:0; height:100vh; padding:28px 22px; border-right:1px solid var(--line); background:#faf8f2; display:flex; flex-direction:column; }
+    .brand { display:flex; align-items:center; gap:10px; margin-bottom:36px; font:700 21px Georgia,serif; text-decoration:none; }
+    .brand-mark { width:34px; height:34px; display:grid; place-items:center; border-radius:50%; color:white; background:var(--green); font:700 16px Inter,sans-serif; }
+    .nav { display:grid; gap:7px; }
+    .nav a { padding:12px 14px; border-radius:12px; color:#5e6863; text-decoration:none; font-size:14px; font-weight:650; }
+    .nav a.active { color:var(--ink); background:#dfe9df; }
+    .profile { margin-top:auto; padding-top:20px; border-top:1px solid var(--line); font-size:13px; color:var(--muted); }
+    .profile strong { display:block; margin-bottom:4px; color:var(--ink); }
+    main { width:100%; max-width:1240px; margin:0 auto; padding:54px 48px 72px; }
+    .page { display:grid; gap:24px; }
+    .eyebrow { color:var(--green-dark); font-size:12px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+    .intro { display:grid; max-width:700px; gap:10px; }
+    h1 { font:600 clamp(34px,4vw,52px)/1.04 Georgia,serif; letter-spacing:-.035em; }
+    .lead { color:var(--muted); font-size:16px; line-height:1.55; }
+    .notice { padding:14px 16px; border:1px solid #ead39e; border-radius:15px; color:var(--warn); background:var(--warn-bg); font-size:14px; font-weight:650; line-height:1.5; }
+    .hero { min-width:0; overflow:hidden; border:1px solid #cfdbcf; border-radius:var(--radius); background:linear-gradient(135deg,var(--sage),#f8f7ef 72%); box-shadow:var(--shadow); }
+    .hero-main { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:28px; align-items:start; padding:28px; }
+    .hero-copy { display:grid; gap:10px; }
+    .plan-line { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+    .plan { font:600 28px/1.1 Georgia,serif; overflow-wrap:anywhere; }
+    .pill { display:inline-flex; min-height:27px; align-items:center; border-radius:999px; padding:0 10px; color:var(--green-dark); background:rgba(71,118,104,.12); font-size:11px; font-weight:800; white-space:nowrap; }
+    .pill.warning { color:var(--warn); background:#f8e6bd; }
+    .pill.expired { color:var(--danger); background:#f5deda; }
+    .hero-copy p { max-width:620px; color:var(--muted); font-size:14px; line-height:1.55; }
+    .usage { min-width:180px; padding-left:28px; border-left:1px solid rgba(71,118,104,.22); }
+    .label { display:block; margin-bottom:7px; color:var(--muted); font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    .usage strong { display:block; font-size:32px; line-height:1; letter-spacing:-.04em; }
+    .usage small { display:block; margin-top:8px; color:var(--muted); font-size:12px; }
+    .dates { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); border-top:1px solid rgba(71,118,104,.18); }
+    .date { min-width:0; padding:18px 28px; border-right:1px solid rgba(71,118,104,.18); }
+    .date:last-child { border-right:0; }
+    .date dd { font-size:15px; font-weight:750; overflow-wrap:anywhere; }
+    .content-grid { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(310px,.8fr); gap:24px; align-items:start; }
+    .surface { min-width:0; padding:26px; border:1px solid var(--line); border-radius:var(--radius); background:var(--paper); box-shadow:var(--shadow); }
+    .surface-head { display:grid; gap:7px; margin-bottom:22px; }
+    h2 { font:600 24px/1.2 Georgia,serif; }
+    .surface-head p, .note { color:var(--muted); font-size:14px; line-height:1.55; }
+    .access-list { border-top:1px solid var(--line); }
+    .access-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:18px; align-items:center; padding:16px 0; border-bottom:1px solid var(--line); }
+    .access-row dt { color:var(--muted); font-size:14px; }
+    .access-row dd { display:flex; align-items:center; gap:8px; text-align:right; font-size:14px; font-weight:750; }
+    .dot { width:8px; height:8px; flex:0 0 auto; border-radius:50%; background:var(--green); }
+    .dot.off { background:#b25b52; }
+    .note { margin-top:18px; }
+    .steps { display:grid; gap:0; counter-reset:steps; }
+    .step { position:relative; display:grid; grid-template-columns:34px minmax(0,1fr); gap:13px; padding:16px 0; border-top:1px solid var(--line); }
+    .step:last-child { border-bottom:1px solid var(--line); }
+    .step::before { counter-increment:steps; content:counter(steps); width:30px; height:30px; display:grid; place-items:center; border-radius:50%; color:var(--green-dark); background:var(--sage); font-size:12px; font-weight:850; }
+    .step strong { font-size:14px; line-height:1.5; }
+    .back { min-height:44px; display:inline-flex; align-items:center; justify-content:center; justify-self:start; padding:0 16px; border:1px solid var(--line); border-radius:12px; background:var(--paper); text-decoration:none; font-size:13px; font-weight:750; }
+    .back:hover { border-color:#b9c6bd; background:white; }
+    .tools { position:fixed; right:18px; bottom:18px; z-index:20; display:flex; max-width:calc(100vw - 36px); gap:6px; padding:7px; border:1px solid #d8ddd8; border-radius:14px; background:rgba(255,255,255,.94); box-shadow:0 10px 28px rgba(0,0,0,.12); overflow:auto; }
+    .tools button { flex:0 0 auto; min-height:34px; padding:7px 10px; border:0; border-radius:9px; color:#4f5954; background:transparent; cursor:pointer; font-size:11px; font-weight:750; }
+    .tools button:hover { background:#edf0eb; }
+    .mobile-nav { display:none; }
+    .loading-box { display:grid; gap:18px; padding:28px; border:1px solid var(--line); border-radius:var(--radius); background:var(--paper); }
+    .skeleton { height:15px; border-radius:8px; background:linear-gradient(90deg,#ece8df 25%,#f8f5ee 50%,#ece8df 75%); background-size:200% 100%; animation:shine 1.3s infinite; }
+    @keyframes shine { to { background-position:-200% 0; } }
+    [hidden] { display:none !important; }
+    @media (max-width:1079px) {
+      .shell { display:block; }
+      .sidebar { display:none; }
+      main { padding:38px 28px 112px; }
+      .mobile-nav { position:fixed; left:0; right:0; bottom:0; z-index:15; display:flex; justify-content:space-around; padding:9px 10px max(9px,env(safe-area-inset-bottom)); border-top:1px solid var(--line); background:rgba(255,250,243,.96); backdrop-filter:blur(14px); }
+      .mobile-nav a { min-width:58px; padding:7px 6px; border-radius:10px; color:var(--muted); text-align:center; text-decoration:none; font-size:11px; font-weight:720; }
+      .mobile-nav a.active { color:var(--green-dark); background:var(--sage); }
+    }
+    @media (max-width:820px) { .content-grid { grid-template-columns:1fr; } }
+    @media (max-width:620px) {
+      main { padding:30px 16px 106px; }
+      .page { gap:20px; }
+      h1 { font-size:38px; }
+      .lead { font-size:15px; }
+      .hero-main { grid-template-columns:1fr; gap:22px; padding:22px 18px; }
+      .plan-line { align-items:flex-start; flex-direction:column; }
+      .plan { font-size:25px; }
+      .usage { min-width:0; padding:18px 0 0; border-top:1px solid rgba(71,118,104,.18); border-left:0; }
+      .dates { grid-template-columns:1fr; padding:0 18px; }
+      .date { padding:15px 0; border-right:0; border-bottom:1px solid rgba(71,118,104,.18); }
+      .date:last-child { border-bottom:0; }
+      .surface { padding:22px 18px; border-radius:18px; }
+      .access-row { align-items:start; grid-template-columns:1fr; gap:7px; }
+      .access-row dd { text-align:left; }
+      .back { width:100%; }
+      .tools { left:10px; right:10px; bottom:78px; }
+    }
+    @media (max-width:340px) {
+      main { padding-left:12px; padding-right:12px; }
+      .hero-main, .dates, .surface { padding-left:14px; padding-right:14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Навигация владельца">
+      <a class="brand" href="#"><span class="brand-mark">Б</span>Брони</a>
+      <nav class="nav">
+        <a href="#">Главная</a><a href="#">Объекты</a><a href="#">Заявки</a><a href="#">Коллекции</a><a class="active" href="#">Подписка</a><a href="#">Настройки</a>
+      </nav>
+      <div class="profile"><strong>Марина Орлова</strong>Владелец</div>
+    </aside>
+    <main>
+      <section id="loading" class="loading-box" hidden aria-label="Загрузка подписки" aria-busy="true">
+        <div class="skeleton" style="width:28%"></div><div class="skeleton" style="height:48px;width:52%"></div><div class="skeleton" style="width:70%"></div><div class="skeleton" style="height:230px"></div><div class="skeleton" style="height:280px"></div>
+      </section>
+      <section id="page" class="page">
+        <header class="intro">
+          <p class="eyebrow">Доступ к сервису</p>
+          <h1>Подписка</h1>
+          <p class="lead">Следите за сроком доступа и лимитом активных номеров. Продление в MVP подтверждает администратор вручную.</p>
+        </header>
+
+        <div id="notice" class="notice" role="status" hidden></div>
+
+        <section class="hero" aria-labelledby="plan-title">
+          <div class="hero-main">
+            <div class="hero-copy">
+              <span class="label">Текущий план</span>
+              <div class="plan-line"><h2 class="plan" id="plan-title">Базовый</h2><span id="status-pill" class="pill">Активна</span></div>
+              <p>Доступ к кабинету, публичным страницам и новым заявкам определяется текущим статусом подписки.</p>
+            </div>
+            <div class="usage"><span class="label">Активные номера</span><strong id="usage-value">4 из 8</strong><small id="usage-note">Доступно ещё 4 активных номера</small></div>
+          </div>
+          <dl class="dates">
+            <div class="date"><dt class="label">Действует до</dt><dd id="valid-until">30 сентября 2026</dd></div>
+            <div class="date"><dt class="label">Оплачено до</dt><dd id="paid-until">30 сентября 2026</dd></div>
+            <div class="date"><dt class="label">Grace period</dt><dd id="grace-until">Не действует</dd></div>
+          </dl>
+        </section>
+
+        <div class="content-grid">
+          <section class="surface" aria-labelledby="access-title">
+            <div class="surface-head"><h2 id="access-title">Что доступно сейчас</h2><p>Ограничения применяются одинаково во всех точках входа.</p></div>
+            <dl class="access-list">
+              <div class="access-row"><dt>Лимит активных номеров</dt><dd id="limit-state"><span class="dot"></span>Доступен</dd></div>
+              <div class="access-row"><dt>Публичные страницы</dt><dd id="public-state"><span class="dot"></span>Доступны</dd></div>
+              <div class="access-row"><dt>Новые заявки</dt><dd id="request-state"><span class="dot"></span>Принимаются</dd></div>
+              <div class="access-row"><dt>Изменения в кабинете</dt><dd id="mutation-state"><span class="dot"></span>Доступны</dd></div>
+            </dl>
+            <p class="note" id="limit-note">Доступно ещё 4 активных номера в рамках текущего лимита.</p>
+          </section>
+
+          <aside class="surface" aria-labelledby="renewal-title">
+            <div class="surface-head"><h2 id="renewal-title">Как продлить</h2><p>Онлайн-оплаты в кабинете сейчас нет.</p></div>
+            <div class="steps">
+              <div class="step"><strong>Оплатите доступ вне автоматического платёжного контура.</strong></div>
+              <div class="step"><strong>Свяжитесь с администратором и подтвердите оплату.</strong></div>
+              <div class="step"><strong>Администратор вручную продлит доступ.</strong></div>
+            </div>
+          </aside>
+        </div>
+
+        <a class="back" href="#">Вернуться на главную</a>
+      </section>
+    </main>
+  </div>
+  <nav class="mobile-nav" aria-label="Мобильная навигация"><a href="#">Главная</a><a href="#">Объекты</a><a href="#">Календарь</a><a href="#">Заявки</a><a class="active" href="#">Ещё</a></nav>
+  <div class="tools" aria-label="Демонстрационные состояния">
+    <button type="button" data-state="active">Активна</button><button type="button" data-state="trial">Пробный период</button><button type="button" data-state="grace">Grace</button><button type="button" data-state="expired">Истекла</button><button type="button" data-state="loading">Загрузка</button>
+  </div>
+  <script>
+    const page = document.querySelector('#page');
+    const loading = document.querySelector('#loading');
+    const notice = document.querySelector('#notice');
+    const pill = document.querySelector('#status-pill');
+    const setAccess = (id, value, enabled) => {
+      const node = document.querySelector(id);
+      node.innerHTML = `<span class="dot${enabled ? '' : ' off'}"></span>${value}`;
+    };
+    const states = {
+      active: { status:'Активна', pill:'pill', notice:'', valid:'30 сентября 2026', paid:'30 сентября 2026', grace:'Не действует', usage:'4 из 8', usageNote:'Доступно ещё 4 активных номера', limit:'Доступен', limitNote:'Доступно ещё 4 активных номера в рамках текущего лимита.', on:true },
+      trial: { status:'Пробный период', pill:'pill', notice:'', valid:'28 сентября 2026', paid:'Нет даты', grace:'Не действует', usage:'1 из 5', usageNote:'Доступно ещё 4 активных номера', limit:'Доступен', limitNote:'Доступно ещё 4 активных номера в рамках текущего лимита.', on:true },
+      grace: { status:'Нужно продлить', pill:'pill warning', notice:'Grace period действует до 19 сентября 2026. До этой даты публичные страницы и новые заявки ещё доступны.', valid:'19 сентября 2026', paid:'15 сентября 2026', grace:'19 сентября 2026', usage:'8 из 8', usageNote:'Лимит активных номеров исчерпан', limit:'Исчерпан', limitNote:'Лимит активных номеров исчерпан. Создание нового активного номера или повторная активация будут заблокированы.', on:true, limitOff:true },
+      expired: { status:'Истекла', pill:'pill expired', notice:'Доступ ограничен до ручного продления администратором. Публичная страница скрыта, новые заявки и изменения данных временно остановлены.', valid:'15 сентября 2026', paid:'15 сентября 2026', grace:'18 сентября 2026', usage:'8 из 8', usageNote:'Лимит активных номеров исчерпан', limit:'Исчерпан', limitNote:'Лимит активных номеров исчерпан. Продлите доступ и проверьте лимит перед активацией новых номеров.', on:false, limitOff:true },
+    };
+    const applyState = (name) => {
+      if (name === 'loading') { page.hidden = true; loading.hidden = false; return; }
+      loading.hidden = true; page.hidden = false;
+      const state = states[name];
+      pill.textContent = state.status; pill.className = state.pill;
+      notice.textContent = state.notice; notice.hidden = !state.notice;
+      document.querySelector('#valid-until').textContent = state.valid;
+      document.querySelector('#paid-until').textContent = state.paid;
+      document.querySelector('#grace-until').textContent = state.grace;
+      document.querySelector('#usage-value').textContent = state.usage;
+      document.querySelector('#usage-note').textContent = state.usageNote;
+      document.querySelector('#limit-note').textContent = state.limitNote;
+      setAccess('#limit-state', state.limit, !state.limitOff);
+      setAccess('#public-state', state.on ? 'Доступны' : 'Скрыты', state.on);
+      setAccess('#request-state', state.on ? 'Принимаются' : 'Не принимаются', state.on);
+      setAccess('#mutation-state', state.on ? 'Доступны' : 'Остановлены', state.on);
+    };
+    document.querySelectorAll('[data-state]').forEach((button) => button.addEventListener('click', () => applyState(button.dataset.state)));
+  </script>
+</body>
+</html>
