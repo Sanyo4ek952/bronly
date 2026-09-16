@@ -18,6 +18,7 @@ export default async function AgentSubscriptionPage() {
       subscription={subscription}
       backHref="/agent/dashboard"
       backLabel="Вернуться на главную"
+      presentation="owner"
     />
   );
 }

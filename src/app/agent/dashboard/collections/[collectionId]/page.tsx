@@ -52,6 +52,7 @@ export default async function AgentCollectionDetailPage({ params, searchParams }
       roomDescription="Доступны свои номера и номера владельцев при активном сотрудничестве."
       success={success}
       error={error}
+      layout="owner-detail"
     />
   );
 }

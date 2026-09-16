@@ -28,5 +28,11 @@ export default async function AgentReferralPage() {
     redirect("/agent/dashboard");
   }
 
-  return <ReferralSharePanel initialRole="owner" invites={{ owner: ownerInvite, agent: agentInvite }} />;
+  return (
+    <ReferralSharePanel
+      initialRole="owner"
+      invites={{ owner: ownerInvite, agent: agentInvite }}
+      presentation="owner"
+    />
+  );
 }

@@ -30,6 +30,7 @@ export default async function AgentCollectionCreatePage({ searchParams }: Collec
       action={createAgentCollectionAction}
       success={success}
       error={error}
+      layout="owner-create"
     />
   );
 }
