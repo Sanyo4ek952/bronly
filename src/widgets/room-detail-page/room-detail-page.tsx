@@ -1,6 +1,7 @@
 import type { OwnerRoomDetail } from "@/entities/room";
 import { formatRubles } from "@/shared/lib";
-import { DashboardPageNav, ButtonLink, StatusPill } from "@/shared/ui";
+import { ButtonLink, DashboardPageNav, Panel, StatusPill } from "@/shared/ui";
+import { AdminPageHeader } from "@/widgets/property-admin";
 import { RoomPhotoCarousel } from "./room-photo-carousel";
 
 type BreadcrumbItem = {
@@ -23,10 +24,7 @@ type RoomDetailPageProps = {
   listLabel?: string;
 };
 
-const pageStackClass = "grid gap-4";
-const sectionCardClass =
-  "grid gap-4 rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
-const sectionHeaderClass = "flex flex-wrap items-start justify-between gap-3";
+const pageStackClass = "grid min-w-0 gap-6 max-[720px]:gap-5";
 const chipClass =
   "inline-flex min-h-8 items-center rounded-full border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.82)] px-3 text-[13px] text-[var(--color-muted)]";
 const statCardClass =
@@ -58,25 +56,31 @@ export function RoomDetailPage({
     <section className={pageStackClass}>
       <DashboardPageNav backHref={backHref} breadcrumbs={breadcrumbs} compact />
 
-      <section className={sectionCardClass}>
-        <div className={sectionHeaderClass}>
-          <div className="grid gap-1.5">
-            {propertyLabel ? <p className="text-sm leading-[1.5] text-[var(--color-muted)]">{propertyLabel}</p> : null}
-            <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">{title}</h2>
-            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">{intro}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            {listHref && listLabel ? (
-              <ButtonLink href={listHref} variant="secondary">
-                {listLabel}
-              </ButtonLink>
-            ) : null}
-            <ButtonLink href={settingsHref}>Настройки</ButtonLink>
-          </div>
+      <div className="grid min-w-0 gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[var(--accent-strong)]">
+            {room.kind === "standalone_room" ? "Отдельный номер" : "Номер объекта"}
+          </p>
+          <StatusPill variant={room.isActive ? "active" : "inactive"}>{room.isActive ? "Активен" : "Неактивен"}</StatusPill>
         </div>
-      </section>
+        <AdminPageHeader
+          variant="plain"
+          title={title}
+          description={[propertyLabel, intro].filter(Boolean).join(" · ")}
+          actions={
+            <>
+              {listHref && listLabel ? (
+                <ButtonLink href={listHref} variant="secondary">
+                  {listLabel}
+                </ButtonLink>
+              ) : null}
+              <ButtonLink href={settingsHref}>Настройки</ButtonLink>
+            </>
+          }
+        />
+      </div>
 
-      <section className="grid gap-5 rounded-[24px] border border-[rgb(15_23_42_/_0.08)] bg-[rgb(255_255_255_/_0.94)] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4">
+      <Panel padding="md" className="grid min-w-0 gap-5 max-[720px]:p-4">
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] xl:items-stretch">
           <div className="min-w-0">
             <RoomPhotoCarousel photos={room.photos} roomTitle={room.title} />
@@ -111,12 +115,12 @@ export function RoomDetailPage({
             </div>
           </div>
         </div>
-      </section>
+      </Panel>
 
       {room.location.shortDescription || room.location.fullDescription ? (
-        <section className={sectionCardClass}>
+        <Panel padding="md" className="grid gap-4 max-[720px]:p-4">
           <div className="grid gap-1.5">
-            <h3 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Описание</h3>
+            <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Описание</h2>
             <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
               Краткая и полная информация по номеру для проверки контента перед публикацией.
             </p>
@@ -125,12 +129,12 @@ export function RoomDetailPage({
             {room.location.shortDescription ? <p>{room.location.shortDescription}</p> : null}
             {room.location.fullDescription ? <p>{room.location.fullDescription}</p> : null}
           </div>
-        </section>
+        </Panel>
       ) : null}
 
-      <section className={sectionCardClass}>
+      <Panel padding="md" className="grid gap-4 max-[720px]:p-4">
         <div className="grid gap-1.5">
-          <h3 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Быстрая сводка</h3>
+          <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Быстрая сводка</h2>
           <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
             Контакты, публикация и условия заезда собраны на одном экране номера.
           </p>
@@ -155,12 +159,12 @@ export function RoomDetailPage({
             </div>
           </article>
         </div>
-      </section>
+      </Panel>
 
       {room.amenities.length ? (
-        <section className={sectionCardClass}>
+        <Panel padding="md" className="grid gap-4 max-[720px]:p-4">
           <div className="grid gap-1.5">
-            <h3 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Удобства</h3>
+            <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Удобства</h2>
             <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
               Этот список показывается в карточке номера и помогает проверить полноту описания.
             </p>
@@ -172,12 +176,12 @@ export function RoomDetailPage({
               </span>
             ))}
           </div>
-        </section>
+        </Panel>
       ) : null}
 
-      <section className={sectionCardClass}>
+      <Panel padding="md" className="grid gap-4 max-[720px]:p-4">
         <div className="grid gap-1.5">
-          <h3 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Цены и занятые даты</h3>
+          <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Цены и занятые даты</h2>
           <p className="text-sm leading-[1.55] text-[var(--color-muted)]">{calendarSummaryText}</p>
         </div>
 
@@ -219,7 +223,7 @@ export function RoomDetailPage({
             )}
           </article>
         </div>
-      </section>
+      </Panel>
     </section>
   );
 }
