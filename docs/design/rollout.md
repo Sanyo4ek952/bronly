@@ -34,6 +34,6 @@
 | D54 | `/p/[slug]` | verified: owner storefront с базовыми ценами и direct request |
 | D55 | `/p/[slug]/request` | verified: owner request flow и конкретный номер |
 | D56 | `/p/[slug]/request/success` | verified: owner success flow и ручные шаги |
-| D57 | `/register` | pending |
+| D57 | `/register` | verified: role-aware registration и invite lock |
 | D58 | `/reset-password` | pending |
 | D59 | `/welcome` | pending |
