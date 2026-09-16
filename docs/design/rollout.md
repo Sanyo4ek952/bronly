@@ -15,7 +15,7 @@
 | D35 | `/agent/dashboard/referrals` | route-specific контракт готов; shared implementation уже внедрён |
 | D36 | `/agent/dashboard/requests` | verified ранее; canonical D36 contract восстановлен |
 | D37 | `/agent/dashboard/settings` | verified ранее; canonical D37 contract восстановлен |
-| D38 | `/agent/dashboard/subscription` | pending route-specific audit |
+| D38 | `/agent/dashboard/subscription` | route-specific контракт готов; shared implementation уже внедрён |
 | D39 | `/admin` | pending |
 | D40 | `/admin/properties` | pending |
 | D41 | `/admin/reviews` | pending |
