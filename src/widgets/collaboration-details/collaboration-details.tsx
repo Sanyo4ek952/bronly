@@ -50,7 +50,31 @@ export function CollaborationContactLinks({
   );
 }
 
-export function CollaborationTargets({ targets }: { targets: CollaborationTargetSummary[] }) {
+export function CollaborationTargets({
+  targets,
+  presentation = "cards",
+}: {
+  targets: CollaborationTargetSummary[];
+  presentation?: "cards" | "flat";
+}) {
+  if (presentation === "flat") {
+    return (
+      <ul className="grid divide-y divide-[var(--border)]">
+        {targets.map((target) => (
+          <li
+            key={`${target.targetType}-${target.id}`}
+            className="grid min-w-0 gap-1 py-2.5 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-baseline sm:gap-4"
+          >
+            <strong className="min-w-0 [overflow-wrap:anywhere] text-sm font-semibold text-[var(--text)]">{target.targetTitle}</strong>
+            <span className="text-xs leading-relaxed text-[var(--text-muted)]">
+              {target.targetType === "property" ? "Объект" : "Отдельный номер"}
+            </span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
   return (
     <div className="grid gap-2">
       {targets.map((target) => (

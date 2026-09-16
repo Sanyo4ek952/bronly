@@ -9,11 +9,18 @@ type ObjectStatItem = {
 type ObjectStatsProps = {
   items: ObjectStatItem[];
   compact?: boolean;
+  stackOnMobile?: boolean;
 };
 
-export function ObjectStats({ items, compact = false }: ObjectStatsProps) {
+export function ObjectStats({ items, compact = false, stackOnMobile = true }: ObjectStatsProps) {
   return (
-    <div className={cn("grid grid-cols-3 gap-3 max-[520px]:grid-cols-1", compact && "gap-2.5")}>
+    <div
+      className={cn(
+        "grid grid-cols-3 gap-3",
+        stackOnMobile && "max-[520px]:grid-cols-1",
+        compact && "gap-2.5",
+      )}
+    >
       {items.map((item) => (
         <div
           key={item.label}

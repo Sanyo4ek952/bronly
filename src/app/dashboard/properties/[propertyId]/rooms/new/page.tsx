@@ -13,7 +13,8 @@ import {
 } from "@/features/property/edit-room/ui/room-form-blocks";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { buildOwnerInventoryBreadcrumbs, getRussianPluralForm, readSearchParams } from "@/shared/lib";
-import { Button, DashboardPageNav, InlineNotice } from "@/shared/ui";
+import { Button, DashboardPageNav, InlineNotice, Panel } from "@/shared/ui";
+import { AdminPageHeader, StatusBadge } from "@/widgets/property-admin";
 import { PropertySectionNav } from "@/widgets/property-section-nav";
 
 type PropertyRoomCreatePageProps = {
@@ -21,12 +22,8 @@ type PropertyRoomCreatePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const pageStackClass = "grid gap-4";
-const sectionCardClass =
-  "grid gap-4 rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
-const sectionHeaderClass = "flex flex-wrap items-start justify-between gap-3";
-const formCardClass =
-  "grid gap-4 rounded-[24px] border border-[rgb(15_23_42_/_0.08)] bg-[rgb(255_255_255_/_0.94)] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
+const pageStackClass = "grid min-w-0 gap-6 max-[720px]:gap-5";
+const formStackClass = "grid min-w-0 gap-4";
 
 function getActiveRoomWord(count: number) {
   return getRussianPluralForm(count, ["активный номер", "активных номера", "активных номеров"]);
@@ -55,6 +52,9 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
   const resolvedSearchParams = await readSearchParams(searchParams);
   const error = typeof resolvedSearchParams.error === "string" ? resolvedSearchParams.error : "";
   const notice = getRoomCreateNotice(error);
+  const propertyDescription = [property.title, property.propertyType, [property.city, property.address].filter(Boolean).join(", ")]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <section className={pageStackClass}>
@@ -68,27 +68,34 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
         compact
       />
 
-      <section className={sectionCardClass}>
-        <div className={sectionHeaderClass}>
-          <div className="grid gap-1.5">
-            <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">{property.title}</h2>
-            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">Добавьте новый номер для этого объекта.</p>
-          </div>
+      <div className="grid min-w-0 gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[var(--accent-strong)]">
+            Объект владельца
+          </p>
+          <StatusBadge kind="property" published={property.published} isFrozen={property.isFrozen} />
         </div>
+        <AdminPageHeader variant="plain" title="Новый номер" description={propertyDescription} />
+      </div>
 
+      {notice || (subscription && roomUsageLabel) ? (
+        <div className="grid gap-3">
+          {notice ? <InlineNotice tone="error">{notice}</InlineNotice> : null}
+          {subscription && roomUsageLabel ? (
+            <InlineNotice tone={subscription.isRoomLimitReached ? "warning" : "soft"}>
+              Подписка: {roomUsageLabel}
+              {roomLimitHint ? ` — ${roomLimitHint}` : ""}
+            </InlineNotice>
+          ) : null}
+        </div>
+      ) : null}
+
+      <Panel padding="sm" surface="subtle" className="rounded-[var(--radius-lg)]">
         <PropertySectionNav propertyId={property.id} active="rooms" />
+      </Panel>
 
-        {notice ? <InlineNotice tone="error">{notice}</InlineNotice> : null}
-        {subscription && roomUsageLabel ? (
-          <InlineNotice tone="soft">
-            Подписка: {roomUsageLabel}
-            {roomLimitHint ? ` — ${roomLimitHint}` : ""}
-          </InlineNotice>
-        ) : null}
-      </section>
-
-      <section className={sectionCardClass}>
-        <div className={sectionHeaderClass}>
+      <Panel padding="md" className="grid min-w-0 gap-5 max-[720px]:p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="grid gap-1.5">
             <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Добавить номер</h2>
             <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
@@ -97,7 +104,7 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
           </div>
         </div>
 
-        <form action={createOwnerRoom} className={formCardClass}>
+        <form action={createOwnerRoom} className={formStackClass}>
           <input type="hidden" name="propertyId" value={property.id} />
 
           <RoomBaseFields title="Основное" description="Короткая карточка номера без лишнего шума." />
@@ -121,7 +128,7 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
             </Button>
           </div>
         </form>
-      </section>
+      </Panel>
     </section>
   );
 }

@@ -13,6 +13,7 @@ export default async function AgentCollectionsPage() {
       detailHrefBase="/agent/dashboard/collections"
       emptyTitle="Пока нет коллекций"
       emptyDescription="Создайте первую подборку, чтобы быстро собирать варианты для гостя."
+      layout="owner-list"
     />
   );
 }

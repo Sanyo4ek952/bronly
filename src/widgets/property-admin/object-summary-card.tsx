@@ -14,6 +14,7 @@ type ObjectSummaryCardProps = {
   roomsHref: string;
   calendarHref: string;
   publicHref: string;
+  publicActionLabel?: string;
   compact?: boolean;
   className?: string;
 };
@@ -24,6 +25,7 @@ export function ObjectSummaryCard({
   roomsHref,
   calendarHref,
   publicHref,
+  publicActionLabel = "Открыть публичную страницу",
   compact = false,
   className,
 }: ObjectSummaryCardProps) {
@@ -80,7 +82,7 @@ export function ObjectSummaryCard({
             Перейти к календарю
           </Link>
           <Link href={publicHref} className="text-sm font-bold text-[var(--color-primary-hover)]">
-            Открыть публичную страницу
+            {publicActionLabel}
           </Link>
         </div>
 

@@ -11,18 +11,15 @@ import { RoomDateRangeField } from "@/features/property/edit-room/ui/room-date-r
 import { RoomFormSection } from "@/features/property/edit-room/ui/room-form-section";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { buildOwnerInventoryBreadcrumbs, readSearchParams } from "@/shared/lib";
-import { Button, ButtonLink, DashboardPageNav, InlineNotice, Input, Textarea } from "@/shared/ui";
+import { Button, ButtonLink, DashboardPageNav, InlineNotice, Input, Panel, Textarea } from "@/shared/ui";
+import { AdminPageHeader } from "@/widgets/property-admin";
 
 type StandaloneRoomCreatePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const pageStackClass = "grid gap-4";
-const sectionCardClass =
-  "grid gap-4 rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
-const sectionHeaderClass = "flex flex-wrap items-start justify-between gap-3";
-const formCardClass =
-  "grid gap-4 rounded-[24px] border border-[rgb(15_23_42_/_0.08)] bg-[rgb(255_255_255_/_0.94)] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
+const pageStackClass = "grid min-w-0 gap-6 max-[720px]:gap-5";
+const formStackClass = "grid min-w-0 gap-4";
 
 export default async function StandaloneRoomCreatePage({ searchParams }: StandaloneRoomCreatePageProps) {
   const params = await readSearchParams(searchParams);
@@ -41,19 +38,28 @@ export default async function StandaloneRoomCreatePage({ searchParams }: Standal
         compact
       />
 
-      <section className={sectionCardClass}>
-        <div className={sectionHeaderClass}>
-          <div className="grid gap-1.5">
-            <h1 className="text-[clamp(24px,3vw,32px)] font-bold leading-[1.05] tracking-[-0.04em] text-[var(--color-text)]">Новый отдельный номер</h1>
-            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">Создайте самостоятельный номер без объекта. Он попадет в общий список и в отдельный блок на публичной странице владельца.</p>
-          </div>
-        </div>
-        {notice ? <InlineNotice tone="error">{notice}</InlineNotice> : null}
-        {profile ? <InlineNotice tone="soft">Подписка учитывает этот номер в общем лимите активных номеров.</InlineNotice> : null}
-      </section>
+      <AdminPageHeader
+        variant="plain"
+        title="Новый отдельный номер"
+        description="Создайте самостоятельный номер без объекта. Он попадет в общий список и в отдельный блок на публичной странице владельца."
+      />
 
-      <section className={sectionCardClass}>
-        <form action={createOwnerRoom} className={formCardClass}>
+      {notice || profile ? (
+        <div className="grid gap-3">
+          {notice ? <InlineNotice tone="error">{notice}</InlineNotice> : null}
+          {profile ? <InlineNotice tone="soft">Подписка учитывает этот номер в общем лимите активных номеров.</InlineNotice> : null}
+        </div>
+      ) : null}
+
+      <Panel padding="md" className="grid min-w-0 gap-5 max-[720px]:p-4">
+        <div className="grid gap-1.5">
+          <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Данные номера</h2>
+          <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
+            Заполните адрес, параметры, цену и сведения для публичной карточки.
+          </p>
+        </div>
+
+        <form action={createOwnerRoom} className={formStackClass}>
           <RoomBaseFields
             title="Основное"
             description="Как называется номер и где он находится."
@@ -66,7 +72,7 @@ export default async function StandaloneRoomCreatePage({ searchParams }: Standal
           />
 
           <RoomFormSection title="Описание" description="Короткий анонс и подробности для гостя.">
-            <div className={pageStackClass}>
+            <div className={formStackClass}>
               <Textarea id="room-short-description-new" name="shortDescription" label="Краткое описание" />
               <Textarea id="room-full-description-new" name="fullDescription" label="Подробное описание" className="min-h-[170px]" />
             </div>
@@ -84,7 +90,7 @@ export default async function StandaloneRoomCreatePage({ searchParams }: Standal
           />
 
           <RoomFormSection title="Контакты и занятые даты" description="Оставьте контакты и, если нужно, сразу отметьте занятый диапазон.">
-            <div className={pageStackClass}>
+            <div className={formStackClass}>
               <div className="grid gap-4 md:grid-cols-2">
                 <Input id="room-phone-new" name="phone" label="Телефон" />
                 <Input id="room-telegram-new" name="telegram" label="Telegram" />
@@ -104,7 +110,7 @@ export default async function StandaloneRoomCreatePage({ searchParams }: Standal
             <Button type="submit" fullWidth>Создать номер</Button>
           </div>
         </form>
-      </section>
+      </Panel>
     </section>
   );
 }

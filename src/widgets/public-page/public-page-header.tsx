@@ -8,12 +8,18 @@ type PublicPageHeaderProps = {
 
 export function PublicPageHeader({ children, actions, navigation }: PublicPageHeaderProps) {
   return (
-    <header className="mb-[18px] grid overflow-hidden rounded-[var(--radius-lg)] border border-[rgb(var(--color-primary-rgb)_/_0.10)] bg-[var(--surface)] shadow-[var(--shadow-md)]">
-      <div className="flex flex-wrap items-center justify-between gap-[14px] border-b border-[rgb(var(--color-primary-rgb)_/_0.10)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(248_250_250_/_0.96))] px-5 py-[18px]">
-        <div className="min-w-0">{children}</div>
-        {actions ? <div className="flex flex-wrap items-center justify-end gap-[14px] max-[720px]:w-full max-[720px]:[&>*]:w-full">{actions}</div> : null}
-      </div>
-      {navigation ? <div className="flex flex-wrap items-center justify-between gap-[14px] px-5 pb-4 pt-[14px]">{navigation}</div> : null}
+    <header className="mb-5 flex flex-wrap items-center justify-between gap-4 px-1 py-1">
+      <div className="min-w-0 shrink-0">{children}</div>
+      {navigation ? (
+        <div className="flex min-w-0 flex-1 justify-end max-[640px]:order-3 max-[640px]:basis-full">
+          {navigation}
+        </div>
+      ) : null}
+      {actions ? (
+        <div className="flex flex-wrap items-center justify-end gap-3 max-[720px]:w-full max-[720px]:[&>*]:w-full">
+          {actions}
+        </div>
+      ) : null}
     </header>
   );
 }

@@ -5,7 +5,7 @@ import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { ButtonLink, InlineNotice, Panel, SectionHeader, StatCard } from "@/shared/ui";
 import { OwnerDashboardActionSection } from "@/widgets/owner-dashboard-overview/owner-dashboard-action-section";
-import { CopyLinkButton } from "@/widgets/property-admin";
+import { AdminPageHeader, CopyLinkButton } from "@/widgets/property-admin";
 import { SubscriptionOverviewCard } from "@/widgets/subscription-status-card";
 
 export default async function AgentDashboardPage() {
@@ -29,13 +29,14 @@ export default async function AgentDashboardPage() {
   }
 
   return (
-    <div className="grid gap-4">
-      <Panel className="grid gap-5 p-5 max-[640px]:p-4" surface="raised">
-        <SectionHeader
-          title="Агентская витрина"
-          description="Персональная ссылка, активные сотрудничества и заявки по вашим каналам."
-        />
+    <div className="grid min-w-0 gap-6 max-[720px]:gap-5">
+      <AdminPageHeader
+        variant="plain"
+        title="Главная агента"
+        description="Витрина, активные сотрудничества и заявки по вашим каналам."
+      />
 
+      <Panel className="grid gap-5 p-5 max-[640px]:p-4" surface="raised">
         <div className="grid gap-3 md:grid-cols-3">
           <StatCard title="Активные связи" value={summary.activeCollaborations} subtitle="Объекты и отдельные номера" />
           <StatCard title="Новые заявки" value={summary.incomingRequests} subtitle="Ожидают вашего действия" />

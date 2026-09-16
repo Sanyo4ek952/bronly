@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>D17 — Календарь объекта</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f0e9;
+        --surface: #fffdf9;
+        --surface-soft: #f8f4ed;
+        --text: #172522;
+        --muted: #687470;
+        --border: #ded8ce;
+        --accent: #176b62;
+        --accent-soft: #e4f0ed;
+        --busy: #d99a2b;
+        --shadow: 0 14px 38px rgba(38, 45, 42, 0.08);
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; background: var(--bg); color: var(--text); font: 15px/1.5 Inter, Arial, sans-serif; }
+      button, a { font: inherit; }
+      a { color: inherit; text-decoration: none; }
+      .shell { display: grid; min-height: 100vh; grid-template-columns: 244px minmax(0, 1fr); }
+      aside { padding: 28px 20px; border-right: 1px solid var(--border); background: rgba(255, 253, 249, 0.9); }
+      .brand { margin-bottom: 34px; font-size: 24px; font-weight: 900; letter-spacing: -0.05em; color: var(--accent); }
+      .side-nav { display: grid; gap: 8px; }
+      .side-nav a { padding: 11px 13px; border-radius: 14px; color: var(--muted); font-weight: 700; }
+      .side-nav a.active { background: var(--accent-soft); color: var(--accent); }
+      main { min-width: 0; padding: 28px clamp(18px, 3vw, 42px) 48px; }
+      .page { display: grid; width: 100%; min-width: 0; gap: 24px; max-width: 1180px; margin: 0 auto; }
+      .crumbs { min-width: 0; overflow-wrap: anywhere; color: var(--muted); font-size: 13px; }
+      .identity { display: grid; min-width: 0; gap: 10px; }
+      .eyebrow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: var(--accent); font-size: 11px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; }
+      .status { padding: 5px 9px; border-radius: 999px; background: #e7f3e9; color: #28713d; letter-spacing: 0; text-transform: none; }
+      h1, h2, h3, p { margin: 0; }
+      h1 { font-size: clamp(30px, 4vw, 46px); line-height: 1.02; letter-spacing: -0.045em; }
+      .lead { min-width: 0; overflow-wrap: anywhere; color: var(--muted); font-size: 16px; }
+      .panel { width: 100%; min-width: 0; max-width: 100%; padding: 18px; border: 1px solid var(--border); border-radius: 22px; background: var(--surface); box-shadow: var(--shadow); }
+      .tabs { display: flex; min-width: 0; gap: 5px; overflow-x: auto; padding: 5px; border-radius: 17px; background: var(--surface-soft); }
+      .tabs a { flex: 0 0 auto; padding: 9px 16px; border-radius: 13px; color: var(--muted); font-weight: 800; }
+      .tabs a.active { background: var(--surface); color: var(--accent); box-shadow: 0 3px 12px rgba(38, 45, 42, 0.08); }
+      .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0; overflow: hidden; }
+      .stat { display: grid; min-width: 0; gap: 3px; padding: 16px 18px; border-right: 1px solid var(--border); }
+      .stat:last-child { border-right: 0; }
+      .stat strong { font-size: 25px; line-height: 1; }
+      .stat span { min-width: 0; overflow-wrap: anywhere; color: var(--muted); font-size: 12px; }
+      .intro { display: grid; gap: 5px; }
+      .intro h2 { font-size: 21px; }
+      .intro p { color: var(--muted); }
+      .calendar { min-width: 0; overflow: hidden; padding: 0; }
+      .calendar-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 18px; border-bottom: 1px solid var(--border); }
+      .calendar-title { display: flex; align-items: center; gap: 12px; }
+      .icon { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 14px; background: var(--accent-soft); color: var(--accent); font-weight: 900; }
+      .calendar-title h3 { font-size: 25px; line-height: 1.05; }
+      .calendar-title p { color: var(--muted); font-size: 13px; }
+      .controls { display: flex; gap: 8px; }
+      .controls button { min-height: 42px; padding: 0 15px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text); font-weight: 800; }
+      .controls .square { width: 42px; padding: 0; }
+      .legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 12px 18px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+      .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; background: #eef1ef; }
+      .legend .busy::before { background: var(--busy); }
+      .calendar-scroll { overflow-x: auto; padding: 16px 18px 20px; }
+      .grid { display: grid; min-width: 800px; grid-template-columns: 190px repeat(8, 1fr); gap: 8px; }
+      .day { padding: 8px 4px; border-bottom: 1px solid var(--border); color: var(--muted); text-align: center; font-size: 11px; }
+      .room { display: grid; align-content: center; min-height: 62px; padding: 10px 12px; border: 1px solid #b9d7d1; border-radius: 16px; background: var(--accent-soft); font-weight: 800; }
+      .room small { color: var(--muted); font-weight: 500; }
+      .cell { min-height: 62px; border: 1px solid transparent; border-radius: 14px; background: #f5f7f6; }
+      .cell.busy { border-color: #edd4a4; background: #f7e8c9; }
+      .hint { padding: 18px; border-top: 1px solid var(--border); background: var(--surface-soft); color: var(--muted); font-size: 13px; }
+
+      @media (max-width: 820px) {
+        .shell { grid-template-columns: 1fr; }
+        aside { display: none; }
+        main { padding-top: 20px; }
+      }
+
+      @media (max-width: 520px) {
+        .page { gap: 18px; }
+        .panel { border-radius: 19px; }
+        .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .stat { padding: 13px 10px; }
+        .stat strong { font-size: 21px; }
+        .calendar-head { align-items: stretch; padding: 15px; }
+        .calendar-title h3 { font-size: 21px; }
+        .controls { width: 100%; }
+        .controls button:not(.square) { flex: 1; }
+        .legend, .calendar-scroll, .hint { padding-left: 15px; padding-right: 15px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside>
+        <div class="brand">Bronly</div>
+        <nav class="side-nav" aria-label="Основная навигация">
+          <a href="#">Главная</a><a href="#">Номера</a><a class="active" href="#">Календарь</a><a href="#">Заявки</a>
+        </nav>
+      </aside>
+      <main>
+        <div class="page">
+          <div class="crumbs">Объекты и номера / Дом у соснового берега / Календарь занятости</div>
+          <header class="identity">
+            <div class="eyebrow">Объект владельца <span class="status">Опубликован</span></div>
+            <h1>Календарь объекта</h1>
+            <p class="lead">Дом у соснового берега · Гостевой дом · Зеленоградск, ул. Морская, 12</p>
+          </header>
+          <section class="panel" aria-label="Разделы объекта">
+            <nav class="tabs"><a href="#">Обзор</a><a href="#">Номера</a><a class="active" href="#">Календарь</a></nav>
+          </section>
+          <section class="panel stats" aria-label="Сводка календаря">
+            <div class="stat"><strong>3</strong><span>Все номера</span></div>
+            <div class="stat"><strong>2</strong><span>С занятыми датами</span></div>
+            <div class="stat"><strong>5</strong><span>Диапазонов</span></div>
+          </section>
+          <section class="intro">
+            <h2>Занятые даты</h2>
+            <p>Отмечайте недоступные периоды вручную. Это не подтверждает заявку на проживание автоматически.</p>
+          </section>
+          <section class="panel calendar" aria-label="Календарь занятости">
+            <div class="calendar-head">
+              <div class="calendar-title"><div class="icon">▦</div><div><h3>Календарь занятости</h3><p>16 сентября — 15 октября 2026</p></div></div>
+              <div class="controls"><button class="square" aria-label="Предыдущий месяц">←</button><button>Текущий месяц</button><button class="square" aria-label="Следующий месяц">→</button></div>
+            </div>
+            <div class="legend"><span>Свободно</span><span class="busy">Занятые даты</span><span>Сегодня</span></div>
+            <div class="calendar-scroll">
+              <div class="grid">
+                <div></div><div class="day">16 ср</div><div class="day">17 чт</div><div class="day">18 пт</div><div class="day">19 сб</div><div class="day">20 вс</div><div class="day">21 пн</div><div class="day">22 вт</div><div class="day">23 ср</div>
+                <div class="room">Люкс с террасой<small>12 000 ₽ · 2 диапазона</small></div><div class="cell"></div><div class="cell busy"></div><div class="cell busy"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+                <div class="room">Семейный номер<small>8 500 ₽ · 3 диапазона</small></div><div class="cell busy"></div><div class="cell busy"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell busy"></div><div class="cell busy"></div>
+                <div class="room">Стандарт<small>5 900 ₽ · свободно</small></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+              </div>
+            </div>
+            <p class="hint">Выберите свободную дату начала, затем дату окончания диапазона. Клик по занятому диапазону открывает редактирование.</p>
+          </section>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

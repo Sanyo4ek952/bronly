@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { getRoomsNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerRoomDetail } from "@/entities/room/api/owner-room-detail";
 import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
-import { ButtonLink, DashboardPageNav, InlineNotice } from "@/shared/ui";
+import { ButtonLink, DashboardPageNav, InlineNotice, StatusPill } from "@/shared/ui";
+import { AdminPageHeader } from "@/widgets/property-admin";
 import { RoomSettingsEditor } from "@/widgets/room-settings-editor/room-settings-editor";
 
 type StandaloneRoomSettingsPageProps = {
@@ -11,9 +12,7 @@ type StandaloneRoomSettingsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const pageStackClass = "grid gap-4";
-const sectionCardClass =
-  "grid gap-4 rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
+const pageStackClass = "grid min-w-0 gap-6 max-[720px]:gap-5";
 
 export default async function StandaloneRoomSettingsPage({ params, searchParams }: StandaloneRoomSettingsPageProps) {
   const { roomId } = await params;
@@ -43,16 +42,20 @@ export default async function StandaloneRoomSettingsPage({ params, searchParams 
         compact
       />
 
-      <section className={sectionCardClass}>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="grid gap-1.5">
-            <h1 className="text-[clamp(24px,3vw,32px)] font-bold leading-[1.05] tracking-[-0.04em] text-[var(--color-text)]">Настройки отдельного номера</h1>
-            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">Здесь можно обновить данные номера, сезонные цены и фотографии.</p>
-          </div>
-          <ButtonLink href={roomViewHref} variant="secondary">К странице номера</ButtonLink>
+      <div className="grid min-w-0 gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[var(--accent-strong)]">Отдельный номер</p>
+          <StatusPill variant={room.isActive ? "active" : "inactive"}>{room.isActive ? "Активен" : "Неактивен"}</StatusPill>
         </div>
-        {notice ? <InlineNotice tone={error ? "error" : "default"}>{notice}</InlineNotice> : null}
-      </section>
+        <AdminPageHeader
+          variant="plain"
+          title="Настройки номера"
+          description={room.title}
+          actions={<ButtonLink href={roomViewHref} variant="secondary">К странице номера</ButtonLink>}
+        />
+      </div>
+
+      {notice ? <InlineNotice tone={error ? "error" : "default"}>{notice}</InlineNotice> : null}
 
       <RoomSettingsEditor room={room} redirectTo={redirectTo} />
     </section>

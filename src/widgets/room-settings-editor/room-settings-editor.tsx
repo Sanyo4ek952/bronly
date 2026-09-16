@@ -14,7 +14,7 @@ import { RoomAmenitiesField } from "@/features/property/edit-room/ui/room-amenit
 import { RoomFormSection } from "@/features/property/edit-room/ui/room-form-section";
 import type { OwnerRoomDetail } from "@/entities/room/model/types";
 import { cn } from "@/shared/lib/cn";
-import { Button, Input, SubmitButton, Textarea } from "@/shared/ui";
+import { Button, Input, Panel, SubmitButton, Textarea } from "@/shared/ui";
 import { DangerZone, PhotoManager, StatusBadge } from "@/widgets/property-admin";
 
 type RoomSettingsEditorProps = {
@@ -24,8 +24,6 @@ type RoomSettingsEditorProps = {
 };
 
 const pageStackClass = "grid gap-4";
-const sectionCardClass =
-  "grid gap-4 rounded-[24px] border border-[rgb(15_23_42_/_0.08)] bg-[rgb(255_255_255_/_0.94)] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
 const sectionHeaderClass = "flex flex-wrap items-start justify-between gap-3";
 const propertyFormGridClass = "grid gap-4 md:grid-cols-2";
 const compactPricingGridClass = "grid gap-4 md:grid-cols-2 xl:grid-cols-4";
@@ -44,7 +42,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
 
   return (
     <article className={pageStackClass}>
-      <section className={sectionCardClass}>
+      <Panel padding="md" className="grid gap-4 max-[720px]:p-4">
         <div className={sectionHeaderClass}>
           <div className="grid gap-1.5">
             <strong className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">{room.title}</strong>
@@ -180,7 +178,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
             </Button>
           </div>
         </form>
-      </section>
+      </Panel>
 
       <PhotoManager
         title="Фото номера"
@@ -202,7 +200,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
         compact
       />
 
-      <section className={sectionCardClass}>
+      <Panel padding="md" className="grid gap-4 max-[720px]:p-4">
         <div className={sectionHeaderClass}>
           <div className="grid gap-1.5">
             <h3 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Сезонные цены</h3>
@@ -263,7 +261,7 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room }: RoomSetting
             </SubmitButton>
           </form>
         </div>
-      </section>
+      </Panel>
 
       <DangerZone
         title="Удаление номера"

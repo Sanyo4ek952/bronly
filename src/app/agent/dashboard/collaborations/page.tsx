@@ -13,6 +13,7 @@ import {
   CollaborationTargets,
   getTargetFormatLabel,
 } from "@/widgets/collaboration-details";
+import { AdminPageHeader, ObjectStats } from "@/widgets/property-admin";
 
 import { saveAgentRoomMarkupAction } from "./actions";
 
@@ -118,13 +119,31 @@ export default async function AgentCollaborationsPage({ searchParams }: AgentCol
   const error = typeof params.error === "string" ? params.error : "";
   const message = getMessage(success, error);
   const proposalItems = outgoingProposals.filter((item) => item.status !== "active");
+  const pendingProposalCount = proposalItems.filter((item) => item.status === "pending").length;
 
   return (
-    <div className="grid gap-4">
-      <Panel className="grid gap-4 p-5 max-[640px]:p-4" surface="raised">
-        <SectionHeader title="Связи с владельцами" description="Отправленные предложения и активные сотрудничества по объектам и отдельным номерам." />
+    <div className="grid min-w-0 gap-6 max-[720px]:gap-5">
+      <AdminPageHeader
+        variant="plain"
+        title="Связи с владельцами"
+        description="Отправленные предложения и активные сотрудничества по объектам и отдельным номерам."
+      />
+
+      <div className="grid gap-3">
         <InlineNotice tone="soft">Агент задает только свою надбавку. Объект, номер, фото, календарь и базовая цена владельца остаются только для чтения.</InlineNotice>
         {message ? <InlineNotice tone={error ? "error" : "default"}>{message}</InlineNotice> : null}
+      </div>
+
+      <Panel padding="md" aria-label="Сводка сотрудничеств">
+        <ObjectStats
+          compact
+          stackOnMobile={false}
+          items={[
+            { label: "Активные связи", value: String(activeCollaborations.length), tone: "accent" },
+            { label: "Ожидают решения", value: String(pendingProposalCount) },
+            { label: "Другие предложения", value: String(proposalItems.length - pendingProposalCount) },
+          ]}
+        />
       </Panel>
 
       <section className="grid gap-4">

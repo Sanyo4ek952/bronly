@@ -10,7 +10,7 @@ import { InstallAppCard } from "@/features/pwa/install-app";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { buildAgentPublicPath } from "@/shared/lib/public-links";
 import { ButtonLink, InlineNotice, Input, Panel, SubmitButton } from "@/shared/ui";
-import { CopyLinkButton } from "@/widgets/property-admin";
+import { AdminPageHeader, CopyLinkButton } from "@/widgets/property-admin";
 import { TelegramNotificationsCard } from "@/widgets/telegram-notifications-card";
 
 type AgentSettingsPageProps = {
@@ -41,17 +41,24 @@ export default async function AgentSettingsPage({ searchParams }: AgentSettingsP
   const publicAgentPath = buildAgentPublicPath(profile.agentPublicId);
 
   return (
-    <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <Panel className="grid gap-5 p-5 max-[640px]:p-4" surface="raised">
-        <div className="grid gap-1.5">
-          <h1 className="text-[clamp(26px,4vw,34px)] font-bold leading-[1.05] tracking-[-0.035em] text-[var(--text)]">Профиль агента</h1>
-          <p className="text-sm leading-relaxed text-[var(--text-muted)]">Контакты, которые гость видит по вашей агентской ссылке.</p>
-        </div>
+    <section className="grid min-w-0 gap-6 max-[720px]:gap-5">
+      <AdminPageHeader
+        variant="plain"
+        title="Профиль агента"
+        description="Контакты, которые гость видит по вашей агентской ссылке."
+      />
 
-        {getErrorMessage(error) ? <InlineNotice tone="error">{getErrorMessage(error)}</InlineNotice> : null}
-        {success === "saved" ? <InlineNotice>Профиль обновлен.</InlineNotice> : null}
-        {success === "telegram-enabled" ? <InlineNotice>Telegram-уведомления включены.</InlineNotice> : null}
-        {success === "telegram-disabled" ? <InlineNotice tone="soft">Telegram-уведомления отключены.</InlineNotice> : null}
+      {getErrorMessage(error) || success ? (
+        <div className="grid gap-3">
+          {getErrorMessage(error) ? <InlineNotice tone="error">{getErrorMessage(error)}</InlineNotice> : null}
+          {success === "saved" ? <InlineNotice>Профиль обновлен.</InlineNotice> : null}
+          {success === "telegram-enabled" ? <InlineNotice>Telegram-уведомления включены.</InlineNotice> : null}
+          {success === "telegram-disabled" ? <InlineNotice tone="soft">Telegram-уведомления отключены.</InlineNotice> : null}
+        </div>
+      ) : null}
+
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <Panel className="grid gap-5 p-5 max-[640px]:p-4" surface="raised">
 
         <section className="grid gap-3 rounded-[20px] border border-[rgb(var(--color-primary-rgb)_/_0.16)] bg-[var(--color-primary-pale)] p-4">
           <div className="grid gap-1.5">
@@ -79,23 +86,24 @@ export default async function AgentSettingsPage({ searchParams }: AgentSettingsP
             <SubmitButton pendingLabel="Сохранение">Сохранить</SubmitButton>
           </div>
         </form>
-      </Panel>
-
-      <aside className="grid gap-4">
-        <TelegramNotificationsCard
-          role="agent"
-          status={telegramStatus}
-          linkAction={startTelegramNotificationLinkAction}
-          toggleAction={setTelegramNotificationsEnabledAction}
-        />
-        <Panel className="grid gap-4 p-4" surface="raised">
-          <div className="grid gap-1.5">
-            <h2 className="text-lg font-semibold text-[var(--text)]">Установка на главный экран</h2>
-            <p className="text-sm leading-relaxed text-[var(--text-muted)]">Быстрый доступ к Bronly с телефона без App Store и Google Play.</p>
-          </div>
-          <InstallAppCard />
         </Panel>
-      </aside>
+
+        <aside className="grid gap-4">
+          <TelegramNotificationsCard
+            role="agent"
+            status={telegramStatus}
+            linkAction={startTelegramNotificationLinkAction}
+            toggleAction={setTelegramNotificationsEnabledAction}
+          />
+          <Panel className="grid gap-4 p-4" surface="raised">
+            <div className="grid gap-1.5">
+              <h2 className="text-lg font-semibold text-[var(--text)]">Установка на главный экран</h2>
+              <p className="text-sm leading-relaxed text-[var(--text-muted)]">Быстрый доступ к Bronly с телефона без App Store и Google Play.</p>
+            </div>
+            <InstallAppCard />
+          </Panel>
+        </aside>
+      </div>
     </section>
   );
 }
