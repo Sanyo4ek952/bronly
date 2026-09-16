@@ -2,8 +2,9 @@ import { notFound } from "next/navigation";
 
 import { getCalendarNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerRoomDetail } from "@/entities/room/api/owner-room-detail";
-import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
-import { ButtonLink, DashboardPageNav } from "@/shared/ui";
+import { buildOwnerInventoryBreadcrumbs, formatRubles } from "@/shared/lib";
+import { ButtonLink, DashboardPageNav, InlineNotice, Panel, StatusPill } from "@/shared/ui";
+import { AdminPageHeader, ObjectStats } from "@/widgets/property-admin";
 import { OwnerCalendarBrowser } from "@/widgets/owner-calendar-browser/owner-calendar-browser";
 
 type StandaloneRoomCalendarPageProps = {
@@ -11,9 +12,7 @@ type StandaloneRoomCalendarPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const pageStackClass = "grid gap-4";
-const sectionCardClass =
-  "grid gap-4 rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
+const pageStackClass = "grid min-w-0 gap-6 max-[720px]:gap-5";
 
 export default async function StandaloneRoomCalendarPage({ params, searchParams }: StandaloneRoomCalendarPageProps) {
   const { roomId } = await params;
@@ -29,6 +28,9 @@ export default async function StandaloneRoomCalendarPage({ params, searchParams 
   const success = typeof resolvedSearchParams.success === "string" ? resolvedSearchParams.success : "";
   const notice = getCalendarNotice(error, success);
   const roomViewHref = `/dashboard/rooms/${room.id}`;
+  const roomDescription = [room.title, [room.location.city, room.location.address].filter(Boolean).join(", ")]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <section className={pageStackClass}>
@@ -42,21 +44,40 @@ export default async function StandaloneRoomCalendarPage({ params, searchParams 
         compact
       />
 
-      <section className={sectionCardClass}>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="grid gap-1.5">
-            <h1 className="text-[clamp(24px,3vw,32px)] font-bold leading-[1.05] tracking-[-0.04em] text-[var(--color-text)]">{room.title}</h1>
-            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">Ручное управление занятыми датами для отдельного номера.</p>
-          </div>
-          <ButtonLink href={`/dashboard/rooms/${room.id}/settings`} variant="secondary">Настройки</ButtonLink>
+      <div className="grid min-w-0 gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[var(--accent-strong)]">Отдельный номер</p>
+          <StatusPill variant={room.isActive ? "active" : "inactive"}>{room.isActive ? "Активен" : "Неактивен"}</StatusPill>
         </div>
-      </section>
+        <AdminPageHeader
+          variant="plain"
+          title="Календарь номера"
+          description={roomDescription}
+          actions={<ButtonLink href={`/dashboard/rooms/${room.id}/settings`} variant="secondary">Настройки</ButtonLink>}
+        />
+      </div>
 
-      <section className={sectionCardClass}>
+      {notice ? <InlineNotice tone={error ? "error" : "default"}>{notice}</InlineNotice> : null}
+
+      <Panel padding="md" aria-label="Сводка по номеру">
+        <ObjectStats
+          compact
+          stackOnMobile={false}
+          items={[
+            { label: "Базовая цена", value: formatRubles(room.pricePerNight) },
+            { label: "Занятые диапазоны", value: String(room.busyRanges.length), tone: "accent" },
+            { label: "Фото", value: String(room.photos.length) },
+          ]}
+        />
+      </Panel>
+
+      <section className="grid min-w-0 gap-4" aria-labelledby="standalone-room-calendar-title">
         <div className="grid gap-1.5">
-            <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Календарь занятости</h2>
-            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">Отмечайте занятые даты без автоматического подтверждения заявок.</p>
-          </div>
+          <h2 id="standalone-room-calendar-title" className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Занятые даты</h2>
+          <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
+            Отмечайте недоступные периоды вручную. Это не подтверждает заявку на проживание автоматически.
+          </p>
+        </div>
 
         <OwnerCalendarBrowser
           rooms={[
@@ -67,8 +88,6 @@ export default async function StandaloneRoomCalendarPage({ params, searchParams 
               busyRanges: room.busyRanges,
             },
           ]}
-          serverNotice={notice}
-          serverNoticeTone={error ? "error" : "default"}
         />
       </section>
     </section>
