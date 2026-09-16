@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui";
 
 type InstallState = "unsupported" | "ios" | "prompt" | "installed";
@@ -36,7 +37,11 @@ function detectIosSafari() {
   return isIos && isSafari;
 }
 
-export function InstallAppCard() {
+type InstallAppCardProps = {
+  embedded?: boolean;
+};
+
+export function InstallAppCard({ embedded = false }: InstallAppCardProps) {
   const [installState, setInstallState] = useState<InstallState>("unsupported");
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isPromptPending, setIsPromptPending] = useState(false);
@@ -121,8 +126,18 @@ export function InstallAppCard() {
   };
 
   return (
-    <div className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-subtle)] p-3.5" aria-live="polite">
-      <strong className="text-sm text-[var(--text)]">{installState === "installed" ? "Приложение установлено" : "Установить приложение"}</strong>
+    <div
+      className={cn(
+        "grid gap-3",
+        !embedded && "rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-subtle)] p-3.5",
+      )}
+      aria-live="polite"
+    >
+      {embedded ? (
+        <h3 className="text-lg font-semibold text-[var(--text)]">{installState === "installed" ? "Приложение установлено" : "Установить приложение"}</h3>
+      ) : (
+        <strong className="text-sm text-[var(--text)]">{installState === "installed" ? "Приложение установлено" : "Установить приложение"}</strong>
+      )}
       <p className="text-sm leading-[1.5] text-[var(--text-muted)]">{description}</p>
       {installState === "prompt" ? (
         <Button

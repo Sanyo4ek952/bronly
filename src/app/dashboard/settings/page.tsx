@@ -52,63 +52,106 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const success = typeof params.success === "string" ? params.success : "";
 
   return (
-    <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <Panel className="grid gap-5 p-5 max-[640px]:p-4" surface="raised">
-        <div className="grid gap-1.5">
-          <h1 className="text-[clamp(26px,4vw,34px)] font-bold leading-[1.05] tracking-[-0.035em] text-[var(--text)]">Профиль владельца</h1>
-          <p className="text-sm leading-[1.55] text-[var(--text-muted)]">Контакты, адрес публичной страницы и базовые настройки кабинета.</p>
-        </div>
-        {getErrorMessage(error) ? <InlineNotice tone="error">{getErrorMessage(error)}</InlineNotice> : null}
-        {success === "saved" ? <InlineNotice>Профиль обновлен.</InlineNotice> : null}
-        {success === "telegram-enabled" ? <InlineNotice>Telegram-уведомления включены.</InlineNotice> : null}
-        {success === "telegram-disabled" ? <InlineNotice tone="soft">Telegram-уведомления отключены.</InlineNotice> : null}
+    <section className="grid gap-5">
+      <header className="grid max-w-[720px] gap-2">
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[var(--accent)]">Профиль и каналы</p>
+        <h1 className="text-[clamp(32px,5vw,46px)] font-bold leading-[1.02] tracking-[-0.04em] text-[var(--text)]">Настройки</h1>
+        <p className="text-sm leading-[1.6] text-[var(--text-muted)]">
+          Обновляйте контактные данные и управляйте тем, как получать уведомления о новых заявках.
+        </p>
+      </header>
 
-        <section className="grid gap-3 rounded-[20px] border border-[rgb(var(--color-primary-rgb)_/_0.16)] bg-[var(--color-primary-pale)] p-4">
+      <section
+        className="flex min-w-0 flex-col gap-4 rounded-[var(--radius-lg)] border border-[rgb(var(--color-primary-rgb)_/_0.16)] bg-[var(--color-primary-pale)] p-4 sm:flex-row sm:items-center sm:justify-between"
+        aria-labelledby="owner-public-page-title"
+      >
+        <div className="min-w-0">
+          <h2 id="owner-public-page-title" className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+            Публичная страница
+          </h2>
+          <p className="mt-1 [overflow-wrap:anywhere] text-sm font-semibold leading-[1.5] text-[var(--text)]">
+            {publicOwnerPath ?? "Задайте адрес страницы ниже, чтобы получить персональную ссылку для гостей."}
+          </p>
+        </div>
+        <div className="grid shrink-0 grid-cols-2 gap-2 max-[360px]:grid-cols-1 [&>*]:min-h-11 [&>*]:w-full">
+          {publicOwnerPath ? <CopyLinkButton path={publicOwnerPath} /> : null}
+          <ButtonLink href={publicOwnerPath ?? "#public-slug"} variant="secondary" disabled={!publicOwnerPath}>
+            Открыть страницу
+          </ButtonLink>
+        </div>
+      </section>
+
+      {getErrorMessage(error) ? <InlineNotice tone="error">{getErrorMessage(error)}</InlineNotice> : null}
+      {success === "saved" ? <InlineNotice role="status">Профиль обновлен.</InlineNotice> : null}
+      {success === "telegram-enabled" ? <InlineNotice role="status">Telegram-уведомления включены.</InlineNotice> : null}
+      {success === "telegram-disabled" ? <InlineNotice role="status" tone="soft">Telegram-уведомления отключены.</InlineNotice> : null}
+
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <Panel className="grid gap-6 p-6 max-[640px]:p-4" surface="raised" aria-labelledby="owner-profile-title">
           <div className="grid gap-1.5">
-            <strong className="text-base text-[var(--text)]">Публичная страница владельца</strong>
-            <p className="break-all text-sm leading-[1.5] text-[var(--text-muted)]">
-              {publicOwnerPath ?? "Задайте адрес страницы ниже, чтобы получить персональную ссылку для гостей."}
+            <h2 id="owner-profile-title" className="text-2xl font-bold tracking-[-0.025em] text-[var(--text)]">Профиль</h2>
+            <p className="text-sm leading-[1.55] text-[var(--text-muted)]">
+              Эти данные помогают гостям связаться с вами после отправки заявки.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2.5">
-            <ButtonLink href={publicOwnerPath ?? "#public-slug"} variant="secondary" disabled={!publicOwnerPath}>
-              Открыть страницу
-            </ButtonLink>
-            {publicOwnerPath ? <CopyLinkButton path={publicOwnerPath} /> : null}
-          </div>
-        </section>
 
-        <form action={updateProfileAction} className="grid gap-5">
-          <input type="hidden" name="role" value="owner" />
-          <div className="grid gap-4 md:grid-cols-2">
-            <Input id="display-name" name="displayName" label="Имя" defaultValue={profile?.displayName} required />
-            <Input id="phone" name="phone" type="tel" label="Телефон" defaultValue={profile?.phone} />
-            <Input id="email" type="email" label="Email" defaultValue={profile?.email} disabled />
-            <Input id="public-slug" name="slug" label="Адрес страницы" description="Используется в персональной ссылке после /p/." defaultValue={profile?.slug} />
-            <Input id="telegram" name="telegram" label="Telegram" placeholder="@username" defaultValue={profile?.telegram} />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <ButtonLink href="/forgot-password" variant="secondary" fullWidth>Изменить пароль</ButtonLink>
-            <SubmitButton pendingLabel="Сохранение">Сохранить</SubmitButton>
-          </div>
-        </form>
-      </Panel>
-
-      <aside className="grid gap-4">
-        <TelegramNotificationsCard
-          role="owner"
-          status={telegramStatus}
-          linkAction={startTelegramNotificationLinkAction}
-          toggleAction={setTelegramNotificationsEnabledAction}
-        />
-        <Panel className="grid gap-4 p-4" surface="raised">
-          <div className="grid gap-1.5">
-            <h2 className="text-lg font-semibold text-[var(--text)]">Установка на главный экран</h2>
-            <p className="text-sm leading-[1.5] text-[var(--text-muted)]">Быстрый доступ к Bronly с телефона без App Store и Google Play.</p>
-          </div>
-          <InstallAppCard />
+          <form action={updateProfileAction} className="grid gap-6">
+            <input type="hidden" name="role" value="owner" />
+            <div className="grid gap-4 md:grid-cols-2">
+              <Input id="display-name" name="displayName" label="Имя" defaultValue={profile?.displayName} required />
+              <Input id="phone" name="phone" type="tel" label="Телефон" defaultValue={profile?.phone} />
+              <Input
+                id="email"
+                type="email"
+                label="Email"
+                description="Email связан с аккаунтом и не меняется здесь."
+                defaultValue={profile?.email}
+                disabled
+              />
+              <Input
+                id="public-slug"
+                name="slug"
+                label="Адрес страницы"
+                description="Используется в персональной ссылке после /p/."
+                defaultValue={profile?.slug}
+              />
+              <Input
+                id="telegram"
+                name="telegram"
+                label="Telegram"
+                description="Имя пользователя для связи."
+                placeholder="@username"
+                defaultValue={profile?.telegram}
+              />
+            </div>
+            <div className="flex flex-col-reverse gap-3 border-t border-[var(--border)] pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <ButtonLink href="/forgot-password" variant="ghost" className="min-h-11 sm:px-0">
+                Изменить пароль
+              </ButtonLink>
+              <SubmitButton className="min-h-11 max-sm:w-full" pendingLabel="Сохранение">
+                Сохранить изменения
+              </SubmitButton>
+            </div>
+          </form>
         </Panel>
-      </aside>
+
+        <Panel as="aside" className="grid gap-6 p-6 max-[640px]:p-4" surface="raised" aria-labelledby="owner-channels-title">
+          <div className="grid gap-1.5">
+            <h2 id="owner-channels-title" className="text-2xl font-bold tracking-[-0.025em] text-[var(--text)]">Связь и приложение</h2>
+            <p className="text-sm leading-[1.55] text-[var(--text-muted)]">Настройте уведомления и быстрый доступ с телефона.</p>
+          </div>
+          <TelegramNotificationsCard
+            role="owner"
+            status={telegramStatus}
+            linkAction={startTelegramNotificationLinkAction}
+            toggleAction={setTelegramNotificationsEnabledAction}
+            embedded
+          />
+          <div className="border-t border-[var(--border)] pt-6">
+            <InstallAppCard embedded />
+          </div>
+        </Panel>
+      </div>
     </section>
   );
 }

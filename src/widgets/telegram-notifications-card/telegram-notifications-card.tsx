@@ -7,15 +7,17 @@ type TelegramNotificationsCardProps = {
   status: TelegramNotificationStatus;
   linkAction: (formData: FormData) => Promise<void>;
   toggleAction: (formData: FormData) => Promise<void>;
+  embedded?: boolean;
 };
 
-export function TelegramNotificationsCard({ role, status, linkAction, toggleAction }: TelegramNotificationsCardProps) {
+export function TelegramNotificationsCard({ role, status, linkAction, toggleAction, embedded = false }: TelegramNotificationsCardProps) {
   const linkedLabel = status.username ? `@${status.username}` : status.isLinked ? "Подключен" : "Не привязан";
+  const Heading = embedded ? "h3" : "h2";
 
-  return (
-    <Panel className="grid gap-4 p-4" surface="raised">
+  const content = (
+    <>
       <div className="grid gap-1.5">
-        <h2 className="text-lg font-semibold text-[var(--text)]">Telegram-уведомления</h2>
+        <Heading className="text-lg font-semibold text-[var(--text)]">Telegram-уведомления</Heading>
         <p className="text-sm leading-[1.5] text-[var(--text-muted)]">Канал для событий по заявкам, предложениям агентов и подписке.</p>
       </div>
       <div className="grid overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)]">
@@ -60,6 +62,12 @@ export function TelegramNotificationsCard({ role, status, linkAction, toggleActi
           </form>
         ) : null}
       </div>
-    </Panel>
+    </>
   );
+
+  if (embedded) {
+    return <section className="grid gap-4">{content}</section>;
+  }
+
+  return <Panel className="grid gap-4 p-4" surface="raised">{content}</Panel>;
 }
