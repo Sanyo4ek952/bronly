@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { OwnerRequestItem } from "@/entities/request";
 import { cn, formatRubles, toPhoneHref, toWhatsAppHref } from "@/shared/lib";
@@ -30,6 +30,12 @@ const requestStatuses = [
   { label: "Отклонены", mobileLabel: "Отклонены", value: "rejected" },
   { label: "Завершены", mobileLabel: "Завершены", value: "completed" },
 ] as const;
+
+const compactRequestsMediaQuery = "(max-width: 899px)";
+
+function getInitialCompactLayout() {
+  return typeof window !== "undefined" && window.matchMedia(compactRequestsMediaQuery).matches;
+}
 
 function isRequestStatusFilter(value: string): value is RequestStatusFilter {
   return requestStatuses.some((item) => item.value === value);
@@ -261,20 +267,20 @@ function RequestListItem({ request, isActive, onSelect, onOpenDetails }: Request
         className={cn(
           "grid w-full grid-cols-[minmax(190px,1.15fr)_minmax(125px,0.75fr)_minmax(150px,0.9fr)_118px] items-center gap-3.5 bg-transparent px-[18px] py-[17px] text-left text-inherit transition-colors",
           "hover:bg-[rgb(var(--color-primary-rgb)_/_0.035)] focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.12)]",
-          "max-[1240px]:grid-cols-[minmax(180px,1fr)_120px_minmax(140px,0.8fr)]",
-          "max-[820px]:grid-cols-[minmax(0,1fr)_auto] max-[820px]:gap-3 max-[820px]:px-3.5 max-[820px]:py-3.5",
+          "max-[1360px]:grid-cols-[minmax(160px,1fr)_108px_minmax(116px,0.8fr)]",
+          "max-[900px]:grid-cols-[minmax(0,1fr)_auto] max-[900px]:gap-3 max-[900px]:px-3.5 max-[900px]:py-3.5",
           "max-[390px]:px-3",
         )}
         aria-label={`Выбрать заявку: ${request.guestName}`}
         aria-current={isActive ? "true" : undefined}
         onClick={onSelect}
       >
-        <span className="grid min-w-0 grid-cols-[42px_minmax(0,1fr)] items-center gap-3 max-[820px]:grid-cols-[38px_minmax(0,1fr)]">
-          <span className="grid size-[42px] shrink-0 place-items-center rounded-full bg-[var(--surface-subtle)] font-extrabold text-[var(--accent-strong)] max-[820px]:size-[38px]">
+        <span className="grid min-w-0 grid-cols-[42px_minmax(0,1fr)] items-center gap-3 max-[900px]:grid-cols-[38px_minmax(0,1fr)]">
+          <span className="grid size-[42px] shrink-0 place-items-center rounded-full bg-[var(--surface-subtle)] font-extrabold text-[var(--accent-strong)] max-[900px]:size-[38px]">
             {getInitial(request.guestName)}
           </span>
           <span className="min-w-0">
-            <strong className="block truncate text-sm text-[var(--text)] max-[820px]:whitespace-normal">{request.guestName}</strong>
+            <strong className="block truncate text-sm text-[var(--text)] max-[900px]:whitespace-normal">{request.guestName}</strong>
             <span className="mt-0.5 block text-[11px] text-[var(--text-muted)]">{request.phone}</span>
             <StatusPill className="mt-1.5" variant={getRequestStatusVariant(request.status)}>
               {getRequestStatusLabel(request.status)}
@@ -282,25 +288,25 @@ function RequestListItem({ request, isActive, onSelect, onOpenDetails }: Request
           </span>
         </span>
 
-        <span className="min-w-0 max-[820px]:col-span-full">
+        <span className="min-w-0 max-[900px]:col-span-full">
           <strong className="block text-[13px] text-[var(--text)]">{`${request.checkIn} – ${request.checkOut}`}</strong>
           <span className="mt-1 block text-[11px] text-[var(--text-muted)]">{request.guestsLabel}</span>
         </span>
 
-        <span className="min-w-0 max-[820px]:col-span-full">
-          <strong className="block truncate text-[13px] text-[var(--text)] max-[820px]:whitespace-normal">{request.roomTitle}</strong>
+        <span className="min-w-0 max-[900px]:col-span-full">
+          <strong className="block truncate text-[13px] text-[var(--text)] max-[900px]:whitespace-normal">{request.roomTitle}</strong>
           <span className="mt-1 block text-[11px] leading-[1.45] text-[var(--text-muted)]">
             {`${getPropertyLabel(request.propertyTitle)} · ${getRequestSourceLabel(request.source)}`}
           </span>
         </span>
 
-        <span className="min-w-0 text-right max-[1240px]:hidden">
+        <span className="min-w-0 text-right max-[1360px]:hidden">
           <strong className="block text-[13px] text-[var(--text)]">{formatRubles(request.totalPrice)}</strong>
           <span className="mt-1 block text-[11px] text-[var(--text-muted)]">{`${formatRubles(request.quotedPricePerNight)} / ночь`}</span>
         </span>
       </button>
 
-      <div className="hidden px-3 pb-3 max-[820px]:block">
+      <div className="hidden px-3 pb-3 max-[900px]:block">
         <Button type="button" variant="secondary" fullWidth onClick={onOpenDetails}>
           Подробнее
         </Button>
@@ -314,6 +320,18 @@ export function RequestsBrowser({ requests, acceptAction, rejectAction, complete
   const [selectedRoomId, setSelectedRoomId] = useState("all");
   const [preferredActiveRequestId, setPreferredActiveRequestId] = useState(requests[0]?.id ?? "");
   const [sheetRequestId, setSheetRequestId] = useState<string | null>(null);
+  const [isCompactLayout, setIsCompactLayout] = useState(getInitialCompactLayout);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(compactRequestsMediaQuery);
+    const handleLayoutChange = (event: MediaQueryListEvent) => {
+      setIsCompactLayout(event.matches);
+      if (!event.matches) setSheetRequestId(null);
+    };
+
+    mediaQuery.addEventListener("change", handleLayoutChange);
+    return () => mediaQuery.removeEventListener("change", handleLayoutChange);
+  }, []);
 
   const { roomOptions, requestsForCounts, filteredRequests } = useMemo(() => {
     const nextRoomOptions = Array.from(new Map(requests.map((request) => [request.roomId, request.roomTitle])).entries()).map(
@@ -337,7 +355,9 @@ export function RequestsBrowser({ requests, acceptAction, rejectAction, complete
     ? preferredActiveRequestId
     : (filteredRequests[0]?.id ?? "");
   const activeRequest = filteredRequests.find((request) => request.id === activeRequestId) ?? null;
-  const sheetRequest = requests.find((request) => request.id === sheetRequestId) ?? null;
+  const sheetRequest = isCompactLayout
+    ? (requests.find((request) => request.id === sheetRequestId) ?? null)
+    : null;
   const statusTabItems = requestStatuses.map((item) => ({
     label: `${item.label} · ${item.value === "all" ? requestsForCounts.length : requestsForCounts.filter((request) => request.status === item.value).length}`,
     value: item.value,
@@ -403,13 +423,13 @@ export function RequestsBrowser({ requests, acceptAction, rejectAction, complete
           </Button>
         </section>
       ) : (
-        <div className="grid grid-cols-[minmax(0,1fr)_360px] items-start gap-6 max-[1180px]:grid-cols-[minmax(0,1fr)_330px] max-[820px]:block">
+        <div className="grid grid-cols-[minmax(0,1fr)_360px] items-start gap-6 max-[1180px]:grid-cols-[minmax(0,1fr)_330px] max-[900px]:block">
           <section className="overflow-hidden rounded-[22px] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)]" aria-label="Список заявок">
-            <div className="grid grid-cols-[minmax(190px,1.15fr)_minmax(125px,0.75fr)_minmax(150px,0.9fr)_118px] gap-3.5 border-b border-[var(--border)] bg-[var(--surface-subtle)] px-[18px] py-3 text-[10px] font-extrabold tracking-[0.06em] text-[var(--text-muted)] max-[1240px]:grid-cols-[minmax(180px,1fr)_120px_minmax(140px,0.8fr)] max-[820px]:hidden">
+            <div className="grid grid-cols-[minmax(190px,1.15fr)_minmax(125px,0.75fr)_minmax(150px,0.9fr)_118px] gap-3.5 border-b border-[var(--border)] bg-[var(--surface-subtle)] px-[18px] py-3 text-[10px] font-extrabold tracking-[0.06em] text-[var(--text-muted)] max-[1360px]:grid-cols-[minmax(160px,1fr)_108px_minmax(116px,0.8fr)] max-[900px]:hidden">
               <span>ГОСТЬ И СТАТУС</span>
               <span>ДАТЫ</span>
               <span>РАЗМЕЩЕНИЕ</span>
-              <span className="text-right max-[1240px]:hidden">СУММА</span>
+              <span className="text-right max-[1360px]:hidden">СУММА</span>
             </div>
             {filteredRequests.map((request) => (
               <RequestListItem
@@ -426,7 +446,7 @@ export function RequestsBrowser({ requests, acceptAction, rejectAction, complete
           </section>
 
           {activeRequest ? (
-            <aside className="sticky top-6 rounded-[22px] border border-[var(--border)] bg-[var(--surface)] p-[21px] shadow-[var(--shadow-md)] max-[820px]:hidden" aria-label="Детали выбранной заявки">
+            <aside className="sticky top-6 rounded-[22px] border border-[var(--border)] bg-[var(--surface)] p-[21px] shadow-[var(--shadow-md)] max-[900px]:hidden" aria-label="Детали выбранной заявки">
               <RequestDetail
                 request={activeRequest}
                 acceptAction={acceptAction}
@@ -438,27 +458,28 @@ export function RequestsBrowser({ requests, acceptAction, rejectAction, complete
         </div>
       )}
 
-      <BottomSheet
-        open={sheetRequest != null}
-        onOpenChange={(open) => {
-          if (!open) setSheetRequestId(null);
-        }}
-        title={sheetRequest ? sheetRequest.guestName : "Заявка"}
-        description={sheetRequest ? `${sheetRequest.phone} · ${sheetRequest.checkIn} – ${sheetRequest.checkOut}` : undefined}
-        closeLabel="Закрыть детали заявки"
-        bodyClassName="gap-0 pb-1"
-        rootClassName="min-[821px]:hidden"
-      >
-        {sheetRequest ? (
-          <RequestDetail
-            request={sheetRequest}
-            acceptAction={acceptAction}
-            rejectAction={rejectAction}
-            completeAction={completeAction}
-            showIdentity={false}
-          />
-        ) : null}
-      </BottomSheet>
+      {isCompactLayout ? (
+        <BottomSheet
+          open={sheetRequest != null}
+          onOpenChange={(open) => {
+            if (!open) setSheetRequestId(null);
+          }}
+          title={sheetRequest ? sheetRequest.guestName : "Заявка"}
+          description={sheetRequest ? `${sheetRequest.phone} · ${sheetRequest.checkIn} – ${sheetRequest.checkOut}` : undefined}
+          closeLabel="Закрыть детали заявки"
+          bodyClassName="gap-0 pb-1"
+        >
+          {sheetRequest ? (
+            <RequestDetail
+              request={sheetRequest}
+              acceptAction={acceptAction}
+              rejectAction={rejectAction}
+              completeAction={completeAction}
+              showIdentity={false}
+            />
+          ) : null}
+        </BottomSheet>
+      ) : null}
     </>
   );
 }
