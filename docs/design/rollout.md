@@ -18,7 +18,7 @@
 | D38 | `/agent/dashboard/subscription` | route-specific контракт готов; shared implementation уже внедрён |
 | D39 | `/admin` | verified: существующий mobile-first redesign и route-specific контракт |
 | D40 | `/admin/properties` | verified: существующий mobile-first redesign и route-specific контракт |
-| D41 | `/admin/reviews` | pending |
+| D41 | `/admin/reviews` | verified: существующий mobile-first redesign и route-specific контракт |
 | D42 | `/admin/subscriptions` | pending |
 | D43 | `/admin/users` | pending |
 | D44 | `/a/[slug]` | pending |
