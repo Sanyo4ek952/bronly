@@ -23,3 +23,6 @@ pnpm-debug.log*
 
 graphify-out/
 src/graphify-out/
+
+.vercel
+.env*
