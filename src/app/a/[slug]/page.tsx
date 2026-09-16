@@ -157,7 +157,6 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
       <main className="min-h-screen bg-[var(--color-page)] pb-[var(--safe-area-bottom)]">
         <div className="mx-auto w-[calc(100%-40px)] max-w-[1440px] py-5 max-[640px]:w-[calc(100%-24px)] sm:py-7">
           <PublicPageHeader
-            actions={firstRequestHref ? <ButtonLink href={firstRequestHref}>Оставить заявку</ButtonLink> : null}
             navigation={
               <nav className="flex w-full flex-wrap items-center justify-start gap-2.5 text-sm font-semibold [&_a]:inline-flex [&_a]:min-h-[38px] [&_a]:items-center [&_a]:rounded-full [&_a]:border [&_a]:border-[var(--color-border)] [&_a]:bg-[rgb(255_255_255_/_0.86)] [&_a]:px-[14px] [&_a]:font-bold [&_a]:transition [&_a]:hover:-translate-y-px [&_a]:hover:border-[rgb(var(--color-primary-rgb)_/_0.28)] [&_a]:hover:bg-[var(--color-primary-pale)] [&_a]:focus-visible:outline-none [&_a]:focus-visible:ring-4 [&_a]:focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)] max-[640px]:[&_a]:w-full max-[640px]:[&_a]:justify-center" aria-label="Навигация агентской витрины">
                 <a href="#agent-rooms">Варианты</a>
