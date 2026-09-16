@@ -23,7 +23,7 @@
 | D43 | `/admin/users` | verified: существующий mobile-first redesign и route-specific контракт |
 | D44 | `/a/[slug]` | verified: существующий public redesign и route-specific контракт |
 | D45 | `/a/[slug]/request` | verified: agent request flow и route-specific контракт |
-| D46 | `/a/[slug]/request/success` | pending |
+| D46 | `/a/[slug]/request/success` | verified: agent success flow и ручные следующие шаги |
 | D47 | `/c/[slug]` | pending |
 | D48 | `/c/[slug]/request` | pending |
 | D49 | `/c/[slug]/request/success` | pending |
