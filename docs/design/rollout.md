@@ -17,7 +17,7 @@
 | D37 | `/agent/dashboard/settings` | verified ранее; canonical D37 contract восстановлен |
 | D38 | `/agent/dashboard/subscription` | route-specific контракт готов; shared implementation уже внедрён |
 | D39 | `/admin` | verified: существующий mobile-first redesign и route-specific контракт |
-| D40 | `/admin/properties` | pending |
+| D40 | `/admin/properties` | verified: существующий mobile-first redesign и route-specific контракт |
 | D41 | `/admin/reviews` | pending |
 | D42 | `/admin/subscriptions` | pending |
 | D43 | `/admin/users` | pending |
