@@ -36,4 +36,4 @@
 | D56 | `/p/[slug]/request/success` | verified: owner success flow и ручные шаги |
 | D57 | `/register` | verified: role-aware registration и invite lock |
 | D58 | `/reset-password` | verified: recovery session и password validation |
-| D59 | `/welcome` | pending |
+| D59 | `/welcome` | verified: role-specific onboarding и post-login redirect |
