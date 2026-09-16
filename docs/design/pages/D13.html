@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>D13 — Сотрудничество владельца с агентами</title>
+  <style>
+    :root {
+      --bg: #fbf7f0;
+      --surface: #fffaf3;
+      --surface-subtle: #f7efe4;
+      --surface-muted: #edf7f2;
+      --text: #20211f;
+      --text-muted: #6f716b;
+      --border: #eadccb;
+      --accent: #477668;
+      --accent-strong: #315f54;
+      --warning-soft: #fff6df;
+      --warning-ink: #8b641e;
+      --danger-soft: #fff1ef;
+      --danger-ink: #9b403d;
+      --radius-md: 14px;
+      --radius-lg: 18px;
+      --shadow-md: 0 14px 38px rgb(49 58 51 / 6%);
+      color-scheme: light;
+      font-family: Manrope, "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgb(71 118 104 / 7%), transparent 29%),
+        linear-gradient(180deg, rgb(255 250 243 / 46%), rgb(251 247 240 / 98%) 27%),
+        var(--bg);
+    }
+    button, a { font: inherit; }
+    button:focus-visible, a:focus-visible { outline: none; box-shadow: 0 0 0 4px rgb(71 118 104 / 14%); }
+    .demo-note, .demo-controls { width: min(1180px, calc(100% - 32px)); margin-inline: auto; }
+    .demo-note { margin-top: 16px; color: var(--text-muted); font-size: 12px; }
+    .demo-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .demo-controls button, .button {
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0 14px;
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 750;
+      cursor: pointer;
+    }
+    .button.primary { border-color: transparent; background: var(--accent); color: white; }
+    .button.danger { border-color: rgb(155 64 61 / 18%); background: var(--danger-soft); color: var(--danger-ink); }
+    .shell {
+      display: grid;
+      grid-template-columns: 224px minmax(0, 1fr);
+      gap: 30px;
+      width: min(1352px, calc(100% - 48px));
+      margin: 24px auto 48px;
+      align-items: start;
+    }
+    .sidebar {
+      position: sticky;
+      top: 24px;
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 22px 16px;
+      background: linear-gradient(180deg, var(--surface), var(--surface-subtle));
+      box-shadow: var(--shadow-md);
+    }
+    .logo { padding: 0 10px 18px; font-size: 22px; font-weight: 850; letter-spacing: -.04em; }
+    .nav { display: grid; gap: 6px; }
+    .nav a { min-height: 44px; display: flex; align-items: center; padding: 0 14px; border-radius: 14px; color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 750; }
+    .nav a.active { background: rgb(71 118 104 / 10%); color: var(--accent-strong); }
+    main { min-width: 0; display: grid; gap: 24px; }
+    .page-head { display: grid; max-width: 760px; gap: 8px; }
+    .eyebrow { margin: 0; color: var(--accent); font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: .16em; }
+    h1 { margin: 0; font-size: clamp(32px, 5vw, 46px); line-height: 1.02; letter-spacing: -.04em; }
+    h2 { margin: 0; font-size: 23px; line-height: 1.1; letter-spacing: -.025em; }
+    h3 { margin: 0; font-size: 16px; line-height: 1.3; }
+    p { overflow-wrap: anywhere; }
+    .page-head > p:last-child, .muted { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+    .notice { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; background: var(--surface-subtle); font-size: 14px; font-weight: 650; line-height: 1.55; }
+    .feedback { display: none; border: 1px solid rgb(71 118 104 / 18%); border-radius: var(--radius-lg); padding: 14px 16px; background: var(--surface-muted); color: var(--accent-strong); font-size: 14px; font-weight: 750; }
+    body.feedback-success .feedback, body.feedback-error .feedback { display: block; }
+    body.feedback-error .feedback { border-color: rgb(155 64 61 / 20%); background: var(--danger-soft); color: var(--danger-ink); }
+    body.feedback-error .feedback::after { content: "Не удалось сохранить решение. Попробуйте ещё раз."; }
+    body:not(.feedback-error) .feedback::after { content: "Предложение принято. Вариант появился в активном сотрудничестве агента."; }
+    .section { min-width: 0; display: grid; gap: 14px; }
+    .section-head { display: flex; min-width: 0; align-items: end; justify-content: space-between; gap: 16px; }
+    .section-copy { display: grid; min-width: 0; gap: 5px; }
+    .section-copy p { margin: 0; color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+    .count { flex: 0 0 auto; border-radius: 999px; padding: 7px 10px; background: var(--surface-subtle); color: var(--text-muted); font-size: 12px; font-weight: 800; }
+    .surface { overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-md); }
+    .list { margin: 0; padding: 0; list-style: none; }
+    .list > li + li { border-top: 1px solid var(--border); }
+    .proposal { display: grid; grid-template-columns: minmax(0, 1fr) 196px; gap: 24px; padding: 24px 26px; }
+    .proposal-main { min-width: 0; display: grid; align-content: start; gap: 15px; }
+    .identity { display: flex; min-width: 0; align-items: flex-start; gap: 12px; }
+    .avatar { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; border-radius: 14px; background: rgb(71 118 104 / 10%); color: var(--accent-strong); font-size: 13px; font-weight: 850; }
+    .identity-copy { min-width: 0; display: grid; gap: 4px; }
+    .identity-line { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .agent { margin: 0; font-size: 13px; font-weight: 800; color: var(--text-muted); }
+    .pill { display: inline-flex; min-height: 24px; align-items: center; border-radius: 999px; padding: 0 8px; background: var(--warning-soft); color: var(--warning-ink); font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .pill.active { background: var(--surface-muted); color: var(--accent-strong); }
+    .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; color: var(--text-muted); font-size: 12px; }
+    .message { margin: 0; border-left: 2px solid rgb(71 118 104 / 28%); padding-left: 12px; color: var(--text); font-size: 14px; line-height: 1.6; }
+    .decision { display: grid; align-content: center; gap: 9px; border-left: 1px solid var(--border); padding-left: 24px; }
+    .decision .button { width: 100%; min-height: 44px; }
+    .collaboration { display: grid; grid-template-columns: minmax(220px, .72fr) minmax(0, 1.28fr); gap: 26px; padding: 24px 26px; }
+    .collaboration-side { min-width: 0; display: grid; align-content: start; gap: 16px; }
+    .contacts { display: flex; flex-wrap: wrap; gap: 8px; }
+    .contacts a { min-height: 36px; display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0 12px; color: var(--text); text-decoration: none; font-size: 12px; font-weight: 750; }
+    .detail { min-width: 0; display: grid; gap: 10px; }
+    .detail + .detail { border-top: 1px solid var(--border); padding-top: 16px; }
+    .detail-label { margin: 0; color: var(--text-muted); font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: .11em; }
+    .targets { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+    .target { display: flex; min-width: 0; align-items: baseline; justify-content: space-between; gap: 16px; padding: 10px 0; }
+    .target + .target { border-top: 1px solid var(--border); }
+    .target strong { min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+    .target span { flex: 0 0 auto; color: var(--text-muted); font-size: 12px; }
+    .terms { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+    .empty-state { display: none; min-height: 150px; align-items: center; gap: 16px; padding: 26px; }
+    .empty-mark { display: grid; width: 48px; height: 48px; flex: 0 0 auto; place-items: center; border-radius: 16px; background: var(--surface-subtle); color: var(--accent-strong); font-weight: 850; }
+    .empty-state h3 { margin-bottom: 5px; }
+    .empty-state p { margin: 0; color: var(--text-muted); font-size: 13px; line-height: 1.55; }
+    body.show-empty .populated { display: none; }
+    body.show-empty .empty-state { display: flex; }
+    .mobile-nav { display: none; }
+    @media (max-width: 1080px) {
+      .shell { grid-template-columns: 1fr; width: calc(100% - 32px); }
+      .sidebar { display: none; }
+      main { padding-bottom: 82px; }
+      .mobile-nav { position: fixed; z-index: 3; inset: auto 12px 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; border: 1px solid var(--border); border-radius: 18px 18px 0 0; padding: 8px; background: var(--surface); box-shadow: var(--shadow-md); }
+      .mobile-nav span { display: grid; min-height: 48px; place-items: center; border-radius: 16px; color: var(--text-muted); font-size: 18px; }
+      .mobile-nav span.active { background: rgb(71 118 104 / 10%); color: var(--accent-strong); }
+    }
+    @media (max-width: 760px) {
+      .proposal, .collaboration { grid-template-columns: 1fr; }
+      .decision { border-top: 1px solid var(--border); border-left: 0; padding-top: 18px; padding-left: 0; }
+      .collaboration-side + .collaboration-side { border-top: 1px solid var(--border); padding-top: 18px; }
+    }
+    @media (max-width: 640px) {
+      .demo-note, .demo-controls { width: calc(100% - 24px); }
+      .shell { width: calc(100% - 24px); margin-top: 18px; gap: 20px; }
+      main { gap: 20px; }
+      .section-head { align-items: flex-start; }
+      .proposal, .collaboration { gap: 18px; padding: 20px 16px; }
+      .identity-line { align-items: flex-start; }
+      .decision .button { min-height: 44px; }
+      .target { display: grid; gap: 4px; }
+      .target span { justify-self: start; }
+      .empty-state { align-items: flex-start; padding: 22px 16px; }
+      .mobile-nav { inset-inline: 10px; padding: 6px; }
+    }
+    @media (max-width: 360px) {
+      .section-head { display: grid; }
+      .count { justify-self: start; }
+      .empty-state { display: none; }
+      body.show-empty .empty-state { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <p class="demo-note">Изолированный макет D13 · все данные демонстрационные · формы, API и подписка не изменяются.</p>
+  <div class="demo-controls" aria-label="Состояния макета">
+    <button type="button" onclick="setState('filled')">С данными</button>
+    <button type="button" onclick="setState('empty')">Пустые списки</button>
+    <button type="button" onclick="setFeedback('success')">Успешное решение</button>
+    <button type="button" onclick="setFeedback('error')">Ошибка решения</button>
+    <button type="button" onclick="setFeedback('')">Очистить сообщение</button>
+  </div>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="logo">Bronly</div>
+      <nav class="nav" aria-label="Навигация кабинета">
+        <a href="#">Главная</a><a href="#">Уведомления</a><a href="#">Объекты</a><a href="#">Коллекции</a><a href="#">Календарь</a><a href="#">Подписка</a><a class="active" href="#">Агенты</a><a href="#">Заявки</a><a href="#">Настройки</a>
+      </nav>
+    </aside>
+    <main>
+      <header class="page-head">
+        <p class="eyebrow">Сотрудничество</p>
+        <h1>Агенты</h1>
+        <p>Рассматривайте новые предложения и держите под рукой контакты агентов, с которыми уже работаете.</p>
+      </header>
+      <div class="notice">После принятия агент видит календарь занятости только для чтения и может настроить только свою надбавку. Данные владельца он не редактирует.</div>
+      <div class="feedback" aria-live="polite"></div>
+
+      <section class="section" aria-labelledby="incoming-title">
+        <div class="section-head">
+          <div class="section-copy"><h2 id="incoming-title">Входящие предложения</h2><p>Проверьте вариант, сообщение агента и примите решение.</p></div>
+          <span class="count populated">2 ожидают решения</span><span class="count empty-state">Нет новых</span>
+        </div>
+        <div class="surface populated">
+          <ol class="list">
+            <li>
+              <article class="proposal">
+                <div class="proposal-main">
+                  <div class="identity">
+                    <span class="avatar" aria-hidden="true">АК</span>
+                    <div class="identity-copy">
+                      <div class="identity-line"><p class="agent">Агент: Александра Константинова</p><span class="pill">Ожидает</span></div>
+                      <h3>Апартаменты у моря с террасой и панорамным видом</h3>
+                    </div>
+                  </div>
+                  <div class="meta"><span>Формат: объект</span><time datetime="2026-09-15T18:10:00+03:00">15 сентября, 18:10</time></div>
+                  <p class="message">Хочу добавить объект в подборки для семейных поездок. Готова согласовывать запросы с владельцем до передачи заявки.</p>
+                </div>
+                <div class="decision" aria-label="Решение по предложению"><button class="button primary" type="button">Принять</button><button class="button danger" type="button">Отклонить</button></div>
+              </article>
+            </li>
+            <li>
+              <article class="proposal">
+                <div class="proposal-main">
+                  <div class="identity">
+                    <span class="avatar" aria-hidden="true">М</span>
+                    <div class="identity-copy">
+                      <div class="identity-line"><p class="agent">Агент: Михаил</p><span class="pill">Ожидает</span></div>
+                      <h3>Семейный номер на втором этаже</h3>
+                    </div>
+                  </div>
+                  <div class="meta"><span>Формат: отдельный номер</span><time datetime="2026-09-14T10:20:00+03:00">14 сентября, 10:20</time></div>
+                  <p class="message">Агент отправил предложение без дополнительного сообщения.</p>
+                </div>
+                <div class="decision" aria-label="Решение по предложению"><button class="button primary" type="button">Принять</button><button class="button danger" type="button">Отклонить</button></div>
+              </article>
+            </li>
+          </ol>
+        </div>
+        <div class="surface empty-state"><span class="empty-mark" aria-hidden="true">↗</span><div><h3>Новых предложений пока нет</h3><p>Когда агент предложит сотрудничество по объекту или отдельному номеру, оно появится здесь.</p></div></div>
+      </section>
+
+      <section class="section" aria-labelledby="active-title">
+        <div class="section-head">
+          <div class="section-copy"><h2 id="active-title">Активные сотрудничества</h2><p>Контакты, условия и варианты, доступные каждому агенту.</p></div>
+          <span class="count populated">1 активный агент</span><span class="count empty-state">Нет активных</span>
+        </div>
+        <div class="surface populated">
+          <ul class="list">
+            <li>
+              <article class="collaboration">
+                <div class="collaboration-side">
+                  <div class="identity">
+                    <span class="avatar" aria-hidden="true">ЕВ</span>
+                    <div class="identity-copy"><div class="identity-line"><h3>Елена Воронова</h3><span class="pill active">Активно</span></div><p class="agent">Агент</p></div>
+                  </div>
+                  <div class="detail"><p class="detail-label">Контакты агента</p><div class="contacts"><a href="tel:+79991234567">+7 999 123-45-67</a><a href="#">Telegram</a></div></div>
+                </div>
+                <div class="collaboration-side">
+                  <div class="detail">
+                    <p class="detail-label">Цели сотрудничества</p>
+                    <ul class="targets"><li class="target"><strong>Гостевой дом «Тихий берег»</strong><span>Объект</span></li><li class="target"><strong>Студия с видом на сад</strong><span>Отдельный номер</span></li></ul>
+                  </div>
+                  <div class="detail"><p class="detail-label">Условия сотрудничества</p><p class="terms">Согласовываем каждую заявку до передачи владельцу. Итоговую цену для своей витрины агент настраивает самостоятельно.</p></div>
+                </div>
+              </article>
+            </li>
+          </ul>
+        </div>
+        <div class="surface empty-state"><span class="empty-mark" aria-hidden="true">✓</span><div><h3>Активных сотрудничеств пока нет</h3><p>Принятое предложение создаст активную связь и появится в этом списке.</p></div></div>
+      </section>
+    </main>
+  </div>
+  <nav class="mobile-nav" aria-label="Мобильная навигация"><span>⌂</span><span>▤</span><span>▦</span><span>☷</span><span class="active">•••</span></nav>
+  <script>
+    function setState(state) { document.body.classList.toggle("show-empty", state === "empty"); }
+    function setFeedback(state) {
+      document.body.classList.toggle("feedback-success", state === "success");
+      document.body.classList.toggle("feedback-error", state === "error");
+    }
+  </script>
+</body>
+</html>
