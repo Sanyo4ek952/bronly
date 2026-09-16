@@ -24,7 +24,7 @@
 | D44 | `/a/[slug]` | verified: существующий public redesign и route-specific контракт |
 | D45 | `/a/[slug]/request` | verified: agent request flow и route-specific контракт |
 | D46 | `/a/[slug]/request/success` | verified: agent success flow и ручные следующие шаги |
-| D47 | `/c/[slug]` | pending |
+| D47 | `/c/[slug]` | verified: персональная подборка без общего каталога |
 | D48 | `/c/[slug]/request` | pending |
 | D49 | `/c/[slug]/request/success` | pending |
 | D50 | `/check-email` | pending |
