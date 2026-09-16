@@ -30,7 +30,7 @@
 | D50 | `/check-email` | verified: confirmation states и invite-контекст |
 | D51 | `/forgot-password` | verified: recovery form и feedback states |
 | D52 | `/invite/[token]` | verified: role-bound invite и unavailable state |
-| D53 | `/login` | pending |
+| D53 | `/login` | verified: role-aware login, recovery и redirect context |
 | D54 | `/p/[slug]` | pending |
 | D55 | `/p/[slug]/request` | pending |
 | D56 | `/p/[slug]/request/success` | pending |
