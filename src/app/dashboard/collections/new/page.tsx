@@ -16,8 +16,8 @@ export default async function OwnerCollectionCreatePage({ searchParams }: Collec
 
   return (
     <CollectionCreateSection
-      title="Создать коллекцию владельца"
-      description="Создайте новую подборку и сразу перейдите к управлению ее составом и публичной ссылкой."
+      title="Соберите варианты для гостя"
+      description="Сначала назовите подборку. Объекты и номера вы добавите на следующем шаге."
       fieldPlaceholder="Например, для Ирины"
       backHref="/dashboard/collections"
       pageNav={(
@@ -30,6 +30,7 @@ export default async function OwnerCollectionCreatePage({ searchParams }: Collec
       action={createOwnerCollectionAction}
       success={success}
       error={error}
+      layout="owner-create"
     />
   );
 }

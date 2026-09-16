@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>D07 — Новая подборка владельца</title>
+  <style>
+    :root {
+      --sand-50: #fbf7f0;
+      --sand-100: #f7efe4;
+      --sand-200: #eadccb;
+      --cream: #fffaf3;
+      --sage-50: #edf7f2;
+      --sage-100: #deeee7;
+      --sage-600: #477668;
+      --sage-700: #315f54;
+      --graphite-900: #20211f;
+      --graphite-700: #3d3e3b;
+      --graphite-500: #6f716b;
+      --border: var(--sand-200);
+      --shadow: 0 18px 48px rgb(58 55 48 / 8%);
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--sand-50); color: var(--graphite-900); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; min-width: 0; }
+    a { color: inherit; }
+    button, input { font: inherit; }
+    .shell { min-height: 100vh; display: grid; grid-template-columns: 224px minmax(0, 1fr); }
+    .sidebar { padding: 26px 18px; background: #243f38; color: white; }
+    .brand { margin: 0 10px 34px; font-size: 23px; font-weight: 800; letter-spacing: -.04em; }
+    .nav { display: grid; gap: 7px; }
+    .nav a { min-height: 43px; display: flex; align-items: center; border-radius: 13px; padding: 0 13px; text-decoration: none; font-size: 13px; color: rgb(255 255 255 / 72%); }
+    .nav a.active { background: rgb(255 255 255 / 12%); color: #fff; font-weight: 700; }
+    .main { min-width: 0; padding: 32px 42px 60px; }
+    .content { width: min(100%, 1000px); margin: 0 auto; }
+    .page-nav { display: flex; align-items: center; gap: 16px; min-width: 0; margin-bottom: 28px; color: var(--graphite-500); font-size: 12px; }
+    .back { min-height: 36px; display: inline-flex; align-items: center; gap: 7px; flex: none; padding: 0 14px; border: 1px solid var(--border); border-radius: 999px; background: #fff; text-decoration: none; font-weight: 700; color: var(--graphite-700); }
+    .crumbs { min-width: 0; overflow-wrap: anywhere; }
+    .hero { margin-bottom: 25px; }
+    .eyebrow { margin: 0 0 9px; color: var(--sage-700); font-size: 11px; font-weight: 800; letter-spacing: .115em; }
+    h1 { max-width: 720px; margin: 0; font-size: clamp(36px, 4vw, 52px); font-weight: 650; line-height: 1.02; letter-spacing: -.05em; overflow-wrap: anywhere; }
+    .lead { max-width: 690px; margin: 13px 0 0; color: var(--graphite-500); font-size: 14px; line-height: 1.58; overflow-wrap: anywhere; }
+    .surface { overflow: clip; border: 1px solid var(--border); border-radius: 24px; background: #fff; box-shadow: var(--shadow); }
+    .form-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(245px, .8fr); }
+    .fields { min-width: 0; padding: 28px; }
+    .fields h2 { margin: 0; font-size: 21px; line-height: 1.2; letter-spacing: -.02em; }
+    .fields-intro { margin: 7px 0 23px; color: var(--graphite-500); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+    .field + .field { margin-top: 18px; }
+    label { display: block; margin: 0 0 7px; color: var(--graphite-700); font-size: 12px; font-weight: 750; line-height: 1.4; overflow-wrap: anywhere; }
+    input { width: 100%; min-width: 0; min-height: 44px; padding: 10px 13px; border: 1px solid var(--border); border-radius: 13px; background: #fff; color: var(--graphite-900); outline: none; }
+    input::placeholder { color: #9a9b96; }
+    input:focus { border-color: rgb(49 95 84 / 48%); box-shadow: 0 0 0 4px rgb(71 118 104 / 13%); }
+    .hint { margin: 7px 0 0; color: var(--graphite-500); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+    .next { min-width: 0; padding: 28px 26px; border-left: 1px solid rgb(71 118 104 / 14%); background: var(--sage-50); }
+    .next-icon { width: 42px; height: 42px; display: grid; place-items: center; margin-bottom: 18px; border-radius: 14px; background: var(--sage-100); color: var(--sage-700); font-size: 20px; }
+    .next h3 { margin: 0; font-size: 16px; }
+    .next p { margin: 8px 0 0; color: #53655f; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+    .steps { display: grid; gap: 10px; margin: 19px 0 0; padding: 0; list-style: none; counter-reset: step; }
+    .steps li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 9px; align-items: start; color: #42564f; font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+    .steps li::before { counter-increment: step; content: counter(step); width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: #fff; color: var(--sage-700); font-size: 10px; font-weight: 800; }
+    .actions { display: flex; align-items: center; justify-content: flex-end; gap: 11px; padding: 18px 28px; border-top: 1px solid var(--border); background: var(--cream); }
+    .button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 18px; border-radius: 13px; border: 1px solid var(--border); text-decoration: none; font-size: 13px; font-weight: 800; cursor: pointer; }
+    .secondary { background: #fff; color: var(--graphite-700); }
+    .primary { border-color: var(--sage-700); background: var(--sage-700); color: #fff; }
+    .back:focus-visible, .button:focus-visible, .nav a:focus-visible { outline: 3px solid #d5a73f; outline-offset: 3px; }
+    .bottom-nav { display: none; }
+    @media (max-width: 1079px) {
+      .shell { display: block; }
+      .sidebar { display: none; }
+      .main { padding: 26px 24px 96px; }
+      .bottom-nav { position: fixed; z-index: 3; inset: auto 0 0; display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--border); background: rgb(255 250 243 / 96%); padding: 7px 5px calc(7px + env(safe-area-inset-bottom)); backdrop-filter: blur(12px); }
+      .bottom-nav a { min-width: 0; min-height: 49px; display: grid; place-items: center; border-radius: 12px; text-decoration: none; color: var(--graphite-500); font-size: 10px; }
+      .bottom-nav a.active { background: var(--sage-50); color: var(--sage-700); font-weight: 800; }
+    }
+    @media (max-width: 720px) {
+      .main { padding: 22px 18px 92px; }
+      .page-nav { margin-bottom: 23px; gap: 12px; }
+      .hero { margin-bottom: 20px; }
+      h1 { font-size: 34px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .fields { padding: 21px 18px; }
+      .next { padding: 21px 18px; border-top: 1px solid rgb(71 118 104 / 14%); border-left: 0; }
+      .actions { display: grid; padding: 16px 18px 18px; }
+      .primary { grid-row: 1; }
+      .secondary { grid-row: 2; }
+      .button { width: 100%; }
+    }
+    @media (max-width: 340px) {
+      .main { padding-right: 14px; padding-left: 14px; }
+      .page-nav { align-items: flex-start; flex-direction: column; }
+      h1 { font-size: 31px; }
+      .surface { border-radius: 20px; }
+      .fields, .next { padding: 18px 14px; }
+      .actions { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Навигация владельца">
+      <div class="brand">Bronly</div>
+      <nav class="nav">
+        <a href="#">Главная</a><a href="#">Объекты</a><a href="#">Календарь</a><a href="#">Заявки</a><a class="active" href="#">Коллекции</a><a href="#">Настройки</a>
+      </nav>
+    </aside>
+    <main class="main">
+      <div class="content">
+        <div class="page-nav">
+          <a class="back" href="#">← <span>Назад</span></a>
+          <div class="crumbs">Главная / Коллекции / <strong>Новая коллекция</strong></div>
+        </div>
+        <header class="hero">
+          <p class="eyebrow">НОВАЯ ПОДБОРКА</p>
+          <h1>Соберите варианты для гостя</h1>
+          <p class="lead">Сначала назовите подборку. Объекты и номера вы добавите на следующем шаге.</p>
+        </header>
+        <form class="surface">
+          <div class="form-grid">
+            <section class="fields" aria-labelledby="form-title">
+              <h2 id="form-title">Название подборки</h2>
+              <p class="fields-intro">Внутреннее название поможет быстро найти подборку в кабинете.</p>
+              <div class="field">
+                <label for="title">Название в кабинете</label>
+                <input id="title" name="title" placeholder="Например, для Ирины" maxlength="120" required />
+              </div>
+              <div class="field">
+                <label for="guest">Название для гостя</label>
+                <input id="guest" name="guestLabel" placeholder="Например, Варианты для Анны" maxlength="160" aria-describedby="guest-hint" />
+                <p class="hint" id="guest-hint">Необязательно. Если оставить пустым, гость увидит название из кабинета.</p>
+              </div>
+            </section>
+            <aside class="next" aria-labelledby="next-title">
+              <div class="next-icon" aria-hidden="true">↗</div>
+              <h3 id="next-title">Что дальше</h3>
+              <p>После создания откроется страница подборки. Там можно добавить объекты и отдельные номера, затем отправить гостю готовую ссылку.</p>
+              <ol class="steps"><li>Создайте пустую подборку.</li><li>Добавьте нужные варианты.</li><li>Проверьте и отправьте ссылку.</li></ol>
+            </aside>
+          </div>
+          <footer class="actions">
+            <a class="button secondary" href="#">Вернуться к списку</a>
+            <button class="button primary" type="button">Создать подборку →</button>
+          </footer>
+        </form>
+      </div>
+    </main>
+  </div>
+  <nav class="bottom-nav" aria-label="Мобильная навигация">
+    <a href="#">Главная</a><a href="#">Номера</a><a href="#">Календарь</a><a href="#">Заявки</a><a class="active" href="#">Ещё</a>
+  </nav>
+</body>
+</html>
