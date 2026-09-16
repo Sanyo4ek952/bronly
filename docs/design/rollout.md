@@ -28,7 +28,7 @@
 | D48 | `/c/[slug]/request` | verified: заявка на конкретный номер из подборки |
 | D49 | `/c/[slug]/request/success` | verified: collection success flow и role-specific шаги |
 | D50 | `/check-email` | verified: confirmation states и invite-контекст |
-| D51 | `/forgot-password` | pending |
+| D51 | `/forgot-password` | verified: recovery form и feedback states |
 | D52 | `/invite/[token]` | pending |
 | D53 | `/login` | pending |
 | D54 | `/p/[slug]` | pending |
