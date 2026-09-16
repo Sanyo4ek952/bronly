@@ -19,7 +19,7 @@
 | D39 | `/admin` | verified: существующий mobile-first redesign и route-specific контракт |
 | D40 | `/admin/properties` | verified: существующий mobile-first redesign и route-specific контракт |
 | D41 | `/admin/reviews` | verified: существующий mobile-first redesign и route-specific контракт |
-| D42 | `/admin/subscriptions` | pending |
+| D42 | `/admin/subscriptions` | verified: существующий mobile-first redesign и route-specific контракт |
 | D43 | `/admin/users` | pending |
 | D44 | `/a/[slug]` | pending |
 | D45 | `/a/[slug]/request` | pending |
