@@ -21,7 +21,7 @@
 | D41 | `/admin/reviews` | verified: существующий mobile-first redesign и route-specific контракт |
 | D42 | `/admin/subscriptions` | verified: существующий mobile-first redesign и route-specific контракт |
 | D43 | `/admin/users` | verified: существующий mobile-first redesign и route-specific контракт |
-| D44 | `/a/[slug]` | pending |
+| D44 | `/a/[slug]` | verified: существующий public redesign и route-specific контракт |
 | D45 | `/a/[slug]/request` | pending |
 | D46 | `/a/[slug]/request/success` | pending |
 | D47 | `/c/[slug]` | pending |
