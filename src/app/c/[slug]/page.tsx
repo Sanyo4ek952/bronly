@@ -172,10 +172,6 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
                     rooms={section.rooms}
                     filters={filters}
                     showFilter={false}
-                    showStickyCta
-                    selectedRoomTitle="Выбранный номер из подборки"
-                    selectedRoomDescription="Заявка будет создана на этот конкретный номер."
-                    selectionHint="Сначала выберите номер из подборки, затем переходите к заявке."
                     cardActionLabel="Перейти к заявке по номеру"
                   />
                 </Panel>
@@ -195,10 +191,6 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
                     rooms={standaloneRooms.map((item) => item.room)}
                     filters={filters}
                     showFilter={false}
-                    showStickyCta
-                    selectedRoomTitle="Выбранный номер из подборки"
-                    selectedRoomDescription="Заявка будет создана на этот конкретный номер."
-                    selectionHint="Выберите номер и переходите к заявке только по нему."
                     cardActionLabel="Перейти к заявке по номеру"
                   />
                 </Panel>
