@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>D06 — Подборки владельца</title>
+  <style>
+    :root {
+      --sand-50: #fbf7f0;
+      --sand-100: #f7efe4;
+      --sand-200: #eadccb;
+      --cream: #fffaf3;
+      --sage-50: #edf7f2;
+      --sage-600: #477668;
+      --sage-700: #315f54;
+      --graphite-900: #20211f;
+      --graphite-700: #3d3e3b;
+      --graphite-500: #6f716b;
+      --danger: #9f4d4d;
+      --border: var(--sand-200);
+      --shadow: 0 18px 48px rgb(58 55 48 / 8%);
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--sand-50); color: var(--graphite-900); font-family: Manrope, Inter, system-ui, sans-serif; }
+    body { margin: 0; min-width: 0; background: radial-gradient(circle at 84% 4%, rgb(237 247 242 / 70%), transparent 26rem), var(--sand-50); }
+    a { color: inherit; text-decoration: none; }
+    button, a { font: inherit; }
+    :focus-visible { outline: 3px solid rgb(71 118 104 / 42%); outline-offset: 3px; }
+    .app { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: 30px; width: min(1392px, calc(100% - 48px)); margin: 24px auto; }
+    .sidebar { position: sticky; top: 24px; display: flex; min-height: calc(100vh - 48px); flex-direction: column; border: 1px solid var(--border); border-radius: 28px; background: rgb(255 250 243 / 92%); padding: 22px 16px; box-shadow: var(--shadow); }
+    .brand { padding: 7px 10px 22px; font-size: 20px; font-weight: 800; letter-spacing: -.03em; }
+    .brand span { color: var(--sage-600); }
+    .nav { display: grid; gap: 6px; }
+    .nav a { min-height: 44px; display: flex; align-items: center; gap: 12px; border-radius: 14px; padding: 0 12px; color: var(--graphite-700); font-size: 13px; font-weight: 700; }
+    .nav a.active { background: var(--sage-50); color: var(--sage-700); }
+    .nav-dot { width: 18px; height: 18px; border: 1.5px solid currentColor; border-radius: 6px; opacity: .72; }
+    .profile { margin-top: auto; border-top: 1px solid var(--border); padding: 18px 10px 2px; }
+    .profile strong, .profile span { display: block; }
+    .profile strong { font-size: 12px; }
+    .profile span { margin-top: 4px; color: var(--graphite-500); font-size: 11px; }
+    main { min-width: 0; padding: 12px 0 48px; }
+    .page { display: grid; gap: 27px; max-width: 1080px; margin: 0 auto; }
+    .hero { display: flex; align-items: end; justify-content: space-between; gap: 32px; padding-top: 5px; }
+    .eyebrow { margin: 0 0 8px; color: var(--sage-700); font-size: 11px; font-weight: 800; letter-spacing: .115em; }
+    h1 { margin: 0; font-size: clamp(36px, 4vw, 52px); font-weight: 650; line-height: 1.02; letter-spacing: -.05em; }
+    .lead { max-width: 670px; margin: 13px 0 0; color: var(--graphite-500); font-size: 14px; line-height: 1.55; }
+    .button { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: 0 0 auto; border-radius: 14px; padding: 0 20px; background: var(--sage-600); color: white; font-size: 13px; font-weight: 800; box-shadow: 0 10px 24px rgb(71 118 104 / 16%); }
+    .button:hover { background: var(--sage-700); transform: translateY(-1px); }
+    .overview { display: grid; gap: 10px; }
+    .summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; border-radius: 23px; background: var(--sage-50); padding: 21px 10px; box-shadow: 0 14px 38px rgb(71 118 104 / 6%); }
+    .summary > div { min-width: 0; border-right: 1px solid rgb(71 118 104 / 18%); padding: 0 22px; }
+    .summary > div:last-child { border-right: 0; }
+    .summary dd, .summary dt { margin: 0; }
+    .summary dd { font-size: 29px; font-weight: 650; line-height: 1; }
+    .summary dt { margin-top: 8px; color: var(--graphite-500); font-size: 11px; }
+    .stat-note { display: flex; align-items: center; gap: 8px; margin: 0 6px; color: var(--graphite-500); font-size: 11px; }
+    .stat-note::before { content: "i"; width: 18px; height: 18px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 50%; background: var(--sand-100); color: var(--sage-700); font-weight: 800; }
+    .collection-section { display: grid; gap: 11px; }
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding: 0 2px; }
+    .section-head h2 { margin: 0; font-size: 21px; letter-spacing: -.025em; }
+    .section-head p { margin: 4px 0 0; color: var(--graphite-500); font-size: 12px; }
+    .count { white-space: nowrap; color: var(--sage-700); font-size: 12px; font-weight: 800; }
+    .collection-list { overflow: clip; border: 1px solid var(--border); border-radius: 23px; background: var(--cream); box-shadow: var(--shadow); }
+    .collection-row { min-height: 112px; display: grid; grid-template-columns: minmax(250px, 1.5fr) repeat(3, minmax(100px, .6fr)) 28px; align-items: center; gap: 18px; padding: 20px 22px; border-bottom: 1px solid var(--border); transition: background .18s ease, color .18s ease; }
+    .collection-row:last-child { border-bottom: 0; }
+    .collection-row:hover { background: rgb(237 247 242 / 56%); }
+    .identity { min-width: 0; }
+    .identity-line { display: flex; min-width: 0; align-items: center; gap: 10px; }
+    .identity strong { min-width: 0; font-size: 16px; line-height: 1.3; }
+    .guest { margin: 6px 0 0; color: var(--graphite-500); font-size: 12px; line-height: 1.45; }
+    .pill { min-height: 24px; display: inline-flex; align-items: center; flex: 0 0 auto; border-radius: 999px; padding: 0 9px; background: rgb(71 118 104 / 9%); color: var(--sage-700); font-size: 10px; font-weight: 800; }
+    .pill.archive { background: rgb(159 77 77 / 8%); color: var(--danger); }
+    .metric { min-width: 0; }
+    .metric span, .metric strong { display: block; }
+    .metric span { color: var(--graphite-500); font-size: 10px; }
+    .metric strong { margin-top: 5px; overflow-wrap: anywhere; font-size: 12px; line-height: 1.35; }
+    .arrow { color: var(--sage-700); font-size: 22px; text-align: right; transition: transform .18s ease; }
+    .collection-row:hover .arrow { transform: translateX(2px); }
+    .bottom-nav { display: none; }
+    @media (max-width: 1080px) {
+      .app { grid-template-columns: 1fr; width: calc(100% - 32px); }
+      .sidebar { display: none; }
+      main { padding-top: 0; }
+      .collection-row { grid-template-columns: minmax(220px, 1.35fr) repeat(3, minmax(88px, .6fr)) 24px; gap: 14px; }
+    }
+    @media (max-width: 700px) {
+      body { padding-bottom: 88px; }
+      .app { width: calc(100% - 24px); margin: 16px auto 24px; }
+      .page { gap: 23px; }
+      .hero { display: grid; align-items: start; gap: 18px; padding-top: 2px; }
+      h1 { font-size: 36px; }
+      .lead { margin-top: 10px; font-size: 13px; }
+      .button { width: 100%; }
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px 13px; border-radius: 20px; }
+      .summary > div { padding: 13px 10px; }
+      .summary > div:nth-child(2) { border-right: 0; }
+      .summary > div:nth-child(-n+2) { border-bottom: 1px solid rgb(71 118 104 / 18%); }
+      .summary dd { font-size: 25px; }
+      .section-head { align-items: start; }
+      .section-head p { line-height: 1.4; }
+      .collection-list { border-radius: 20px; }
+      .collection-row { min-height: 0; grid-template-columns: repeat(3, minmax(0, 1fr)) 20px; gap: 15px 10px; padding: 18px 16px; }
+      .identity { grid-column: 1 / -1; }
+      .identity-line { align-items: start; justify-content: space-between; }
+      .metric { border-right: 1px solid var(--border); padding-right: 8px; }
+      .metric:nth-of-type(3) { border-right: 0; }
+      .arrow { grid-column: 4; grid-row: 2; align-self: center; }
+      .bottom-nav { position: fixed; z-index: 20; left: 8px; right: 8px; bottom: max(8px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(5, 1fr); min-height: 64px; padding: 7px; border: 1px solid var(--border); border-radius: 20px; background: rgb(255 250 243 / 96%); box-shadow: 0 14px 40px rgb(49 58 51 / 14%); backdrop-filter: blur(14px); }
+      .bottom-nav a { min-width: 0; display: grid; place-items: center; align-content: center; gap: 4px; border-radius: 13px; color: var(--graphite-500); font-size: 9px; font-weight: 750; }
+      .bottom-nav a.active { background: var(--sage-50); color: var(--sage-700); }
+      .bottom-nav i { width: 17px; height: 17px; border: 1.5px solid currentColor; border-radius: 5px; }
+    }
+    @media (max-width: 340px) {
+      .app { width: calc(100% - 20px); }
+      h1 { font-size: 32px; }
+      .summary > div { padding-inline: 8px; }
+      .collection-row { padding-inline: 14px; gap-inline: 7px; }
+      .identity strong { font-size: 15px; }
+      .metric strong { font-size: 11px; }
+      .bottom-nav { left: 5px; right: 5px; }
+      .bottom-nav a { font-size: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="Навигация владельца">
+      <div class="brand">bron<span>ly</span></div>
+      <nav class="nav">
+        <a href="#"><span class="nav-dot"></span>Главная</a>
+        <a href="#"><span class="nav-dot"></span>Объекты</a>
+        <a class="active" href="#"><span class="nav-dot"></span>Коллекции</a>
+        <a href="#"><span class="nav-dot"></span>Календарь</a>
+        <a href="#"><span class="nav-dot"></span>Заявки</a>
+        <a href="#"><span class="nav-dot"></span>Настройки</a>
+      </nav>
+      <div class="profile"><strong>Александр Афанасьев</strong><span>Владелец</span></div>
+    </aside>
+    <main>
+      <div class="page">
+        <header class="hero">
+          <div>
+            <p class="eyebrow">ПОДБОРКИ ДЛЯ ГОСТЕЙ</p>
+            <h1>Коллекции</h1>
+            <p class="lead">Собирайте объекты и отдельные номера в персональные подборки и отправляйте гостю одну понятную ссылку.</p>
+          </div>
+          <a class="button" href="#">＋ Создать подборку</a>
+        </header>
+
+        <section class="overview" aria-label="Сводка по подборкам">
+          <dl class="summary">
+            <div><dd>3</dd><dt>Всего подборок</dt></div>
+            <div><dd>2</dd><dt>Активные</dt></div>
+            <div><dd>1</dd><dt>В архиве</dt></div>
+            <div><dd>11</dd><dt>Открытий ссылок</dt></div>
+          </dl>
+          <p class="stat-note">Показываем только базовую статистику: открытия ссылки и время последнего открытия.</p>
+        </section>
+
+        <section class="collection-section" aria-labelledby="active-title">
+          <header class="section-head">
+            <div><h2 id="active-title">Активные подборки</h2><p>Их ссылки доступны гостям, пока подборки не отправлены в архив.</p></div>
+            <span class="count">2 подборки</span>
+          </header>
+          <div class="collection-list">
+            <a class="collection-row" href="#">
+              <div class="identity"><div class="identity-line"><strong>Выходные у моря</strong><span class="pill">Активна</span></div><p class="guest">Для гостя: Дарья</p></div>
+              <div class="metric"><span>Варианты</span><strong>5 элементов</strong></div>
+              <div class="metric"><span>Открытия</span><strong>7</strong></div>
+              <div class="metric"><span>Последнее</span><strong>Сегодня, 12:40</strong></div>
+              <span class="arrow" aria-hidden="true">›</span>
+            </a>
+            <a class="collection-row" href="#">
+              <div class="identity"><div class="identity-line"><strong>Большая семейная поездка на осенние каникулы</strong><span class="pill">Активна</span></div><p class="guest">Для гостя: Александр и семья, 6 человек</p></div>
+              <div class="metric"><span>Варианты</span><strong>2 элемента</strong></div>
+              <div class="metric"><span>Открытия</span><strong>4</strong></div>
+              <div class="metric"><span>Последнее</span><strong>15 сен, 18:20</strong></div>
+              <span class="arrow" aria-hidden="true">›</span>
+            </a>
+          </div>
+        </section>
+
+        <section class="collection-section" aria-labelledby="archive-title">
+          <header class="section-head">
+            <div><h2 id="archive-title">Архив</h2><p>Сохранённые подборки, ссылки которых больше не показываются гостям.</p></div>
+            <span class="count">1 подборка</span>
+          </header>
+          <div class="collection-list">
+            <a class="collection-row" href="#">
+              <div class="identity"><div class="identity-line"><strong>Июньская поездка</strong><span class="pill archive">Архив</span></div></div>
+              <div class="metric"><span>Варианты</span><strong>3 элемента</strong></div>
+              <div class="metric"><span>Открытия</span><strong>0</strong></div>
+              <div class="metric"><span>Последнее</span><strong>Пока не открывали</strong></div>
+              <span class="arrow" aria-hidden="true">›</span>
+            </a>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <nav class="bottom-nav" aria-label="Мобильная навигация">
+    <a href="#"><i></i>Главная</a><a href="#"><i></i>Номера</a><a href="#"><i></i>Календарь</a><a href="#"><i></i>Заявки</a><a class="active" href="#"><i></i>Ещё</a>
+  </nav>
+</body>
+</html>
