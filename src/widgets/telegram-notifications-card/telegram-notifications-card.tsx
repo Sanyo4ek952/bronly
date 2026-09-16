@@ -48,7 +48,7 @@ export function TelegramNotificationsCard({ role, status, linkAction, toggleActi
       <div className="flex flex-wrap gap-2.5">
         <form action={linkAction}>
           <input type="hidden" name="role" value={role} />
-          <SubmitButton variant="secondary" disabled={!status.botConfigured} pendingLabel="Переход">
+          <SubmitButton variant="secondary" pendingLabel="Переход">
             {status.isLinked ? "Перепривязать Telegram" : "Привязать Telegram"}
           </SubmitButton>
         </form>
