@@ -1,5 +1,6 @@
 "use client";
 
+import { BellRing } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
 
 import {
@@ -13,6 +14,7 @@ type PushNotificationsCardProps = {
   deliveryMode: "enabled" | "foundation_only";
   hasServerSubscriptions: boolean;
   initialPushEnabled: boolean;
+  presentation?: "default" | "owner";
 };
 
 type StatusMessage = {
@@ -68,6 +70,7 @@ export function PushNotificationsCard({
   deliveryMode,
   hasServerSubscriptions,
   initialPushEnabled,
+  presentation = "default",
 }: PushNotificationsCardProps) {
   const [isPending, startTransition] = useTransition();
   const [pushEnabled, setPushEnabled] = useState(initialPushEnabled);
@@ -97,6 +100,16 @@ export function PushNotificationsCard({
 
   const isActive = pushEnabled && hasCurrentSubscription;
   const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
+  const statusText =
+    permission === "unsupported"
+      ? "Этот браузер не поддерживает push-уведомления."
+      : permission === "denied"
+        ? "Разрешение на push-уведомления сейчас отключено в браузере."
+        : isActive
+          ? "Push-уведомления включены для этого устройства."
+          : hasServerSubscriptions
+            ? "Для аккаунта уже есть сохраненные push-подписки. На этом устройстве push можно включить отдельно."
+            : "Push-уведомления пока не включены.";
 
   function handleEnable() {
     startTransition(async () => {
@@ -173,6 +186,56 @@ export function PushNotificationsCard({
     });
   }
 
+  if (presentation === "owner") {
+    return (
+      <Panel
+        as="aside"
+        className="grid min-w-0 gap-[18px] p-[22px] shadow-[var(--shadow-md)] max-[640px]:p-4 xl:sticky xl:top-6"
+        aria-labelledby="owner-push-notifications-title"
+      >
+        <div className="grid size-11 place-items-center rounded-[15px] bg-[var(--surface-muted)] text-[var(--accent-strong)]" aria-hidden="true">
+          <BellRing className="size-5" strokeWidth={2} />
+        </div>
+
+        <div className="grid gap-2">
+          <h2 id="owner-push-notifications-title" className="text-[22px] font-bold leading-[1.15] tracking-[-0.025em] text-[var(--text)]">
+            Push на устройстве
+          </h2>
+          <p className="text-sm leading-[1.55] text-[var(--text-muted)]">
+            Получайте важные события прямо в установленном PWA.
+          </p>
+        </div>
+
+        <p className="text-sm font-semibold leading-[1.55] text-[var(--text-muted)]">{statusText}</p>
+
+        {deliveryMode === "foundation_only" ? (
+          <InlineNotice tone="warning">
+            Подписка и запись доставок уже работают. Внешняя отправка push будет активирована после настройки серверных
+            VAPID-ключей.
+          </InlineNotice>
+        ) : null}
+
+        {statusMessage ? (
+          <InlineNotice tone={statusMessage.tone === "warning" ? "warning" : "soft"} aria-live="polite">
+            {statusMessage.text}
+          </InlineNotice>
+        ) : null}
+
+        <Button
+          type="button"
+          onClick={isActive ? handleDisable : handleEnable}
+          disabled={!isSupported}
+          isLoading={isPending}
+          loadingLabel="Сохранение"
+          fullWidth
+          className="min-h-11"
+        >
+          {isActive ? "Отключить push-уведомления" : "Включить push-уведомления"}
+        </Button>
+      </Panel>
+    );
+  }
+
   return (
     <Panel className="grid gap-4 p-5 max-[640px]:p-4" surface="raised">
       <div className="grid gap-1.5">
@@ -183,17 +246,7 @@ export function PushNotificationsCard({
       </div>
 
       <div className="grid gap-3">
-        <p className="text-sm leading-[1.5] text-[var(--text-muted)]">
-          {permission === "unsupported"
-            ? "Этот браузер не поддерживает push-уведомления."
-            : permission === "denied"
-              ? "Разрешение на push-уведомления сейчас отключено в браузере."
-              : isActive
-                ? "Push-уведомления включены для этого устройства."
-                : hasServerSubscriptions
-                  ? "Для аккаунта уже есть сохраненные push-подписки. На этом устройстве push можно включить отдельно."
-                  : "Push-уведомления пока не включены."}
-        </p>
+        <p className="text-sm leading-[1.5] text-[var(--text-muted)]">{statusText}</p>
 
         {deliveryMode === "foundation_only" ? (
           <InlineNotice tone="warning">

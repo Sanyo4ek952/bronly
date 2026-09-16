@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>D11 — Уведомления владельца</title>
+  <style>
+    :root {
+      --bg: #fbf7f0;
+      --surface: #fffaf3;
+      --surface-subtle: #f7efe4;
+      --surface-muted: #edf7f2;
+      --text: #20211f;
+      --text-muted: #6f716b;
+      --border: #eadccb;
+      --accent: #477668;
+      --accent-strong: #315f54;
+      --warning-soft: #fff0dd;
+      --warning-ink: #8e5d13;
+      --radius-md: 14px;
+      --radius-lg: 18px;
+      --radius-xl: 24px;
+      --shadow-md: 0 14px 38px rgb(49 58 51 / 6%);
+      color-scheme: light;
+      font-family: Manrope, "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgb(71 118 104 / 7%), transparent 29%),
+        linear-gradient(180deg, rgb(255 250 243 / 46%), rgb(251 247 240 / 98%) 27%),
+        var(--bg);
+    }
+    button, a { font: inherit; }
+    button:focus-visible, a:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 4px rgb(71 118 104 / 14%);
+    }
+    .demo-note {
+      margin: 16px auto 0;
+      width: min(1180px, calc(100% - 32px));
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+    .demo-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px auto 0;
+      width: min(1180px, calc(100% - 32px));
+    }
+    .demo-controls button, .button {
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0 14px;
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 750;
+      cursor: pointer;
+    }
+    .button.primary { border-color: transparent; background: var(--accent); color: white; }
+    .shell {
+      display: grid;
+      grid-template-columns: 224px minmax(0, 1fr);
+      gap: 30px;
+      width: min(1352px, calc(100% - 48px));
+      margin: 24px auto 48px;
+      align-items: start;
+    }
+    .sidebar {
+      position: sticky;
+      top: 24px;
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 22px 16px;
+      background: linear-gradient(180deg, var(--surface), var(--surface-subtle));
+      box-shadow: var(--shadow-md);
+    }
+    .logo { padding: 0 10px 18px; font-size: 22px; font-weight: 850; letter-spacing: -.04em; }
+    .nav { display: grid; gap: 6px; }
+    .nav a { min-height: 44px; display: flex; align-items: center; padding: 0 14px; border-radius: 14px; color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 750; }
+    .nav a.active { background: rgb(71 118 104 / 10%); color: var(--accent-strong); }
+    main { min-width: 0; display: grid; gap: 24px; }
+    .page-head { display: grid; max-width: 760px; gap: 8px; }
+    .eyebrow { margin: 0; color: var(--accent); font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: .16em; }
+    h1 { margin: 0; font-size: clamp(32px, 5vw, 46px); line-height: 1.02; letter-spacing: -.04em; }
+    .page-head > p:last-child, .muted { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; align-items: start; }
+    .feed, .push {
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow-md);
+    }
+    .feed-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 24px; border-bottom: 1px solid var(--border); }
+    h2 { margin: 0; font-size: 22px; line-height: 1.15; letter-spacing: -.025em; }
+    .feed-head p { margin: 7px 0 0; color: var(--text-muted); font-size: 14px; }
+    .count { color: var(--accent-strong); font-weight: 800; }
+    .notification-list { list-style: none; margin: 0; padding: 0; }
+    .notification { position: relative; display: grid; gap: 14px; padding: 20px 24px; border-bottom: 1px solid var(--border); }
+    .notification:last-child { border-bottom: 0; }
+    .notification.unread { background: linear-gradient(90deg, var(--surface-muted), var(--surface) 76%); }
+    .notification.unread::before { content: ""; position: absolute; inset: 18px auto 18px 0; width: 3px; border-radius: 999px; background: var(--accent); }
+    .notification-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .notification strong { overflow-wrap: anywhere; font-size: 14px; }
+    .notification p { margin: 6px 0 0; color: var(--text-muted); font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+    time { flex: 0 0 auto; color: var(--text-muted); font-size: 12px; }
+    .pill { display: inline-flex; min-height: 24px; align-items: center; border-radius: 999px; padding: 0 9px; background: rgb(71 118 104 / 9%); color: var(--accent-strong); font-size: 11px; font-weight: 800; }
+    .pill.read { background: rgb(32 33 31 / 6%); color: var(--text); }
+    .notification-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .notification-actions .read-state { margin-left: auto; }
+    .push { display: grid; gap: 18px; padding: 22px; }
+    .push-icon { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 15px; background: var(--surface-muted); color: var(--accent-strong); font-size: 20px; }
+    .push-copy { display: grid; gap: 8px; }
+    .notice { border: 1px solid rgb(217 154 43 / 24%); border-radius: var(--radius-lg); padding: 13px 14px; background: var(--warning-soft); color: var(--warning-ink); font-size: 13px; font-weight: 700; line-height: 1.5; }
+    .push .button { width: 100%; }
+    .empty { display: none; min-height: 330px; place-items: center; padding: 32px; text-align: center; }
+    .empty div { max-width: 430px; }
+    .empty h3 { margin: 0; font-size: 18px; }
+    .empty p { margin: 8px 0 0; color: var(--text-muted); line-height: 1.55; }
+    body.show-empty .notification-list { display: none; }
+    body.show-empty .empty { display: grid; }
+    body.show-empty .feed-action, body.show-empty .count { display: none; }
+    body.push-active .push-status { color: var(--accent-strong); font-weight: 750; }
+    body.push-active .push-button::after { content: "Отключить push-уведомления"; }
+    body:not(.push-active) .push-button::after { content: "Включить push-уведомления"; }
+    .mobile-nav { display: none; }
+    @media (max-width: 1080px) {
+      .shell { grid-template-columns: 1fr; width: calc(100% - 32px); }
+      .sidebar { display: none; }
+      main { padding-bottom: 82px; }
+      .mobile-nav { position: fixed; z-index: 3; inset: auto 12px 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; border: 1px solid var(--border); border-radius: 18px 18px 0 0; padding: 8px; background: var(--surface); box-shadow: var(--shadow-md); }
+      .mobile-nav span { display: grid; min-height: 48px; place-items: center; border-radius: 16px; color: var(--text-muted); font-size: 18px; }
+      .mobile-nav span.active { background: rgb(71 118 104 / 10%); color: var(--accent-strong); }
+    }
+    @media (max-width: 820px) {
+      .layout { grid-template-columns: 1fr; }
+      .push { grid-row: 2; }
+    }
+    @media (max-width: 640px) {
+      .demo-note, .demo-controls { width: calc(100% - 24px); }
+      .shell { width: calc(100% - 24px); margin-top: 18px; gap: 20px; }
+      main { gap: 20px; }
+      .layout { gap: 16px; }
+      .feed-head { display: grid; gap: 14px; padding: 18px 16px; }
+      .feed-action { width: 100%; min-height: 44px; }
+      .notification { padding: 18px 16px; }
+      .notification-top { display: grid; gap: 7px; }
+      time { grid-row: 2; }
+      .notification-actions { display: grid; grid-template-columns: 1fr; }
+      .notification-actions .button, .notification-actions .read-state { width: 100%; min-height: 44px; margin-left: 0; justify-content: center; text-align: center; }
+      .push { padding: 18px 16px; }
+      .mobile-nav { inset-inline: 10px; padding: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <p class="demo-note">Изолированный макет D11 · все данные демонстрационные · API и разрешения браузера не используются.</p>
+  <div class="demo-controls" aria-label="Состояния макета">
+    <button type="button" onclick="document.body.classList.toggle('show-empty')">Лента / пусто</button>
+    <button type="button" onclick="document.body.classList.toggle('push-active')">Push выкл. / вкл.</button>
+  </div>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="logo">Bronly</div>
+      <nav class="nav" aria-label="Навигация кабинета">
+        <a href="#">Главная</a><a class="active" href="#">Уведомления</a><a href="#">Объекты</a><a href="#">Коллекции</a><a href="#">Календарь</a><a href="#">Подписка</a><a href="#">Агенты</a><a href="#">Заявки</a><a href="#">Настройки</a>
+      </nav>
+    </aside>
+    <main>
+      <header class="page-head">
+        <p class="eyebrow">События кабинета</p>
+        <h1>Уведомления</h1>
+        <p>Следите за новыми заявками, предложениями агентов и изменениями подписки в одном месте.</p>
+      </header>
+      <div class="layout">
+        <section class="feed" aria-labelledby="feed-title">
+          <header class="feed-head">
+            <div><h2 id="feed-title">Последние события</h2><p><span class="count">2 непрочитанных</span><span> · сначала показываем новые</span></p></div>
+            <button class="feed-action button" type="button">Отметить все прочитанными</button>
+          </header>
+          <ul class="notification-list">
+            <li class="notification unread">
+              <article>
+                <div class="notification-top"><div><div class="title-row"><strong>Новая заявка</strong><span class="pill">Новое</span></div><p>Гостевой дом «Сосны» · Семейный номер. Гость указал даты проживания и ждёт вашего ответа.</p></div><time datetime="2026-09-16T10:42:00+03:00">Сегодня, 10:42</time></div>
+                <div class="notification-actions"><a class="button" href="#">Открыть заявки</a><button class="button primary" type="button">Отметить прочитанным</button></div>
+              </article>
+            </li>
+            <li class="notification unread">
+              <article>
+                <div class="notification-top"><div><div class="title-row"><strong>Новое предложение агента для объекта с очень длинным названием</strong><span class="pill">Новое</span></div><p>По объекту: Апартаменты у моря с террасой и панорамным видом на набережную.</p></div><time datetime="2026-09-15T18:10:00+03:00">Вчера, 18:10</time></div>
+                <div class="notification-actions"><a class="button" href="#">Открыть предложения</a><button class="button primary" type="button">Отметить прочитанным</button></div>
+              </article>
+            </li>
+            <li class="notification">
+              <article>
+                <div class="notification-top"><div><div class="title-row"><strong>Подписка продлена вручную</strong><span class="pill read">Прочитано</span></div><p>Доступ к сервису продлён администратором. Новый срок уже отражён в разделе подписки.</p></div><time datetime="2026-09-12T12:24:00+03:00">12 сентября, 12:24</time></div>
+                <div class="notification-actions"><a class="button" href="#">Открыть подписку</a><span class="read-state muted">Событие прочитано</span></div>
+              </article>
+            </li>
+          </ul>
+          <div class="empty"><div><h3>Пока нет уведомлений</h3><p>Новые события по заявкам, предложениям агентов и подписке появятся здесь.</p></div></div>
+        </section>
+        <aside class="push" aria-labelledby="push-title">
+          <div class="push-icon" aria-hidden="true">◉</div>
+          <div class="push-copy"><h2 id="push-title">Push на устройстве</h2><p class="muted">Получайте важные события прямо в установленном PWA.</p></div>
+          <p class="push-status muted">Push-уведомления пока не включены.</p>
+          <div class="notice">Подписка и запись доставок уже работают. Внешняя отправка станет доступна после серверной настройки push.</div>
+          <button class="button primary push-button" type="button" aria-label="Переключить push"></button>
+        </aside>
+      </div>
+    </main>
+  </div>
+  <nav class="mobile-nav" aria-label="Мобильная навигация"><span>⌂</span><span>▤</span><span>▦</span><span>☷</span><span class="active">•••</span></nav>
+</body>
+</html>
