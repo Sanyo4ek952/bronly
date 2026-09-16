@@ -193,7 +193,6 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
               <nav className="flex w-full flex-wrap items-center justify-start gap-2.5 text-sm font-semibold [&_a]:inline-flex [&_a]:min-h-[38px] [&_a]:items-center [&_a]:rounded-full [&_a]:border [&_a]:border-[var(--color-border)] [&_a]:bg-[rgb(255_255_255_/_0.86)] [&_a]:px-[14px] [&_a]:font-bold [&_a]:transition [&_a]:hover:-translate-y-px [&_a]:hover:border-[rgb(var(--color-primary-rgb)_/_0.28)] [&_a]:hover:bg-[var(--color-primary-pale)] [&_a]:focus-visible:outline-none [&_a]:focus-visible:ring-4 [&_a]:focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)] max-[640px]:[&_a]:w-full max-[640px]:[&_a]:justify-center" aria-label="Навигация публичной страницы владельца">
                 <a href="#owner-filter">Подобрать номер</a>
                 <a href="#owner-contact">Контакты</a>
-                <a href="#owner-request-flow">Как работает заявка</a>
               </nav>
             }
           >
@@ -289,17 +288,6 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
             )}
           </section>
 
-          <Panel id="owner-request-flow" as="section" className="mb-10 grid gap-[18px] border-[rgb(var(--color-primary-rgb)_/_0.10)] shadow-[var(--shadow-md)]" surface="raised" padding="lg">
-            <div className="grid gap-3">
-              <h2 className="text-[clamp(1.4rem,2vw,1.9rem)] font-extrabold leading-tight">Как работает заявка</h2>
-              <p className="text-sm leading-relaxed text-[var(--color-muted)]">Bronly не подтверждает проживание от имени сервиса. Владелец свяжется с вами напрямую.</p>
-            </div>
-            <ol className="grid list-decimal gap-3 pl-6 marker:font-extrabold marker:text-[var(--color-primary-hover)]">
-              <li>Выберите конкретный номер по датам, гостям и комнатам.</li>
-              <li>Оставьте заявку на выбранный номер.</li>
-              <li>Владелец свяжется с вами для уточнения доступности и деталей проживания.</li>
-            </ol>
-          </Panel>
         </div>
       </main>
     </>
