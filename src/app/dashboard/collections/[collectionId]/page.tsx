@@ -52,6 +52,7 @@ export default async function OwnerCollectionDetailPage({ params, searchParams }
       roomDescription="Номер добавляется отдельно и будет доступен гостю как конкретный вариант."
       success={success}
       error={error}
+      layout="owner-detail"
     />
   );
 }
