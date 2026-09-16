@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { getCalendarNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerPropertyDetail } from "@/entities/property";
 import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
-import { DashboardPageNav } from "@/shared/ui";
+import { ButtonLink, DashboardPageNav, InlineNotice, Panel } from "@/shared/ui";
+import { AdminPageHeader, ObjectStats, StatusBadge } from "@/widgets/property-admin";
 import { PropertySectionNav } from "@/widgets/property-section-nav";
 import { OwnerCalendarBrowser } from "@/widgets/owner-calendar-browser/owner-calendar-browser";
 
@@ -12,10 +13,7 @@ type PropertyCalendarPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const pageStackClass = "grid gap-4";
-const sectionCardClass =
-  "grid gap-4 rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
-const sectionHeaderClass = "flex flex-wrap items-start justify-between gap-3";
+const pageStackClass = "grid min-w-0 gap-6 max-[720px]:gap-5";
 
 export default async function PropertyCalendarPage({ params, searchParams }: PropertyCalendarPageProps) {
   const { propertyId } = await params;
@@ -30,6 +28,11 @@ export default async function PropertyCalendarPage({ params, searchParams }: Pro
   const error = typeof resolvedSearchParams.error === "string" ? resolvedSearchParams.error : "";
   const success = typeof resolvedSearchParams.success === "string" ? resolvedSearchParams.success : "";
   const notice = getCalendarNotice(error, success);
+  const busyRangeCount = property.rooms.reduce((total, room) => total + room.busyRanges.length, 0);
+  const roomsWithBusyRanges = property.rooms.filter((room) => room.busyRanges.length > 0).length;
+  const propertyDescription = [property.title, property.propertyType, [property.city, property.address].filter(Boolean).join(", ")]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <section className={pageStackClass}>
@@ -42,27 +45,42 @@ export default async function PropertyCalendarPage({ params, searchParams }: Pro
         compact
       />
 
-      <section className={sectionCardClass}>
-        <div className={sectionHeaderClass}>
-          <div className="grid gap-1.5">
-            <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">{property.title}</h2>
-            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
-              Ручное управление занятыми датами по каждому номеру.
-            </p>
-          </div>
+      <div className="grid min-w-0 gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[var(--accent-strong)]">
+            Объект владельца
+          </p>
+          <StatusBadge kind="property" published={property.published} isFrozen={property.isFrozen} />
         </div>
+        <AdminPageHeader variant="plain" title="Календарь объекта" description={propertyDescription} />
+      </div>
 
+      {notice ? <InlineNotice tone={error ? "error" : "default"}>{notice}</InlineNotice> : null}
+
+      <Panel padding="sm" surface="subtle" className="rounded-[var(--radius-lg)]">
         <PropertySectionNav propertyId={property.id} active="calendar" />
-      </section>
+      </Panel>
 
-      <section className={sectionCardClass}>
-        <div className={sectionHeaderClass}>
-          <div className="grid gap-1.5">
-            <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Календарь занятости</h2>
-            <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
-              Отмечайте занятые даты без автоматического подтверждения заявок.
-            </p>
-          </div>
+      <Panel padding="md" aria-label="Сводка календаря">
+        <ObjectStats
+          compact
+          stackOnMobile={false}
+          items={[
+            { label: "Все номера", value: String(property.rooms.length) },
+            { label: "С занятыми датами", value: String(roomsWithBusyRanges) },
+            { label: "Диапазоны", value: String(busyRangeCount), tone: "accent" },
+          ]}
+        />
+      </Panel>
+
+      <section className="grid min-w-0 gap-4" aria-labelledby="property-calendar-title">
+        <div className="grid gap-1.5">
+          <h2 id="property-calendar-title" className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">
+            Занятые даты
+          </h2>
+          <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
+            Отмечайте недоступные периоды вручную. Это не подтверждает заявку на проживание автоматически.
+          </p>
         </div>
 
         {property.rooms.length ? (
@@ -74,13 +92,23 @@ export default async function PropertyCalendarPage({ params, searchParams }: Pro
               pricePerNight: room.pricePerNight,
               busyRanges: room.busyRanges,
             }))}
-            serverNotice={notice}
-            serverNoticeTone={error ? "error" : "default"}
           />
         ) : (
-          <p className="text-sm leading-[1.5] text-[var(--color-muted)]">
-            Сначала добавьте номер, затем отмечайте занятые даты.
-          </p>
+          <Panel
+            padding="md"
+            surface="subtle"
+            className="grid justify-items-center gap-4 text-center max-[520px]:justify-items-stretch"
+          >
+            <div className="grid max-w-[540px] gap-2">
+              <h3 className="text-xl font-semibold leading-[1.15] text-[var(--text)]">Сначала добавьте номер</h3>
+              <p className="text-sm leading-[1.55] text-[var(--text-muted)]">
+                Календарь занятости появится после создания первого номера этого объекта.
+              </p>
+            </div>
+            <ButtonLink href={`/dashboard/properties/${property.id}/rooms/new`} className="max-[520px]:w-full">
+              Добавить номер
+            </ButtonLink>
+          </Panel>
         )}
       </section>
     </section>
