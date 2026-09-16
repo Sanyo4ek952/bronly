@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 
 import { getAgentCalendarData } from "@/entities/collaboration";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
-import { InlineNotice, Panel, SectionHeader } from "@/shared/ui";
+import { InlineNotice, Panel } from "@/shared/ui";
+import { AdminPageHeader, ObjectStats } from "@/widgets/property-admin";
 import { AgentCalendarBrowser } from "@/widgets/agent-calendar-browser/agent-calendar-browser";
 
 export default async function AgentCalendarPage() {
@@ -22,11 +23,34 @@ export default async function AgentCalendarPage() {
     );
   }
 
+  const roomCount = properties.reduce((total, property) => total + property.rooms.length, 0);
+  const busyRangeCount = properties.reduce(
+    (propertyTotal, property) => propertyTotal + property.rooms.reduce((roomTotal, room) => roomTotal + room.busyRanges.length, 0),
+    0,
+  );
+
   return (
-    <div className="grid gap-4">
-      <Panel className="grid gap-4 p-5 max-[640px]:p-4" surface="raised">
-        <SectionHeader title="Календарь занятости" description="Занятые даты подключенных объектов и отдельных номеров по активным сотрудничествам." />
-        <InlineNotice tone="soft">Агент видит только данные по активным сотрудничествам и только в режиме чтения. Здесь нельзя менять объект, номер, цены, фото или занятые даты владельца.</InlineNotice>
+    <div className="grid min-w-0 gap-6 max-[720px]:gap-5">
+      <AdminPageHeader
+        variant="plain"
+        title="Календарь занятости"
+        description="Занятые даты подключенных объектов и отдельных номеров по активным сотрудничествам."
+      />
+
+      <InlineNotice tone="soft">
+        Агент видит только данные по активным сотрудничествам и только в режиме чтения. Здесь нельзя менять объект, номер, цены, фото или занятые даты владельца.
+      </InlineNotice>
+
+      <Panel padding="md" aria-label="Сводка календаря агента">
+        <ObjectStats
+          compact
+          stackOnMobile={false}
+          items={[
+            { label: "Варианты", value: String(properties.length) },
+            { label: "Номера", value: String(roomCount) },
+            { label: "Занятые диапазоны", value: String(busyRangeCount), tone: "accent" },
+          ]}
+        />
       </Panel>
 
       {properties.length ? (
