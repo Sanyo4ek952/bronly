@@ -45,6 +45,7 @@ export default async function AgentDashboardLayout({
           userName={profile.displayName}
           roleLabel={shellData.roleLabel}
           roleKind={shellData.roleKind}
+          unreadNotificationsCount={unreadNotificationsCount}
           topbar={shellData.topbar}
           notice={shellData.notice}
         >

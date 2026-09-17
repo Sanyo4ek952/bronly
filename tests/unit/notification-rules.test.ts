@@ -89,3 +89,18 @@ test("the service worker confines notification navigation to the Bronly origin",
   assert.match(serviceWorker, /getSafeClientUrl\(payload\.url/);
   assert.match(serviceWorker, /notificationclick/);
 });
+
+test("owner and agent menus receive and render the unread notification count", () => {
+  const ownerShell = readFileSync("src/widgets/owner-shell/owner-shell.tsx", "utf8");
+  const ownerLayout = readFileSync("src/app/dashboard/layout.tsx", "utf8");
+  const agentLayout = readFileSync("src/app/agent/dashboard/layout.tsx", "utf8");
+
+  assert.match(ownerShell, /unreadNotificationsCount\?: number/);
+  assert.match(
+    ownerShell,
+    /isNotificationsItem \? <NotificationCountBadge count=\{unreadNotificationsCount\} \/> : null/,
+  );
+  assert.match(ownerShell, /<NotificationCountBadge count=\{unreadNotificationsCount\} compact \/>/);
+  assert.match(ownerLayout, /unreadNotificationsCount=\{unreadNotificationsCount\}/);
+  assert.match(agentLayout, /unreadNotificationsCount=\{unreadNotificationsCount\}/);
+});

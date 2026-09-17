@@ -110,11 +110,40 @@ function getNavigationItemClass(isActive: boolean, surface: "sidebar" | "bottom"
   );
 }
 
+function NotificationCountBadge({
+  count,
+  compact = false,
+}: {
+  count: number;
+  compact?: boolean;
+}) {
+  if (count <= 0) {
+    return null;
+  }
+
+  const label = count > 99 ? "99+" : String(count);
+
+  return (
+    <span
+      className={cn(
+        "grid place-items-center rounded-full bg-[var(--color-danger)] font-extrabold leading-none text-white",
+        compact
+          ? "absolute right-1 top-1 min-h-3.5 min-w-3.5 px-1 text-[9px]"
+          : "ml-auto min-h-5 min-w-5 px-1.5 text-[10px]",
+      )}
+      aria-hidden="true"
+    >
+      {label}
+    </span>
+  );
+}
+
 export type OwnerShellProps = {
   children: React.ReactNode;
   userName: string;
   roleLabel: string;
   roleKind?: "owner" | "agent";
+  unreadNotificationsCount?: number;
   topbar?: DashboardTopbarProps | null;
   notice?: {
     title: string;
@@ -127,6 +156,7 @@ export function OwnerShell({
   userName,
   roleLabel,
   roleKind = "owner",
+  unreadNotificationsCount = 0,
   topbar = null,
   notice = null,
 }: OwnerShellProps) {
@@ -139,6 +169,7 @@ export function OwnerShell({
     (item) => !mobilePrimaryItems.some((primaryItem) => primaryItem.href === item.href),
   );
   const isOverflowActive = mobileOverflowItems.some((item) => isItemActive(pathname, item.href));
+  const hasUnreadNotifications = unreadNotificationsCount > 0;
 
   return (
     <div className="grid w-full grid-cols-[224px_minmax(0,1fr)] items-start gap-[30px] pb-[var(--safe-area-bottom)] max-[1080px]:min-h-full max-[1080px]:flex-1 max-[1080px]:grid-cols-1 max-[1080px]:gap-4">
@@ -150,6 +181,7 @@ export function OwnerShell({
         <nav className="grid gap-1.5" aria-label="Навигация кабинета">
           {desktopItems.map((item) => {
             const isActive = isItemActive(pathname, item.href);
+            const isNotificationsItem = item.href.endsWith("/notifications");
 
             return (
               <Link
@@ -157,9 +189,15 @@ export function OwnerShell({
                 href={item.href}
                 className={getNavigationItemClass(isActive, "sidebar")}
                 aria-current={isActive ? "page" : undefined}
+                aria-label={
+                  isNotificationsItem && hasUnreadNotifications
+                    ? `${item.label}. Непрочитанных уведомлений: ${unreadNotificationsCount}`
+                    : undefined
+                }
               >
                 <AppIcon icon={item.icon} className="size-[18px]" aria-hidden="true" />
                 <span>{item.label}</span>
+                {isNotificationsItem ? <NotificationCountBadge count={unreadNotificationsCount} /> : null}
               </Link>
             );
           })}
@@ -214,11 +252,16 @@ export function OwnerShell({
             className={getNavigationItemClass(isMobileMenuOpen || isOverflowActive, "bottom")}
             aria-expanded={isMobileMenuOpen}
             aria-controls="owner-mobile-menu"
-            aria-label="Ещё"
+            aria-label={
+              hasUnreadNotifications
+                ? `Ещё. Непрочитанных уведомлений: ${unreadNotificationsCount}`
+                : "Ещё"
+            }
             onClick={() => setIsMobileMenuOpen(true)}
           >
             <AppIcon icon={Menu} className="size-5" aria-hidden="true" />
             <span className="sr-only">Ещё</span>
+            <NotificationCountBadge count={unreadNotificationsCount} compact />
           </button>
         </nav>
 
@@ -236,6 +279,7 @@ export function OwnerShell({
             <>
               {mobileOverflowItems.map((item) => {
                 const isActive = isItemActive(pathname, item.href);
+                const isNotificationsItem = item.href.endsWith("/notifications");
 
                 return (
                   <Link
@@ -243,10 +287,16 @@ export function OwnerShell({
                     href={item.href}
                     className={getNavigationItemClass(isActive, "sheet")}
                     aria-current={isActive ? "page" : undefined}
+                    aria-label={
+                      isNotificationsItem && hasUnreadNotifications
+                        ? `${item.label}. Непрочитанных уведомлений: ${unreadNotificationsCount}`
+                        : undefined
+                    }
                     onClick={close}
                   >
                     <AppIcon icon={item.icon} className="size-[18px]" aria-hidden="true" />
                     <span>{item.label}</span>
+                    {isNotificationsItem ? <NotificationCountBadge count={unreadNotificationsCount} /> : null}
                   </Link>
                 );
               })}
