@@ -92,17 +92,17 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
   });
 
   const publicPageHref = hasPublicUrl ? (dashboardStats.publicUrl as string) : "/dashboard/settings";
-  const publicStatusLabel = dashboardStats.isCabinetRestricted
+  const publicStatusLabel = dashboardStats.isPublicRestricted
     ? "Временно ограничена"
     : hasPublicUrl
       ? "Открыта для гостей"
       : "Нужно настроить адрес";
-  const heroTitle = dashboardStats.isCabinetRestricted
+  const heroTitle = dashboardStats.isPublicRestricted
     ? "Витрина ждёт продления доступа"
     : hasPublicUrl
       ? "Ваша публичная витрина готова к новым заявкам"
       : "Подготовьте публичную ссылку для гостей";
-  const heroDescription = dashboardStats.isCabinetRestricted
+  const heroDescription = dashboardStats.isPublicRestricted
     ? "Данные кабинета сохранены. После ручного продления подписки публичная страница и новые заявки снова станут доступны."
     : hasPublicUrl
       ? "Гости видят номера, цены и свободные даты по вашей персональной ссылке. После заявки вы связываетесь с ними напрямую."
@@ -116,10 +116,10 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
         </InlineNotice>
       ) : null}
 
-      {dashboardStats.isCabinetRestricted ? (
+      {dashboardStats.isPublicRestricted ? (
         <OwnerDashboardActionSection
           title="Продление доступа"
-          description="Публичные страницы и новые заявки временно недоступны. Доступ восстановится после ручного продления подписки."
+          description="Публичные страницы и новые заявки временно недоступны. Кабинет и редактирование данных продолжают работать."
           href="/dashboard/subscription"
           actionLabel="Открыть подписку"
           buttonVariant="secondary"

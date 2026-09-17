@@ -57,7 +57,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
 
   return (
     <AuthShell
-      eyebrow="Старт для владельца или агента"
+      eyebrow="Начало работы для владельца или агента"
       title="Создайте аккаунт"
       description="Запустите свою витрину, добавьте объекты, номера и начните принимать заявки по персональной ссылке."
       footer={<>Уже есть аккаунт? <Link href={buildLoginHref(invite, next)}>Войти</Link></>}

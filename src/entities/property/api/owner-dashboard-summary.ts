@@ -90,8 +90,7 @@ function buildUnavailableOwnerDashboardSummary(): OwnerDashboardSummary {
     subscriptionPlan: "Недоступно",
     subscriptionValidUntil: "Недоступно",
     subscriptionWarningText: null,
-    isCabinetRestricted: true,
-    isMutationAllowed: false,
+    isPublicRestricted: true,
     onboarding: {
       activeStepLabel: "Данные временно недоступны",
       steps: [],
@@ -269,8 +268,7 @@ export const getOwnerDashboardSummary = cache(async (): Promise<OwnerDashboardSu
       subscriptionPlan: subscription.planName,
       subscriptionValidUntil: subscription.validUntil ? formatDateLabel(subscription.validUntil) : "Без даты",
       subscriptionWarningText: getSubscriptionWarningText(subscription),
-      isCabinetRestricted: subscription.isCabinetRestricted,
-      isMutationAllowed: subscription.isMutationAllowed,
+      isPublicRestricted: subscription.isPublicRestricted,
       onboarding: buildOwnerOnboarding({
         profile,
         publicUrl,

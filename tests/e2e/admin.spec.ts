@@ -34,6 +34,7 @@ test.describe("admin", () => {
       await expect(subscriptionCard).toBeVisible();
       await subscriptionCard.click();
       await expect(page.getByRole("button", { name: "Продлить на 30 дней" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Продлить на год" })).toBeVisible();
     }
 
     await page.goto("/admin/properties");

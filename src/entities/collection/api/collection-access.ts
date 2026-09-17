@@ -1,6 +1,5 @@
 import { createSupabaseServerClient, getCurrentAuthProfile } from "@/shared/api/supabase";
 import type { AuthProfile } from "@/shared/api/supabase";
-import { getSubscriptionRuntimeState } from "@/entities/subscription";
 
 import type { CollectionRole } from "../model/types";
 import type { PropertyCandidateRow, RoomCandidateRow } from "./collection-types";
@@ -23,11 +22,7 @@ export async function getCollectionMutationAccess(role: CollectionRole) {
     return { profile: null, reason: "unauthorized" as const };
   }
 
-  const subscription = await getSubscriptionRuntimeState(profile.id, role);
-
-  return subscription.isMutationAllowed
-    ? { profile, reason: null }
-    : { profile: null, reason: "subscription_expired" as const };
+  return { profile, reason: null };
 }
 
 export async function hasActiveCollaboration(profileId: string, propertyId: string) {

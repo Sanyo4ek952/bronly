@@ -28,7 +28,6 @@ function getSourceLabel(source: AgentRequestItem["source"]) {
 function getActionMessage(success: string, error: string) {
   if (success === "transferred") return "Заявка передана владельцу.";
   if (success === "completion-requested") return "Запрос завершения отправлен владельцу.";
-  if (error === "subscription") return "Действия с заявками временно недоступны, пока подписка не продлена.";
   if (error === "invalid_transition") return "Статус заявки уже изменился. Обновите страницу.";
   if (error === "not_found") return "Заявка не найдена или относится к другому агенту.";
   if (error === "unauthorized") return "Действие доступно только агенту, который получил заявку.";

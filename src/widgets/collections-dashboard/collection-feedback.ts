@@ -6,7 +6,6 @@ export function getCollectionFeedbackMessage(success: string, error: string) {
   if (success === "item-removed") return "Элемент удален из коллекции.";
   if (error === "duplicate") return "Этот элемент уже есть в коллекции.";
   if (error === "archived") return "Архивированную коллекцию нельзя менять.";
-  if (error === "subscription_expired") return "Изменения коллекций недоступны после завершения подписки.";
   if (error === "not_allowed") {
     return "Можно добавлять только свои объекты и объекты владельцев при активном сотрудничестве.";
   }

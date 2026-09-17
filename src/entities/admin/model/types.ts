@@ -23,9 +23,9 @@ export type AdminSubscriptionItem = {
   roleContext: SubscriptionRoleContext;
   status: SubscriptionStatus;
   statusLabel: string;
-  planName: string;
   activeRoomCount: number;
-  activeRoomLimit: number | null;
+  roomLimit: number;
+  roomLimitOverride: number | null;
   validUntil: string | null;
   paidUntil: string | null;
   graceEndsAt: string | null;

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { ensureAgentSubscriptionMutationAllowed } from "@/app/agent/dashboard/subscription-guard";
+import { requireAgentProfile } from "@/app/agent/dashboard/access-guard";
 import { requestAgentCompletion, transferAgentRequestToOwner } from "@/entities/request";
 
 function getRequestId(formData: FormData) {
@@ -12,7 +12,7 @@ function getRequestId(formData: FormData) {
 }
 
 export async function transferAgentRequestAction(formData: FormData) {
-  await ensureAgentSubscriptionMutationAllowed("/agent/dashboard/requests");
+  await requireAgentProfile();
 
   const result = await transferAgentRequestToOwner({ requestId: getRequestId(formData) });
 
@@ -27,7 +27,7 @@ export async function transferAgentRequestAction(formData: FormData) {
 }
 
 export async function requestAgentCompletionAction(formData: FormData) {
-  await ensureAgentSubscriptionMutationAllowed("/agent/dashboard/requests");
+  await requireAgentProfile();
 
   const result = await requestAgentCompletion({ requestId: getRequestId(formData) });
 

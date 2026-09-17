@@ -8,7 +8,7 @@ export type NotificationPayload = {
   propertyTitle?: string;
   roomTitle?: string;
   proposalId?: string;
-  subscriptionStatus?: "trial" | "active" | "grace" | "expired" | "manual";
+  subscriptionStatus?: "trial" | "active" | "grace" | "expired";
   roleContext?: NotificationRoleContext;
   linkPath?: string;
 };

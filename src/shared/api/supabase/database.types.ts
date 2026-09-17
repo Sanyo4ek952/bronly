@@ -1323,8 +1323,7 @@ export type Database = {
         profile_id: string
         role_context: Database["public"]["Enums"]["app_role"]
         status: Database["public"]["Enums"]["subscription_status"]
-        plan_name: string
-        active_room_limit: number | null
+        room_limit_override: number | null
         trial_ends_at: string | null
         grace_ends_at: string | null
         paid_until: string | null
@@ -1336,8 +1335,7 @@ export type Database = {
         profile_id: string
         role_context: Database["public"]["Enums"]["app_role"]
         status?: Database["public"]["Enums"]["subscription_status"]
-        plan_name?: string
-        active_room_limit?: number | null
+        room_limit_override?: number | null
         trial_ends_at?: string | null
         grace_ends_at?: string | null
         paid_until?: string | null
@@ -1349,8 +1347,7 @@ export type Database = {
         profile_id?: string
         role_context?: Database["public"]["Enums"]["app_role"]
         status?: Database["public"]["Enums"]["subscription_status"]
-        plan_name?: string
-        active_room_limit?: number | null
+        room_limit_override?: number | null
         trial_ends_at?: string | null
         grace_ends_at?: string | null
         paid_until?: string | null
@@ -1518,7 +1515,7 @@ export type Database = {
       referral_milestone_type: "owner_inventory_created" | "agent_first_active_collaboration"
       request_source: "owner" | "agent" | "collection"
       request_status: "new" | "accepted_by_owner" | "rejected" | "transferred_to_owner" | "completed"
-      subscription_status: "trial" | "active" | "grace" | "expired" | "manual"
+      subscription_status: "trial" | "active" | "grace" | "expired"
     }
     CompositeTypes: Record<string, never>
   }

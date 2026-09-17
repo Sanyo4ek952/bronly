@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { ensureAgentSubscriptionMutationAllowed } from "@/app/agent/dashboard/subscription-guard";
+import { requireAgentProfile } from "@/app/agent/dashboard/access-guard";
 import { upsertAgentRoomMarkup } from "@/entities/collaboration";
 import { getString } from "@/shared/lib/form-data";
 
@@ -28,7 +28,7 @@ export async function saveAgentRoomMarkupAction(formData: FormData) {
   const markupValue = getString(formData, "markupPercent");
   const markupPercent = markupValue ? Number(markupValue) : Number.NaN;
 
-  await ensureAgentSubscriptionMutationAllowed("/agent/dashboard/collaborations");
+  await requireAgentProfile();
 
   const result = await upsertAgentRoomMarkup({
     roomId,

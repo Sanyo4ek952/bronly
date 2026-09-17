@@ -1,4 +1,8 @@
-import type { SubscriptionRuntimeState } from "@/entities/subscription";
+import {
+  SUBSCRIPTION_MONTHLY_PRICE_RUB,
+  SUBSCRIPTION_YEARLY_PRICE_RUB,
+  type SubscriptionRuntimeState,
+} from "@/entities/subscription";
 import { formatDateLabel } from "@/shared/lib/date";
 import { ButtonLink, InlineNotice, Panel, StatCard, StatusPill } from "@/shared/ui";
 
@@ -33,11 +37,7 @@ function getActiveRoomWord(count: number) {
   return "активных номеров";
 }
 
-function getRoomUsageLabel(activeRoomCount: number, roomLimit: number | null) {
-  if (roomLimit == null) {
-    return `${activeRoomCount} ${getActiveRoomWord(activeRoomCount)}`;
-  }
-
+function getRoomUsageLabel(activeRoomCount: number, roomLimit: number) {
   return `${activeRoomCount} из ${roomLimit}`;
 }
 
@@ -46,10 +46,6 @@ function getValidityLabel(validUntil: string | null) {
 }
 
 function getRoomLimitNote(subscription: SubscriptionRuntimeState) {
-  if (subscription.roomLimit == null) {
-    return "Текущий лимит не ограничен отдельной настройкой.";
-  }
-
   if (subscription.isRoomLimitReached) {
     return "Лимит активных номеров исчерпан. Редактирование текущих данных доступно по статусу подписки, но создание нового активного номера или повторная активация неактивного номера будут заблокированы.";
   }
@@ -58,7 +54,7 @@ function getRoomLimitNote(subscription: SubscriptionRuntimeState) {
     return "Доступен еще 1 активный номер в рамках текущего лимита.";
   }
 
-  const remainingRoomSlots = subscription.remainingRoomSlots ?? 0;
+  const remainingRoomSlots = subscription.remainingRoomSlots;
   return `Доступно еще ${remainingRoomSlots} ${getActiveRoomWord(remainingRoomSlots)} в рамках текущего лимита.`;
 }
 
@@ -70,7 +66,7 @@ function getWarning(subscription: SubscriptionRuntimeState) {
   }
 
   if (subscription.status === "expired") {
-    return "Доступ ограничен до ручного продления администратором. Публичная страница скрыта, новые заявки и изменения данных временно остановлены.";
+    return "Публичная страница скрыта и новые заявки не принимаются до продления. Кабинет и редактирование данных остаются доступными.";
   }
 
   return null;
@@ -90,9 +86,11 @@ function getPublicSurfaceAvailabilityLabel(roleContext: SubscriptionRuntimeState
 
 function getSubscriptionDescription(roleContext: SubscriptionRuntimeState["roleContext"]) {
   return roleContext === "agent"
-    ? "Статус доступа агентской витрины, лимит активных номеров и ручное продление в рамках MVP."
-    : "Статус доступа, лимит активных номеров и ручное продление в рамках MVP.";
+    ? "Тариф Bronly для агентской витрины: все функции и до 15 активных номеров."
+    : "Тариф Bronly: все функции и до 15 активных номеров.";
 }
+
+const subscriptionPriceLabel = `${SUBSCRIPTION_MONTHLY_PRICE_RUB} ₽/месяц или ${SUBSCRIPTION_YEARLY_PRICE_RUB.toLocaleString("ru-RU")} ₽/год`;
 
 function OwnerSubscriptionStatus({
   subscription,
@@ -119,8 +117,8 @@ function OwnerSubscriptionStatus({
     },
     {
       label: "Изменения в кабинете",
-      value: subscription.isMutationAllowed ? "Доступны" : "Остановлены",
-      isAllowed: subscription.isMutationAllowed,
+      value: "Доступны",
+      isAllowed: true,
     },
   ] as const;
   const renewalSteps = [
@@ -135,7 +133,7 @@ function OwnerSubscriptionStatus({
         <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[var(--accent)]">Доступ к сервису</p>
         <h1 className="text-[clamp(32px,5vw,46px)] font-bold leading-[1.02] tracking-[-0.04em] text-[var(--text)]">Подписка</h1>
         <p className="text-sm leading-[1.6] text-[var(--text-muted)]">
-          Следите за сроком доступа и лимитом активных номеров. Продление в MVP подтверждает администратор вручную.
+          {subscriptionPriceLabel}. Следите за сроком доступа и лимитом активных номеров.
         </p>
       </header>
 
@@ -147,7 +145,7 @@ function OwnerSubscriptionStatus({
       >
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-7 p-7 max-[640px]:grid-cols-1 max-[640px]:gap-5 max-[640px]:px-4 max-[640px]:py-5">
           <div className="grid min-w-0 gap-2.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-[var(--text-muted)]">Текущий план</span>
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-[var(--text-muted)]">Текущий тариф</span>
             <div className="flex min-w-0 flex-wrap items-center gap-2.5 max-[640px]:items-start">
               <h2
                 id="owner-subscription-plan-title"
@@ -168,11 +166,9 @@ function OwnerSubscriptionStatus({
               {usageLabel}
             </strong>
             <small className="mt-2 block text-xs leading-[1.45] text-[var(--text-muted)]">
-              {subscription.roomLimit == null
-                ? "Лимит не ограничен текущей настройкой"
-                : subscription.isRoomLimitReached
-                  ? "Лимит активных номеров исчерпан"
-                  : `Доступно еще ${subscription.remainingRoomSlots ?? 0} ${getActiveRoomWord(subscription.remainingRoomSlots ?? 0)}`}
+              {subscription.isRoomLimitReached
+                ? "Лимит активных номеров исчерпан"
+                : `Доступно еще ${subscription.remainingRoomSlots} ${getActiveRoomWord(subscription.remainingRoomSlots)}`}
             </small>
           </div>
         </div>
@@ -253,7 +249,7 @@ function OwnerSubscriptionStatus({
 export function SubscriptionOverviewCard({ subscription, href }: SubscriptionOverviewCardProps) {
   const rows = [
     { label: "Действует до", value: getValidityLabel(subscription.validUntil) },
-    { label: "План", value: subscription.planName },
+    { label: "Тариф", value: subscription.planName },
     { label: "Активные номера", value: getRoomUsageLabel(subscription.activeRoomCount, subscription.roomLimit) },
   ];
 
@@ -299,7 +295,7 @@ export function SubscriptionStatusCard({ subscription, backHref, backLabel, pres
     ["Лимит активных номеров", subscription.isRoomLimitReached ? "Исчерпан" : "Доступен"],
     [publicSurfaceLabel, getPublicSurfaceAvailabilityLabel(subscription.roleContext, subscription.isPublicAllowed)],
     ["Новые заявки", subscription.isRequestIntakeAllowed ? "Принимаются" : "Не принимаются"],
-    ["Изменения в кабинете", subscription.isMutationAllowed ? "Доступны" : "Остановлены"],
+    ["Изменения в кабинете", "Доступны"],
   ] as const;
 
   return (
@@ -319,16 +315,14 @@ export function SubscriptionStatusCard({ subscription, backHref, backLabel, pres
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <StatCard title="Статус" value={subscription.statusLabel} subtitle="Текущий статус подписки" />
-          <StatCard title="План" value={subscription.planName} subtitle="План и лимит по активным номерам" />
+          <StatCard title="Тариф" value={subscription.planName} subtitle={subscriptionPriceLabel} />
           <StatCard
             title="Активные номера"
             value={usageLabel}
             subtitle={
-              subscription.roomLimit == null
-                ? "Лимит не ограничен текущей настройкой"
-                : subscription.isRoomLimitReached
-                  ? "Лимит активных номеров уже исчерпан"
-                  : "Занято из доступного лимита"
+              subscription.isRoomLimitReached
+                ? "Лимит активных номеров уже исчерпан"
+                : "Занято из доступного лимита"
             }
           />
           <StatCard title="Действует до" value={validUntilLabel} subtitle="Дата окончания текущего доступа" />

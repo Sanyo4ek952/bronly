@@ -32,10 +32,6 @@ function getErrorMessage(error: string) {
     return "Укажите имя владельца и проверьте остальные поля.";
   }
 
-  if (error === "subscription") {
-    return "Профиль временно нельзя изменить, пока подписка не продлена.";
-  }
-
   if (error) {
     return "Не удалось сохранить изменения.";
   }

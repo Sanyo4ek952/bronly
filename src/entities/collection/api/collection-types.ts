@@ -6,7 +6,6 @@ export type ResultReason =
   | "not_allowed"
   | "not_found"
   | "save_failed"
-  | "subscription_expired"
   | "unauthorized"
   | "validation";
 

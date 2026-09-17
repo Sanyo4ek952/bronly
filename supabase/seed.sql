@@ -105,16 +105,15 @@ values
   ('44444444-4444-4444-4444-444444444443', 'ТВ', 2)
 on conflict do nothing;
 
-insert into public.subscriptions (profile_id, role_context, status, plan_name, active_room_limit, trial_ends_at, grace_ends_at, paid_until)
+insert into public.subscriptions (profile_id, role_context, status, room_limit_override, trial_ends_at, grace_ends_at, paid_until)
 values
   (
     '11111111-1111-1111-1111-111111111111',
     'owner',
     'active',
-    'Премиум',
-    20,
-    timezone('utc', now()) + interval '14 day',
-    timezone('utc', now()) + interval '17 day',
+    null,
+    timezone('utc', now()) + interval '30 day',
+    timezone('utc', now()) + interval '33 day',
     timezone('utc', now()) + interval '30 day'
   )
 on conflict (profile_id, role_context) do nothing;

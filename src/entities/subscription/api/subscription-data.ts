@@ -148,7 +148,6 @@ export const getSubscriptionRuntimeState = cache(
       subscriptionRow: rawSubscriptionRow,
       activeRoomCount,
       now,
-      storedStatus: rawSubscriptionRow?.status ?? "expired",
     });
   },
 );

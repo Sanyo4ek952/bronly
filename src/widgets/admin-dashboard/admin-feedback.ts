@@ -1,6 +1,10 @@
 export function getAdminFeedbackMessage(input: { success?: string; error?: string }) {
-  if (input.success === "subscription-extended") {
+  if (input.success === "subscription-extended-month") {
     return "Подписка продлена на 30 дней.";
+  }
+
+  if (input.success === "subscription-extended-year") {
+    return "Подписка продлена на 365 дней.";
   }
 
   if (input.success === "subscription-saved") {

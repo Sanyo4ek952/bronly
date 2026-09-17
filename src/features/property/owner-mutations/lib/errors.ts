@@ -11,7 +11,7 @@ export function mapActionError(error: { code?: string; message?: string } | null
     return "overlap";
   }
 
-  if (error.code === "P0001" && error.message?.includes("active_room_limit_reached")) {
+  if (error.code === "P0001" && error.message?.includes("room_limit_reached")) {
     return "room-limit";
   }
 

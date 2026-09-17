@@ -20,28 +20,13 @@ const workflowSteps = [
 
 const pricingCards = [
   {
-    name: "Старт",
-    price: "0 ₽",
-    text: "Для первого запуска и проверки сценария.",
-    features: ["1 объект", "До 5 номеров в пробный период", "Базовые функции"],
-    cta: "Начать бесплатно",
-    featured: false,
-  },
-  {
-    name: "Базовый",
-    price: "790 ₽",
-    text: "Для владельцев, которые регулярно работают с заявками.",
-    features: ["Публичная страница", "Календарь занятости и заявки", "PWA и уведомления"],
-    cta: "Выбрать тариф",
+    name: "Bronly",
+    price: "490 ₽",
+    annualPrice: "4 490 ₽/год",
+    text: "Один тариф для владельцев и агентов — без скрытых уровней и автоматической смены плана.",
+    features: ["30 дней бесплатно со всеми функциями", "До 15 активных номеров", "Публичная страница, календарь и заявки", "PWA и уведомления"],
+    cta: "Попробовать бесплатно",
     featured: true,
-  },
-  {
-    name: "Премиум",
-    price: "1 490 ₽",
-    text: "Для нескольких объектов и расширенного управления.",
-    features: ["Все из Базового", "Расширенный лимит номеров", "Приоритетная поддержка"],
-    cta: "Выбрать тариф",
-    featured: false,
   },
 ];
 
@@ -83,7 +68,7 @@ export function LandingPage() {
               Соберите номера, цены и свободные даты на одной странице. Отправляйте ссылку гостям и получайте заявки напрямую.
             </p>
             <ButtonLink href="/register" className="min-h-12 px-6 !text-white">Создать свою страницу</ButtonLink>
-            <p className="text-xs text-[var(--color-muted)]">Начните бесплатно · Работает с телефона</p>
+            <p className="text-xs text-[var(--color-muted)]">30 дней бесплатно · Все функции · Работает с телефона</p>
           </div>
 
           <figure className="m-0 grid min-w-0 gap-4 rounded-[var(--radius-2xl)] bg-[var(--color-primary-soft)] p-4 sm:p-8">
@@ -158,9 +143,9 @@ export function LandingPage() {
 
       <section id="pricing" aria-labelledby="pricing-title" className="scroll-mt-6 bg-[var(--color-surface-soft-2)] py-14 sm:py-20">
         <div className={container}>
-          <SectionTitle id="pricing-title" className={heading}>Выберите свой масштаб</SectionTitle>
-          <p className="!mt-5 text-base leading-relaxed text-[var(--color-muted)]">Подписка на Bronly — для вашей страницы, календаря и заявок.</p>
-          <div className="mt-9 grid gap-6 lg:grid-cols-3">
+          <SectionTitle id="pricing-title" className={heading}>Один тариф. Все функции.</SectionTitle>
+          <p className="!mt-5 text-base leading-relaxed text-[var(--color-muted)]">До 15 активных номеров. Если нужно больше, лимит настраивает администратор.</p>
+          <div className="mt-9 grid max-w-[620px] gap-6">
             {pricingCards.map((card) => (
               <Panel key={card.name} as="article" padding="lg" className="flex min-w-0 flex-col gap-6 !border-0"
                 style={card.featured ? { background: "var(--color-primary-hover)", color: "var(--color-bg)" } : undefined}>
@@ -168,6 +153,7 @@ export function LandingPage() {
                 <p className="flex flex-wrap items-baseline gap-2 text-4xl font-medium tracking-[-0.03em]">
                   {card.price}<span className="text-sm font-normal tracking-normal">/ мес.</span>
                 </p>
+                <p className="text-base font-semibold">или {card.annualPrice}</p>
                 <p className={cn("text-[15px] leading-relaxed", !card.featured && "text-[var(--color-muted)]")}>{card.text}</p>
                 <ul className="grid gap-2 text-sm leading-relaxed">
                   {card.features.map((feature) => <li key={feature}>{feature}</li>)}

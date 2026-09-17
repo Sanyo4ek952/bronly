@@ -13,11 +13,10 @@ export const dashboardStats: OwnerDashboardSummary = {
   publicUrl: buildOwnerPublicPath(property.slug),
   subscriptionStatus: "active",
   subscriptionStatusLabel: "Активна",
-  subscriptionPlan: "Плюс",
+  subscriptionPlan: "Bronly",
   subscriptionValidUntil: "Без даты",
   subscriptionWarningText: null,
-  isCabinetRestricted: false,
-  isMutationAllowed: true,
+  isPublicRestricted: false,
   onboarding: {
     activeStepLabel: "Активный шаг: создание объекта",
     steps: [

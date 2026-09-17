@@ -177,9 +177,8 @@ export type SupabaseSubscriptionRow = {
   id: string;
   profile_id: string;
   role_context: "owner" | "agent" | "admin";
-  status: "trial" | "active" | "grace" | "expired" | "manual";
-  plan_name: string;
-  active_room_limit: number | null;
+  status: "trial" | "active" | "grace" | "expired";
+  room_limit_override: number | null;
   trial_ends_at: string | null;
   grace_ends_at: string | null;
   paid_until: string | null;
@@ -303,7 +302,7 @@ export type SupabaseNotificationRow = {
     propertyTitle?: string;
     roomTitle?: string;
     proposalId?: string;
-    subscriptionStatus?: "trial" | "active" | "grace" | "expired" | "manual";
+    subscriptionStatus?: "trial" | "active" | "grace" | "expired";
     roleContext?: "owner" | "agent";
     linkPath?: string;
   };

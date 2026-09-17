@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { reviewAgentProposal } from "@/entities/collaboration";
-import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 
 function getProposalId(formData: FormData) {
@@ -26,12 +25,6 @@ async function updateProposal(formData: FormData, decision: "active" | "declined
 
   if (!profile.roles.includes("owner")) {
     redirect("/agent/dashboard");
-  }
-
-  const subscription = await getSubscriptionRuntimeState(profile.id, "owner");
-
-  if (!subscription.isMutationAllowed) {
-    redirect("/dashboard/agent-proposals?error=subscription");
   }
 
   const targetType = getTargetType(formData);

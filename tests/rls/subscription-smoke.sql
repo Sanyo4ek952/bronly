@@ -44,7 +44,7 @@ insert into public.subscriptions (
   profile_id,
   role_context,
   status,
-  active_room_limit,
+  room_limit_override,
   paid_until,
   grace_ends_at
 )
@@ -52,7 +52,7 @@ values (
   '91000000-0000-0000-0000-000000000001',
   'owner',
   'expired',
-  1,
+  null,
   timezone('utc', now()) - interval '10 days',
   timezone('utc', now()) - interval '7 days'
 );
@@ -86,6 +86,20 @@ values (
 );
 
 insert into public.rooms (
+  id, property_id, owner_id, room_kind, slug, title, price_per_night, is_active
+)
+select
+  gen_random_uuid(),
+  '92000000-0000-0000-0000-000000000001',
+  '91000000-0000-0000-0000-000000000001',
+  'property_room',
+  'active-room-' || room_number,
+  'Active room ' || room_number,
+  5000,
+  true
+from generate_series(2, 15) as room_number;
+
+insert into public.rooms (
   id, property_id, owner_id, room_kind, slug, title, price_per_night, is_active,
   property_type, city, address, timezone
 )
@@ -108,7 +122,7 @@ select pg_temp.expect_failure(
   $$update public.rooms
     set is_active = true
     where id = '93000000-0000-0000-0000-000000000002'$$,
-  'standalone reactivation cannot exceed the active-room limit'
+  'standalone reactivation cannot exceed the Bronly room limit'
 );
 
 select pg_temp.expect_failure(
@@ -123,7 +137,7 @@ select pg_temp.expect_failure(
       6000,
       true
     )$$,
-  'property-room creation cannot exceed the active-room limit'
+  'property-room creation cannot exceed the Bronly room limit'
 );
 
 select public.admin_extend_subscription(

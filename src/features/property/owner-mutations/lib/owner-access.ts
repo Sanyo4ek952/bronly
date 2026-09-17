@@ -64,23 +64,13 @@ export async function requireOwnedRoom(profileId: string, roomId: string, proper
 }
 
 export async function requireOwnerMutationAccess(redirectPath: string) {
-  const profile = await requireOwnerProfile();
-  const subscription = await getSubscriptionRuntimeState(profile.id, "owner");
-
-  if (!subscription.isMutationAllowed) {
-    redirect(`${redirectPath}${redirectPath.includes("?") ? "&" : "?"}error=subscription`);
-  }
-
-  return profile;
+  void redirectPath;
+  return requireOwnerProfile();
 }
 
 export async function requireOwnerActiveRoomSlotAccess(redirectPath: string) {
   const profile = await requireOwnerProfile();
   const subscription = await getSubscriptionRuntimeState(profile.id, "owner");
-
-  if (!subscription.isMutationAllowed) {
-    redirect(`${redirectPath}${redirectPath.includes("?") ? "&" : "?"}error=subscription`);
-  }
 
   if (!subscription.canAddActiveRoom) {
     redirect(`${redirectPath}${redirectPath.includes("?") ? "&" : "?"}error=room-limit`);

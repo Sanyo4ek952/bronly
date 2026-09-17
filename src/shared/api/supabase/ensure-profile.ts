@@ -2,6 +2,9 @@ import type { User } from "@supabase/supabase-js";
 
 import { createSupabaseAdminClient } from "@/shared/api/supabase/server";
 
+const TRIAL_PERIOD_DAYS = 30;
+const GRACE_PERIOD_DAYS = 3;
+
 function slugify(value: string) {
   return (
     value
@@ -43,21 +46,56 @@ async function resolveUniqueAgentPublicId(admin: ReturnType<typeof createSupabas
 
 function addDays(baseDate: Date, days: number) {
   const nextDate = new Date(baseDate);
-  nextDate.setDate(nextDate.getDate() + days);
+  nextDate.setUTCDate(nextDate.getUTCDate() + days);
   return nextDate;
+}
+
+async function ensureRoleAndTrial(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  profileId: string,
+  role: "agent" | "owner",
+) {
+  const { error: roleError } = await admin.from("user_roles").upsert(
+    {
+      profile_id: profileId,
+      role,
+    },
+    { onConflict: "profile_id,role", ignoreDuplicates: true },
+  );
+
+  if (roleError) {
+    return false;
+  }
+
+  const now = new Date();
+  const { error: subscriptionError } = await admin.from("subscriptions").upsert(
+    {
+      profile_id: profileId,
+      role_context: role,
+      status: "trial",
+      room_limit_override: null,
+      trial_ends_at: addDays(now, TRIAL_PERIOD_DAYS).toISOString(),
+      grace_ends_at: addDays(now, TRIAL_PERIOD_DAYS + GRACE_PERIOD_DAYS).toISOString(),
+      paid_until: null,
+      updated_at: now.toISOString(),
+    },
+    { onConflict: "profile_id,role_context", ignoreDuplicates: true },
+  );
+
+  return !subscriptionError;
 }
 
 export async function ensureAuthUserProfile(user: User): Promise<string | null> {
   const admin = createSupabaseAdminClient();
-  const { data: existing } = await admin.from("profiles").select("id").eq("auth_user_id", user.id).maybeSingle();
   const metadata = user.user_metadata ?? {};
   const role: "agent" | "owner" =
     typeof metadata.role === "string" && (metadata.role === "agent" || metadata.role === "owner")
       ? metadata.role
       : "owner";
+  const { data: existing } = await admin.from("profiles").select("id").eq("auth_user_id", user.id).maybeSingle();
 
   if (existing?.id) {
-    return existing.id;
+    return (await ensureRoleAndTrial(admin, existing.id, role)) ? existing.id : null;
   }
 
   const displayName =
@@ -92,37 +130,5 @@ export async function ensureAuthUserProfile(user: User): Promise<string | null> 
     return null;
   }
 
-  const { error: roleError } = await admin.from("user_roles").upsert(
-    {
-      profile_id: profile.id,
-      role,
-    },
-    { onConflict: "profile_id,role" },
-  );
-
-  if (roleError) {
-    return null;
-  }
-
-  const now = new Date();
-  const { error: subscriptionError } = await admin.from("subscriptions").upsert(
-    {
-      profile_id: profile.id,
-      role_context: role,
-      status: "trial",
-      plan_name: "Старт",
-      active_room_limit: 3,
-      trial_ends_at: addDays(now, 14).toISOString(),
-      grace_ends_at: addDays(now, 17).toISOString(),
-      paid_until: null,
-      updated_at: now.toISOString(),
-    },
-    { onConflict: "profile_id,role_context" },
-  );
-
-  if (subscriptionError) {
-    return null;
-  }
-
-  return profile.id;
+  return (await ensureRoleAndTrial(admin, profile.id, role)) ? profile.id : null;
 }

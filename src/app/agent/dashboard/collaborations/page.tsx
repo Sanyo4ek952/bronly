@@ -23,7 +23,6 @@ type AgentCollaborationsPageProps = {
 
 function getMessage(success: string, error: string) {
   if (success === "saved") return "Надбавка агента сохранена.";
-  if (error === "subscription") return "Надбавку временно нельзя изменить, пока подписка не продлена.";
   if (error === "not_allowed") return "Надбавка доступна только для своих номеров или номеров по активному сотрудничеству.";
   if (error === "validation") return "Укажите надбавку от 0 до 999,99%.";
   if (error === "unauthorized") return "Нужен вход в аккаунт агента.";

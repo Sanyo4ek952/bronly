@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { ensureAgentSubscriptionMutationAllowed } from "@/app/agent/dashboard/subscription-guard";
+import { requireAgentProfile } from "@/app/agent/dashboard/access-guard";
 import { submitAgentProposal } from "@/entities/collaboration";
 
 function getString(formData: FormData, key: string) {
@@ -12,7 +12,7 @@ function getString(formData: FormData, key: string) {
 }
 
 export async function submitAgentProposalAction(formData: FormData) {
-  await ensureAgentSubscriptionMutationAllowed("/agent/dashboard/opportunities");
+  await requireAgentProfile();
 
   const targetType = getString(formData, "targetType");
 

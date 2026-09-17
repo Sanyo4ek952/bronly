@@ -20,7 +20,6 @@ type OwnerAgentProposalsPageProps = {
 function getFeedback(success: string, error: string) {
   if (success === "accepted") return "Предложение принято. Вариант появился в активном сотрудничестве агента.";
   if (success === "declined") return "Предложение отклонено.";
-  if (error === "subscription") return "Решение по предложению временно недоступно, пока подписка не продлена.";
   if (error === "not_found") return "Предложение уже обработано или относится к другому владельцу.";
   if (error === "validation") return "Не удалось определить предложение.";
   if (error === "unauthorized") return "Действие доступно только владельцу варианта.";

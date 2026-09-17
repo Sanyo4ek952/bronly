@@ -18,8 +18,6 @@ function formatSubscriptionStatusLabel(status?: NotificationPayload["subscriptio
       return "Нужно продлить";
     case "expired":
       return "Доступ ограничен";
-    case "manual":
-      return "Продлена вручную";
     default:
       return "Обновлен";
   }

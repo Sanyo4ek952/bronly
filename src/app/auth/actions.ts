@@ -18,7 +18,6 @@ import {
 } from "@/shared/api/supabase";
 import { createTelegramLinkSession, setTelegramNotificationsEnabled } from "@/entities/notification";
 import { getReferralRegistrationIntent } from "@/entities/referral";
-import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { consumeAuthReferralInvite } from "@/features/auth/consume-auth-referral-invite";
 
 type RegisterRole = "owner" | "agent";
@@ -329,14 +328,6 @@ export async function updateProfileAction(formData: FormData) {
 
   if (!profile || !displayName || (role !== "owner" && role !== "agent") || !profile.roles.includes(role)) {
     redirect(`${getSettingsTargetPath(role)}?error=validation`);
-  }
-
-  if (role === "owner" || role === "agent") {
-    const subscription = await getSubscriptionRuntimeState(profile.id, role);
-
-    if (!subscription.isMutationAllowed) {
-      redirect(`${getSettingsTargetPath(role)}?error=subscription`);
-    }
   }
 
   const payload: {

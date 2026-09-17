@@ -709,7 +709,7 @@ export function AdminSubscriptionsPage({
         return true;
       }
 
-      return [row.displayName, row.slug, row.profileId, row.planName, row.roleContext].some((value) =>
+      return [row.displayName, row.slug, row.profileId, row.roleContext].some((value) =>
         value.toLowerCase().includes(query),
       );
     });
@@ -720,7 +720,7 @@ export function AdminSubscriptionsPage({
       <AdminPageHeader
         variant="plain"
         title="Подписки"
-        description="Продлевайте доступ вручную и контролируйте статусы и лимиты. Каждое продление записывается в журнал с администратором и новым сроком."
+        description="Управляйте единым тарифом Bronly, статусами и индивидуальными лимитами свыше 15 номеров. Каждое продление записывается в журнал."
       />
 
       {message ? (
@@ -735,7 +735,7 @@ export function AdminSubscriptionsPage({
           label="Поиск"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Имя, slug, профиль или план"
+          placeholder="Имя, slug, профиль или контекст"
           wrapperClassName="max-w-[460px]"
         />
         <AdminFilterChips
@@ -798,7 +798,7 @@ export function AdminSubscriptionsPage({
                     </div>
                     <div className="grid gap-1">
                       <span className="text-xs text-[var(--text-muted)]">План</span>
-                      <strong className="block text-sm text-[var(--text)]">{row.planName}</strong>
+                      <strong className="block text-sm text-[var(--text)]">Bronly</strong>
                     </div>
                   </div>
                 </button>
@@ -808,8 +808,8 @@ export function AdminSubscriptionsPage({
                     <input type="hidden" name="profileId" value={row.profileId} />
                     <input type="hidden" name="roleContext" value={row.roleContext} />
 
-                    <AdminAccordion title="Статус и план" defaultOpen>
-                      <div className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
+                    <AdminAccordion title="Статус подписки" defaultOpen>
+                      <div className="grid gap-3.5 max-[390px]:gap-2.5">
                         <Select
                           id={`${cardKey}-status`}
                           name="status"
@@ -822,34 +822,29 @@ export function AdminSubscriptionsPage({
                             { label: "expired", value: "expired" },
                           ]}
                         />
-                        <Input
-                          id={`${cardKey}-plan`}
-                          name="planName"
-                          label="План"
-                          defaultValue={row.planName}
-                        />
                       </div>
                     </AdminAccordion>
 
-                    <AdminAccordion title="Лимиты" subtitle="Ручная корректировка room limit.">
+                    <AdminAccordion title="Лимиты" subtitle="По умолчанию доступно до 15 активных номеров. Override задаётся только для большего лимита.">
                       <div className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
                         <Input
                           id={`${cardKey}-limit`}
-                          name="activeRoomLimit"
-                          label="Лимит активных номеров"
-                          defaultValue={row.activeRoomLimit ?? ""}
+                          name="roomLimitOverride"
+                          label="Room limit override"
+                          defaultValue={row.roomLimitOverride ?? ""}
+                          placeholder="Не задан — лимит 15"
                           inputMode="numeric"
                         />
                         <Input
                           id={`${cardKey}-rooms`}
                           label="Активные номера"
-                          value={String(row.activeRoomCount)}
+                          value={`${row.activeRoomCount} из ${row.roomLimit}`}
                           readOnly
                         />
                       </div>
                     </AdminAccordion>
 
-                    <AdminAccordion title="Даты доступа" subtitle="Оплачен до, grace period и текущий доступ. Продление на 30 дней применяется от более поздней даты: сегодня или текущий оплаченный срок.">
+                    <AdminAccordion title="Даты доступа" subtitle="Продление на месяц или год применяется от более поздней даты: сегодня или текущий оплаченный срок.">
                       <div className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
                         <Input
                           id={`${cardKey}-valid`}
@@ -874,16 +869,27 @@ export function AdminSubscriptionsPage({
                       </div>
                     </AdminAccordion>
 
-                    <div className="grid gap-2.5 max-[720px]:sticky max-[720px]:bottom-[calc(74px+var(--safe-area-bottom))] max-[720px]:rounded-[18px] max-[720px]:border max-[720px]:border-[var(--border)] max-[720px]:bg-[rgb(255_255_255_/_0.96)] max-[720px]:p-2.5 max-[720px]:shadow-[var(--shadow-md)] sm:grid-cols-2">
+                    <div className="grid gap-2.5 max-[720px]:sticky max-[720px]:bottom-[calc(74px+var(--safe-area-bottom))] max-[720px]:rounded-[18px] max-[720px]:border max-[720px]:border-[var(--border)] max-[720px]:bg-[rgb(255_255_255_/_0.96)] max-[720px]:p-2.5 max-[720px]:shadow-[var(--shadow-md)] sm:grid-cols-3">
                       <Button type="submit" variant="secondary" fullWidth>
                         Сохранить
                       </Button>
                       <Button
                         type="submit"
                         formAction={extendSubscriptionAction}
+                        name="extensionDays"
+                        value="30"
                         fullWidth
                       >
                         Продлить на 30 дней
+                      </Button>
+                      <Button
+                        type="submit"
+                        formAction={extendSubscriptionAction}
+                        name="extensionDays"
+                        value="365"
+                        fullWidth
+                      >
+                        Продлить на год
                       </Button>
                     </div>
                   </form>

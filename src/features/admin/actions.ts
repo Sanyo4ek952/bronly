@@ -91,8 +91,7 @@ export async function saveSubscriptionAction(formData: FormData) {
   const profileId = getString(formData, "profileId");
   const roleContext = getString(formData, "roleContext");
   const status = getString(formData, "status");
-  const planName = getString(formData, "planName") || "MVP";
-  const activeRoomLimit = getNullableInteger(formData, "activeRoomLimit");
+  const roomLimitOverride = getNullableInteger(formData, "roomLimitOverride");
   const paidUntilInput = getNullableDateIso(formData, "paidUntil");
   const graceEndsAtInput = getNullableDateIso(formData, "graceEndsAt");
 
@@ -100,7 +99,7 @@ export async function saveSubscriptionAction(formData: FormData) {
     !profileId ||
     (roleContext !== "owner" && roleContext !== "agent") ||
     !ALLOWED_SUBSCRIPTION_STATUSES.has(status) ||
-    (activeRoomLimit != null && activeRoomLimit < 0)
+    (roomLimitOverride != null && roomLimitOverride <= 15)
   ) {
     redirect("/admin/subscriptions?error=subscription");
   }
@@ -116,7 +115,7 @@ export async function saveSubscriptionAction(formData: FormData) {
     .maybeSingle();
 
   const existingRow = existingData as {
-    status: "trial" | "active" | "grace" | "expired" | "manual";
+    status: "trial" | "active" | "grace" | "expired";
     trial_ends_at: string | null;
     grace_ends_at: string | null;
     paid_until: string | null;
@@ -135,8 +134,7 @@ export async function saveSubscriptionAction(formData: FormData) {
     profile_id: profileId,
     role_context: roleContext as "owner" | "agent",
     status: normalizedStatus,
-    plan_name: planName,
-    active_room_limit: activeRoomLimit,
+    room_limit_override: roomLimitOverride,
     trial_ends_at: schedule.trialEndsAt,
     grace_ends_at: schedule.graceEndsAt,
     paid_until: schedule.paidUntil,
@@ -193,8 +191,9 @@ export async function extendSubscriptionAction(formData: FormData) {
 
   const profileId = getString(formData, "profileId");
   const roleContext = getString(formData, "roleContext");
+  const extensionDays = getNullableInteger(formData, "extensionDays");
 
-  if (!profileId || (roleContext !== "owner" && roleContext !== "agent")) {
+  if (!profileId || (roleContext !== "owner" && roleContext !== "agent") || (extensionDays !== 30 && extensionDays !== 365)) {
     redirect("/admin/subscriptions?error=subscription");
   }
 
@@ -212,7 +211,7 @@ export async function extendSubscriptionAction(formData: FormData) {
     p_profile_id: profileId,
     p_role_context: roleContext,
     p_actor_profile_id: adminProfile.id,
-    p_extension_days: 30,
+    p_extension_days: extensionDays,
   });
 
   if (error) {
@@ -239,7 +238,7 @@ export async function extendSubscriptionAction(formData: FormData) {
     profileId,
     roleContext: roleContext as "owner" | "agent",
   });
-  redirect("/admin/subscriptions?success=subscription-extended");
+  redirect(`/admin/subscriptions?success=${extensionDays === 365 ? "subscription-extended-year" : "subscription-extended-month"}`);
 }
 
 export async function togglePropertyFreezeAction(formData: FormData) {

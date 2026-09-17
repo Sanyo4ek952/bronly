@@ -132,10 +132,10 @@
           <div class="hero-main">
             <div class="hero-copy">
               <span class="label">Текущий план</span>
-              <div class="plan-line"><h2 class="plan" id="plan-title">Базовый</h2><span id="status-pill" class="pill">Активна</span></div>
+              <div class="plan-line"><h2 class="plan" id="plan-title">Bronly</h2><span id="status-pill" class="pill">Активна</span></div>
               <p>Доступ к кабинету, публичным страницам и новым заявкам определяется текущим статусом подписки.</p>
             </div>
-            <div class="usage"><span class="label">Активные номера</span><strong id="usage-value">4 из 8</strong><small id="usage-note">Доступно ещё 4 активных номера</small></div>
+            <div class="usage"><span class="label">Активные номера</span><strong id="usage-value">4 из 15</strong><small id="usage-note">Доступно ещё 11 активных номеров</small></div>
           </div>
           <dl class="dates">
             <div class="date"><dt class="label">Действует до</dt><dd id="valid-until">30 сентября 2026</dd></div>
@@ -184,10 +184,10 @@
       node.innerHTML = `<span class="dot${enabled ? '' : ' off'}"></span>${value}`;
     };
     const states = {
-      active: { status:'Активна', pill:'pill', notice:'', valid:'30 сентября 2026', paid:'30 сентября 2026', grace:'Не действует', usage:'4 из 8', usageNote:'Доступно ещё 4 активных номера', limit:'Доступен', limitNote:'Доступно ещё 4 активных номера в рамках текущего лимита.', on:true },
-      trial: { status:'Пробный период', pill:'pill', notice:'', valid:'28 сентября 2026', paid:'Нет даты', grace:'Не действует', usage:'1 из 5', usageNote:'Доступно ещё 4 активных номера', limit:'Доступен', limitNote:'Доступно ещё 4 активных номера в рамках текущего лимита.', on:true },
-      grace: { status:'Нужно продлить', pill:'pill warning', notice:'Grace period действует до 19 сентября 2026. До этой даты публичные страницы и новые заявки ещё доступны.', valid:'19 сентября 2026', paid:'15 сентября 2026', grace:'19 сентября 2026', usage:'8 из 8', usageNote:'Лимит активных номеров исчерпан', limit:'Исчерпан', limitNote:'Лимит активных номеров исчерпан. Создание нового активного номера или повторная активация будут заблокированы.', on:true, limitOff:true },
-      expired: { status:'Истекла', pill:'pill expired', notice:'Доступ ограничен до ручного продления администратором. Публичная страница скрыта, новые заявки и изменения данных временно остановлены.', valid:'15 сентября 2026', paid:'15 сентября 2026', grace:'18 сентября 2026', usage:'8 из 8', usageNote:'Лимит активных номеров исчерпан', limit:'Исчерпан', limitNote:'Лимит активных номеров исчерпан. Продлите доступ и проверьте лимит перед активацией новых номеров.', on:false, limitOff:true },
+      active: { status:'Активна', pill:'pill', notice:'', valid:'30 сентября 2026', paid:'30 сентября 2026', grace:'Не действует', usage:'4 из 15', usageNote:'Доступно ещё 11 активных номеров', limit:'Доступен', limitNote:'Доступно ещё 11 активных номеров в рамках текущего лимита.', on:true },
+      trial: { status:'Пробный период', pill:'pill', notice:'', valid:'17 октября 2026', paid:'Нет даты', grace:'Не действует', usage:'1 из 15', usageNote:'Доступно ещё 14 активных номеров', limit:'Доступен', limitNote:'Доступно ещё 14 активных номеров в рамках текущего лимита.', on:true },
+      grace: { status:'Нужно продлить', pill:'pill warning', notice:'Grace period действует до 19 сентября 2026. До этой даты публичные страницы и новые заявки ещё доступны.', valid:'19 сентября 2026', paid:'15 сентября 2026', grace:'19 сентября 2026', usage:'15 из 15', usageNote:'Лимит активных номеров исчерпан', limit:'Исчерпан', limitNote:'Лимит активных номеров исчерпан. Создание нового активного номера или повторная активация будут заблокированы.', on:true, limitOff:true },
+      expired: { status:'Доступ ограничен', pill:'pill expired', notice:'Публичная страница скрыта и новые заявки не принимаются до продления. Кабинет и редактирование данных остаются доступными.', valid:'15 сентября 2026', paid:'15 сентября 2026', grace:'18 сентября 2026', usage:'15 из 15', usageNote:'Лимит активных номеров исчерпан', limit:'Исчерпан', limitNote:'Лимит активных номеров исчерпан. Редактирование данных доступно, но активировать дополнительные номера нельзя.', on:false, limitOff:true },
     };
     const applyState = (name) => {
       if (name === 'loading') { page.hidden = true; loading.hidden = false; return; }
@@ -204,7 +204,7 @@
       setAccess('#limit-state', state.limit, !state.limitOff);
       setAccess('#public-state', state.on ? 'Доступны' : 'Скрыты', state.on);
       setAccess('#request-state', state.on ? 'Принимаются' : 'Не принимаются', state.on);
-      setAccess('#mutation-state', state.on ? 'Доступны' : 'Остановлены', state.on);
+      setAccess('#mutation-state', 'Доступны', true);
     };
     document.querySelectorAll('[data-state]').forEach((button) => button.addEventListener('click', () => applyState(button.dataset.state)));
   </script>

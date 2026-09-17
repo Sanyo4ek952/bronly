@@ -124,8 +124,7 @@ export type OwnerDashboardSummary = {
   subscriptionPlan: string;
   subscriptionValidUntil: string;
   subscriptionWarningText: string | null;
-  isCabinetRestricted: boolean;
-  isMutationAllowed: boolean;
+  isPublicRestricted: boolean;
   onboarding: {
     activeStepLabel: string;
     steps: Array<{

@@ -22,7 +22,6 @@ function getErrorMessage(error: string) {
   if (error === "telegram-link") return "Не удалось создать ссылку для привязки Telegram.";
   if (error === "telegram-setting") return "Не удалось изменить настройки Telegram-уведомлений.";
   if (error === "validation") return "Укажите имя агента и проверьте остальные поля.";
-  if (error === "subscription") return "Профиль временно нельзя изменить, пока подписка не продлена.";
   if (error === "unauthorized") return "Настройки доступны только для профиля агента.";
   if (error) return "Не удалось сохранить изменения.";
   return "";

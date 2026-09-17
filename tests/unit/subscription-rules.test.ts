@@ -11,7 +11,7 @@ import type { SupabaseSubscriptionRow } from "../../src/shared/api/supabase/type
 
 const row: SupabaseSubscriptionRow = {
   id: "subscription-1", profile_id: "owner-1", role_context: "owner",
-  status: "active", plan_name: "MVP", active_room_limit: 3,
+  status: "active", room_limit_override: null,
   trial_ends_at: null, grace_ends_at: null, paid_until: "2026-06-01T00:00:00.000Z",
   created_at: "2026-05-01T00:00:00.000Z", updated_at: "2026-05-01T00:00:00.000Z",
 };
@@ -33,8 +33,8 @@ for (const [now, expectedStatus] of [
     assert.equal(state.status, expectedStatus);
     assert.equal(state.isPublicAllowed, expectedStatus !== "expired");
     assert.equal(state.isRequestIntakeAllowed, expectedStatus !== "expired");
-    assert.equal(state.isMutationAllowed, expectedStatus !== "expired");
-    assert.equal(state.isCabinetRestricted, expectedStatus === "expired");
+    assert.equal(state.isCabinetAllowed, true);
+    assert.equal(state.isPublicRestricted, expectedStatus === "expired");
     assert.equal(state.showGraceWarning, expectedStatus === "grace");
     assert.equal(state.publicWarningText !== null, expectedStatus === "grace");
     assert.equal(state.publicRestrictionMode, expectedStatus === "active" ? "none" : expectedStatus);
@@ -72,46 +72,41 @@ test("trial without a valid deadline and missing subscription rows fail closed",
   assert.equal(calculate(null).status, "expired");
 });
 
-test("legacy manual rows are presented as active and still follow paid and grace dates", () => {
-  const legacyManual = { ...row, status: "manual" as const };
-  assert.equal(calculate(legacyManual, 2, "2026-06-01T00:00:00.000Z").status, "active");
-  assert.equal(calculate(legacyManual, 2, "2026-06-01T00:00:00.001Z").status, "grace");
-});
-
 for (const [count, limit, remaining, reached] of [
-  [0, 3, 3, false], [2, 3, 1, false], [3, 3, 0, true], [4, 3, 0, true], [0, 0, 0, true],
+  [0, 18, 18, false], [17, 18, 1, false], [18, 18, 0, true], [19, 18, 0, true],
 ] as const) {
-  test(`custom room limit ${limit} at ${count} active rooms`, () => {
-    const state = calculate({ ...row, active_room_limit: limit }, count);
+  test(`room limit override ${limit} at ${count} active rooms`, () => {
+    const state = calculate({ ...row, room_limit_override: limit }, count);
     assert.equal(state.roomLimit, limit);
+    assert.equal(state.roomLimitOverride, limit);
     assert.equal(state.remainingRoomSlots, remaining);
     assert.equal(state.isRoomLimitReached, reached);
     assert.equal(state.canAddActiveRoom, !reached);
-    assert.equal(state.planTier, "custom");
   });
 }
 
-for (const [count, tier, limit] of [
-  [0, "start", 3], [3, "start", 3], [4, "base", 10], [10, "base", 10], [11, "plus", null],
+for (const [count, remaining, reached] of [
+  [0, 15, false], [14, 1, false], [15, 0, true], [16, 0, true],
 ] as const) {
-  test(`derived subscription plan at ${count} active rooms`, () => {
+  test(`Bronly room limit at ${count} active rooms`, () => {
     const state = calculate(null, count);
-    assert.equal(state.planTier, tier);
-    assert.equal(state.roomLimit, limit);
+    assert.equal(state.planName, "Bronly");
+    assert.equal(state.roomLimit, 15);
+    assert.equal(state.roomLimitOverride, null);
+    assert.equal(state.remainingRoomSlots, remaining);
+    assert.equal(state.isRoomLimitReached, reached);
+    assert.equal(state.canAddActiveRoom, !reached);
     assert.equal(state.status, "expired");
-    if (limit === null) {
-      assert.equal(state.remainingRoomSlots, null);
-      assert.equal(state.canAddActiveRoom, true);
-    }
   });
 }
 
-test("unlimited room capacity is never exhausted", () => {
-  assert.equal(isRoomLimitReached(1000, null), false);
+test("the effective room capacity is exhausted at the configured limit", () => {
+  assert.equal(isRoomLimitReached(14, 15), false);
+  assert.equal(isRoomLimitReached(15, 15), true);
 });
 
 test("database room-limit guard maps back to the same form feedback", () => {
-  assert.equal(mapActionError({ code: "P0001", message: "active_room_limit_reached" }), "room-limit");
+  assert.equal(mapActionError({ code: "P0001", message: "room_limit_reached" }), "room-limit");
   assert.equal(mapActionError({ code: "P0001", message: "another server error" }), "save");
 });
 
@@ -167,15 +162,27 @@ test("admin schedule normalization keeps every selected status coherent with its
   }
 });
 
+test("a new trial schedule lasts 30 days and gets a three-day grace period", () => {
+  const schedule = buildSubscriptionSchedule({
+    status: "trial",
+    now: new Date("2026-06-01T12:00:00.000Z"),
+    trialEndsAt: null,
+    graceEndsAt: null,
+    paidUntil: null,
+  });
+
+  assert.equal(schedule.trialEndsAt, "2026-07-01T12:00:00.000Z");
+  assert.equal(schedule.graceEndsAt, "2026-07-04T12:00:00.000Z");
+});
+
 test("owner and agent contexts apply identical supplied room limits", () => {
   for (const roleContext of ["owner", "agent"] as const) {
     const state = calculateSubscriptionRuntimeState({
       profileId: "profile-1", roleContext, subscriptionRow: { ...row, role_context: roleContext },
-      activeRoomCount: 3, now: new Date("2026-06-01T00:00:00.000Z"), storedStatus: "grace",
+      activeRoomCount: 15, now: new Date("2026-06-01T00:00:00.000Z"),
     });
     assert.equal(state.isRoomLimitReached, true);
     assert.equal(state.roleContext, roleContext);
     assert.equal(state.status, "active");
-    assert.equal(state.storedStatus, "grace");
   }
 });

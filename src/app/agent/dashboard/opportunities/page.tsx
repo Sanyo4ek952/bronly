@@ -13,7 +13,6 @@ type AgentOpportunitiesPageProps = {
 };
 
 function getErrorMessage(error: string) {
-  if (error === "subscription") return "Отправка предложений временно недоступна, пока подписка не продлена.";
   if (error === "duplicate") return "Предложение уже отправлено или сотрудничество уже активно.";
   if (error === "not_available") return "Владелец больше не принимает предложения по этому варианту.";
   if (error === "unauthorized") return "Предложения доступны только для профиля агента.";

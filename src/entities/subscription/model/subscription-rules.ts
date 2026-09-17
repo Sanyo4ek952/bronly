@@ -1,15 +1,17 @@
 import type {
   PublicRestrictionMode,
-  SubscriptionPlanTier,
   SubscriptionRoleContext,
   SubscriptionRuntimeState,
   SubscriptionStatus,
-  StoredSubscriptionStatus,
 } from "@/entities/subscription/model/types";
 import type { SupabaseSubscriptionRow } from "@/shared/api/supabase/types";
 
-const GRACE_PERIOD_DAYS = 3;
-const TRIAL_PERIOD_DAYS = 14;
+export const SUBSCRIPTION_PLAN_NAME = "Bronly";
+export const SUBSCRIPTION_MONTHLY_PRICE_RUB = 490;
+export const SUBSCRIPTION_YEARLY_PRICE_RUB = 4_490;
+export const DEFAULT_ROOM_LIMIT = 15;
+export const GRACE_PERIOD_DAYS = 3;
+export const TRIAL_PERIOD_DAYS = 30;
 
 const PUBLIC_GRACE_WARNING =
   "Подписку нужно продлить. После окончания grace period публичная страница будет скрыта, а новые заявки временно остановятся.";
@@ -27,34 +29,6 @@ function formatStatusLabel(status: SubscriptionStatus) {
   }
 }
 
-function resolveDerivedPlan(activeRoomCount: number): {
-  planTier: SubscriptionPlanTier;
-  planName: string;
-  roomLimit: number | null;
-} {
-  if (activeRoomCount <= 3) {
-    return {
-      planTier: "start",
-      planName: "Старт",
-      roomLimit: 3,
-    };
-  }
-
-  if (activeRoomCount <= 10) {
-    return {
-      planTier: "base",
-      planName: "База",
-      roomLimit: 10,
-    };
-  }
-
-  return {
-    planTier: "plus",
-    planName: "Плюс",
-    roomLimit: null,
-  };
-}
-
 function addDays(base: Date, days: number) {
   const nextDate = new Date(base);
   nextDate.setUTCDate(nextDate.getUTCDate() + days);
@@ -70,11 +44,7 @@ function toTimestamp(value: string | null) {
   return Number.isNaN(timestamp) ? null : timestamp;
 }
 
-function getRemainingRoomSlots(activeRoomCount: number, roomLimit: number | null) {
-  if (roomLimit == null) {
-    return null;
-  }
-
+function getRemainingRoomSlots(activeRoomCount: number, roomLimit: number) {
   return Math.max(roomLimit - activeRoomCount, 0);
 }
 
@@ -170,7 +140,7 @@ export function resolveEffectiveStatus(
     };
   }
 
-  if (row.status === "active" || row.status === "manual") {
+  if (row.status === "active") {
     return { status: "active", graceEndsAt: null };
   }
 
@@ -230,11 +200,7 @@ export function buildSubscriptionSchedule({
   }
 }
 
-export function isRoomLimitReached(activeRoomCount: number, roomLimit: number | null) {
-  if (roomLimit == null) {
-    return false;
-  }
-
+export function isRoomLimitReached(activeRoomCount: number, roomLimit: number) {
   return activeRoomCount >= roomLimit;
 }
 
@@ -245,17 +211,14 @@ export function calculateSubscriptionRuntimeState({
   subscriptionRow,
   activeRoomCount,
   now,
-  storedStatus = subscriptionRow?.status ?? "expired",
 }: {
   profileId: string;
   roleContext: SubscriptionRoleContext;
   subscriptionRow: SupabaseSubscriptionRow | null;
   activeRoomCount: number;
   now: Date;
-  storedStatus?: StoredSubscriptionStatus;
 }): SubscriptionRuntimeState {
   const resolved = resolveEffectiveStatus(subscriptionRow, now);
-  const derivedPlan = resolveDerivedPlan(activeRoomCount);
   const status = resolved.status;
   const validUntil = toValidUntil(
     status,
@@ -267,26 +230,21 @@ export function calculateSubscriptionRuntimeState({
         }
       : null,
   );
-  const roomLimit = subscriptionRow?.active_room_limit ?? derivedPlan.roomLimit;
+  const roomLimitOverride = subscriptionRow?.room_limit_override ?? null;
+  const roomLimit = roomLimitOverride ?? DEFAULT_ROOM_LIMIT;
   const remainingRoomSlots = getRemainingRoomSlots(activeRoomCount, roomLimit);
   const roomLimitReached = isRoomLimitReached(activeRoomCount, roomLimit);
-  const planTier: SubscriptionPlanTier = subscriptionRow?.active_room_limit != null ? "custom" : derivedPlan.planTier;
-  const planName =
-    subscriptionRow?.plan_name && subscriptionRow.plan_name !== "MVP"
-      ? subscriptionRow.plan_name
-      : derivedPlan.planName;
   const publicRestrictionMode = toPublicRestrictionMode(status);
 
   return {
     profileId,
     roleContext,
     status,
-    storedStatus,
     statusLabel: formatStatusLabel(status),
-    planTier,
-    planName,
+    planName: SUBSCRIPTION_PLAN_NAME,
     activeRoomCount,
     roomLimit,
+    roomLimitOverride,
     remainingRoomSlots,
     isRoomLimitReached: roomLimitReached,
     canAddActiveRoom: !roomLimitReached,
@@ -296,8 +254,7 @@ export function calculateSubscriptionRuntimeState({
     trialEndsAt: subscriptionRow?.trial_ends_at ?? null,
     hasSubscriptionRow: Boolean(subscriptionRow),
     isCabinetAllowed: true,
-    isCabinetRestricted: status === "expired",
-    isMutationAllowed: status !== "expired",
+    isPublicRestricted: status === "expired",
     isPublicAllowed: status !== "expired",
     isRequestIntakeAllowed: status !== "expired",
     showGraceWarning: status === "grace",
