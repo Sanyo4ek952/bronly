@@ -10,7 +10,7 @@ import {
   settleNotificationFanOut,
 } from "../../src/entities/notification/model/notification-rules.ts";
 
-test("every MVP notification event fans out to push and Telegram without one failure rejecting the fan-out", async () => {
+test("every supported notification event fans out to push and Telegram without one failure rejecting the fan-out", async () => {
   for (const eventType of NOTIFICATION_EVENT_TYPES) {
     assert.deepEqual(getNotificationDeliveryChannels(eventType), ["push", "telegram"]);
   }

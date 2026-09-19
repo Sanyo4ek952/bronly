@@ -4,14 +4,14 @@
 
 - `docs/product/prd.md` is the canonical product specification.
 - `docs/product/decision-log.md` contains newer explicit decisions when they override earlier wording.
-- `docs/product/mvp-boundaries.md` and `docs/product/terminology.md` are operational summaries, not replacements for the PRD.
+- `docs/product/product-boundaries.md` and `docs/product/terminology.md` are operational summaries, not replacements for the PRD.
 
 ## Required reading before work
 
 Read in this order:
 
 1. `README.md`
-2. `docs/product/mvp-boundaries.md`
+2. `docs/product/product-boundaries.md`
 3. `docs/product/terminology.md`
 4. `docs/process/task-intake.md`
 5. `docs/product/prd.md` for product, UX, workflow, pricing, subscription, owner, guest, agent, collection, or public-page changes
@@ -19,14 +19,14 @@ Read in this order:
 
 ## Expected behavior
 
-- Follow the documented MVP boundaries.
+- Follow the documented product boundaries.
 - Use project terminology in all user-facing text.
 - Treat undocumented product behavior as ambiguous.
 - Do not silently expand scope.
 
 ## Conflict handling
 
-If a request conflicts with the MVP, terminology, or documented business rules:
+If a request conflicts with the product boundaries, terminology, or documented business rules:
 
 1. stop implementation;
 2. name the conflict;
@@ -36,5 +36,4 @@ If a request conflicts with the MVP, terminology, or documented business rules:
 
 ## Guardrails
 
-Do not add marketplace behavior, accommodation payments, automatic booking confirmation, global catalog features, or other explicitly excluded MVP functionality unless the user clearly approves a product change.
-
+Do not add marketplace behavior, accommodation payments, automatic booking confirmation, global catalog features, or other changes listed in `product-boundaries.md` unless the product decision is recorded in the PRD or decision log.

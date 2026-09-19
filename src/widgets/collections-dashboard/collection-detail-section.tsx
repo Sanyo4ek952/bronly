@@ -478,7 +478,7 @@ function OwnerCollectionDetail({
           <div className="border-t border-[var(--border)] px-6 pb-6 pt-5 max-[520px]:px-[18px]">
             <strong className="block text-xs text-[var(--text)]">Архив подборки</strong>
             <p className="mb-3 mt-1.5 [overflow-wrap:anywhere] text-[10px] leading-[1.5] text-[var(--text-muted)]">
-              После архивации ссылка перестанет показывать подборку гостю. Восстановление в MVP не предусмотрено.
+              После архивации ссылка перестанет показывать подборку гостю. Восстановление пока не предусмотрено.
             </p>
             <form action={archiveAction}>
               <input type="hidden" name="collectionId" value={collection.id} />

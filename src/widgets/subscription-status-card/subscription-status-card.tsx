@@ -342,7 +342,7 @@ export function SubscriptionStatusCard({ subscription, backHref, backLabel, pres
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
         <Panel className="grid content-start gap-4 p-5" surface="raised">
           <div className="grid gap-1.5">
-            <h2 className="text-xl font-semibold leading-tight text-[var(--text)]">Как продлить в MVP</h2>
+            <h2 className="text-xl font-semibold leading-tight text-[var(--text)]">Как продлить доступ</h2>
             <p className="text-sm leading-[1.55] text-[var(--text-muted)]">
               Продление доступа выполняется вручную. Онлайн-оплаты в кабинете сейчас нет.
             </p>

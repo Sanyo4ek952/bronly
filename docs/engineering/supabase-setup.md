@@ -1,6 +1,6 @@
-# Supabase setup for Bronly MVP
+# Supabase setup for Bronly
 
-Этот проект теперь умеет работать с Supabase и хранить MVP-сущности Bronly в реальной базе.
+Проект использует Supabase для хранения базовых сущностей Bronly в реальной базе.
 
 ## На что опирается схема
 
@@ -10,7 +10,7 @@
 ## Что уже добавлено в репозиторий
 
 - `.env.example` с переменными окружения;
-- `supabase/migrations/202606020001_initial_bronly_schema.sql` с основной MVP-схемой;
+- `supabase/migrations/202606020001_initial_bronly_schema.sql` с исходной базовой схемой;
 - `supabase/seed.sql` с демо-данными под текущие страницы;
 - Supabase-клиенты в `src/shared/api/supabase/*`, data layer в `src/entities/*/api/*`, серверные действия в `src/features/*`.
 
