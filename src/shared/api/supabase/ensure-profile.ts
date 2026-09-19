@@ -71,7 +71,6 @@ async function ensureRoleAndTrial(
   const { error: subscriptionError } = await admin.from("subscriptions").upsert(
     {
       profile_id: profileId,
-      role_context: role,
       status: "trial",
       room_limit_override: null,
       trial_ends_at: addDays(now, TRIAL_PERIOD_DAYS).toISOString(),
@@ -79,7 +78,7 @@ async function ensureRoleAndTrial(
       paid_until: null,
       updated_at: now.toISOString(),
     },
-    { onConflict: "profile_id,role_context", ignoreDuplicates: true },
+    { onConflict: "profile_id", ignoreDuplicates: true },
   );
 
   return !subscriptionError;

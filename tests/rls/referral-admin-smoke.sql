@@ -71,10 +71,9 @@ values
   ('14000000-0000-0000-0000-000000000004', 'admin'),
   ('14000000-0000-0000-0000-000000000005', 'owner');
 
-insert into public.subscriptions (profile_id, role_context, status, paid_until, grace_ends_at)
+insert into public.subscriptions (profile_id, status, paid_until, grace_ends_at)
 values
-  ('14000000-0000-0000-0000-000000000001', 'owner', 'expired', '2035-01-01T00:00:00Z', '2034-12-20T00:00:00Z'),
-  ('14000000-0000-0000-0000-000000000001', 'agent', 'expired', '2035-01-01T00:00:00Z', '2034-12-20T00:00:00Z');
+  ('14000000-0000-0000-0000-000000000001', 'expired', '2035-01-01T00:00:00Z', '2034-12-20T00:00:00Z');
 
 insert into public.referral_invites (
   id, token, inviter_profile_id, inviter_role, invitee_role, intent
@@ -299,21 +298,20 @@ select pg_temp.assert_text(
 select pg_temp.assert_count(
   (select count(*) from public.subscriptions
     where profile_id = '14000000-0000-0000-0000-000000000001'
-      and role_context in ('owner', 'agent')
       and status = 'active'
       and grace_ends_at is null
       and paid_until = '2035-01-11T00:00:00Z'),
-  2,
-  'approval extends every inviter owner and agent context by exactly ten days'
+  1,
+  'approval extends the inviter shared subscription exactly once by ten days'
 );
 
 select pg_temp.assert_count(
   (select count(*) from public.subscription_audit_events
     where profile_id = '14000000-0000-0000-0000-000000000001'
       and extension_days = 10
-      and details->>'source' = 'referral_reward'),
-  2,
-  'referral approval journals one extension for each inviter context'
+      and details->>'source' like 'referral_reward:%'),
+  1,
+  'referral approval journals one shared extension'
 );
 
 select pg_temp.assert_text(

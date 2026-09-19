@@ -5,11 +5,8 @@ import { redirect } from "next/navigation";
 
 import { buildNotificationIdempotencyKey, createNotificationEvent } from "@/entities/notification";
 import { reviewReferralReward } from "@/entities/referral";
-import { buildSubscriptionSchedule } from "@/entities/subscription";
 import { createSupabaseAdminClient, getCurrentAuthProfile, getPostLoginRedirect } from "@/shared/api/supabase";
 import { logServerDataError } from "@/shared/api/supabase/server-diagnostics";
-
-const ALLOWED_SUBSCRIPTION_STATUSES = new Set(["trial", "active", "grace", "expired"]);
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -34,7 +31,7 @@ function getNullableDateIso(formData: FormData, key: string) {
     return null;
   }
 
-  const parsed = new Date(`${value}T23:59:59.999Z`);
+  const parsed = new Date(`${value}T12:00:00.000Z`);
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
@@ -52,21 +49,19 @@ async function requireAdmin() {
   return profile;
 }
 
-async function revalidateSubscriptionSurfaces(input: {
-  profileId: string;
-  roleContext: "owner" | "agent";
-}) {
+async function revalidateSubscriptionSurfaces(profileId: string) {
   const admin = createSupabaseAdminClient();
-  const { data: profileData } = await admin
-    .from("profiles")
-    .select("slug, agent_public_id")
-    .eq("id", input.profileId)
-    .maybeSingle();
+  const [{ data: profileData }, { data: roleRows }] = await Promise.all([
+    admin.from("profiles").select("slug, agent_public_id").eq("id", profileId).maybeSingle(),
+    admin.from("user_roles").select("role").eq("profile_id", profileId),
+  ]);
+  const roles = (roleRows ?? []).map((row) => row.role);
 
   revalidatePath("/admin");
   revalidatePath("/admin/subscriptions");
+  revalidatePath(`/admin/subscriptions/${profileId}`);
 
-  if (input.roleContext === "agent") {
+  if (roles.includes("agent")) {
     revalidatePath("/agent/dashboard");
     revalidatePath("/agent/dashboard/subscription");
 
@@ -74,171 +69,138 @@ async function revalidateSubscriptionSurfaces(input: {
       revalidatePath(`/a/${profileData.agent_public_id}`);
     }
 
-    return;
   }
 
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/subscription");
+  if (roles.includes("owner")) {
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/subscription");
 
-  if (profileData?.slug) {
-    revalidatePath(`/p/${profileData.slug}`);
-  }
-}
-
-export async function saveSubscriptionAction(formData: FormData) {
-  await requireAdmin();
-
-  const profileId = getString(formData, "profileId");
-  const roleContext = getString(formData, "roleContext");
-  const status = getString(formData, "status");
-  const roomLimitOverride = getNullableInteger(formData, "roomLimitOverride");
-  const paidUntilInput = getNullableDateIso(formData, "paidUntil");
-  const graceEndsAtInput = getNullableDateIso(formData, "graceEndsAt");
-
-  if (
-    !profileId ||
-    (roleContext !== "owner" && roleContext !== "agent") ||
-    !ALLOWED_SUBSCRIPTION_STATUSES.has(status) ||
-    (roomLimitOverride != null && roomLimitOverride <= 15)
-  ) {
-    redirect("/admin/subscriptions?error=subscription");
-  }
-
-  const admin = createSupabaseAdminClient();
-  const now = new Date();
-  const nowIso = now.toISOString();
-  const { data: existingData } = await admin
-    .from("subscriptions")
-    .select("*")
-    .eq("profile_id", profileId)
-    .eq("role_context", roleContext)
-    .maybeSingle();
-
-  const existingRow = existingData as {
-    status: "trial" | "active" | "grace" | "expired";
-    trial_ends_at: string | null;
-    grace_ends_at: string | null;
-    paid_until: string | null;
-  } | null;
-
-  const normalizedStatus = status as "trial" | "active" | "grace" | "expired";
-  const schedule = buildSubscriptionSchedule({
-    status: normalizedStatus,
-    now,
-    trialEndsAt: existingRow?.trial_ends_at ?? null,
-    graceEndsAt: graceEndsAtInput ?? existingRow?.grace_ends_at ?? null,
-    paidUntil: paidUntilInput ?? existingRow?.paid_until ?? null,
-  });
-
-  const payload = {
-    profile_id: profileId,
-    role_context: roleContext as "owner" | "agent",
-    status: normalizedStatus,
-    room_limit_override: roomLimitOverride,
-    trial_ends_at: schedule.trialEndsAt,
-    grace_ends_at: schedule.graceEndsAt,
-    paid_until: schedule.paidUntil,
-    updated_at: nowIso,
-  };
-
-  const { error } = await admin.from("subscriptions").upsert(payload, { onConflict: "profile_id,role_context" });
-
-  if (error) {
-    redirect("/admin/subscriptions?error=subscription");
-  }
-
-  if (existingRow?.status !== status) {
-    await createNotificationEvent({
-      recipientId: profileId,
-      eventType: "subscription_status_changed",
-      idempotencyKey: buildNotificationIdempotencyKey({
-        eventType: "subscription_status_changed",
-        sourceId: `${profileId}:${roleContext}:${status}`,
-        occurrence: nowIso,
-      }),
-      payload: {
-        subscriptionStatus: status as "trial" | "active" | "grace" | "expired",
-        roleContext: roleContext as "owner" | "agent",
-      },
-    });
-
-    if (status === "grace") {
-      await createNotificationEvent({
-        recipientId: profileId,
-        eventType: "subscription_reminder",
-        idempotencyKey: buildNotificationIdempotencyKey({
-          eventType: "subscription_reminder",
-          sourceId: `${profileId}:${roleContext}:grace`,
-          occurrence: nowIso,
-        }),
-        payload: {
-          subscriptionStatus: "grace",
-          roleContext: roleContext as "owner" | "agent",
-        },
-      });
+    if (profileData?.slug) {
+      revalidatePath(`/p/${profileData.slug}`);
     }
   }
-
-  await revalidateSubscriptionSurfaces({
-    profileId,
-    roleContext: roleContext as "owner" | "agent",
-  });
-  redirect("/admin/subscriptions?success=subscription-saved");
 }
 
-export async function extendSubscriptionAction(formData: FormData) {
-  const adminProfile = await requireAdmin();
-
-  const profileId = getString(formData, "profileId");
-  const roleContext = getString(formData, "roleContext");
-  const extensionDays = getNullableInteger(formData, "extensionDays");
-
-  if (!profileId || (roleContext !== "owner" && roleContext !== "agent") || (extensionDays !== 30 && extensionDays !== 365)) {
-    redirect("/admin/subscriptions?error=subscription");
-  }
-
+async function notifySubscriptionActive(profileId: string, occurrence: string, source: string) {
   const admin = createSupabaseAdminClient();
-  const extensionOccurredAt = new Date().toISOString();
-  const { data: existingData } = await admin
-    .from("subscriptions")
-    .select("*")
-    .eq("profile_id", profileId)
-    .eq("role_context", roleContext)
-    .maybeSingle();
+  const { data: roles } = await admin.from("user_roles").select("role").eq("profile_id", profileId);
+  const roleContext = roles?.some((row) => row.role === "owner") ? "owner" : "agent";
 
-  const existingRow = existingData;
-  const { error } = await admin.rpc("admin_extend_subscription", {
-    p_profile_id: profileId,
-    p_role_context: roleContext,
-    p_actor_profile_id: adminProfile.id,
-    p_extension_days: extensionDays,
-  });
-
-  if (error) {
-    redirect("/admin/subscriptions?error=subscription");
-  }
-
-  if (existingRow?.status !== "active") {
-    await createNotificationEvent({
-      recipientId: profileId,
+  await createNotificationEvent({
+    recipientId: profileId,
+    eventType: "subscription_status_changed",
+    idempotencyKey: buildNotificationIdempotencyKey({
       eventType: "subscription_status_changed",
-      idempotencyKey: buildNotificationIdempotencyKey({
-        eventType: "subscription_status_changed",
-        sourceId: `${profileId}:${roleContext}:active`,
-        occurrence: extensionOccurredAt,
-      }),
-      payload: {
-        subscriptionStatus: "active",
-        roleContext: roleContext as "owner" | "agent",
-      },
-    });
-  }
-
-  await revalidateSubscriptionSurfaces({
-    profileId,
-    roleContext: roleContext as "owner" | "agent",
+      sourceId: `${source}:${profileId}:active`,
+      occurrence,
+    }),
+    payload: { subscriptionStatus: "active", roleContext },
   });
-  redirect(`/admin/subscriptions?success=${extensionDays === 365 ? "subscription-extended-year" : "subscription-extended-month"}`);
+}
+
+function subscriptionRedirect(profileId: string, result: "success" | "error", code: string) {
+  redirect(`/admin/subscriptions?${result}=${code}&focus=${profileId}`);
+}
+
+export async function startSubscriptionTrialAction(formData: FormData) {
+  const adminProfile = await requireAdmin();
+  const profileId = getString(formData, "profileId");
+  if (!profileId) {
+    subscriptionRedirect(profileId, "error", "subscription");
+  }
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin.rpc("admin_start_subscription_trial", {
+    p_profile_id: profileId,
+    p_actor_profile_id: adminProfile.id,
+  });
+  if (error) subscriptionRedirect(profileId, "error", "subscription");
+  await revalidateSubscriptionSurfaces(profileId);
+  subscriptionRedirect(profileId, "success", "subscription-trial-started");
+}
+
+export async function recordSubscriptionPaymentAction(formData: FormData) {
+  const adminProfile = await requireAdmin();
+  const profileId = getString(formData, "profileId");
+  const billingPeriod = getString(formData, "billingPeriod");
+  const paymentMethod = getString(formData, "paymentMethod");
+  const paidAt = getNullableDateIso(formData, "paidAt") ?? new Date().toISOString();
+  if (!profileId || !["month", "year"].includes(billingPeriod) || !["bank_transfer", "cash", "other"].includes(paymentMethod)) {
+    subscriptionRedirect(profileId, "error", "payment");
+  }
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin.rpc("admin_record_subscription_payment", {
+    p_profile_id: profileId,
+    p_actor_profile_id: adminProfile.id,
+    p_billing_period: billingPeriod,
+    p_payment_method: paymentMethod,
+    p_paid_at: paidAt,
+    p_external_reference: getString(formData, "externalReference"),
+    p_note: getString(formData, "note"),
+    p_idempotency_key: crypto.randomUUID(),
+  });
+  if (error) subscriptionRedirect(profileId, "error", "payment");
+  await notifySubscriptionActive(profileId, paidAt, `payment:${billingPeriod}`);
+  await revalidateSubscriptionSurfaces(profileId);
+  subscriptionRedirect(profileId, "success", billingPeriod === "year" ? "payment-year-recorded" : "payment-month-recorded");
+}
+
+export async function grantSubscriptionDaysAction(formData: FormData) {
+  const adminProfile = await requireAdmin();
+  const profileId = getString(formData, "profileId");
+  const extensionDays = getNullableInteger(formData, "extensionDays");
+  const reason = getString(formData, "reason");
+  if (!profileId || extensionDays == null || extensionDays < 1 || extensionDays > 3650 || !reason) {
+    subscriptionRedirect(profileId, "error", "extension");
+  }
+  const admin = createSupabaseAdminClient();
+  const occurredAt = new Date().toISOString();
+  const { error } = await admin.rpc("admin_grant_subscription_extension", {
+    p_profile_id: profileId,
+    p_actor_profile_id: adminProfile.id,
+    p_extension_days: extensionDays!,
+    p_reason: reason,
+    p_source: "admin_subscription_page",
+  });
+  if (error) subscriptionRedirect(profileId, "error", "extension");
+  await notifySubscriptionActive(profileId, occurredAt, `free-extension:${reason}`);
+  await revalidateSubscriptionSurfaces(profileId);
+  subscriptionRedirect(profileId, "success", "subscription-days-added");
+}
+
+export async function setSubscriptionRoomLimitAction(formData: FormData) {
+  const adminProfile = await requireAdmin();
+  const profileId = getString(formData, "profileId");
+  const roomLimitOverride = getNullableInteger(formData, "roomLimitOverride");
+  const reason = getString(formData, "reason");
+  if (!profileId || (roomLimitOverride != null && roomLimitOverride <= 15) || !reason) {
+    subscriptionRedirect(profileId, "error", "limit");
+  }
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin.rpc("admin_set_subscription_room_limit", {
+    p_profile_id: profileId,
+    p_actor_profile_id: adminProfile.id,
+    p_room_limit_override: roomLimitOverride,
+    p_reason: reason,
+  });
+  if (error) subscriptionRedirect(profileId, "error", "limit");
+  await revalidateSubscriptionSurfaces(profileId);
+  subscriptionRedirect(profileId, "success", "subscription-limit-saved");
+}
+
+export async function endSubscriptionAccessAction(formData: FormData) {
+  const adminProfile = await requireAdmin();
+  const profileId = getString(formData, "profileId");
+  const reason = getString(formData, "reason");
+  if (!profileId || !reason) subscriptionRedirect(profileId, "error", "end-access");
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin.rpc("admin_end_subscription_access", {
+    p_profile_id: profileId,
+    p_actor_profile_id: adminProfile.id,
+    p_reason: reason,
+  });
+  if (error) subscriptionRedirect(profileId, "error", "end-access");
+  await revalidateSubscriptionSurfaces(profileId);
+  subscriptionRedirect(profileId, "success", "subscription-access-ended");
 }
 
 export async function togglePropertyFreezeAction(formData: FormData) {
@@ -309,7 +271,7 @@ async function notifyAndRevalidateReferralExtension(rewardId: string) {
   const admin = createSupabaseAdminClient();
   const { data: reward, error } = await admin
     .from("referral_rewards")
-    .select("inviter_profile_id, applied_role_contexts, approved_at")
+    .select("inviter_profile_id, approved_at")
     .eq("id", rewardId)
     .maybeSingle();
 
@@ -322,30 +284,8 @@ async function notifyAndRevalidateReferralExtension(rewardId: string) {
     return;
   }
 
-  const roleContexts = reward.applied_role_contexts.filter(
-    (roleContext): roleContext is "owner" | "agent" => roleContext === "owner" || roleContext === "agent",
-  );
-
-  await Promise.all(roleContexts.map(async (roleContext) => {
-    await createNotificationEvent({
-      recipientId: reward.inviter_profile_id,
-      eventType: "subscription_status_changed",
-      idempotencyKey: buildNotificationIdempotencyKey({
-        eventType: "subscription_status_changed",
-        sourceId: `referral:${rewardId}:${roleContext}:active`,
-        occurrence: reward.approved_at ?? rewardId,
-      }),
-      payload: {
-        subscriptionStatus: "active",
-        roleContext,
-      },
-    });
-
-    await revalidateSubscriptionSurfaces({
-      profileId: reward.inviter_profile_id,
-      roleContext,
-    });
-  }));
+  await notifySubscriptionActive(reward.inviter_profile_id, reward.approved_at ?? rewardId, `referral:${rewardId}`);
+  await revalidateSubscriptionSurfaces(reward.inviter_profile_id);
 }
 
 export async function reviewReferralRewardAction(formData: FormData) {

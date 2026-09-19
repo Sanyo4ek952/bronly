@@ -176,7 +176,6 @@ export type SupabaseRoomAgentMarkupRow = {
 export type SupabaseSubscriptionRow = {
   id: string;
   profile_id: string;
-  role_context: "owner" | "agent" | "admin";
   status: "trial" | "active" | "grace" | "expired";
   room_limit_override: number | null;
   trial_ends_at: string | null;
@@ -184,6 +183,22 @@ export type SupabaseSubscriptionRow = {
   paid_until: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type SupabasePaymentRow = {
+  id: string;
+  subscription_id: string;
+  profile_id: string;
+  billing_period: "month" | "year";
+  amount_kopecks: number;
+  currency: "RUB";
+  payment_method: "bank_transfer" | "cash" | "other";
+  paid_at: string;
+  external_reference: string | null;
+  note: string | null;
+  recorded_by_profile_id: string;
+  idempotency_key: string;
+  created_at: string;
 };
 
 export type SupabaseReferralInviteRow = {
@@ -215,7 +230,7 @@ export type SupabaseReferralRewardRow = {
   approved_by_admin_id: string | null;
   approved_at: string | null;
   rejected_at: string | null;
-  applied_role_contexts: Array<"owner" | "agent" | "admin">;
+  applied_subscription_id: string | null;
   created_at: string;
   updated_at: string;
 };

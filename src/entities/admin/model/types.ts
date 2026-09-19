@@ -1,4 +1,4 @@
-import type { SubscriptionRoleContext, SubscriptionStatus } from "@/entities/subscription";
+import type { SubscriptionStatus } from "@/entities/subscription";
 import type { ReferralQueueItem } from "@/entities/referral";
 
 export type AdminUserItem = {
@@ -20,7 +20,7 @@ export type AdminSubscriptionItem = {
   displayName: string;
   slug: string;
   createdAt: string;
-  roleContext: SubscriptionRoleContext;
+  roles: Array<"owner" | "agent">;
   status: SubscriptionStatus;
   statusLabel: string;
   activeRoomCount: number;
@@ -102,6 +102,34 @@ export type AdminSubscriptionsPageData = {
   subscriptions: AdminSubscriptionItem[];
   expiringSoonCount: number;
   activeSubscriptionCount: number;
+};
+
+export type AdminSubscriptionPaymentItem = {
+  id: string;
+  billingPeriod: "month" | "year";
+  amountKopecks: number;
+  paymentMethod: "bank_transfer" | "cash" | "other";
+  paidAt: string;
+  externalReference: string | null;
+  note: string | null;
+  recordedBy: string;
+};
+
+export type AdminSubscriptionAuditItem = {
+  id: string;
+  eventType: "trial_started" | "payment_recorded" | "free_extension" | "room_limit_changed" | "access_ended";
+  actorName: string;
+  extensionDays: number | null;
+  previousPaidUntil: string | null;
+  nextPaidUntil: string | null;
+  details: Record<string, unknown>;
+  createdAt: string;
+};
+
+export type AdminSubscriptionDetailData = {
+  subscription: AdminSubscriptionItem;
+  payments: AdminSubscriptionPaymentItem[];
+  auditEvents: AdminSubscriptionAuditItem[];
 };
 
 export type AdminPropertiesPageData = {

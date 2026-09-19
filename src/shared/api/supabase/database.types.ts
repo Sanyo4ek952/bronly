@@ -543,6 +543,76 @@ export type Database = {
         }
       ]
       }
+      payments: {
+        Row: {
+        id: string
+        subscription_id: string
+        profile_id: string
+        billing_period: string
+        amount_kopecks: number
+        currency: string
+        payment_method: string
+        paid_at: string
+        external_reference: string | null
+        note: string | null
+        recorded_by_profile_id: string
+        idempotency_key: string
+        created_at: string
+      }
+        Insert: {
+        id?: string
+        subscription_id: string
+        profile_id: string
+        billing_period: string
+        amount_kopecks: number
+        currency?: string
+        payment_method: string
+        paid_at: string
+        external_reference?: string | null
+        note?: string | null
+        recorded_by_profile_id: string
+        idempotency_key: string
+        created_at?: string
+      }
+        Update: {
+        id?: string
+        subscription_id?: string
+        profile_id?: string
+        billing_period?: string
+        amount_kopecks?: number
+        currency?: string
+        payment_method?: string
+        paid_at?: string
+        external_reference?: string | null
+        note?: string | null
+        recorded_by_profile_id?: string
+        idempotency_key?: string
+        created_at?: string
+      }
+        Relationships: [
+        {
+          foreignKeyName: "payments_profile_id_fkey"
+          columns: ["profile_id"]
+          isOneToOne: false
+          referencedRelation: "profiles"
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "payments_recorded_by_profile_id_fkey"
+          columns: ["recorded_by_profile_id"]
+          isOneToOne: false
+          referencedRelation: "profiles"
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "payments_subscription_id_fkey"
+          columns: ["subscription_id"]
+          isOneToOne: false
+          referencedRelation: "subscriptions"
+          referencedColumns: ["id"]
+        }
+      ]
+      }
       profiles: {
         Row: {
         id: string
@@ -890,7 +960,7 @@ export type Database = {
         approved_by_admin_id: string | null
         approved_at: string | null
         rejected_at: string | null
-        applied_role_contexts: Database["public"]["Enums"]["app_role"][]
+        applied_subscription_id: string | null
         created_at: string
         updated_at: string
       }
@@ -906,7 +976,7 @@ export type Database = {
         approved_by_admin_id?: string | null
         approved_at?: string | null
         rejected_at?: string | null
-        applied_role_contexts: Database["public"]["Enums"]["app_role"][]
+        applied_subscription_id?: string | null
         created_at?: string
         updated_at?: string
       }
@@ -922,11 +992,18 @@ export type Database = {
         approved_by_admin_id?: string | null
         approved_at?: string | null
         rejected_at?: string | null
-        applied_role_contexts?: Database["public"]["Enums"]["app_role"][]
+        applied_subscription_id?: string | null
         created_at?: string
         updated_at?: string
       }
         Relationships: [
+        {
+          foreignKeyName: "referral_rewards_applied_subscription_id_fkey"
+          columns: ["applied_subscription_id"]
+          isOneToOne: false
+          referencedRelation: "subscriptions"
+          referencedColumns: ["id"]
+        },
         {
           foreignKeyName: "referral_rewards_invite_id_fkey"
           columns: ["invite_id"]
@@ -1252,7 +1329,6 @@ export type Database = {
         id: string
         subscription_id: string
         profile_id: string
-        role_context: Database["public"]["Enums"]["app_role"]
         actor_profile_id: string
         event_type: string
         previous_status: Database["public"]["Enums"]["subscription_status"] | null
@@ -1267,7 +1343,6 @@ export type Database = {
         id?: string
         subscription_id: string
         profile_id: string
-        role_context: Database["public"]["Enums"]["app_role"]
         actor_profile_id: string
         event_type: string
         previous_status?: Database["public"]["Enums"]["subscription_status"] | null
@@ -1282,7 +1357,6 @@ export type Database = {
         id?: string
         subscription_id?: string
         profile_id?: string
-        role_context?: Database["public"]["Enums"]["app_role"]
         actor_profile_id?: string
         event_type?: string
         previous_status?: Database["public"]["Enums"]["subscription_status"] | null
@@ -1321,7 +1395,6 @@ export type Database = {
         Row: {
         id: string
         profile_id: string
-        role_context: Database["public"]["Enums"]["app_role"]
         status: Database["public"]["Enums"]["subscription_status"]
         room_limit_override: number | null
         trial_ends_at: string | null
@@ -1333,7 +1406,6 @@ export type Database = {
         Insert: {
         id?: string
         profile_id: string
-        role_context: Database["public"]["Enums"]["app_role"]
         status?: Database["public"]["Enums"]["subscription_status"]
         room_limit_override?: number | null
         trial_ends_at?: string | null
@@ -1345,7 +1417,6 @@ export type Database = {
         Update: {
         id?: string
         profile_id?: string
-        role_context?: Database["public"]["Enums"]["app_role"]
         status?: Database["public"]["Enums"]["subscription_status"]
         room_limit_override?: number | null
         trial_ends_at?: string | null
@@ -1446,6 +1517,14 @@ export type Database = {
     }
     Views: Record<string, never>
     Functions: {
+      admin_end_subscription_access: {
+        Args: {
+          p_actor_profile_id: string
+          p_profile_id: string
+          p_reason: string
+        }
+        Returns: string
+      }
       admin_review_referral_reward: {
         Args: {
           p_actor_profile_id: string
@@ -1467,6 +1546,45 @@ export type Database = {
           p_actor_profile_id: string
           p_frozen: boolean
           p_property_id: string
+        }
+        Returns: string
+      }
+      admin_grant_subscription_extension: {
+        Args: {
+          p_actor_profile_id: string
+          p_extension_days: number
+          p_profile_id: string
+          p_reason: string
+          p_source?: string
+        }
+        Returns: string
+      }
+      admin_record_subscription_payment: {
+        Args: {
+          p_actor_profile_id: string
+          p_billing_period: string
+          p_external_reference: string
+          p_idempotency_key: string
+          p_note: string
+          p_paid_at: string
+          p_payment_method: string
+          p_profile_id: string
+        }
+        Returns: string
+      }
+      admin_set_subscription_room_limit: {
+        Args: {
+          p_actor_profile_id: string
+          p_profile_id: string
+          p_reason: string
+          p_room_limit_override: number | null
+        }
+        Returns: string
+      }
+      admin_start_subscription_trial: {
+        Args: {
+          p_actor_profile_id: string
+          p_profile_id: string
         }
         Returns: string
       }

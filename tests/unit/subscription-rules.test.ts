@@ -10,7 +10,7 @@ import { mapActionError } from "../../src/features/property/owner-mutations/lib/
 import type { SupabaseSubscriptionRow } from "../../src/shared/api/supabase/types";
 
 const row: SupabaseSubscriptionRow = {
-  id: "subscription-1", profile_id: "owner-1", role_context: "owner",
+  id: "subscription-1", profile_id: "owner-1",
   status: "active", room_limit_override: null,
   trial_ends_at: null, grace_ends_at: null, paid_until: "2026-06-01T00:00:00.000Z",
   created_at: "2026-05-01T00:00:00.000Z", updated_at: "2026-05-01T00:00:00.000Z",
@@ -175,10 +175,10 @@ test("a new trial schedule lasts 30 days and gets a three-day grace period", () 
   assert.equal(schedule.graceEndsAt, "2026-07-04T12:00:00.000Z");
 });
 
-test("owner and agent contexts apply identical supplied room limits", () => {
+test("owner and agent views use the same supplied profile room limit", () => {
   for (const roleContext of ["owner", "agent"] as const) {
     const state = calculateSubscriptionRuntimeState({
-      profileId: "profile-1", roleContext, subscriptionRow: { ...row, role_context: roleContext },
+      profileId: "profile-1", roleContext, subscriptionRow: row,
       activeRoomCount: 15, now: new Date("2026-06-01T00:00:00.000Z"),
     });
     assert.equal(state.isRoomLimitReached, true);

@@ -5,6 +5,7 @@ import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import type {
   AdminDashboardData,
   AdminOverviewData,
+  AdminSubscriptionDetailData,
   AdminPropertiesPageData,
   AdminPropertyItem,
   AdminReviewsPageData,
@@ -21,6 +22,7 @@ import type {
   SupabaseCollectionRow,
   SupabaseGuestRequestRow,
   SupabaseProfileRow,
+  SupabasePaymentRow,
   SupabasePropertyRow,
   SupabaseRoomRow,
   SupabaseSubscriptionRow,
@@ -45,6 +47,7 @@ type AdminRecords = {
   properties: SupabasePropertyRow[];
   rooms: SupabaseRoomRow[];
   subscriptions: SupabaseSubscriptionRow[];
+  payments: SupabasePaymentRow[];
   guestRequests: SupabaseGuestRequestRow[];
   collections: SupabaseCollectionRow[];
   pendingReferralRewards: Awaited<ReturnType<typeof getPendingReferralQueue>>;
@@ -73,19 +76,20 @@ async function getAdminRecords(): Promise<AdminRecords> {
     admin.from("properties").select("*").order("created_at", { ascending: false }),
     admin.from("rooms").select("*"),
     admin.from("subscriptions").select("*").order("updated_at", { ascending: false }),
+    admin.from("payments").select("*").order("paid_at", { ascending: false }),
     admin.from("guest_requests").select("*").order("created_at", { ascending: false }),
     admin.from("collections").select("*"),
     getPendingReferralQueue(),
   ] as const);
-  const [profileResult, roleResult, propertyResult, roomResult, subscriptionResult, guestRequestResult, collectionResult] = results;
+  const [profileResult, roleResult, propertyResult, roomResult, subscriptionResult, paymentResult, guestRequestResult, collectionResult] = results;
 
-  for (const result of results.slice(0, 7)) {
+  for (const result of results.slice(0, 8)) {
     if ("error" in result && result.error) {
       throw result.error;
     }
   }
 
-  const pendingReferralRewards = results[7];
+  const pendingReferralRewards = results[8];
   const collections = collectionResult.data ?? [];
 
   if (!collections.every(isAdminCollectionRow)) {
@@ -98,6 +102,7 @@ async function getAdminRecords(): Promise<AdminRecords> {
     properties: propertyResult.data ?? [],
     rooms: roomResult.data ?? [],
     subscriptions: subscriptionResult.data ?? [],
+    payments: (paymentResult.data ?? []) as SupabasePaymentRow[],
     guestRequests: guestRequestResult.data ?? [],
     collections,
     pendingReferralRewards,
@@ -209,29 +214,25 @@ const getAdminSnapshot = cache(async (): Promise<AdminSnapshot> => {
     displayName: string;
     slug: string;
     createdAt: string;
+    roles: Array<"owner" | "agent">;
     roleContext: "owner" | "agent";
   }> = [];
 
   for (const profile of records.profiles) {
     const roles = rolesByProfile.get(profile.id) ?? [];
 
-    if (roles.includes("owner")) {
-      subscriptionTargets.push({
-        profileId: profile.id,
-        displayName: profile.display_name,
-        slug: profile.slug ?? "",
-        createdAt: profile.created_at,
-        roleContext: "owner",
-      });
-    }
+    const subscriptionRoles = roles.filter(
+      (role): role is "owner" | "agent" => role === "owner" || role === "agent",
+    );
 
-    if (roles.includes("agent")) {
+    if (subscriptionRoles.length) {
       subscriptionTargets.push({
         profileId: profile.id,
         displayName: profile.display_name,
         slug: profile.slug ?? "",
         createdAt: profile.created_at,
-        roleContext: "agent",
+        roles: subscriptionRoles,
+        roleContext: subscriptionRoles.includes("owner") ? "owner" : "agent",
       });
     }
   }
@@ -241,21 +242,19 @@ const getAdminSnapshot = cache(async (): Promise<AdminSnapshot> => {
   );
 
   const subscriptionRowLookup = new Map(
-    records.subscriptions.map((row) => [`${row.profile_id}:${row.role_context}`, row] satisfies [string, SupabaseSubscriptionRow]),
+    records.subscriptions.map((row) => [row.profile_id, row] satisfies [string, SupabaseSubscriptionRow]),
   );
 
   const subscriptions: AdminSubscriptionItem[] = runtimeStates.map((state) => {
-    const target = subscriptionTargets.find(
-      (item) => item.profileId === state.profileId && item.roleContext === state.roleContext,
-    );
-    const subscriptionRow = subscriptionRowLookup.get(`${state.profileId}:${state.roleContext}`);
+    const target = subscriptionTargets.find((item) => item.profileId === state.profileId);
+    const subscriptionRow = subscriptionRowLookup.get(state.profileId);
 
     return {
       profileId: state.profileId,
       displayName: target?.displayName ?? "Пользователь",
       slug: target?.slug ?? "",
       createdAt: target?.createdAt ?? "",
-      roleContext: state.roleContext,
+      roles: target?.roles ?? [],
       status: state.status,
       statusLabel: state.statusLabel,
       activeRoomCount: state.activeRoomCount,
@@ -288,11 +287,7 @@ const getAdminSnapshot = cache(async (): Promise<AdminSnapshot> => {
   });
 
   const activeSubscriptionCount = subscriptions.filter((item) => item.status === "active").length;
-  const paidUserCount = new Set(
-    subscriptions
-      .filter((item) => item.status === "active")
-      .map((item) => item.profileId),
-  ).size;
+  const paidUserCount = new Set(records.payments.map((item) => item.profile_id)).size;
   const expiringSubscriptions = subscriptions.filter((item) => isExpiringSoon(item.validUntil));
   const frozenProperties = properties.filter((item) => item.isFrozen);
   const hiddenUsers = users.filter((item) => item.isPublicHiddenByAdmin);
@@ -368,6 +363,66 @@ export async function getAdminUsersPageData(): Promise<AdminUsersPageData> {
 export async function getAdminSubscriptionsPageData(): Promise<AdminSubscriptionsPageData> {
   const snapshot = await getAdminSnapshot();
   return snapshot.subscriptionsPageData;
+}
+
+export async function getAdminSubscriptionDetailData(profileId: string): Promise<AdminSubscriptionDetailData | null> {
+  const snapshot = await getAdminSnapshot();
+  const subscription = snapshot.subscriptionsPageData.subscriptions.find((item) => item.profileId === profileId);
+
+  if (!subscription) {
+    return null;
+  }
+
+  const admin = createSupabaseAdminClient();
+  const [paymentResult, auditResult] = await Promise.all([
+    admin.from("payments").select("*").eq("profile_id", profileId).order("paid_at", { ascending: false }),
+    admin.from("subscription_audit_events").select("*").eq("profile_id", profileId).order("created_at", { ascending: false }),
+  ]);
+
+  if (paymentResult.error || auditResult.error) {
+    logServerDataError("admin_subscription_detail_load_failed", paymentResult.error ?? auditResult.error, { profileId });
+    throw new Error("Admin subscription detail is unavailable.");
+  }
+
+  const actorIds = new Set<string>();
+  for (const payment of paymentResult.data ?? []) actorIds.add(payment.recorded_by_profile_id);
+  for (const event of auditResult.data ?? []) actorIds.add(event.actor_profile_id);
+
+  const actorResult = actorIds.size
+    ? await admin.from("profiles").select("id, display_name").in("id", [...actorIds])
+    : { data: [], error: null };
+
+  if (actorResult.error) {
+    logServerDataError("admin_subscription_actor_load_failed", actorResult.error, { profileId });
+  }
+
+  const actorNameById = new Map((actorResult.data ?? []).map((profile) => [profile.id, profile.display_name]));
+
+  return {
+    subscription,
+    payments: (paymentResult.data ?? []).map((payment) => ({
+      id: payment.id,
+      billingPeriod: payment.billing_period as "month" | "year",
+      amountKopecks: payment.amount_kopecks,
+      paymentMethod: payment.payment_method as "bank_transfer" | "cash" | "other",
+      paidAt: payment.paid_at,
+      externalReference: payment.external_reference,
+      note: payment.note,
+      recordedBy: actorNameById.get(payment.recorded_by_profile_id) ?? "Администратор",
+    })),
+    auditEvents: (auditResult.data ?? []).map((event) => ({
+      id: event.id,
+      eventType: event.event_type as AdminSubscriptionDetailData["auditEvents"][number]["eventType"],
+      actorName: actorNameById.get(event.actor_profile_id) ?? "Администратор",
+      extensionDays: event.extension_days,
+      previousPaidUntil: event.previous_paid_until,
+      nextPaidUntil: event.next_paid_until,
+      details: typeof event.details === "object" && event.details && !Array.isArray(event.details)
+        ? event.details as Record<string, unknown>
+        : {},
+      createdAt: event.created_at,
+    })),
+  };
 }
 
 export async function getAdminPropertiesPageData(): Promise<AdminPropertiesPageData> {

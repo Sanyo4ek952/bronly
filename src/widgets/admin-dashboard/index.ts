@@ -1,4 +1,5 @@
 export { AdminShell } from "./admin-shell";
+export { AdminSubscriptionDetail } from "./admin-subscription-detail";
 export {
   AdminOverview,
   AdminPropertiesPage,

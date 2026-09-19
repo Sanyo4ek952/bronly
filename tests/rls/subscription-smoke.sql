@@ -42,7 +42,6 @@ values
 
 insert into public.subscriptions (
   profile_id,
-  role_context,
   status,
   room_limit_override,
   paid_until,
@@ -50,7 +49,6 @@ insert into public.subscriptions (
 )
 values (
   '91000000-0000-0000-0000-000000000001',
-  'owner',
   'expired',
   null,
   timezone('utc', now()) - interval '10 days',
@@ -140,18 +138,23 @@ select pg_temp.expect_failure(
   'property-room creation cannot exceed the Bronly room limit'
 );
 
-select public.admin_extend_subscription(
+select public.admin_record_subscription_payment(
   '91000000-0000-0000-0000-000000000001',
-  'owner',
   '91000000-0000-0000-0000-000000000003',
-  30
+  'month',
+  'bank_transfer',
+  timezone('utc', now()),
+  'smoke-payment',
+  'Subscription smoke test',
+  '91000000-0000-0000-0000-000000000099'
 );
 
-select public.admin_extend_subscription(
+select public.admin_grant_subscription_extension(
   '91000000-0000-0000-0000-000000000002',
-  'agent',
   '91000000-0000-0000-0000-000000000003',
-  30
+  30,
+  'Subscription smoke test',
+  'rls_smoke'
 );
 
 select pg_temp.assert_count(
@@ -160,16 +163,24 @@ select pg_temp.assert_count(
     '91000000-0000-0000-0000-000000000002'
   )),
   2,
-  'manual extension activates owner and agent contexts and clears grace'
+  'paid and free extension activate each profile and clear grace'
+);
+
+select pg_temp.assert_count(
+  (select count(*) from public.payments
+    where profile_id = '91000000-0000-0000-0000-000000000001'
+      and amount_kopecks = 49000),
+  1,
+  'manual payment is stored separately from a free extension'
 );
 
 select pg_temp.assert_count(
   (select count(*) from public.subscription_audit_events
     where actor_profile_id = '91000000-0000-0000-0000-000000000003'
-      and event_type = 'manual_extension'
+      and event_type in ('payment_recorded', 'free_extension')
       and extension_days = 30),
   2,
-  'each manual extension is journaled with its administrator'
+  'each subscription operation is journaled with its administrator'
 );
 
 select pg_temp.assert_count(

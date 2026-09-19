@@ -17,13 +17,16 @@ import type {
 import type { ReferralQueueItem } from "@/entities/referral";
 import { formatDateLabel, formatDateTimeLabel } from "@/shared/lib/date";
 import { cn } from "@/shared/lib/cn";
-import { AppIcon, Button, ButtonLink, InlineNotice, Input, Panel, Select, StatusPill } from "@/shared/ui";
+import { AppIcon, Button, ButtonLink, InlineNotice, Input, Panel, Select, StatusPill, Textarea } from "@/shared/ui";
 import { AdminPageHeader } from "@/widgets/property-admin";
 
 import {
-  extendSubscriptionAction,
+  endSubscriptionAccessAction,
+  grantSubscriptionDaysAction,
+  recordSubscriptionPaymentAction,
   reviewReferralRewardAction,
-  saveSubscriptionAction,
+  setSubscriptionRoomLimitAction,
+  startSubscriptionTrialAction,
   toggleProfilePublicVisibilityAction,
   togglePropertyFreezeAction,
 } from "@/features/admin/actions";
@@ -45,12 +48,11 @@ function isExpiringSoon(value: string | null) {
 }
 
 function getSubscriptionFocusKey(row: ReferralQueueItem) {
-  const roleContext = row.inviterRoles.includes("owner") ? "owner" : "agent";
-  return `${row.inviterProfileId}:${roleContext}`;
+  return row.inviterProfileId;
 }
 
-function getSubscriptionAnchorId(profileId: string, roleContext: "owner" | "agent") {
-  return `subscription-${profileId}-${roleContext}`;
+function getSubscriptionAnchorId(profileId: string) {
+  return `subscription-${profileId}`;
 }
 
 function getSubscriptionStatusVariant(status: AdminSubscriptionItem["status"]) {
@@ -379,7 +381,7 @@ export function AdminOverview({ data, message }: { data: AdminOverviewData; mess
         >
           <AdminPreviewList
             items={data.expiringSubscriptions.map((item) => ({
-              title: `${item.displayName} · ${item.roleContext}`,
+              title: `${item.displayName} · ${getSubscriptionRolesLabel(item.roles)}`,
               subtitle: item.validUntil ? `Доступ до ${formatDateLabel(item.validUntil)}` : "Дата не указана",
               badge: { label: item.statusLabel, tone: getSubscriptionStatusVariant(item.status) },
             }))}
@@ -658,6 +660,14 @@ export function AdminUsersPage({ data, message }: { data: AdminUsersPageData; me
 type SubscriptionStatusFilter = "all" | "expiring" | "grace" | "active" | "expired";
 type SubscriptionContextFilter = "all" | "owner" | "agent";
 
+function getSubscriptionRolesLabel(roles: AdminSubscriptionItem["roles"]) {
+  if (roles.includes("owner") && roles.includes("agent")) {
+    return "Владелец и агент";
+  }
+
+  return roles.includes("owner") ? "Владелец" : "Агент";
+}
+
 export function AdminSubscriptionsPage({
   data,
   message,
@@ -685,7 +695,7 @@ export function AdminSubscriptionsPage({
     const query = search.trim().toLowerCase();
 
     return data.subscriptions.filter((row) => {
-      if (contextFilter !== "all" && row.roleContext !== contextFilter) {
+      if (contextFilter !== "all" && !row.roles.includes(contextFilter)) {
         return false;
       }
 
@@ -709,7 +719,7 @@ export function AdminSubscriptionsPage({
         return true;
       }
 
-      return [row.displayName, row.slug, row.profileId, row.roleContext].some((value) =>
+      return [row.displayName, row.slug, row.profileId, ...row.roles].some((value) =>
         value.toLowerCase().includes(query),
       );
     });
@@ -735,7 +745,7 @@ export function AdminSubscriptionsPage({
           label="Поиск"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Имя, slug, профиль или контекст"
+          placeholder="Имя, slug или ID профиля"
           wrapperClassName="max-w-[460px]"
         />
         <AdminFilterChips
@@ -744,18 +754,18 @@ export function AdminSubscriptionsPage({
           options={[
             { label: "Все", value: "all" },
             { label: `Скоро истекают (${data.expiringSoonCount})`, value: "expiring" },
-            { label: "Grace", value: "grace" },
-            { label: `Active (${data.activeSubscriptionCount})`, value: "active" },
-            { label: "Expired", value: "expired" },
+            { label: "Нужно продлить", value: "grace" },
+            { label: `Активные (${data.activeSubscriptionCount})`, value: "active" },
+            { label: "Доступ завершён", value: "expired" },
           ]}
         />
         <AdminFilterChips
           value={contextFilter}
           onChange={setContextFilter}
           options={[
-            { label: "Все контексты", value: "all" },
-            { label: "Owner", value: "owner" },
-            { label: "Agent", value: "agent" },
+            { label: "Все роли", value: "all" },
+            { label: "Владельцы", value: "owner" },
+            { label: "Агенты", value: "agent" },
           ]}
         />
       </Panel>
@@ -763,13 +773,13 @@ export function AdminSubscriptionsPage({
       {filteredSubscriptions.length ? (
         <div className="grid gap-3.5 max-[390px]:gap-2.5">
           {filteredSubscriptions.map((row) => {
-            const cardKey = `${row.profileId}:${row.roleContext}`;
+            const cardKey = row.profileId;
             const isOpen = openKey === cardKey;
 
             return (
               <article
                 key={cardKey}
-                id={getSubscriptionAnchorId(row.profileId, row.roleContext)}
+                id={getSubscriptionAnchorId(row.profileId)}
                 ref={focusKey === cardKey ? focusedCardRef : undefined}
                 className={cn(
                   "grid gap-3.5 rounded-[22px] border border-[var(--border)] bg-[rgb(255_255_255_/_0.95)] p-4 max-[390px]:rounded-[18px] max-[390px]:p-3",
@@ -786,7 +796,7 @@ export function AdminSubscriptionsPage({
                     <div>
                       <strong className="block text-[var(--text)]">{row.displayName}</strong>
                       <p className="text-sm text-[var(--text-muted)]">
-                        {row.roleContext} · {row.activeRoomCount} активных номеров
+                        {getSubscriptionRolesLabel(row.roles)} · {row.activeRoomCount} из {row.roomLimit} активных номеров
                       </p>
                     </div>
                     <AdminBadge tone={getSubscriptionStatusVariant(row.status)}>{row.statusLabel}</AdminBadge>
@@ -804,95 +814,68 @@ export function AdminSubscriptionsPage({
                 </button>
 
                 {isOpen ? (
-                  <form action={saveSubscriptionAction} className="grid gap-3">
-                    <input type="hidden" name="profileId" value={row.profileId} />
-                    <input type="hidden" name="roleContext" value={row.roleContext} />
-
-                    <AdminAccordion title="Статус подписки" defaultOpen>
-                      <div className="grid gap-3.5 max-[390px]:gap-2.5">
-                        <Select
-                          id={`${cardKey}-status`}
-                          name="status"
-                          label="Статус"
-                          defaultValue={row.status}
-                          options={[
-                            { label: "trial", value: "trial" },
-                            { label: "active", value: "active" },
-                            { label: "grace", value: "grace" },
-                            { label: "expired", value: "expired" },
-                          ]}
-                        />
-                      </div>
-                    </AdminAccordion>
-
-                    <AdminAccordion title="Лимиты" subtitle="По умолчанию доступно до 15 активных номеров. Override задаётся только для большего лимита.">
-                      <div className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
-                        <Input
-                          id={`${cardKey}-limit`}
-                          name="roomLimitOverride"
-                          label="Room limit override"
-                          defaultValue={row.roomLimitOverride ?? ""}
-                          placeholder="Не задан — лимит 15"
-                          inputMode="numeric"
-                        />
-                        <Input
-                          id={`${cardKey}-rooms`}
-                          label="Активные номера"
-                          value={`${row.activeRoomCount} из ${row.roomLimit}`}
-                          readOnly
-                        />
-                      </div>
-                    </AdminAccordion>
-
-                    <AdminAccordion title="Даты доступа" subtitle="Продление на месяц или год применяется от более поздней даты: сегодня или текущий оплаченный срок.">
-                      <div className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1 max-[390px]:gap-2.5">
-                        <Input
-                          id={`${cardKey}-valid`}
-                          label="Доступ до"
-                          value={row.validUntil ? formatDateLabel(row.validUntil) : "Не задано"}
-                          readOnly
-                        />
-                        <Input
-                          id={`${cardKey}-paid`}
-                          name="paidUntil"
-                          type="date"
-                          label="Оплачено до"
-                          defaultValue={row.paidUntil ? new Date(row.paidUntil).toISOString().slice(0, 10) : ""}
-                        />
-                        <Input
-                          id={`${cardKey}-grace`}
-                          name="graceEndsAt"
-                          type="date"
-                          label="Grace period до"
-                          defaultValue={row.graceEndsAt ? new Date(row.graceEndsAt).toISOString().slice(0, 10) : ""}
-                        />
-                      </div>
-                    </AdminAccordion>
-
-                    <div className="grid gap-2.5 max-[720px]:sticky max-[720px]:bottom-[calc(74px+var(--safe-area-bottom))] max-[720px]:rounded-[18px] max-[720px]:border max-[720px]:border-[var(--border)] max-[720px]:bg-[rgb(255_255_255_/_0.96)] max-[720px]:p-2.5 max-[720px]:shadow-[var(--shadow-md)] sm:grid-cols-3">
-                      <Button type="submit" variant="secondary" fullWidth>
-                        Сохранить
-                      </Button>
-                      <Button
-                        type="submit"
-                        formAction={extendSubscriptionAction}
-                        name="extensionDays"
-                        value="30"
-                        fullWidth
-                      >
-                        Продлить на 30 дней
-                      </Button>
-                      <Button
-                        type="submit"
-                        formAction={extendSubscriptionAction}
-                        name="extensionDays"
-                        value="365"
-                        fullWidth
-                      >
-                        Продлить на год
-                      </Button>
+                  <div className="grid gap-3">
+                    <div className="grid grid-cols-3 gap-3.5 max-[720px]:grid-cols-1">
+                      <Input id={`${cardKey}-valid`} label="Доступ до" value={row.validUntil ? formatDateLabel(row.validUntil) : "Не задано"} readOnly />
+                      <Input id={`${cardKey}-paid`} label="Оплачено до" value={row.paidUntil ? formatDateLabel(row.paidUntil) : "Нет оплаты"} readOnly />
+                      <Input id={`${cardKey}-grace`} label="Льготный период до" value={row.graceEndsAt ? formatDateLabel(row.graceEndsAt) : "Не активен"} readOnly />
                     </div>
-                  </form>
+
+                    {!row.hasSubscriptionRow ? (
+                      <form action={startSubscriptionTrialAction} className="grid gap-3 rounded-[18px] border border-[var(--border)] p-3.5">
+                        <input type="hidden" name="profileId" value={row.profileId} />
+                        <div>
+                          <strong className="block text-sm text-[var(--text)]">Подписка ещё не создана</strong>
+                          <p className="mt-1 text-sm text-[var(--text-muted)]">Запустите один пробный период на 30 дней для всех ролей пользователя.</p>
+                        </div>
+                        <Button type="submit">Начать пробный период</Button>
+                      </form>
+                    ) : (
+                      <>
+                        <AdminAccordion title="Зарегистрировать оплату" subtitle="Цена и срок подставляются автоматически. Уже оплаченный остаток не сгорает." defaultOpen>
+                          <form action={recordSubscriptionPaymentAction} className="grid gap-3.5">
+                            <input type="hidden" name="profileId" value={row.profileId} />
+                            <div className="grid grid-cols-2 gap-3.5 max-[720px]:grid-cols-1">
+                              <Select id={`${cardKey}-period`} name="billingPeriod" label="Период и сумма" defaultValue="month" options={[{ label: "30 дней — 490 ₽", value: "month" }, { label: "365 дней — 4 490 ₽", value: "year" }]} />
+                              <Select id={`${cardKey}-method`} name="paymentMethod" label="Способ оплаты" defaultValue="bank_transfer" options={[{ label: "Банковский перевод", value: "bank_transfer" }, { label: "Наличные", value: "cash" }, { label: "Другое", value: "other" }]} />
+                              <Input id={`${cardKey}-paid-at`} name="paidAt" type="date" label="Дата оплаты (пусто — сегодня)" />
+                              <Input id={`${cardKey}-reference`} name="externalReference" label="Номер операции" placeholder="Необязательно" />
+                            </div>
+                            <Textarea id={`${cardKey}-payment-note`} name="note" label="Комментарий" placeholder="Необязательно" rows={2} />
+                            <Button type="submit">Зарегистрировать оплату</Button>
+                          </form>
+                        </AdminAccordion>
+
+                        <AdminAccordion title="Добавить бесплатные дни" subtitle="Для компенсации, реферального бонуса или другого согласованного случая. Оплата не создаётся.">
+                          <form action={grantSubscriptionDaysAction} className="grid gap-3.5">
+                            <input type="hidden" name="profileId" value={row.profileId} />
+                            <Input id={`${cardKey}-days`} name="extensionDays" label="Количество дней" inputMode="numeric" placeholder="Например, 10" required />
+                            <Textarea id={`${cardKey}-extension-reason`} name="reason" label="Причина" placeholder="Почему добавлены бесплатные дни" rows={2} required />
+                            <Button type="submit" variant="secondary">Добавить дни</Button>
+                          </form>
+                        </AdminAccordion>
+
+                        <AdminAccordion title="Изменить лимит номеров" subtitle={`Сейчас используется ${row.activeRoomCount} из ${row.roomLimit}. Пустое значение возвращает стандартный лимит 15.`}>
+                          <form action={setSubscriptionRoomLimitAction} className="grid gap-3.5">
+                            <input type="hidden" name="profileId" value={row.profileId} />
+                            <Input id={`${cardKey}-limit`} name="roomLimitOverride" label="Индивидуальный лимит" defaultValue={row.roomLimitOverride ?? ""} inputMode="numeric" placeholder="Стандартный лимит — 15" />
+                            <Textarea id={`${cardKey}-limit-reason`} name="reason" label="Причина изменения" rows={2} required />
+                            <Button type="submit" variant="secondary">Сохранить лимит</Button>
+                          </form>
+                        </AdminAccordion>
+
+                        <AdminAccordion title="Завершить доступ" subtitle="Публичные страницы и новые заявки будут отключены. Данные пользователя сохранятся.">
+                          <form action={endSubscriptionAccessAction} className="grid gap-3.5">
+                            <input type="hidden" name="profileId" value={row.profileId} />
+                            <Textarea id={`${cardKey}-end-reason`} name="reason" label="Причина завершения" rows={2} required />
+                            <Button type="submit" variant="danger">Завершить доступ</Button>
+                          </form>
+                        </AdminAccordion>
+                      </>
+                    )}
+
+                    <ButtonLink href={`/admin/subscriptions/${row.profileId}`} variant="ghost">Открыть платежи и историю</ButtonLink>
+                  </div>
                 ) : null}
               </article>
             );

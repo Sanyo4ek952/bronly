@@ -46,6 +46,7 @@ export type {
   SupabaseNotificationDeliveryRow,
   SupabaseNotificationSettingsRow,
   SupabaseNotificationRow,
+  SupabasePaymentRow,
   SupabaseProfileRow,
   SupabasePropertyPhotoRow,
   SupabasePropertyFeatureRow,

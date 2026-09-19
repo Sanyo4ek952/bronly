@@ -8,22 +8,7 @@ import { canUseSupabase, createSupabaseAdminClient } from "@/shared/api/supabase
 import type { SupabaseSubscriptionRow } from "@/shared/api/supabase";
 import { logServerConfigurationError, logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 
-async function countOwnerActiveRooms(profileId: string) {
-  const admin = createSupabaseAdminClient();
-  const { count, error } = await admin
-    .from("rooms")
-    .select("*", { count: "exact", head: true })
-    .eq("owner_id", profileId)
-    .eq("is_active", true);
-
-  if (error) {
-    throw error;
-  }
-
-  return count ?? 0;
-}
-
-async function countAgentActiveRooms(profileId: string) {
+async function countProfileActiveRooms(profileId: string) {
   const admin = createSupabaseAdminClient();
   const [ownRoomResult, propertyLinkResult, roomLinkResult] = await Promise.all([
     admin.from("rooms").select("id").eq("owner_id", profileId).eq("is_active", true),
@@ -105,21 +90,12 @@ async function countAgentActiveRooms(profileId: string) {
   return activeRoomIds.size;
 }
 
-async function countActiveRooms(profileId: string, roleContext: SubscriptionRoleContext) {
-  if (roleContext === "agent") {
-    return countAgentActiveRooms(profileId);
-  }
-
-  return countOwnerActiveRooms(profileId);
-}
-
-async function getSubscriptionRow(profileId: string, roleContext: SubscriptionRoleContext) {
+async function getSubscriptionRow(profileId: string) {
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from("subscriptions")
     .select("*")
     .eq("profile_id", profileId)
-    .eq("role_context", roleContext)
     .maybeSingle();
 
   if (error) {
@@ -138,8 +114,8 @@ export const getSubscriptionRuntimeState = cache(
 
     const now = new Date();
     const [rawSubscriptionRow, activeRoomCount] = await Promise.all([
-      getSubscriptionRow(profileId, roleContext),
-      countActiveRooms(profileId, roleContext),
+      getSubscriptionRow(profileId),
+      countProfileActiveRooms(profileId),
     ]);
 
     return calculateSubscriptionRuntimeState({

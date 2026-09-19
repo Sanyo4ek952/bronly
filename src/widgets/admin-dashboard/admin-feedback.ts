@@ -1,14 +1,26 @@
 export function getAdminFeedbackMessage(input: { success?: string; error?: string }) {
-  if (input.success === "subscription-extended-month") {
-    return "Подписка продлена на 30 дней.";
+  if (input.success === "payment-month-recorded") {
+    return "Оплата 490 ₽ зарегистрирована, доступ продлён на 30 дней.";
   }
 
-  if (input.success === "subscription-extended-year") {
-    return "Подписка продлена на 365 дней.";
+  if (input.success === "payment-year-recorded") {
+    return "Оплата 4 490 ₽ зарегистрирована, доступ продлён на 365 дней.";
   }
 
-  if (input.success === "subscription-saved") {
-    return "Подписка обновлена.";
+  if (input.success === "subscription-trial-started") {
+    return "Пробный период на 30 дней начат.";
+  }
+
+  if (input.success === "subscription-days-added") {
+    return "Бесплатные дни добавлены. Причина сохранена в истории.";
+  }
+
+  if (input.success === "subscription-limit-saved") {
+    return "Индивидуальный лимит номеров обновлён.";
+  }
+
+  if (input.success === "subscription-access-ended") {
+    return "Доступ завершён. Данные пользователя сохранены.";
   }
 
   if (input.success === "profile-hidden") {
