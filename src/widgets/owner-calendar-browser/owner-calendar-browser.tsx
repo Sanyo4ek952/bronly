@@ -1,34 +1,27 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Dot, PencilLine } from "lucide-react";
+import { ChevronLeft, ChevronRight, PencilLine } from "lucide-react";
 
-import { createRoomBusyRange, deleteRoomBusyRange, updateRoomBusyRange } from "@/features/property/owner-mutations";
 import type { OwnerBusyRange } from "@/entities/room";
-import { cn } from "@/shared/lib/cn";
-import { formatDateLabel } from "@/shared/lib/date";
-import { AppIcon, Button, IconButton, InlineNotice, Input, StatCard, Textarea } from "@/shared/ui";
 import {
-  addMonths,
+  type CalendarDayCell,
   addDaysToDateKey,
+  addMonths,
   findBusyRangeForDate,
-  formatDateKey,
   formatMonthLabel,
-  formatMonthRangeLabel,
   formatShortDateLabel,
   getMonthDays,
-  getNearestBusyRange,
-  getTimelineBusyRanges,
-  getTimelineDays,
-  getTimelineStartIndex,
-  getVisibleTimelineDays,
   hasBusyOverlap,
   normalizeDateRange,
   parseDateKey,
   startOfMonth,
-  useTimelineVisibleDayCount,
   weekDays,
 } from "@/entities/room/model/calendar-helpers";
+import { createRoomBusyRange, deleteRoomBusyRange, updateRoomBusyRange } from "@/features/property/owner-mutations";
+import { cn } from "@/shared/lib/cn";
+import { formatDateLabel } from "@/shared/lib/date";
+import { AppIcon, BottomSheet, Button, IconButton, InlineNotice, Input, Select, Textarea } from "@/shared/ui";
 
 type OwnerCalendarRoom = {
   id: string;
@@ -57,79 +50,83 @@ type ActiveEditorState =
       busyRange: OwnerBusyRange;
     };
 
-const stackClass = "grid gap-4";
-const shellClass =
-  "grid gap-[14px] overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.98)] max-[720px]:rounded-[20px]";
-const shellHeaderClass =
-  "flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(248_243_236_/_0.82)),var(--surface)] px-5 py-[18px] max-[720px]:px-4";
-const shellLegendClass =
-  "flex flex-wrap items-center gap-3 border-b border-[var(--border)] px-5 py-3 text-[13px] text-[var(--text-muted)] max-[720px]:px-4";
-const editorCardClass =
-  "grid gap-4 rounded-[22px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))] p-[18px] max-[720px]:rounded-[20px] max-[720px]:p-4";
-const actionGridClass = "grid auto-cols-max grid-flow-col gap-2 max-[640px]:grid-flow-row";
-const timelineCellClass =
-  "h-10 rounded-xl border border-transparent bg-[rgb(248_250_252_/_0.85)] transition-[transform,border-color,background-color] duration-[180ms] hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.28)]";
+const monthControlClass = "size-10 rounded-[8px] border-[var(--border)] bg-transparent shadow-none hover:translate-y-0";
+const editorActionsClass = "grid gap-2 sm:grid-cols-2";
 
 function formatRoomPrice(value: number) {
   return `${value.toLocaleString("ru-RU")} ₽`;
 }
 
+function formatCalendarMonthLabel(value: Date) {
+  const label = formatMonthLabel(value);
+  return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
+}
+
+function formatBusyRangeCount(value: number) {
+  const lastTwoDigits = value % 100;
+  const lastDigit = value % 10;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return `${value} диапазонов`;
+  }
+
+  if (lastDigit === 1) {
+    return `${value} диапазон`;
+  }
+
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return `${value} диапазона`;
+  }
+
+  return `${value} диапазонов`;
+}
+
 function getPanelTitle(activeEditor: ActiveEditorState | null) {
   if (!activeEditor) {
-    return "Выберите даты";
+    return "Занятые даты";
   }
 
-  return activeEditor.mode === "create" ? "Новые занятые даты" : "Редактирование диапазона";
+  return activeEditor.mode === "create" ? "Новые занятые даты" : "Изменить занятые даты";
 }
 
-function getPanelDescription(activeEditor: ActiveEditorState | null) {
+function getPanelDescription(activeEditor: ActiveEditorState | null, roomTitle: string) {
   if (!activeEditor) {
-    return "Выберите свободные даты в сетке или откройте существующий диапазон ниже.";
+    return roomTitle;
   }
 
-  if (activeEditor.mode === "create") {
-    return "Проверьте даты и при необходимости добавьте пометку или комментарий.";
-  }
-
-  return "Обновите даты, пометку или комментарий для выбранного диапазона.";
-}
-
-function getRoomSummary(room: OwnerCalendarRoom) {
-  if (!room.busyRanges.length) {
-    return "Свободно";
-  }
-
-  return `${room.busyRanges.length} занятых диапазонов`;
-}
-
-function getTimelineRangeLabel(range: OwnerBusyRange) {
-  return range.label || "Занято";
+  return activeEditor.mode === "create"
+    ? `${roomTitle}. Проверьте дату заезда и выезда.`
+    : `${roomTitle}. Изменения сохранятся в календаре занятости.`;
 }
 
 function getSelectionNotice(selectionStart: string | null) {
   return selectionStart
-    ? `Заезд выбран: ${formatDateLabel(selectionStart)}. Теперь выберите дату выезда.`
+    ? `Заезд: ${formatDateLabel(selectionStart)}. Выберите дату выезда.`
     : "Выберите дату заезда, затем дату выезда. День выезда остаётся свободным.";
 }
 
-function getDefaultTimelineAnchorKey(month: Date) {
-  const today = new Date();
-  const isCurrentMonth =
-    today.getFullYear() === month.getFullYear() && today.getMonth() === month.getMonth();
+function getBusyBandEdges(monthDays: CalendarDayCell<OwnerBusyRange>[], index: number) {
+  const currentRangeId = monthDays[index]?.busyRange?.id;
+  const previousRangeId = monthDays[index - 1]?.busyRange?.id;
+  const nextRangeId = monthDays[index + 1]?.busyRange?.id;
 
-  return isCurrentMonth ? formatDateKey(today) : formatDateKey(startOfMonth(month));
+  return {
+    continuesFromPrevious: index % 7 !== 0 && Boolean(currentRangeId && currentRangeId === previousRangeId),
+    continuesToNext: index % 7 !== 6 && Boolean(currentRangeId && currentRangeId === nextRangeId),
+  };
 }
 
-export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = "", serverNoticeTone = "default" }: OwnerCalendarBrowserProps) {
+export function OwnerCalendarBrowser({
+  propertyId = "",
+  rooms,
+  serverNotice = "",
+  serverNoticeTone = "default",
+}: OwnerCalendarBrowserProps) {
   const [selectedRoomId, setSelectedRoomId] = useState(rooms[0]?.id ?? "");
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), 1);
-  });
+  const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
   const [selectionStart, setSelectionStart] = useState<string | null>(null);
   const [activeEditor, setActiveEditor] = useState<ActiveEditorState | null>(null);
   const [localNotice, setLocalNotice] = useState("");
-  const [timelineAnchorKey, setTimelineAnchorKey] = useState(() => getDefaultTimelineAnchorKey(new Date()));
 
   const selectedRoom = useMemo(
     () => rooms.find((room) => room.id === selectedRoomId) ?? rooms[0] ?? null,
@@ -139,50 +136,30 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
     () => (selectedRoom ? getMonthDays(currentMonth, selectedRoom.busyRanges) : []),
     [currentMonth, selectedRoom],
   );
-  const visibleDayCount = useTimelineVisibleDayCount();
-  const timelineDays = useMemo(() => getTimelineDays(currentMonth), [currentMonth]);
-  const timelineStartIndex = useMemo(
-    () => getTimelineStartIndex(timelineDays, visibleDayCount, timelineAnchorKey),
-    [timelineAnchorKey, timelineDays, visibleDayCount],
-  );
-  const visibleTimelineDays = useMemo(
-    () => getVisibleTimelineDays(timelineDays, timelineStartIndex, visibleDayCount),
-    [timelineDays, timelineStartIndex, visibleDayCount],
-  );
-  const nearestBusyRange = useMemo(
-    () => (selectedRoom ? getNearestBusyRange(selectedRoom.busyRanges) : null),
-    [selectedRoom],
-  );
   const selectedBusyRangeId = activeEditor?.mode === "edit" ? activeEditor.busyRange.id : null;
-  const canMoveTimelineBackward = timelineStartIndex > 0;
-  const canMoveTimelineForward = timelineStartIndex + visibleTimelineDays.length < timelineDays.length;
-  const timelineWindowLabel = visibleTimelineDays.length
-    ? `${formatShortDateLabel(visibleTimelineDays[0].key)} - ${formatShortDateLabel(visibleTimelineDays[visibleTimelineDays.length - 1].key)}`
-    : formatMonthRangeLabel(currentMonth);
 
-  function handleRoomFocus(roomId: string) {
+  function handleRoomChange(roomId: string) {
     setSelectedRoomId(roomId);
     setSelectionStart(null);
+    setActiveEditor(null);
     setLocalNotice("");
   }
 
-  function handleTimelineCellClick(room: OwnerCalendarRoom, dayKey: string) {
-    setSelectedRoomId(room.id);
-    setLocalNotice("");
-
-    const dayBusyRange = findBusyRangeForDate(room.busyRanges, dayKey);
-
-    if (dayBusyRange) {
-      setSelectionStart(null);
-      setActiveEditor({
-        mode: "edit",
-        roomId: room.id,
-        busyRange: dayBusyRange,
-      });
+  function handleDayClick(dayKey: string) {
+    if (!selectedRoom) {
       return;
     }
 
-    if (!selectionStart || selectedRoomId !== room.id) {
+    setLocalNotice("");
+    const dayBusyRange = findBusyRangeForDate(selectedRoom.busyRanges, dayKey);
+
+    if (dayBusyRange) {
+      setSelectionStart(null);
+      setActiveEditor({ mode: "edit", roomId: selectedRoom.id, busyRange: dayBusyRange });
+      return;
+    }
+
+    if (!selectionStart) {
       setSelectionStart(dayKey);
       setActiveEditor(null);
       return;
@@ -192,9 +169,8 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
       ? { startsOn: dayKey, endsOn: addDaysToDateKey(dayKey, 1) }
       : normalizeDateRange(selectionStart, dayKey);
 
-    if (hasBusyOverlap(room.busyRanges, nextRange.startsOn, nextRange.endsOn)) {
+    if (hasBusyOverlap(selectedRoom.busyRanges, nextRange.startsOn, nextRange.endsOn)) {
       setSelectionStart(null);
-      setActiveEditor(null);
       setLocalNotice("Выбранный диапазон пересекается с уже отмеченными занятыми датами.");
       return;
     }
@@ -202,93 +178,46 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
     setSelectionStart(null);
     setActiveEditor({
       mode: "create",
-      roomId: room.id,
+      roomId: selectedRoom.id,
       startsOn: nextRange.startsOn,
       endsOn: nextRange.endsOn,
     });
   }
 
-  function handleOpenBusyRange(roomId: string, busyRange: OwnerBusyRange) {
-    setSelectedRoomId(roomId);
+  function handleOpenBusyRange(busyRange: OwnerBusyRange) {
     setSelectionStart(null);
-    setActiveEditor({
-      mode: "edit",
-      roomId,
-      busyRange,
-    });
-
-    const visibleMonth = parseDateKey(busyRange.startsOn);
-    setCurrentMonth(new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1));
-    setTimelineAnchorKey(busyRange.startsOn);
+    setActiveEditor({ mode: "edit", roomId: selectedRoom.id, busyRange });
+    setCurrentMonth(startOfMonth(parseDateKey(busyRange.startsOn)));
     setLocalNotice("");
   }
 
   function updateMonth(nextMonth: Date) {
     setCurrentMonth(nextMonth);
-    setTimelineAnchorKey(getDefaultTimelineAnchorKey(nextMonth));
+    setSelectionStart(null);
+    setLocalNotice("");
   }
 
-  function shiftTimelineWindow(direction: -1 | 1) {
-    if (!timelineDays.length) {
-      return;
-    }
-
-    const nextIndex = direction < 0
-      ? Math.max(0, timelineStartIndex - visibleDayCount)
-      : Math.min(Math.max(0, timelineDays.length - visibleDayCount), timelineStartIndex + visibleDayCount);
-    const nextDay = timelineDays[nextIndex];
-
-    if (nextDay) {
-      setTimelineAnchorKey(nextDay.key);
-    }
-  }
-
-  function renderEditorPanel() {
-    if (!selectedRoom) {
-      return null;
-    }
-
+  function renderEditorForm() {
     if (!activeEditor) {
-      return (
-        <section className={editorCardClass}>
-          <div className="grid gap-1.5">
-            <strong className="text-base font-semibold leading-[1.25] text-[var(--color-text)]">{getPanelTitle(activeEditor)}</strong>
-            <p className="text-[13px] leading-[1.5] text-[var(--color-muted)]">{getPanelDescription(activeEditor)}</p>
-          </div>
-          <div className="grid gap-2 rounded-[18px] border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.92)] px-4 py-4">
-            <strong className="text-sm font-semibold text-[var(--color-text)]">Отмечайте занятые даты прямо в сетке</strong>
-            <p className="text-sm leading-[1.5] text-[var(--color-muted)]">{getSelectionNotice(selectionStart)}</p>
-            <p className="text-sm leading-[1.5] text-[var(--color-muted)]">Клик по занятому диапазону откроет его для редактирования.</p>
-          </div>
-        </section>
-      );
+      return null;
     }
 
     if (activeEditor.mode === "create") {
       return (
-        <form action={createRoomBusyRange} className={editorCardClass}>
+        <form action={createRoomBusyRange} className="grid gap-4">
           <input type="hidden" name="propertyId" value={propertyId} />
           <input type="hidden" name="roomId" value={activeEditor.roomId} />
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="grid gap-1.5">
-              <strong className="text-base font-semibold leading-[1.25] text-[var(--color-text)]">{getPanelTitle(activeEditor)}</strong>
-              <p className="text-[13px] leading-[1.5] text-[var(--color-muted)]">{getPanelDescription(activeEditor)}</p>
-            </div>
-            <button type="button" className="text-sm font-bold text-[var(--color-primary)]" onClick={() => setActiveEditor(null)}>
-              Отменить
-            </button>
+          <div className="grid grid-cols-2 gap-3">
+            <Input id="owner-busy-new-start" name="startsOn" type="date" label="Заезд" defaultValue={activeEditor.startsOn} required />
+            <Input id="owner-busy-new-end" name="endsOn" type="date" label="Выезд" defaultValue={activeEditor.endsOn} required />
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Input id="owner-busy-new-start" name="startsOn" type="date" label="Заезд" defaultValue={activeEditor.startsOn} />
-            <Input id="owner-busy-new-end" name="endsOn" type="date" label="Выезд" defaultValue={activeEditor.endsOn} />
-            <Input id="owner-busy-new-label" name="label" label="Пометка" placeholder="Например, заявка" wrapperClassName="grid gap-1.5 md:col-span-2" />
-            <Textarea id="owner-busy-new-note" name="note" label="Комментарий" rows={3} wrapperClassName="grid gap-1.5 md:col-span-2" />
-          </div>
-          <p className="text-xs leading-[1.5] text-[var(--color-muted)]">Дата выезда не занимает ночь и доступна для следующего заезда.</p>
-          <div className={actionGridClass}>
-            <Button type="button" variant="secondary" onClick={() => setActiveEditor(null)}>
-              Отменить
-            </Button>
+          <Input id="owner-busy-new-label" name="label" label="Пометка" placeholder="Например, заявка" />
+          <Textarea id="owner-busy-new-note" name="note" label="Комментарий" rows={4} />
+          <p className="border-y border-[var(--border)] py-3 text-xs leading-[1.5] text-[var(--text-muted)]">
+            Дата выезда не занимает ночь и доступна для следующего заезда.
+          </p>
+          <div className={editorActionsClass}>
+            <Button type="button" variant="secondary" onClick={() => setActiveEditor(null)}>Отменить</Button>
             <Button type="submit">Сохранить</Button>
           </div>
         </form>
@@ -296,383 +225,173 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
     }
 
     return (
-      <form action={updateRoomBusyRange} className={editorCardClass}>
+      <form action={updateRoomBusyRange} className="grid gap-4">
         <input type="hidden" name="propertyId" value={propertyId} />
         <input type="hidden" name="busyRangeId" value={activeEditor.busyRange.id} />
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="grid gap-1.5">
-            <strong className="text-base font-semibold leading-[1.25] text-[var(--color-text)]">{getPanelTitle(activeEditor)}</strong>
-            <p className="text-[13px] leading-[1.5] text-[var(--color-muted)]">{getPanelDescription(activeEditor)}</p>
-          </div>
-          <button type="button" className="text-sm font-bold text-[var(--color-primary)]" onClick={() => setActiveEditor(null)}>
-            Отменить
-          </button>
+        <div className="grid grid-cols-2 gap-3">
+          <Input id={`owner-busy-edit-start-${activeEditor.busyRange.id}`} name="startsOn" type="date" label="Заезд" defaultValue={activeEditor.busyRange.startsOn} required />
+          <Input id={`owner-busy-edit-end-${activeEditor.busyRange.id}`} name="endsOn" type="date" label="Выезд" defaultValue={activeEditor.busyRange.endsOn} required />
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Input
-            id={`owner-busy-edit-start-${activeEditor.busyRange.id}`}
-            name="startsOn"
-            type="date"
-            label="Заезд"
-            defaultValue={activeEditor.busyRange.startsOn}
-          />
-          <Input
-            id={`owner-busy-edit-end-${activeEditor.busyRange.id}`}
-            name="endsOn"
-            type="date"
-            label="Выезд"
-            defaultValue={activeEditor.busyRange.endsOn}
-          />
-          <Input
-            id={`owner-busy-edit-label-${activeEditor.busyRange.id}`}
-            name="label"
-            label="Пометка"
-            defaultValue={activeEditor.busyRange.label}
-            wrapperClassName="grid gap-1.5 md:col-span-2"
-          />
-          <Textarea
-            id={`owner-busy-edit-note-${activeEditor.busyRange.id}`}
-            name="note"
-            label="Комментарий"
-            rows={3}
-            defaultValue={activeEditor.busyRange.note}
-            wrapperClassName="grid gap-1.5 md:col-span-2"
-          />
-        </div>
-        <p className="text-xs leading-[1.5] text-[var(--color-muted)]">Дата выезда не занимает ночь и доступна для следующего заезда.</p>
-        <div className={actionGridClass}>
-          <Button type="submit" variant="danger" formAction={deleteRoomBusyRange}>
-            Удалить
-          </Button>
+        <Input id={`owner-busy-edit-label-${activeEditor.busyRange.id}`} name="label" label="Пометка" defaultValue={activeEditor.busyRange.label} />
+        <Textarea id={`owner-busy-edit-note-${activeEditor.busyRange.id}`} name="note" label="Комментарий" rows={4} defaultValue={activeEditor.busyRange.note} />
+        <p className="border-y border-[var(--border)] py-3 text-xs leading-[1.5] text-[var(--text-muted)]">
+          Дата выезда не занимает ночь и доступна для следующего заезда.
+        </p>
+        <div className={editorActionsClass}>
+          <Button type="submit" variant="danger" formAction={deleteRoomBusyRange}>Удалить диапазон</Button>
           <Button type="submit">Сохранить</Button>
         </div>
       </form>
     );
   }
 
+  if (!selectedRoom) {
+    return null;
+  }
+
   return (
-    <section className={stackClass}>
+    <section className="grid min-w-0 gap-6">
       {(serverNotice || localNotice) ? <InlineNotice tone={localNotice ? "error" : serverNoticeTone}>{serverNotice || localNotice}</InlineNotice> : null}
 
-      <section className={shellClass}>
-        <div className={shellHeaderClass}>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-[14px] bg-[rgb(var(--color-primary-rgb)_/_0.08)] text-[var(--accent-strong)]">
-              <AppIcon icon={CalendarDays} className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-[28px] font-bold leading-[1.05] tracking-[-0.04em] text-[var(--text)]">Календарь занятости</h3>
-              <p className="text-sm text-[var(--text-muted)]">{formatMonthRangeLabel(currentMonth)}</p>
-            </div>
+      <section className="min-w-0 overflow-hidden border-y border-[var(--border)] bg-[var(--surface)]" aria-label="Календарь занятости">
+        <header className="grid min-w-0 gap-4 border-b border-[var(--border)] px-5 py-4 lg:grid-cols-[minmax(220px,1fr)_auto_minmax(220px,1fr)] lg:items-center max-[720px]:px-3">
+          <div className="min-w-0">
+            {rooms.length > 1 ? (
+              <Select
+                id="owner-calendar-room"
+                aria-label="Выбрать номер"
+                value={selectedRoom.id}
+                onChange={(event) => handleRoomChange(event.target.value)}
+                className="max-w-[320px] rounded-[8px] bg-transparent font-semibold"
+                options={rooms.map((room) => ({ value: room.id, label: room.title }))}
+              />
+            ) : (
+              <div className="grid gap-0.5">
+                <strong className="truncate text-base font-semibold text-[var(--text)]">{selectedRoom.title}</strong>
+                <span className="text-xs text-[var(--text-muted)]">Номер</span>
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            <IconButton
-              aria-label="Предыдущий месяц"
-              className="size-[42px]"
-              onClick={() => updateMonth(addMonths(currentMonth, -1))}
-            >
+          <div className="flex items-center justify-center gap-1.5 max-[720px]:justify-between">
+            <IconButton aria-label="Предыдущий месяц" className={monthControlClass} onClick={() => updateMonth(addMonths(currentMonth, -1))}>
               <AppIcon icon={ChevronLeft} />
             </IconButton>
-            <Button
-              variant="secondary"
-              className="min-w-[152px] rounded-full"
-              onClick={() => {
-                const today = new Date();
-                updateMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-              }}
-            >
-              Текущий месяц
-            </Button>
-            <IconButton
-              aria-label="Следующий месяц"
-              className="size-[42px]"
-              onClick={() => updateMonth(addMonths(currentMonth, 1))}
-            >
+            <strong className="min-w-[156px] text-center text-lg font-semibold text-[var(--text)] max-[420px]:min-w-0">
+              {formatCalendarMonthLabel(currentMonth)}
+            </strong>
+            <IconButton aria-label="Следующий месяц" className={monthControlClass} onClick={() => updateMonth(addMonths(currentMonth, 1))}>
               <AppIcon icon={ChevronRight} />
             </IconButton>
           </div>
-        </div>
 
-        <div className={shellLegendClass}>
-          <span className="inline-flex items-center gap-1.5"><Dot className="h-[14px] w-[14px] text-[#f2c94c]" />Свободно</span>
-          <span className="inline-flex items-center gap-1.5"><Dot className="h-[14px] w-[14px] text-[#d99a2b]" />Занятые даты</span>
-          <span className="inline-flex items-center gap-1.5"><Dot className="h-[14px] w-[14px] text-[var(--accent)]" />Сегодня</span>
-          <span className="inline-flex items-center gap-1.5"><Dot className="h-[14px] w-[14px] text-[#7c6fd6]" />Выбранное начало</span>
-          <span className="inline-flex items-center gap-1.5"><Dot className="h-[14px] w-[14px] text-[#3b6ea8]" />Активный диапазон</span>
-        </div>
-
-        <div className="grid gap-3 px-0 pb-[18px] pt-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-2.5 max-[720px]:px-4">
-            <div className="flex min-w-0 flex-wrap items-center gap-3">
-              <strong className="text-sm text-[var(--text)]">{timelineWindowLabel}</strong>
-              <span className="text-xs text-[var(--text-muted)]">{visibleTimelineDays.length} дней в видимом окне</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <IconButton
-                aria-label="Показать предыдущие дни"
-                className="size-10"
-                disabled={!canMoveTimelineBackward}
-                onClick={() => shiftTimelineWindow(-1)}
-              >
-                <AppIcon icon={ChevronLeft} />
-              </IconButton>
-              <IconButton
-                aria-label="Показать следующие дни"
-                className="size-10"
-                disabled={!canMoveTimelineForward}
-                onClick={() => shiftTimelineWindow(1)}
-              >
-                <AppIcon icon={ChevronRight} />
-              </IconButton>
-            </div>
+          <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-[var(--text-muted)] max-[720px]:justify-start">
+            <span><strong className="font-semibold text-[var(--text)]">{formatRoomPrice(selectedRoom.pricePerNight)}</strong> за ночь</span>
+            <span>{formatBusyRangeCount(selectedRoom.busyRanges.length)}</span>
+            <button type="button" className="bg-transparent p-0 font-semibold text-[var(--accent-strong)] underline-offset-4 hover:underline" onClick={() => updateMonth(startOfMonth(new Date()))}>
+              Сегодня
+            </button>
           </div>
+        </header>
 
-          <div className="max-h-[min(58vh,720px)] overflow-auto px-5 pb-1 [scrollbar-gutter:stable_both-edges] max-[720px]:px-4">
-            <div
-              className="grid w-max min-w-[calc(190px+(var(--calendar-columns,31)*40px))] gap-2"
-              style={{ ["--calendar-columns" as string]: String(visibleTimelineDays.length) }}
-            >
-              <div className="sticky top-0 z-[5] grid grid-cols-[190px_minmax(0,1fr)] gap-[14px] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(255_255_255_/_0.94))] pb-1.5">
-                <div className="sticky left-0 z-[7] min-h-[54px] border-b border-[var(--border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(255_255_255_/_0.94))]" />
-
-                <div
-                  className="grid"
-                  style={{ gridTemplateColumns: `repeat(${visibleTimelineDays.length}, minmax(38px, 40px))` }}
-                >
-                  {visibleTimelineDays.map((day) => (
-                    <div
-                      key={day.key}
-                      className="grid min-h-[54px] justify-items-center gap-1 border-b border-[var(--border)] px-0 py-[6px] pb-2.5 text-[11px] lowercase text-[var(--text-muted)]"
-                    >
-                      <strong
-                        className={cn(
-                          "text-xs font-semibold text-[var(--text)]",
-                          day.isToday &&
-                            "grid h-8 w-8 place-items-center rounded-xl border border-[rgb(var(--color-primary-rgb)_/_0.26)] bg-[var(--surface)]",
-                        )}
-                      >
-                        {day.dayLabel}
-                      </strong>
-                      <span>{day.weekDayLabel}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid gap-3">
-                {rooms.map((room, rowIndex) => {
-                  const ranges = getTimelineBusyRanges(room.busyRanges, visibleTimelineDays);
-                  const isSelectedRoom = room.id === selectedRoom?.id;
-
-                  return (
-                    <div key={room.id} className="grid grid-cols-[190px_minmax(0,1fr)] items-stretch gap-[14px]">
-                      <button
-                        type="button"
-                        className={cn(
-                          "sticky left-0 z-[6] grid min-h-[72px] grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-[20px] border px-4 py-3 text-left shadow-[var(--shadow-sm)]",
-                          isSelectedRoom
-                            ? "border-[rgb(var(--color-primary-rgb)_/_0.28)] bg-[rgb(var(--color-primary-rgb)_/_0.08)]"
-                            : "border-[var(--color-border)] bg-[rgb(255_255_255_/_0.96)]",
-                        )}
-                        onClick={() => handleRoomFocus(room.id)}
-                      >
-                        <span
-                          className={cn(
-                            "grid h-9 w-9 place-items-center rounded-[14px] text-sm font-bold",
-                            `bg-[rgb(var(--color-primary-rgb)_/_0.${(rowIndex % 4) + 1}2)]`,
-                            "text-[var(--color-primary-hover)]",
-                          )}
-                        >
-                          {rowIndex + 1}
-                        </span>
-                        <span className="grid min-w-0 gap-0.5">
-                          <strong className="truncate text-sm font-semibold text-[var(--text)]">{room.title}</strong>
-                          <small className="text-xs text-[var(--text-muted)]">{getRoomSummary(room)}</small>
-                        </span>
-                      </button>
-
-                      <div className={cn("grid gap-2 rounded-[20px] border px-3 py-3", isSelectedRoom ? "border-[rgb(var(--color-primary-rgb)_/_0.22)] bg-[rgb(var(--color-primary-rgb)_/_0.04)]" : "border-[var(--color-border)] bg-[rgb(255_255_255_/_0.82)]")}>
-                        <div
-                          className="grid gap-2"
-                          style={{ gridTemplateColumns: `repeat(${visibleTimelineDays.length}, minmax(38px, 40px))` }}
-                        >
-                          {visibleTimelineDays.map((day) => {
-                            const dayBusyRange = findBusyRangeForDate(room.busyRanges, day.key);
-                            const isSelectionStart = isSelectedRoom && selectionStart === day.key;
-                            const isActiveRange = selectedBusyRangeId ? dayBusyRange?.id === selectedBusyRangeId : false;
-
-                            return (
-                              <button
-                                key={`${room.id}-${day.key}`}
-                                type="button"
-                                className={cn(
-                                  timelineCellClass,
-                                  dayBusyRange && "border-[rgb(217_154_43_/_0.18)] bg-[rgb(217_154_43_/_0.18)]",
-                                  day.isToday && "border-[rgb(var(--color-primary-rgb)_/_0.22)]",
-                                  isSelectionStart && "border-[#7c6fd6] bg-[rgb(124_111_214_/_0.16)]",
-                                  isActiveRange && "border-[#3b6ea8] bg-[rgb(59_110_168_/_0.18)]",
-                                )}
-                                onClick={() => handleTimelineCellClick(room, day.key)}
-                                aria-label={`${room.title}: ${formatDateLabel(day.date)}. ${dayBusyRange ? "Занято" : "Свободно"}.`}
-                              />
-                            );
-                          })}
-                        </div>
-
-                        <div
-                          className="grid gap-2 text-center text-[11px] text-[var(--text-muted)]"
-                          style={{ gridTemplateColumns: `repeat(${visibleTimelineDays.length}, minmax(38px, 40px))` }}
-                        >
-                          {visibleTimelineDays.map((day) => (
-                            <span key={`${room.id}-price-${day.key}`}>{room.pricePerNight.toLocaleString("ru-RU")}</span>
-                          ))}
-                        </div>
-
-                        <div
-                          className="grid gap-2"
-                          style={{ gridTemplateColumns: `repeat(${visibleTimelineDays.length}, minmax(38px, 40px))` }}
-                        >
-                          {ranges.map((range) => (
-                            <button
-                              key={range.busyRange.id}
-                              type="button"
-                              className={cn(
-                                "grid gap-1 rounded-2xl border px-2 py-2 text-left text-white shadow-[var(--shadow-sm)]",
-                                selectedBusyRangeId === range.busyRange.id
-                                  ? "border-[#3b6ea8] bg-[#3b6ea8]"
-                                  : "border-[#d99a2b] bg-[#d99a2b]",
-                              )}
-                              style={{
-                                gridColumn: `${range.startIndex + 1} / span ${range.span}`,
-                              }}
-                              onClick={() => handleOpenBusyRange(room.id, range.busyRange)}
-                            >
-                              <span className="truncate text-xs font-semibold">
-                                {range.clippedStart ? "…" : ""}
-                                {getTimelineRangeLabel(range.busyRange)}
-                                {range.clippedEnd ? "…" : ""}
-                              </span>
-                              <span className="inline-flex items-center gap-1 text-[11px] opacity-95">
-                                {formatShortDateLabel(range.busyRange.startsOn)} - {formatShortDateLabel(range.busyRange.endsOn)}
-                                <AppIcon icon={PencilLine} className="h-3.5 w-3.5" />
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+        <div className="grid grid-cols-7 border-l border-[var(--border)] bg-[var(--surface-subtle)]" aria-hidden="true">
+          {weekDays.map((day, index) => (
+            <div key={day} className={cn("border-b border-r border-[var(--border)] py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]", index > 4 && "text-[var(--accent-strong)]")}>
+              {day}
             </div>
-          </div>
+          ))}
         </div>
+
+        <div className="grid grid-cols-7 border-l border-[var(--border)]">
+          {monthDays.map((day, index) => {
+            const isSelectionStart = selectionStart === day.key;
+            const isActiveBusyRange = selectedBusyRangeId ? day.busyRange?.id === selectedBusyRangeId : false;
+            const { continuesFromPrevious, continuesToNext } = getBusyBandEdges(monthDays, index);
+            const showBusyLabel = Boolean(day.busyRange && !continuesFromPrevious);
+
+            return (
+              <button
+                key={day.key}
+                type="button"
+                className={cn(
+                  "group relative min-h-[104px] border-b border-r border-[var(--border)] bg-[var(--surface)] px-2 py-2 text-left transition-colors hover:bg-[var(--surface-subtle)] focus-visible:z-[3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--accent)] max-[720px]:min-h-[72px] max-[720px]:px-1.5 max-[720px]:py-1.5",
+                  !day.inCurrentMonth && "bg-[rgb(248_246_241_/_0.54)] text-[var(--text-subtle)]",
+                  isSelectionStart && "z-[2] bg-[rgb(var(--color-primary-rgb)_/_0.10)] ring-2 ring-inset ring-[var(--accent)]",
+                )}
+                onClick={() => handleDayClick(day.key)}
+                aria-label={`${selectedRoom.title}: ${formatDateLabel(day.date)}. ${day.busyRange ? `Занято: ${day.busyRange.label || "без пометки"}` : "Свободно"}. Цена ${formatRoomPrice(selectedRoom.pricePerNight)} за ночь.`}
+              >
+                <span className={cn("relative z-[2] inline-grid size-7 place-items-center text-sm font-semibold text-[var(--text)] max-[720px]:size-6 max-[720px]:text-xs", day.isToday && "rounded-full bg-[var(--accent)] text-white", !day.inCurrentMonth && !day.isToday && "text-[var(--text-subtle)]")}>
+                  {day.date.getDate()}
+                </span>
+
+                {day.busyRange ? (
+                  <span className={cn("absolute inset-x-0 top-[46px] z-[1] flex h-7 items-center bg-[#d99a2b] px-2 text-[11px] font-semibold text-[#20211f] max-[720px]:top-[34px] max-[720px]:h-6 max-[720px]:px-1", !continuesFromPrevious && "left-1 rounded-l-[6px]", !continuesToNext && "right-1 rounded-r-[6px]", isActiveBusyRange && "bg-[#3b6ea8] text-white")}>
+                    {showBusyLabel ? <span className="truncate">{day.busyRange.label || "Занято"}</span> : null}
+                  </span>
+                ) : null}
+
+                <span className="absolute bottom-2 left-2 text-[11px] text-[var(--text-muted)] max-[720px]:bottom-1.5 max-[720px]:left-1.5 max-[720px]:text-[9px]">
+                  {selectedRoom.pricePerNight.toLocaleString("ru-RU")}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] px-5 py-3 text-xs text-[var(--text-muted)] max-[720px]:px-3">
+          <span>{getSelectionNotice(selectionStart)}</span>
+          <span className="inline-flex flex-wrap items-center gap-x-4 gap-y-2" aria-label="Обозначения календаря">
+            <span className="inline-flex items-center gap-1.5"><span className="size-2.5 bg-[#d99a2b]" aria-hidden="true" />Занято</span>
+            <span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-[var(--accent)]" aria-hidden="true" />Сегодня</span>
+            <span className="inline-flex items-center gap-1.5"><span className="size-2.5 border-2 border-[var(--accent)]" aria-hidden="true" />Заезд выбран</span>
+          </span>
+        </footer>
       </section>
 
-      {selectedRoom ? (
-        <section className={stackClass}>
-          <div className="grid gap-4 md:grid-cols-3">
-            <StatCard title="Выбранный номер" value={selectedRoom.title} subtitle="Календарь занятости номера" />
-            <StatCard title="Базовая цена" value={formatRoomPrice(selectedRoom.pricePerNight)} subtitle="Отображается для каждого дня в шкале" />
-            <StatCard
-              title="Ближайший период"
-              value={
-                nearestBusyRange
-                  ? `${formatShortDateLabel(nearestBusyRange.startsOn)} - ${formatShortDateLabel(nearestBusyRange.endsOn)}`
-                  : "Нет занятых дат"
-              }
-              subtitle={nearestBusyRange?.label || "Свободные даты"}
-            />
+      <section className="border-t border-[var(--border)]" aria-labelledby="owner-busy-ranges-title">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] py-4">
+          <div className="grid gap-1">
+            <h3 id="owner-busy-ranges-title" className="text-lg font-semibold text-[var(--text)]">Занятые диапазоны</h3>
+            <p className="text-sm text-[var(--text-muted)]">Нажмите строку, чтобы изменить даты или комментарий.</p>
           </div>
+          <span className="text-sm font-semibold text-[var(--text-muted)]">{selectedRoom.busyRanges.length}</span>
+        </div>
 
-          <section className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-            <section className="grid gap-4 rounded-[22px] border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.96)] p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <strong className="text-base font-semibold text-[var(--text)]">{selectedRoom.title}</strong>
-                  <p className="mt-1 text-[13px] leading-[1.5] text-[var(--text-muted)]">Детальный месяц для проверки выбора и занятых дат.</p>
-                </div>
-                <span className="text-sm font-medium text-[var(--text-muted)]">{formatMonthLabel(currentMonth)}</span>
-              </div>
+        {selectedRoom.busyRanges.length ? (
+          <div className="divide-y divide-[var(--border)]">
+            {selectedRoom.busyRanges.map((busyRange) => (
+              <button
+                key={busyRange.id}
+                type="button"
+                className={cn("grid w-full grid-cols-[minmax(200px,0.9fr)_minmax(140px,0.65fr)_minmax(180px,1fr)_auto] items-center gap-4 px-1 py-3.5 text-left transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--accent)] max-[720px]:grid-cols-[minmax(0,1fr)_auto] max-[720px]:gap-x-3 max-[720px]:gap-y-1.5", selectedBusyRangeId === busyRange.id && "bg-[rgb(var(--color-primary-rgb)_/_0.08)]")}
+                onClick={() => handleOpenBusyRange(busyRange)}
+              >
+                <strong className="text-sm font-semibold text-[var(--text)]">{formatShortDateLabel(busyRange.startsOn)} — {formatShortDateLabel(busyRange.endsOn)}</strong>
+                <span className="truncate text-sm text-[var(--text)] max-[720px]:col-start-1">{busyRange.label || "Без пометки"}</span>
+                <span className="truncate text-sm text-[var(--text-muted)] max-[720px]:col-span-2">{busyRange.note || "Без комментария"}</span>
+                <AppIcon icon={PencilLine} className="h-4 w-4 text-[var(--text-muted)] max-[720px]:col-start-2 max-[720px]:row-start-1" aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="border-b border-[var(--border)] py-5 text-sm text-[var(--text-muted)]">Занятые даты ещё не отмечены.</p>
+        )}
+      </section>
 
-              <div className="grid grid-cols-7 gap-2">
-                {weekDays.map((day) => (
-                  <div key={day} className="text-center text-xs font-medium text-[var(--text-muted)]">
-                    {day}
-                  </div>
-                ))}
-
-                {monthDays.map((day) => {
-                  const isSelectionStart = selectionStart === day.key;
-                  const isActiveBusyRange = selectedBusyRangeId ? day.busyRange?.id === selectedBusyRangeId : false;
-
-                  return (
-                    <button
-                      key={day.key}
-                      type="button"
-                      className={cn(
-                        "grid min-h-[72px] gap-1 rounded-[16px] border border-transparent bg-[rgb(248_250_252_/_0.85)] px-2 py-2 text-left transition-[transform,border-color,background-color] duration-[180ms] hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.28)]",
-                        day.busyRange && "border-[rgb(217_154_43_/_0.18)] bg-[rgb(217_154_43_/_0.18)]",
-                        !day.inCurrentMonth && "bg-[rgb(248_250_252_/_0.40)] text-[rgb(148_163_184)]",
-                        day.isToday && "border-[rgb(var(--color-primary-rgb)_/_0.22)]",
-                        isSelectionStart && "border-[#7c6fd6] bg-[rgb(124_111_214_/_0.16)]",
-                        isActiveBusyRange && "border-[#3b6ea8] bg-[rgb(59_110_168_/_0.18)]",
-                      )}
-                      onClick={() => handleTimelineCellClick(selectedRoom, day.key)}
-                    >
-                      <span className="text-sm font-semibold text-[var(--text)]">{day.date.getDate()}</span>
-                      <small className="text-[11px] leading-[1.35] text-[var(--text-muted)]">
-                        {day.busyRange?.label || (day.busyRange ? "Занято" : "Свободно")}
-                      </small>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="grid gap-4">
-              <section className={editorCardClass}>
-                <div className="grid gap-1.5">
-                  <strong className="text-base font-semibold text-[var(--text)]">Занятые диапазоны</strong>
-                  <span className="text-[13px] leading-[1.5] text-[var(--text-muted)]">
-                    {selectedRoom.busyRanges.length
-                      ? "Откройте диапазон, чтобы изменить даты или комментарий."
-                      : "Пока нет занятых дат."}
-                  </span>
-                </div>
-                {selectedRoom.busyRanges.length ? (
-                  <div className="grid gap-3">
-                    {selectedRoom.busyRanges.map((busyRange) => (
-                      <button
-                        key={busyRange.id}
-                        type="button"
-                        className={cn(
-                          "grid gap-1 rounded-[18px] border px-4 py-3 text-left transition-[border-color,background-color,transform] duration-[180ms] hover:-translate-y-px",
-                          selectedBusyRangeId === busyRange.id
-                            ? "border-[rgb(var(--color-primary-rgb)_/_0.28)] bg-[rgb(var(--color-primary-rgb)_/_0.08)]"
-                            : "border-[var(--color-border)] bg-[rgb(255_255_255_/_0.92)]",
-                        )}
-                        onClick={() => handleOpenBusyRange(selectedRoom.id, busyRange)}
-                      >
-                        <strong className="text-sm font-semibold text-[var(--text)]">
-                          {formatDateLabel(busyRange.startsOn)} - {formatDateLabel(busyRange.endsOn)}
-                        </strong>
-                        <span className="text-sm text-[var(--text-muted)]">{busyRange.label || "Без пометки"}</span>
-                        <small className="text-xs text-[var(--text-muted)]">{busyRange.note || "Без комментария"}</small>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm leading-[1.5] text-[var(--text-muted)]">Занятые даты еще не отмечены.</p>
-                )}
-              </section>
-
-              {renderEditorPanel()}
-            </section>
-          </section>
-        </section>
-      ) : null}
+      <BottomSheet
+        open={Boolean(activeEditor)}
+        onOpenChange={(open) => { if (!open) setActiveEditor(null); }}
+        title={getPanelTitle(activeEditor)}
+        description={getPanelDescription(activeEditor, selectedRoom.title)}
+        closeLabel="Закрыть редактор"
+        desktopSidePanel
+        rootClassName="md:items-stretch md:justify-end md:pt-0"
+        className="max-[640px]:max-h-[94vh] md:mt-0 md:h-full md:max-h-none md:max-w-[460px] md:rounded-none md:rounded-l-[24px]"
+        bodyClassName="gap-4"
+      >
+        {renderEditorForm()}
+      </BottomSheet>
     </section>
   );
 }

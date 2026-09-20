@@ -4,7 +4,7 @@ import { getCalendarNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerPropertyDetail } from "@/entities/property";
 import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
 import { ButtonLink, DashboardPageNav, InlineNotice, Panel } from "@/shared/ui";
-import { AdminPageHeader, ObjectStats, StatusBadge } from "@/widgets/property-admin";
+import { AdminPageHeader, StatusBadge } from "@/widgets/property-admin";
 import { PropertySectionNav } from "@/widgets/property-section-nav";
 import { OwnerCalendarBrowser } from "@/widgets/owner-calendar-browser/owner-calendar-browser";
 
@@ -13,7 +13,7 @@ type PropertyCalendarPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const pageStackClass = "grid min-w-0 gap-6 max-[720px]:gap-5";
+const pageStackClass = "grid min-w-0 gap-5 max-[720px]:gap-4";
 
 export default async function PropertyCalendarPage({ params, searchParams }: PropertyCalendarPageProps) {
   const { propertyId } = await params;
@@ -28,8 +28,6 @@ export default async function PropertyCalendarPage({ params, searchParams }: Pro
   const error = typeof resolvedSearchParams.error === "string" ? resolvedSearchParams.error : "";
   const success = typeof resolvedSearchParams.success === "string" ? resolvedSearchParams.success : "";
   const notice = getCalendarNotice(error, success);
-  const busyRangeCount = property.rooms.reduce((total, room) => total + room.busyRanges.length, 0);
-  const roomsWithBusyRanges = property.rooms.filter((room) => room.busyRanges.length > 0).length;
   const propertyDescription = [property.title, property.propertyType, [property.city, property.address].filter(Boolean).join(", ")]
     .filter(Boolean)
     .join(" · ");
@@ -57,31 +55,13 @@ export default async function PropertyCalendarPage({ params, searchParams }: Pro
 
       {notice ? <InlineNotice tone={error ? "error" : "default"}>{notice}</InlineNotice> : null}
 
-      <Panel padding="sm" surface="subtle" className="rounded-[var(--radius-lg)]">
-        <PropertySectionNav propertyId={property.id} active="calendar" />
-      </Panel>
+      <PropertySectionNav propertyId={property.id} active="calendar" appearance="line" />
 
-      <Panel padding="md" aria-label="Сводка календаря">
-        <ObjectStats
-          compact
-          stackOnMobile={false}
-          items={[
-            { label: "Все номера", value: String(property.rooms.length) },
-            { label: "С занятыми датами", value: String(roomsWithBusyRanges) },
-            { label: "Диапазоны", value: String(busyRangeCount), tone: "accent" },
-          ]}
-        />
-      </Panel>
-
-      <section className="grid min-w-0 gap-4" aria-labelledby="property-calendar-title">
-        <div className="grid gap-1.5">
-          <h2 id="property-calendar-title" className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">
-            Занятые даты
-          </h2>
-          <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
-            Отмечайте недоступные периоды вручную. Это не подтверждает заявку на проживание автоматически.
-          </p>
-        </div>
+      <section className="grid min-w-0 gap-3" aria-labelledby="property-calendar-title">
+        <h2 id="property-calendar-title" className="sr-only">Календарь занятости</h2>
+        <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
+          Отмечайте недоступные периоды вручную. Это не подтверждает заявку на проживание автоматически.
+        </p>
 
         {property.rooms.length ? (
           <OwnerCalendarBrowser

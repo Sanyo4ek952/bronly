@@ -8,8 +8,7 @@ import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { buildOwnerInventoryBreadcrumbs, getRussianPluralForm } from "@/shared/lib";
 import { ButtonLink, DashboardPageNav, InlineNotice, Panel } from "@/shared/ui";
-import { AdminPageHeader, ObjectStats, StatusBadge } from "@/widgets/property-admin";
-import { PropertySectionNav } from "@/widgets/property-section-nav";
+import { AdminPageHeader, StatusBadge } from "@/widgets/property-admin";
 
 type PropertyRoomsPageProps = {
   params: Promise<{ propertyId: string }>;
@@ -56,14 +55,17 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
     : subscription?.roomLimit != null && subscription.remainingRoomSlots != null
       ? `Свободно еще ${subscription.remainingRoomSlots} ${getSlotWord(subscription.remainingRoomSlots)} в лимите активных номеров.`
       : null;
+  const shouldShowRoomLimitNotice = Boolean(
+    subscription?.roomLimit != null
+      && subscription.remainingRoomSlots != null
+      && subscription.remainingRoomSlots <= 1,
+  );
 
   const fallbackParams: Record<string, string | string[] | undefined> = {};
   const resolvedSearchParams = await (searchParams ?? Promise.resolve(fallbackParams));
   const error = typeof resolvedSearchParams.error === "string" ? resolvedSearchParams.error : "";
   const success = typeof resolvedSearchParams.success === "string" ? resolvedSearchParams.success : "";
   const notice = getRoomsNotice(error, success);
-  const busyRangeCount = property.rooms.reduce((total, room) => total + room.busyRanges.length, 0);
-  const activeRoomCount = property.rooms.filter((room) => room.isActive).length;
   const propertyDescription = [property.title, property.propertyType, [property.city, property.address].filter(Boolean).join(", ")]
     .filter(Boolean)
     .join(" · ");
@@ -98,10 +100,10 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
         />
       </div>
 
-      {notice || (subscription && roomUsageLabel) ? (
+      {notice || shouldShowRoomLimitNotice ? (
         <div className="grid gap-3">
           {notice ? <InlineNotice tone={error ? "error" : "default"}>{notice}</InlineNotice> : null}
-          {subscription && roomUsageLabel ? (
+          {shouldShowRoomLimitNotice && subscription && roomUsageLabel ? (
             <InlineNotice tone={subscription.isRoomLimitReached ? "warning" : "soft"}>
               Подписка: {roomUsageLabel}
               {roomLimitHint ? ` — ${roomLimitHint}` : ""}
@@ -109,22 +111,6 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
           ) : null}
         </div>
       ) : null}
-
-      <Panel padding="sm" surface="subtle" className="rounded-[var(--radius-lg)]">
-        <PropertySectionNav propertyId={property.id} active="rooms" />
-      </Panel>
-
-      <Panel padding="md" aria-label="Сводка по номерам">
-        <ObjectStats
-          compact
-          stackOnMobile={false}
-          items={[
-            { label: "Все номера", value: String(property.rooms.length) },
-            { label: "Активные", value: String(activeRoomCount) },
-            { label: "Занятые даты", value: String(busyRangeCount), tone: "accent" },
-          ]}
-        />
-      </Panel>
 
       <Panel padding="md" className="grid min-w-0 gap-5 max-[720px]:p-4">
         <div className={sectionHeaderClass}>
@@ -138,7 +124,7 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
 
         <div className={roomGridClass}>
           {property.rooms.length ? (
-            property.rooms.map((room) => (
+            property.rooms.map((room, roomIndex) => (
               <article
                 key={room.id}
                 className="grid min-w-0 gap-3 rounded-[20px] border border-[var(--border)] bg-[rgb(255_255_255_/_0.72)] p-3 shadow-[var(--shadow-sm)] xl:grid-cols-[minmax(0,1fr)_170px]"
@@ -156,6 +142,7 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
                         width={720}
                         height={480}
                         unoptimized
+                        loading={roomIndex === 0 ? "eager" : "lazy"}
                         className="h-full w-full object-cover"
                       />
                     ) : (
