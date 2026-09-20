@@ -24,6 +24,7 @@
     "supabase:types:cli": "npx supabase gen types typescript --linked"
   },
   "dependencies": {
+    "@radix-ui/react-select": "^2.3.7",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "lucide-react": "^1.17.0",

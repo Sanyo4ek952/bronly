@@ -392,8 +392,8 @@ export function RequestsBrowser({ requests, acceptAction, rejectAction, complete
           wrapperClassName="hidden max-[720px]:grid"
           className="min-h-11 bg-[var(--bg)]"
           value={statusFilter}
-          onChange={(event) => {
-            if (isRequestStatusFilter(event.target.value)) setStatusFilter(event.target.value);
+          onValueChange={(value) => {
+            if (isRequestStatusFilter(value)) setStatusFilter(value);
           }}
           options={statusSelectOptions}
         />
@@ -401,7 +401,7 @@ export function RequestsBrowser({ requests, acceptAction, rejectAction, complete
           aria-label="Номер"
           className="min-h-11 bg-[var(--bg)]"
           value={selectedRoomId}
-          onChange={(event) => setSelectedRoomId(event.target.value)}
+          onValueChange={setSelectedRoomId}
           options={[{ value: "all", label: "Все номера" }, ...roomOptions]}
         />
       </section>

@@ -261,7 +261,7 @@ export function OwnerCalendarBrowser({
                 id="owner-calendar-room"
                 aria-label="Выбрать номер"
                 value={selectedRoom.id}
-                onChange={(event) => handleRoomChange(event.target.value)}
+                onValueChange={handleRoomChange}
                 className="max-w-[320px] rounded-[8px] bg-transparent font-semibold"
                 options={rooms.map((room) => ({ value: room.id, label: room.title }))}
               />

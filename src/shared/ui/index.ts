@@ -4,8 +4,10 @@ export type { BottomSheetProps, BottomSheetRenderApi } from "@/shared/ui/bottom-
 export { Button, ButtonLink } from "@/shared/ui/button";
 export type { ButtonLinkProps, ButtonProps, ButtonSize, ButtonVariant } from "@/shared/ui/button";
 export { DashboardPageNav } from "@/shared/ui/dashboard-page-nav";
-export { Input, Select, Textarea } from "@/shared/ui/field";
-export type { InputProps, SelectProps, TextareaProps } from "@/shared/ui/field";
+export { Input, Textarea } from "@/shared/ui/field";
+export type { InputProps, TextareaProps } from "@/shared/ui/field";
+export { Select } from "@/shared/ui/select";
+export type { SelectOption, SelectProps } from "@/shared/ui/select";
 export { FormSection } from "@/shared/ui/form-section";
 export { AppIcon } from "@/shared/ui/icon";
 export type { AppIconComponent } from "@/shared/ui/icon";

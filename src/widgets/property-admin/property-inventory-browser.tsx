@@ -171,8 +171,8 @@ export function PropertyInventoryBrowser({ data, feedback = null, feedbackTone =
 
       <section className="grid grid-cols-[minmax(220px,1fr)_180px_190px] gap-2.5 rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-3 shadow-[var(--shadow-sm)] max-[720px]:grid-cols-[minmax(0,1fr)_44px] max-[720px]:p-2" aria-label="Поиск и фильтры">
         <Input id="properties-search" type="search" aria-label="Поиск по объектам и номерам" placeholder="Название, город или адрес" value={query} onChange={(event) => setQuery(event.target.value)} className="min-h-11 bg-[var(--bg)]" />
-        <Select id="properties-status" aria-label="Статус" options={statusOptions} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)} className="min-h-11 bg-[var(--bg)] max-[720px]:hidden" />
-        <Select id="properties-sort" aria-label="Сортировка" options={sortOptions} value={sort} onChange={(event) => setSort(event.target.value as SortMode)} className="min-h-11 bg-[var(--bg)] max-[720px]:hidden" />
+        <Select id="properties-status" aria-label="Статус" options={statusOptions} value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)} wrapperClassName="max-[720px]:hidden" className="min-h-11 bg-[var(--bg)]" />
+        <Select id="properties-sort" aria-label="Сортировка" options={sortOptions} value={sort} onValueChange={(value) => setSort(value as SortMode)} wrapperClassName="max-[720px]:hidden" className="min-h-11 bg-[var(--bg)]" />
         <span className="hidden max-[720px]:block">
           <IconButton type="button" aria-label="Открыть фильтры" aria-expanded={isFiltersOpen} className="size-11 rounded-[13px] bg-[var(--bg)] shadow-none" onClick={() => setIsFiltersOpen(true)}><SlidersHorizontal aria-hidden="true" className="size-[18px]" strokeWidth={2} /></IconButton>
         </span>
@@ -192,7 +192,7 @@ export function PropertyInventoryBrowser({ data, feedback = null, feedbackTone =
       </div>
 
       <BottomSheet open={isFiltersOpen} onOpenChange={setIsFiltersOpen} title="Фильтры" description="Выберите статус и порядок списка. Поиск остаётся доступен на странице." closeLabel="Закрыть фильтры" rootClassName="min-[721px]:hidden">
-        {({ close }) => <><Select id="properties-status-mobile" label="Статус" options={statusOptions} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)} className="min-h-11" /><Select id="properties-sort-mobile" label="Сортировка" options={sortOptions} value={sort} onChange={(event) => setSort(event.target.value as SortMode)} className="min-h-11" /><Button fullWidth onClick={close}>Показать результаты</Button></>}
+        {({ close }) => <><Select id="properties-status-mobile" label="Статус" options={statusOptions} value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)} className="min-h-11" /><Select id="properties-sort-mobile" label="Сортировка" options={sortOptions} value={sort} onValueChange={(value) => setSort(value as SortMode)} className="min-h-11" /><Button fullWidth onClick={close}>Показать результаты</Button></>}
       </BottomSheet>
     </div>
   );

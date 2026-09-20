@@ -41,7 +41,7 @@ type DragState = {
 
 function isInteractiveElement(target: EventTarget | null) {
   return target instanceof HTMLElement
-    && Boolean(target.closest("a, button, input, textarea, select, option, label, summary, [role='button']"));
+    && Boolean(target.closest("a, button, input, textarea, select, option, label, summary, [role='button'], [role='combobox'], [role='listbox'], [role='option']"));
 }
 
 export function BottomSheet({
@@ -186,6 +186,10 @@ export function BottomSheet({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        if (event.target instanceof HTMLElement && event.target.closest("[role='listbox']")) {
+          return;
+        }
+
         setCloseStartOffset(0);
         onOpenChange(false);
         return;

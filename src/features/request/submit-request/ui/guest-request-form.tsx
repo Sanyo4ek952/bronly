@@ -138,7 +138,7 @@ export function GuestRequestForm({
         name="roomId"
         label="Номер"
         value={selectedRoomId}
-        onChange={(event) => setSelectedRoomId(event.target.value)}
+        onValueChange={setSelectedRoomId}
         options={activeRooms.map((room) => ({
           value: room.id,
           label: !room.isAvailableForFilter && room.unavailableReason ? `${room.title} — ${room.unavailableReason}` : room.title,
@@ -173,7 +173,7 @@ export function GuestRequestForm({
         name="adultsCount"
         label="Количество гостей"
         value={adultsCount}
-        onChange={(event) => setAdultsCount(event.target.value)}
+        onValueChange={setAdultsCount}
         options={Array.from({ length: 8 }, (_, index) => {
           const value = String(index + 1);
           return { value, label: value };
@@ -185,7 +185,7 @@ export function GuestRequestForm({
         name="roomsCount"
         label="Комнаты"
         value={roomsCount}
-        onChange={(event) => setRoomsCount(event.target.value)}
+        onValueChange={setRoomsCount}
         options={Array.from({ length: 5 }, (_, index) => {
           const value = String(index + 1);
           return { value, label: value };

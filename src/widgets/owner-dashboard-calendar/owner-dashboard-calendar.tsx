@@ -201,13 +201,25 @@ export function OwnerDashboardCalendar({ groups, serverNotice = "", serverNotice
       <section className="overflow-hidden rounded-[22px] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)]" aria-label="Общий календарь кабинета">
         <div className="grid gap-3 border-b border-[var(--border)] bg-[var(--surface)] p-3.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-4">
           <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(132px,0.72fr)] gap-2 sm:max-w-[520px]">
-            <Select id="calendar-placement-filter" aria-label="Показать размещения" value={groupId} onChange={(event) => setGroupId(event.target.value)} className="min-w-0 bg-[var(--surface-subtle)] py-2 font-semibold">
-              <option value="all">Все размещения · {groups.reduce((sum, group) => sum + group.rooms.length, 0)}</option>
-              {groups.map((group) => <option key={group.id} value={group.id}>{group.title} · {group.rooms.length}</option>)}
-            </Select>
-            <Select id="calendar-month-filter" aria-label="Выбрать месяц" value={getMonthKey(currentMonth)} onChange={(event) => setCurrentMonth(parseMonthKey(event.target.value))} className="min-w-0 bg-[var(--surface-subtle)] py-2 font-semibold">
-              {monthOptions.map((month) => <option key={getMonthKey(month)} value={getMonthKey(month)}>{capitalize(formatMonthLabel(month))}</option>)}
-            </Select>
+            <Select
+              id="calendar-placement-filter"
+              aria-label="Показать размещения"
+              value={groupId}
+              onValueChange={setGroupId}
+              className="min-w-0 bg-[var(--surface-subtle)] py-2 font-semibold"
+              options={[
+                { value: "all", label: `Все размещения · ${groups.reduce((sum, group) => sum + group.rooms.length, 0)}` },
+                ...groups.map((group) => ({ value: group.id, label: `${group.title} · ${group.rooms.length}` })),
+              ]}
+            />
+            <Select
+              id="calendar-month-filter"
+              aria-label="Выбрать месяц"
+              value={getMonthKey(currentMonth)}
+              onValueChange={(value) => setCurrentMonth(parseMonthKey(value))}
+              className="min-w-0 bg-[var(--surface-subtle)] py-2 font-semibold"
+              options={monthOptions.map((month) => ({ value: getMonthKey(month), label: capitalize(formatMonthLabel(month)) }))}
+            />
           </div>
 
           <div className="flex items-center justify-between gap-2 sm:justify-end">

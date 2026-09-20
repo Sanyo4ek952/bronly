@@ -87,10 +87,16 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
                   />
                 </>
               ) : (
-                <Select id="role" name="role" label="Роль" defaultValue={requestedRole}>
-                    <option value="owner">Владелец</option>
-                    <option value="agent">Агент</option>
-                </Select>
+                <Select
+                  id="role"
+                  name="role"
+                  label="Роль"
+                  defaultValue={requestedRole}
+                  options={[
+                    { value: "owner", label: "Владелец" },
+                    { value: "agent", label: "Агент" },
+                  ]}
+                />
               )}
               <Input id="register-email" name="email" type="email" label="Email" placeholder="name@example.com" required />
               <Input id="phone" name="phone" type="tel" label="Телефон" placeholder="+7 (900) 123-45-67" />

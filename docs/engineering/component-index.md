@@ -10,7 +10,8 @@ Update this file when a new reusable component or composite pattern is added.
 - `BottomSheet` — `src/shared/ui/bottom-sheet.tsx` — Tailwind mobile dialog with drag-to-close, focus trap/restore, Escape and safe-area handling; accepts body/surface classes and render-close API.
 - `Button`, `ButtonLink` — `src/shared/ui/button.tsx` — shared `primary` / `secondary` / `danger` / `ghost`, `sm` / `md`, full-width, disabled and loading action API.
 - `DashboardPageNav` — `src/shared/ui/dashboard-page-nav.tsx` — back navigation and page-level dashboard nav.
-- `Input`, `Select`, `Textarea` — `src/shared/ui/field.tsx` — Tailwind form controls with labels, descriptions, disabled/focus styling and accessible error messaging.
+- `Input`, `Textarea` — `src/shared/ui/field.tsx` — Tailwind form controls with labels, descriptions, disabled/focus styling and accessible error messaging.
+- `Select` — `src/shared/ui/select.tsx` — единый Radix Select с Bronly-токенами, адаптивным меню, keyboard/typeahead-навигацией, ошибками и передачей значения в формы.
 - `FormSection` — `src/shared/ui/form-section.tsx` — section wrapper for grouped form content; supports static card and opt-in accessible accordion variants.
 - `AppIcon` — `src/shared/ui/icon.tsx` — icon mapping surface.
 - `IconButton` — `src/shared/ui/icon-button.tsx` — compact icon-only action button.

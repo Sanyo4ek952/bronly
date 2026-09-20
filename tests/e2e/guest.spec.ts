@@ -25,8 +25,10 @@ test.describe("guest", () => {
 
     await page.getByLabel("Заезд", { exact: true }).fill(e2eEnv.guest.checkIn);
     await page.getByLabel("Выезд", { exact: true }).fill(e2eEnv.guest.checkOut);
-    await page.getByLabel("Гости", { exact: true }).selectOption("2");
-    await page.getByLabel("Комнаты", { exact: true }).selectOption("1");
+    await page.getByLabel("Гости", { exact: true }).click();
+    await page.getByRole("option", { name: "2", exact: true }).click();
+    await page.getByLabel("Комнаты", { exact: true }).click();
+    await page.getByRole("option", { name: "1", exact: true }).click();
     await page.getByRole("button", { name: "Подобрать номера" }).click();
 
     await expect(page).toHaveURL(new RegExp(`checkIn=${e2eEnv.guest.checkIn}`));

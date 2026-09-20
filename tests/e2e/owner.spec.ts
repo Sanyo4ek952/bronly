@@ -8,8 +8,19 @@ test.describe("owner", () => {
     await page.goto("/register?role=owner");
 
     await expect(page.getByRole("heading", { name: "Создайте аккаунт" })).toBeVisible();
-    await expect(page.getByLabel("Роль", { exact: true })).toHaveValue("owner");
-    await expect(page.locator('option[value="owner"]')).toHaveText("Владелец");
+    const roleSelect = page.getByLabel("Роль", { exact: true });
+
+    await expect(roleSelect).toHaveText("Владелец");
+    await roleSelect.click();
+    await expect(page.getByRole("listbox")).toBeVisible();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    await expect(roleSelect).toHaveText("Агент");
+    await expect(page.locator('select[name="role"]')).toHaveValue("agent");
+
+    await page.locator("form").evaluate((form) => (form as HTMLFormElement).reset());
+    await expect(roleSelect).toHaveText("Владелец");
+    await expect(page.locator('select[name="role"]')).toHaveValue("owner");
   });
 
   test("owner reaches inventory, standalone room, calendar and public link", async ({ page }) => {
@@ -46,6 +57,26 @@ test.describe("owner", () => {
         `/p/${e2eEnv.owner.publicSlug}`,
       );
     }
+  });
+
+  test("mobile inventory select closes before its filter sheet", async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.includes("mobile"), "This interaction is specific to the mobile filter sheet.");
+    test.skip(!hasRoleCredentials("owner"), "Configure the dedicated E2E owner account.");
+    await loginAs(page, "owner");
+    await page.goto("/dashboard/properties");
+
+    await page.getByRole("button", { name: "Открыть фильтры" }).click();
+    const sheetHeading = page.getByRole("heading", { name: "Фильтры" });
+    await expect(sheetHeading).toBeVisible();
+
+    await page.getByLabel("Статус", { exact: true }).click();
+    await expect(page.getByRole("listbox")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("listbox")).toBeHidden();
+    await expect(sheetHeading).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(sheetHeading).toBeHidden();
   });
 
   test("owner cannot enter agent or admin role surfaces", async ({ page }) => {

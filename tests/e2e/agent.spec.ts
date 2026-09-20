@@ -8,8 +8,8 @@ test.describe("agent", () => {
     await page.goto("/register?role=agent");
 
     await expect(page.getByRole("heading", { name: "Создайте аккаунт" })).toBeVisible();
-    await expect(page.getByLabel("Роль", { exact: true })).toHaveValue("agent");
-    await expect(page.locator('option[value="agent"]')).toHaveText("Агент");
+    await expect(page.getByLabel("Роль", { exact: true })).toHaveText("Агент");
+    await expect(page.locator('select[name="role"]')).toHaveValue("agent");
   });
 
   test("agent reaches storefront, collaborations, requests and read-only calendar", async ({ page }) => {
