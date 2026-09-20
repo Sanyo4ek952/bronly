@@ -51,7 +51,7 @@ export default async function PropertyRoomSettingsPage({ params, searchParams }:
       <div className="grid min-w-0 gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[var(--accent-strong)]">Номер объекта</p>
-          <StatusPill variant={room.isActive ? "active" : "inactive"}>{room.isActive ? "Активен" : "Неактивен"}</StatusPill>
+          <StatusPill variant={room.isActive ? "active" : "inactive"}>{room.isActive ? "Опубликован" : "В архиве"}</StatusPill>
         </div>
         <AdminPageHeader
           variant="plain"
@@ -67,7 +67,12 @@ export default async function PropertyRoomSettingsPage({ params, searchParams }:
 
       {notice ? <InlineNotice tone={error ? "error" : "default"}>{notice}</InlineNotice> : null}
 
-      <RoomSettingsEditor propertyId={property.id} room={room} redirectTo={redirectTo} />
+      <RoomSettingsEditor
+        propertyId={property.id}
+        room={room}
+        redirectTo={redirectTo}
+        propertyAllowAgentInquiries={property.allowAgentInquiries}
+      />
     </section>
   );
 }

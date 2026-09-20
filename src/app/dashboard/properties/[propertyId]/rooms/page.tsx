@@ -52,7 +52,7 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
       : `${subscription.activeRoomCount} из ${subscription.roomLimit} активных номеров`
     : null;
   const roomLimitHint = subscription?.isRoomLimitReached
-    ? "Лимит активных номеров исчерпан. Деактивация и редактирование текущих данных доступны, но создание нового активного номера или активация неактивного номера будут заблокированы."
+    ? "Лимит активных номеров исчерпан. Редактирование и архивация доступны, но создание нового номера или восстановление номера из архива будут заблокированы."
     : subscription?.roomLimit != null && subscription.remainingRoomSlots != null
       ? `Свободно еще ${subscription.remainingRoomSlots} ${getSlotWord(subscription.remainingRoomSlots)} в лимите активных номеров.`
       : null;

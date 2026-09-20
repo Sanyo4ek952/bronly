@@ -47,7 +47,7 @@ export default async function StandaloneRoomCalendarPage({ params, searchParams 
       <div className="grid min-w-0 gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[var(--accent-strong)]">Отдельный номер</p>
-          <StatusPill variant={room.isActive ? "active" : "inactive"}>{room.isActive ? "Активен" : "Неактивен"}</StatusPill>
+          <StatusPill variant={room.isActive ? "active" : "inactive"}>{room.isActive ? "Опубликован" : "В архиве"}</StatusPill>
         </div>
         <AdminPageHeader
           variant="plain"

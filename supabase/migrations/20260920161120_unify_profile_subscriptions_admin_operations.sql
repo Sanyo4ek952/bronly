@@ -1,3 +1,7 @@
+-- The newer owner-only room trigger may already exist when this migration is
+-- backfilled after the archive workflow. Remove it before replacing its function.
+drop trigger if exists rooms_enforce_owner_room_limit on public.rooms;
+
 -- One entitlement per profile, with explicit admin operations and immutable payments.
 
 drop trigger if exists rooms_enforce_room_limit on public.rooms;

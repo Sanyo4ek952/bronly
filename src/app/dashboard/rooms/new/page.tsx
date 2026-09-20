@@ -1,14 +1,15 @@
 import { createOwnerRoom } from "@/app/dashboard/properties/actions";
 import { getRoomCreateNotice } from "@/app/dashboard/properties/page-helpers";
 import {
+  RoomAgentSettings,
   RoomAmenitiesSection,
   RoomBaseFields,
   RoomPhotosField,
   RoomPricingFields,
-  RoomPublishSettings,
 } from "@/features/property/edit-room/ui/room-form-blocks";
 import { RoomDateRangeField } from "@/features/property/edit-room/ui/room-date-range-field";
 import { RoomFormSection } from "@/features/property/edit-room/ui/room-form-section";
+import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { buildOwnerInventoryBreadcrumbs, readSearchParams } from "@/shared/lib";
 import { Button, ButtonLink, DashboardPageNav, InlineNotice, Input, Panel, Textarea } from "@/shared/ui";
@@ -26,6 +27,7 @@ export default async function StandaloneRoomCreatePage({ searchParams }: Standal
   const error = typeof params.error === "string" ? params.error : "";
   const notice = getRoomCreateNotice(error);
   const profile = await getCurrentAuthProfile();
+  const subscription = profile ? await getSubscriptionRuntimeState(profile.id, "owner") : null;
 
   return (
     <section className={pageStackClass}>
@@ -47,7 +49,13 @@ export default async function StandaloneRoomCreatePage({ searchParams }: Standal
       {notice || profile ? (
         <div className="grid gap-3">
           {notice ? <InlineNotice tone="error">{notice}</InlineNotice> : null}
-          {profile ? <InlineNotice tone="soft">Подписка учитывает этот номер в общем лимите активных номеров.</InlineNotice> : null}
+          {profile ? (
+            <InlineNotice tone={subscription?.isRoomLimitReached ? "warning" : "soft"}>
+              {subscription?.isRoomLimitReached
+                ? "Лимит активных номеров исчерпан. Архивируйте один из текущих номеров или увеличьте лимит подписки."
+                : "После создания номер сразу появится на публичной странице и займёт одно место в общем лимите активных номеров."}
+            </InlineNotice>
+          ) : null}
         </div>
       ) : null}
 
@@ -99,15 +107,14 @@ export default async function StandaloneRoomCreatePage({ searchParams }: Standal
             </div>
           </RoomFormSection>
 
-          <RoomPublishSettings
-            title="Настройки"
-            description="Что показывать гостю и как вести номер в кабинете."
-            allowAgentControls
+          <RoomAgentSettings
+            title="Работа с агентами"
+            description="Разрешите агентам присылать предложения о сотрудничестве по этому номеру."
           />
 
           <div className="grid gap-3 md:grid-cols-2">
             <ButtonLink href="/dashboard/properties" variant="secondary" fullWidth>К общему списку</ButtonLink>
-            <Button type="submit" fullWidth>Создать номер</Button>
+            <Button type="submit" fullWidth disabled={subscription?.isRoomLimitReached}>Создать номер</Button>
           </div>
         </form>
       </Panel>

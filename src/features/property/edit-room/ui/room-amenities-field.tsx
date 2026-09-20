@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent, useState } from "react";
+import { useState } from "react";
 
 import { cn } from "@/shared/lib/cn";
 
@@ -20,9 +20,6 @@ type AmenityCategoryView = AmenityCategory & {
 
 type RoomAmenitiesFieldProps = {
   name?: string;
-  id?: string;
-  label?: string;
-  description?: string;
   initialAmenities?: string[];
 };
 
@@ -138,7 +135,7 @@ function splitInitialAmenities(initialAmenities: string[]) {
   return { selected, custom };
 }
 
-function buildInitialOpenCategories(selectedAmenities: string[], customAmenities: string[]) {
+function buildInitialOpenCategories(selectedAmenities: string[]) {
   const selectedKeys = new Set(selectedAmenities);
   const open = new Set<string>();
 
@@ -148,30 +145,17 @@ function buildInitialOpenCategories(selectedAmenities: string[], customAmenities
     }
   });
 
-  if (customAmenities.length) {
-    open.add("custom");
-  }
-
   return open;
 }
 
 export function RoomAmenitiesField({
   name = "amenities",
-  id = "room-amenities",
-  label = "Удобства номера",
-  description = "Отметьте то, что уже есть в номере. Остальное можно добавить своими словами.",
   initialAmenities = [],
 }: RoomAmenitiesFieldProps) {
   const initialState = splitInitialAmenities(initialAmenities);
   const [selectedAmenities, setSelectedAmenities] = useState(initialState.selected);
-  const [customAmenities, setCustomAmenities] = useState(initialState.custom);
-  const [draftAmenity, setDraftAmenity] = useState("");
-  const [openCategories, setOpenCategories] = useState(() =>
-    buildInitialOpenCategories(initialState.selected, initialState.custom),
-  );
-  const [showAll, setShowAll] = useState(
-    initialState.selected.some((amenity) => !popularLabels.has(amenity)) || initialState.custom.length > 0,
-  );
+  const [openCategories, setOpenCategories] = useState(() => buildInitialOpenCategories(initialState.selected));
+  const [showAll, setShowAll] = useState(initialState.selected.some((amenity) => !popularLabels.has(amenity)));
   const selectedSet = new Set(selectedAmenities);
   const visibleCategories: AmenityCategoryView[] = amenityCatalog
     .map((category) => ({
@@ -181,7 +165,7 @@ export function RoomAmenitiesField({
     }))
     .filter((category) => category.items.length > 0);
   const orderedSelectedAmenities = catalogLabels.filter((amenity) => selectedSet.has(amenity));
-  const serializedAmenities = [...orderedSelectedAmenities, ...customAmenities].join("\n");
+  const serializedAmenities = [...orderedSelectedAmenities, ...initialState.custom].join("\n");
   const hasAdditionalAmenities = catalogLabels.some((amenity) => !popularLabels.has(amenity));
 
   function toggleAmenity(amenity: string) {
@@ -212,54 +196,8 @@ export function RoomAmenitiesField({
     });
   }
 
-  function addCustomAmenity() {
-    const value = draftAmenity.trim().replace(/\s+/g, " ");
-
-    if (!value) {
-      return;
-    }
-
-    const catalogLabel = catalogLabelByKey.get(normalizeAmenity(value));
-
-    if (catalogLabel) {
-      setSelectedAmenities((current) => (current.includes(catalogLabel) ? current : [...current, catalogLabel]));
-      setShowAll((current) => current || !popularLabels.has(catalogLabel));
-      setDraftAmenity("");
-      return;
-    }
-
-    setCustomAmenities((current) => dedupeAmenities([...current, value]));
-    setOpenCategories((current) => {
-      const next = new Set(current);
-      next.add("custom");
-      return next;
-    });
-    setDraftAmenity("");
-  }
-
-  function removeCustomAmenity(amenity: string) {
-    const target = normalizeAmenity(amenity);
-    setCustomAmenities((current) => current.filter((item) => normalizeAmenity(item) !== target));
-  }
-
-  function handleDraftAmenityKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== "Enter") {
-      return;
-    }
-
-    event.preventDefault();
-    addCustomAmenity();
-  }
-
   return (
     <div className="grid gap-[14px]">
-      <div className="grid gap-1.5">
-        <label className="text-[var(--label-size)] font-bold leading-[1.4] text-[var(--text-muted)]" htmlFor={`${id}-custom`}>
-          {label}
-        </label>
-        <span className="text-xs leading-[1.45] text-[var(--text-muted)]">{description}</span>
-      </div>
-
       <textarea hidden readOnly name={name} value={serializedAmenities} />
 
       <div className="grid gap-3 md:grid-cols-2 max-[640px]:grid-cols-1">
@@ -338,80 +276,6 @@ export function RoomAmenitiesField({
         </button>
       ) : null}
 
-      <section
-        className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[rgb(248_250_252_/_0.9)] p-4 max-[640px]:p-[14px]"
-        data-open={openCategories.has("custom") ? "true" : "false"}
-      >
-        <button
-          type="button"
-          className="flex min-h-8 w-full items-center justify-between gap-3 bg-transparent text-left text-[var(--color-text)]"
-          aria-expanded={openCategories.has("custom")}
-          onClick={() => toggleCategory("custom")}
-        >
-          <span className="grid gap-1">
-            <strong className="text-[15px] leading-[1.3]">Свои удобства</strong>
-            <small className="text-xs leading-[1.4] text-[var(--color-muted)] max-[640px]:hidden">
-              {customAmenities.length ? `Добавлено: ${customAmenities.length}` : "То, чего нет в списке"}
-            </small>
-          </span>
-          <span
-            className={cn(
-              "text-[18px] leading-none text-[var(--color-muted)] transition-transform duration-[180ms] max-[640px]:inline-flex",
-              openCategories.has("custom") ? "rotate-0" : "-rotate-90",
-            )}
-            aria-hidden="true"
-          >
-            ▾
-          </span>
-        </button>
-
-        <div className={cn("grid gap-3", !openCategories.has("custom") && "max-[640px]:hidden")}>
-          <div className="grid gap-1.5">
-            <strong className="text-[15px] leading-[1.3]">Свои удобства</strong>
-            <span className="text-[13px] leading-[1.5] text-[var(--color-muted)]">Добавьте то, чего нет в списке выше.</span>
-          </div>
-
-          {customAmenities.length ? (
-            <div className="flex flex-wrap gap-2">
-              {customAmenities.map((amenity) => (
-                <span
-                  key={amenity}
-                  className="inline-flex min-h-[34px] items-center gap-2 rounded-full border border-[rgb(var(--color-primary-rgb)_/_0.16)] bg-[var(--color-primary-pale)] px-[10px] py-1.5 text-[13px] text-[var(--color-text)]"
-                >
-                  <span>{amenity}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeCustomAmenity(amenity)}
-                    aria-label={`Удалить: ${amenity}`}
-                    className="grid h-[18px] w-[18px] place-items-center rounded-full bg-transparent text-base leading-none text-[var(--color-muted)]"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          ) : null}
-
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2.5 max-[640px]:grid-cols-1">
-            <input
-              id={`${id}-custom`}
-              type="text"
-              className="min-h-10 w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-[13px] leading-[1.45] text-[var(--text)] transition-[border-color,box-shadow] duration-[180ms] placeholder:text-[var(--text-subtle)] focus:outline-none focus:border-[rgb(var(--color-primary-rgb)_/_0.44)] focus:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.12)]"
-              value={draftAmenity}
-              onChange={(event) => setDraftAmenity(event.target.value)}
-              onKeyDown={handleDraftAmenityKeyDown}
-              placeholder="Например: кофемашина"
-            />
-            <button
-              type="button"
-              className="inline-flex min-h-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-4 text-[13px] font-bold leading-none text-[var(--text)] transition-[background-color,border-color,color,transform,box-shadow] duration-[180ms] hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.24)] hover:bg-[var(--color-primary-pale)]"
-              onClick={addCustomAmenity}
-            >
-              Добавить
-            </button>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

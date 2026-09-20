@@ -9,7 +9,6 @@ import {
   RoomBaseFields,
   RoomPhotosField,
   RoomPricingFields,
-  RoomPublishSettings,
 } from "@/features/property/edit-room/ui/room-form-blocks";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { buildOwnerInventoryBreadcrumbs, getRussianPluralForm, readSearchParams } from "@/shared/lib";
@@ -44,7 +43,7 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
       : `${subscription.activeRoomCount} из ${subscription.roomLimit} активных номеров`
     : null;
   const roomLimitHint = subscription?.isRoomLimitReached
-    ? "Лимит активных номеров уже исчерпан. Вы можете сохранить новый номер как неактивный, а затем деактивировать другой номер или продлить подписку."
+    ? "Лимит активных номеров исчерпан. Архивируйте один из текущих номеров или увеличьте лимит подписки."
     : subscription?.roomLimit != null && subscription.remainingRoomSlots != null
       ? `Сейчас доступно еще ${subscription.remainingRoomSlots} ${getActiveRoomWord(subscription.remainingRoomSlots)}.`
       : null;
@@ -119,11 +118,9 @@ export default async function PropertyRoomCreatePage({ params, searchParams }: P
 
           <RoomPhotosField title="Фото номера" description="Можно выбрать до 10 фото сразу. Первое фото станет главным." />
 
-          <RoomPublishSettings title="Настройки" description="Оставьте только то, что важно для публикации." />
-
           <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
             <div />
-            <Button type="submit" fullWidth>
+            <Button type="submit" fullWidth disabled={subscription?.isRoomLimitReached}>
               Сохранить номер
             </Button>
           </div>

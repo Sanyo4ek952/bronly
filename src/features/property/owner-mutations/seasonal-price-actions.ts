@@ -57,7 +57,7 @@ export async function createRoomSeasonalPrice(formData: FormData) {
     starts_on: startsOn,
     ends_on: endsOn,
     price_per_night: getNumber(formData, "pricePerNight", 0),
-    is_active: getCheckbox(formData, "isActive"),
+    is_active: true,
   });
 
   if (error) {

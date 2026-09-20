@@ -13,7 +13,7 @@ type StatusBadgeProps =
 
 export function StatusBadge(props: StatusBadgeProps) {
   if (props.kind === "room") {
-    return <StatusPill variant={props.isActive ? "active" : "inactive"}>{props.isActive ? "Активен" : "Неактивен"}</StatusPill>;
+    return <StatusPill variant={props.isActive ? "active" : "inactive"}>{props.isActive ? "Опубликован" : "В архиве"}</StatusPill>;
   }
 
   const active = props.published && !props.isFrozen;

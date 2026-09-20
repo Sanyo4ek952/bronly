@@ -119,43 +119,23 @@ export function RoomPhotosField({
   );
 }
 
-export function RoomPublishSettings({
+export function RoomAgentSettings({
   title,
   description,
-  allowAgentControls = false,
   values,
   children,
 }: RoomSectionProps & {
-  allowAgentControls?: boolean;
   values?: {
-    isActive?: boolean;
     allowAgentInquiries?: boolean;
-    allowOwnerContactSharing?: boolean;
   };
 }) {
   return (
     <FormSection variant="plain" title={title} description={description}>
       <div className={toggleListClass}>
         <label className={toggleRowClass}>
-          <span className="max-w-[calc(100%-42px)]">Номер активен</span>
-          <input type="checkbox" name="isActive" defaultChecked={values?.isActive ?? true} />
+          <span className="max-w-[calc(100%-42px)]">Хочу работать с агентами</span>
+          <input type="checkbox" name="allowAgentInquiries" defaultChecked={values?.allowAgentInquiries ?? false} />
         </label>
-        {allowAgentControls ? (
-          <>
-            <label className={toggleRowClass}>
-              <span className="max-w-[calc(100%-42px)]">Готов сотрудничать с агентами</span>
-              <input type="checkbox" name="allowAgentInquiries" defaultChecked={values?.allowAgentInquiries ?? false} />
-            </label>
-            <label className={toggleRowClass}>
-              <span className="max-w-[calc(100%-42px)]">Показывать контакты владельца агенту</span>
-              <input
-                type="checkbox"
-                name="allowOwnerContactSharing"
-                defaultChecked={values?.allowOwnerContactSharing ?? false}
-              />
-            </label>
-          </>
-        ) : null}
       </div>
       {children}
     </FormSection>

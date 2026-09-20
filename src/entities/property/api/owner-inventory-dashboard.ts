@@ -53,7 +53,7 @@ function getStandaloneStatus(row: SupabaseRoomRow): { status: OwnerInventoryDash
     return { status: "published", label: "Опубликован" };
   }
 
-  return { status: "draft", label: "Черновик" };
+  return { status: "archived", label: "Архив" };
 }
 
 function clampPercent(value: number) {

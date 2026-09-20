@@ -61,7 +61,7 @@ export function RoomDetailPage({
           <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[var(--accent-strong)]">
             {room.kind === "standalone_room" ? "Отдельный номер" : "Номер объекта"}
           </p>
-          <StatusPill variant={room.isActive ? "active" : "inactive"}>{room.isActive ? "Активен" : "Неактивен"}</StatusPill>
+          <StatusPill variant={room.isActive ? "active" : "inactive"}>{room.isActive ? "Опубликован" : "В архиве"}</StatusPill>
         </div>
         <AdminPageHeader
           variant="plain"
@@ -89,7 +89,7 @@ export function RoomDetailPage({
           <div className="grid content-start gap-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <StatusPill variant={room.isActive ? "active" : "inactive"}>
-                {room.isActive ? "Активен" : "Неактивен"}
+                {room.isActive ? "Опубликован" : "В архиве"}
               </StatusPill>
               <strong className="whitespace-nowrap text-[24px] font-extrabold leading-none text-[var(--color-text)]">
                 {formatRubles(room.pricePerNight)} / ночь

@@ -60,6 +60,12 @@ export function getRoomsNotice(error: string, success: string) {
   if (success === "room-saved") {
     return "Номер обновлён.";
   }
+  if (success === "room-archived") {
+    return "Номер перенесён в архив и скрыт с публичных страниц.";
+  }
+  if (success === "room-restored") {
+    return "Номер восстановлен и снова доступен на публичных страницах.";
+  }
   if (success === "room-deleted") {
     return "Номер удалён.";
   }
@@ -90,7 +96,7 @@ export function getRoomsNotice(error: string, success: string) {
     case "subscription":
       return "Подписка не продлена. Изменение номеров временно недоступно.";
     case "room-limit":
-      return "Лимит активных номеров исчерпан. Деактивируйте один из текущих активных номеров или продлите подписку с большим лимитом.";
+      return "Лимит активных номеров исчерпан. Архивируйте один из текущих номеров или увеличьте лимит подписки.";
     case "overlap":
       return "Сезонные цены не должны пересекаться по датам.";
     case "delete-confirmation":
@@ -127,7 +133,7 @@ export function getRoomCreateNotice(error: string) {
     case "subscription":
       return "Подписка не продлена. Добавление номера временно недоступно.";
     case "room-limit":
-      return "Лимит активных номеров исчерпан. Можно сохранить номер как неактивный или сначала освободить место в лимите.";
+      return "Лимит активных номеров исчерпан. Архивируйте один из текущих номеров или увеличьте лимит подписки.";
     case "room-photo-type":
       return "Для номера поддерживаются только JPG, PNG, WebP и GIF.";
     case "room-photo-size":

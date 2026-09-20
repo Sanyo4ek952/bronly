@@ -62,7 +62,23 @@ function getStandaloneRoomPayload(formData: FormData) {
     check_in_time: null,
     check_out_time: null,
     allow_agent_inquiries: getCheckbox(formData, "allowAgentInquiries"),
-    allow_owner_contact_sharing: getCheckbox(formData, "allowOwnerContactSharing"),
+    allow_owner_contact_sharing: false,
+  };
+}
+
+function getStandaloneRoomUpdatePayload(formData: FormData) {
+  return {
+    property_type: DEFAULT_STANDALONE_ROOM_TYPE,
+    city: getString(formData, "city"),
+    address: getString(formData, "address"),
+    timezone: DEFAULT_TIMEZONE,
+    short_description: getString(formData, "shortDescription") || null,
+    full_description: getString(formData, "fullDescription") || null,
+    phone: getString(formData, "phone") || null,
+    whatsapp: null,
+    telegram: getString(formData, "telegram") || null,
+    check_in_time: null,
+    check_out_time: null,
   };
 }
 
@@ -91,7 +107,6 @@ export async function createOwnerRoom(formData: FormData) {
   const isStandalone = !propertyId;
   const profile = await requireOwnerMutationAccess(propertyId ? buildPropertyRoomCreatePath(propertyId) : buildStandaloneRoomCreatePath());
   const title = getString(formData, "title");
-  const isActive = getCheckbox(formData, "isActive");
   const roomPhotoFiles = getUploadedRoomPhotoFiles(formData);
   const roomPhotoError = validateRoomPhotoFiles(roomPhotoFiles);
   const initialBusyRange = getInitialBusyRange(formData);
@@ -116,9 +131,7 @@ export async function createOwnerRoom(formData: FormData) {
     await requireOwnedProperty(profile.id, propertyId, buildPropertyRoomCreatePath(propertyId));
   }
 
-  if (isActive) {
-    await requireOwnerActiveRoomSlotAccess(propertyId ? buildPropertyRoomCreatePath(propertyId) : buildStandaloneRoomCreatePath());
-  }
+  await requireOwnerActiveRoomSlotAccess(propertyId ? buildPropertyRoomCreatePath(propertyId) : buildStandaloneRoomCreatePath());
 
   const supabase = await createSupabaseServerClient();
   const slug = await generateUniqueRoomSlug(title, { propertyId: propertyId || null, ownerId: profile.id });
@@ -135,7 +148,7 @@ export async function createOwnerRoom(formData: FormData) {
       bedrooms: getInteger(formData, "bedrooms", 1),
       area: getInteger(formData, "area", 0),
       price_per_night: getNumber(formData, "pricePerNight", 0),
-      is_active: isActive,
+      is_active: true,
       ...(isStandalone ? getStandaloneRoomPayload(formData) : {}),
     })
     .select("id")
@@ -185,7 +198,6 @@ export async function updateOwnerRoom(formData: FormData) {
     propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId),
   );
   const title = getString(formData, "title");
-  const nextIsActive = getCheckbox(formData, "isActive");
   const fallbackPath = propertyId ? buildPropertyRoomSettingsPath(propertyId, roomId) : buildStandaloneRoomSettingsPath(roomId);
 
   if (!roomId || !title || (!propertyId && !validateStandaloneRoom(formData))) {
@@ -198,20 +210,6 @@ export async function updateOwnerRoom(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data: existingRoom } = await supabase
-    .from("rooms")
-    .select("is_active, owner_id")
-    .eq("id", roomId)
-    .maybeSingle();
-
-  if (!existingRoom || existingRoom.owner_id == null) {
-    redirect(buildRoomRedirectTarget(formData, fallbackPath, { error: "save" }));
-  }
-
-  if (!existingRoom.is_active && nextIsActive) {
-    await requireOwnerActiveRoomSlotAccess(propertyId ? buildPropertyPath(propertyId, "rooms") : buildStandaloneRoomSettingsPath(roomId));
-  }
-
   const { error } = await supabase
     .from("rooms")
     .update({
@@ -223,9 +221,8 @@ export async function updateOwnerRoom(formData: FormData) {
       bedrooms: getInteger(formData, "bedrooms", 1),
       area: getInteger(formData, "area", 0),
       price_per_night: getNumber(formData, "pricePerNight", 0),
-      is_active: nextIsActive,
       ...(isStandalone
-        ? getStandaloneRoomPayload(formData)
+        ? getStandaloneRoomUpdatePayload(formData)
         : {
             property_type: null,
             city: null,
@@ -265,6 +262,51 @@ export async function updateOwnerRoom(formData: FormData) {
   revalidatePath(buildPropertyRoomPath(propertyId, roomId));
   revalidatePath(buildPropertyRoomSettingsPath(propertyId, roomId));
   redirect(buildRoomRedirectTarget(formData, fallbackPath, { success: "room-saved" }));
+}
+
+export async function setOwnerRoomArchived(formData: FormData) {
+  const propertyId = getString(formData, "propertyId");
+  const roomId = getString(formData, "roomId");
+  const shouldArchive = getString(formData, "archived") === "true";
+  const fallbackPath = propertyId ? buildPropertyRoomSettingsPath(propertyId, roomId) : buildStandaloneRoomSettingsPath(roomId);
+  const profile = await requireOwnerMutationAccess(fallbackPath);
+
+  await requireOwnedRoom(profile.id, roomId, propertyId || null, fallbackPath);
+  if (propertyId) {
+    await requireOwnedProperty(profile.id, propertyId, fallbackPath);
+  }
+
+  if (!shouldArchive) {
+    await requireOwnerActiveRoomSlotAccess(fallbackPath);
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("rooms")
+    .update({
+      is_active: !shouldArchive,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", roomId)
+    .eq("owner_id", profile.id);
+
+  if (error) {
+    redirect(buildRoomRedirectTarget(formData, fallbackPath, { error: mapActionError(error) }));
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/properties");
+
+  if (!propertyId) {
+    revalidatePath(buildStandaloneRoomPath(roomId));
+    revalidatePath(buildStandaloneRoomSettingsPath(roomId));
+  } else {
+    revalidatePath(buildPropertyPath(propertyId));
+    revalidatePath(buildPropertyRoomPath(propertyId, roomId));
+    revalidatePath(buildPropertyRoomSettingsPath(propertyId, roomId));
+  }
+
+  redirect(buildRoomRedirectTarget(formData, fallbackPath, { success: shouldArchive ? "room-archived" : "room-restored" }));
 }
 
 export async function deleteOwnerRoom(formData: FormData) {

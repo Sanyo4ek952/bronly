@@ -292,7 +292,7 @@ export function AdminOverview({ data, message }: { data: AdminOverviewData; mess
 
   const activityStats = [
     { label: "Объекты", value: String(data.propertyCount), hint: "Все созданные объекты" },
-    { label: "Номера", value: String(data.roomCount), hint: "Активные и неактивные варианты" },
+    { label: "Номера", value: String(data.roomCount), hint: "Опубликованные и архивные варианты" },
     { label: "Заявки", value: String(data.requestCount), hint: "Всего запросов на проживание" },
     { label: "Коллекции", value: String(data.collectionCount), hint: "Подборки владельцев и агентов" },
   ];

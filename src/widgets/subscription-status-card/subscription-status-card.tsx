@@ -47,7 +47,7 @@ function getValidityLabel(validUntil: string | null) {
 
 function getRoomLimitNote(subscription: SubscriptionRuntimeState) {
   if (subscription.isRoomLimitReached) {
-    return "Лимит активных номеров исчерпан. Редактирование текущих данных доступно по статусу подписки, но создание нового активного номера или повторная активация неактивного номера будут заблокированы.";
+    return "Лимит активных номеров исчерпан. Редактирование и архивация доступны, но создание нового номера или восстановление номера из архива будут заблокированы.";
   }
 
   if (subscription.remainingRoomSlots === 1) {
