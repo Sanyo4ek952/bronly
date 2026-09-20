@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { X } from "lucide-react";
 
 import type { OwnerRoomDetail } from "@/entities/room/model/types";
 import { RoomAmenitiesField } from "@/features/property/edit-room/ui/room-amenities-field";
@@ -11,10 +12,9 @@ import {
   setRoomPhotoPrimary,
   setOwnerRoomArchived,
   updateOwnerRoom,
-  updateRoomSeasonalPrice,
   uploadRoomPhoto,
 } from "@/features/property/owner-mutations";
-import { Button, Input, SubmitButton, Textarea } from "@/shared/ui";
+import { AppIcon, Button, IconButton, Input, SubmitButton, Textarea } from "@/shared/ui";
 import { AgentCollaborationToggle, DangerZone, PhotoManager } from "@/widgets/property-admin";
 
 type RoomSettingsEditorProps = {
@@ -29,8 +29,6 @@ const sectionHeaderClass = "flex flex-wrap items-start justify-between gap-3";
 const propertyFormGridClass = "grid gap-4 md:grid-cols-2";
 const compactPricingGridClass = "grid gap-4 md:grid-cols-2 xl:grid-cols-4";
 const inlineFieldsClass = "grid gap-4 md:grid-cols-2";
-const seasonalEditFormClass =
-  "grid gap-4 border-t border-[var(--border)] pt-4 xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(190px,0.8fr)_auto] xl:items-end";
 const seasonalCreateFormClass =
   "grid gap-4 border-t border-[var(--border)] pt-4 xl:grid-cols-[repeat(3,minmax(0,1fr))_auto] xl:items-end";
 const sectionNavLinkClass =
@@ -39,6 +37,12 @@ const sectionNavLinkClass =
 const priceFormatter = new Intl.NumberFormat("ru-RU", {
   maximumFractionDigits: 2,
 });
+
+function formatSeasonalDate(value: string) {
+  const [year, month, day] = value.split("-");
+
+  return year && month && day ? `${day}.${month}.${year}` : value;
+}
 
 export function RoomSettingsEditor({ propertyId, redirectTo, room, propertyAllowAgentInquiries }: RoomSettingsEditorProps) {
   const isStandalone = room.kind === "standalone_room";
@@ -251,50 +255,42 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room, propertyAllow
           <div className="grid gap-1.5">
             <h2 className="text-xl font-semibold leading-[1.15] text-[var(--text)]">Сезонные цены</h2>
             <p className="max-w-[68ch] text-sm leading-[1.55] text-[var(--text-muted)]">
-              Цена действует на все даты периода, включая начало и конец. Уже созданный период можно временно выключить без удаления.
+              Цена действует на все даты периода, включая начало и конец. Созданный период можно удалить и добавить заново.
             </p>
           </div>
         </div>
 
         <div className="grid gap-4">
           {room.seasonalPrices.length ? (
-            room.seasonalPrices.map((seasonalPrice) => (
-              <form key={seasonalPrice.id} action={updateRoomSeasonalPrice} className={seasonalEditFormClass}>
-                <input type="hidden" name="propertyId" value={propertyId ?? ""} />
-                <input type="hidden" name="roomId" value={room.id} />
-                <input type="hidden" name="seasonalPriceId" value={seasonalPrice.id} />
-                <input type="hidden" name="redirectTo" value={redirectTo} />
-                <Input id={`season-start-${seasonalPrice.id}`} name="startsOn" type="date" label="Начало периода" defaultValue={seasonalPrice.startsOn} />
-                <Input id={`season-end-${seasonalPrice.id}`} name="endsOn" type="date" label="Конец периода" defaultValue={seasonalPrice.endsOn} />
-                <Input
-                  id={`season-price-${seasonalPrice.id}`}
-                  name="pricePerNight"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  label="Цена за ночь"
-                  defaultValue={String(seasonalPrice.pricePerNight)}
-                />
-                <label className="flex min-h-10 items-start justify-between gap-3 py-2 text-sm text-[var(--text)]">
-                  <span className="grid gap-1">
-                    <strong className="font-semibold">Учитывать в расчёте</strong>
-                    <small className="text-xs leading-[1.45] text-[var(--text-muted)]">Можно временно выключить без удаления.</small>
+            <div className="grid overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)]">
+              {room.seasonalPrices.map((seasonalPrice) => (
+                <div
+                  key={seasonalPrice.id}
+                  className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-b border-[var(--border)] px-3 py-2 last:border-b-0 sm:grid-cols-[minmax(0,1.35fr)_minmax(120px,0.65fr)_auto] sm:px-4"
+                >
+                  <span className="min-w-0 text-[13px] font-semibold leading-[1.35] text-[var(--text)]">
+                    {formatSeasonalDate(seasonalPrice.startsOn)} — {formatSeasonalDate(seasonalPrice.endsOn)}
                   </span>
-                  <input
-                    className="mt-0.5 h-5 w-5 flex-none accent-[var(--color-primary)]"
-                    type="checkbox"
-                    name="isActive"
-                    defaultChecked={seasonalPrice.isActive}
-                  />
-                </label>
-                <div className="grid gap-2 xl:min-w-[170px]">
-                  <Button type="submit">Сохранить</Button>
-                  <Button type="submit" variant="danger" formAction={deleteRoomSeasonalPrice}>
-                    Удалить
-                  </Button>
+                  <span className="row-start-2 text-xs leading-[1.35] text-[var(--text-muted)] sm:row-start-auto sm:text-right sm:text-[13px] sm:font-semibold sm:text-[var(--text)]">
+                    {priceFormatter.format(seasonalPrice.pricePerNight)} ₽ / ночь
+                  </span>
+                  <form action={deleteRoomSeasonalPrice} className="col-start-2 row-span-2 row-start-1 sm:col-start-3 sm:row-span-1">
+                    <input type="hidden" name="propertyId" value={propertyId ?? ""} />
+                    <input type="hidden" name="roomId" value={room.id} />
+                    <input type="hidden" name="seasonalPriceId" value={seasonalPrice.id} />
+                    <input type="hidden" name="redirectTo" value={redirectTo} />
+                    <IconButton
+                      type="submit"
+                      aria-label={`Удалить сезонную цену с ${formatSeasonalDate(seasonalPrice.startsOn)} по ${formatSeasonalDate(seasonalPrice.endsOn)}`}
+                      title="Удалить период"
+                      className="size-9 border-transparent bg-transparent text-[var(--danger)] shadow-none hover:border-[rgb(196_81_81_/_0.24)] hover:bg-[rgb(196_81_81_/_0.08)]"
+                    >
+                      <AppIcon icon={X} className="size-4" aria-hidden="true" />
+                    </IconButton>
+                  </form>
                 </div>
-              </form>
-            ))
+              ))}
+            </div>
           ) : (
             <p className="text-sm leading-[1.5] text-[var(--text-muted)]">Сезонные цены пока не добавлены.</p>
           )}
