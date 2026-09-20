@@ -38,18 +38,26 @@ export function doInclusiveDateRangesOverlap(
   );
 }
 
-export function doesStayOverlapInclusiveDateRange(
-  checkIn: string,
-  checkOut: string,
+export function isValidStayDateRange(startsOn: string, endsOn: string) {
+  const start = parseIsoDate(startsOn);
+  const end = parseIsoDate(endsOn);
+  return Boolean(start && end && start.getTime() < end.getTime());
+}
+
+export function isDateWithinStayRange(date: string, startsOn: string, endsOn: string) {
+  return Boolean(parseIsoDate(date) && isValidStayDateRange(startsOn, endsOn) && startsOn <= date && date < endsOn);
+}
+
+export function doStayDateRangesOverlap(
   startsOn: string,
   endsOn: string,
+  existingStartsOn: string,
+  existingEndsOn: string,
 ) {
-  const stayStart = parseIsoDate(checkIn);
-  const stayEnd = parseIsoDate(checkOut);
-
-  if (!stayStart || !stayEnd || stayStart.getTime() >= stayEnd.getTime() || !isValidInclusiveDateRange(startsOn, endsOn)) {
-    return false;
-  }
-
-  return checkIn <= endsOn && checkOut > startsOn;
+  return (
+    isValidStayDateRange(startsOn, endsOn) &&
+    isValidStayDateRange(existingStartsOn, existingEndsOn) &&
+    startsOn < existingEndsOn &&
+    endsOn > existingStartsOn
+  );
 }

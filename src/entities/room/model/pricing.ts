@@ -1,4 +1,4 @@
-import { addUtcDays, doesStayOverlapInclusiveDateRange, parseIsoDate } from "./date-ranges.ts";
+import { addUtcDays, doStayDateRangesOverlap, parseIsoDate } from "./date-ranges.ts";
 import type { OwnerBusyRange, OwnerSeasonalPrice, PublicRoom } from "@/entities/room/model/types";
 
 export type PublicStayFilters = {
@@ -59,7 +59,7 @@ export function getNights(checkIn: string, checkOut: string) {
 }
 
 export function doesDateRangeOverlap(checkIn: string, checkOut: string, rangeStart: string, rangeEnd: string) {
-  return doesStayOverlapInclusiveDateRange(checkIn, checkOut, rangeStart, rangeEnd);
+  return doStayDateRangesOverlap(checkIn, checkOut, rangeStart, rangeEnd);
 }
 
 export function isRoomAvailableForDates(room: Pick<PricingRoom, "busyRanges">, checkIn: string, checkOut: string) {

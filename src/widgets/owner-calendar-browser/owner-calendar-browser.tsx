@@ -10,6 +10,8 @@ import { formatDateLabel } from "@/shared/lib/date";
 import { AppIcon, Button, IconButton, InlineNotice, Input, StatCard, Textarea } from "@/shared/ui";
 import {
   addMonths,
+  addDaysToDateKey,
+  findBusyRangeForDate,
   formatDateKey,
   formatMonthLabel,
   formatMonthRangeLabel,
@@ -106,8 +108,8 @@ function getTimelineRangeLabel(range: OwnerBusyRange) {
 
 function getSelectionNotice(selectionStart: string | null) {
   return selectionStart
-    ? `Начало диапазона выбрано: ${formatDateLabel(selectionStart)}.`
-    : "Кликните по двум датам, чтобы отметить занятый диапазон.";
+    ? `Заезд выбран: ${formatDateLabel(selectionStart)}. Теперь выберите дату выезда.`
+    : "Выберите дату заезда, затем дату выезда. День выезда остаётся свободным.";
 }
 
 function getDefaultTimelineAnchorKey(month: Date) {
@@ -168,7 +170,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
     setSelectedRoomId(room.id);
     setLocalNotice("");
 
-    const dayBusyRange = room.busyRanges.find((range) => dayKey >= range.startsOn && dayKey <= range.endsOn) ?? null;
+    const dayBusyRange = findBusyRangeForDate(room.busyRanges, dayKey);
 
     if (dayBusyRange) {
       setSelectionStart(null);
@@ -186,7 +188,9 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
       return;
     }
 
-    const nextRange = normalizeDateRange(selectionStart, dayKey);
+    const nextRange = selectionStart === dayKey
+      ? { startsOn: dayKey, endsOn: addDaysToDateKey(dayKey, 1) }
+      : normalizeDateRange(selectionStart, dayKey);
 
     if (hasBusyOverlap(room.busyRanges, nextRange.startsOn, nextRange.endsOn)) {
       setSelectionStart(null);
@@ -275,11 +279,12 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
             </button>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <Input id="owner-busy-new-start" name="startsOn" type="date" label="С" defaultValue={activeEditor.startsOn} />
-            <Input id="owner-busy-new-end" name="endsOn" type="date" label="По" defaultValue={activeEditor.endsOn} />
+            <Input id="owner-busy-new-start" name="startsOn" type="date" label="Заезд" defaultValue={activeEditor.startsOn} />
+            <Input id="owner-busy-new-end" name="endsOn" type="date" label="Выезд" defaultValue={activeEditor.endsOn} />
             <Input id="owner-busy-new-label" name="label" label="Пометка" placeholder="Например, заявка" wrapperClassName="grid gap-1.5 md:col-span-2" />
             <Textarea id="owner-busy-new-note" name="note" label="Комментарий" rows={3} wrapperClassName="grid gap-1.5 md:col-span-2" />
           </div>
+          <p className="text-xs leading-[1.5] text-[var(--color-muted)]">Дата выезда не занимает ночь и доступна для следующего заезда.</p>
           <div className={actionGridClass}>
             <Button type="button" variant="secondary" onClick={() => setActiveEditor(null)}>
               Отменить
@@ -308,14 +313,14 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
             id={`owner-busy-edit-start-${activeEditor.busyRange.id}`}
             name="startsOn"
             type="date"
-            label="С"
+            label="Заезд"
             defaultValue={activeEditor.busyRange.startsOn}
           />
           <Input
             id={`owner-busy-edit-end-${activeEditor.busyRange.id}`}
             name="endsOn"
             type="date"
-            label="По"
+            label="Выезд"
             defaultValue={activeEditor.busyRange.endsOn}
           />
           <Input
@@ -334,6 +339,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
             wrapperClassName="grid gap-1.5 md:col-span-2"
           />
         </div>
+        <p className="text-xs leading-[1.5] text-[var(--color-muted)]">Дата выезда не занимает ночь и доступна для следующего заезда.</p>
         <div className={actionGridClass}>
           <Button type="submit" variant="danger" formAction={deleteRoomBusyRange}>
             Удалить
@@ -492,8 +498,7 @@ export function OwnerCalendarBrowser({ propertyId = "", rooms, serverNotice = ""
                           style={{ gridTemplateColumns: `repeat(${visibleTimelineDays.length}, minmax(38px, 40px))` }}
                         >
                           {visibleTimelineDays.map((day) => {
-                            const dayBusyRange =
-                              room.busyRanges.find((range) => day.key >= range.startsOn && day.key <= range.endsOn) ?? null;
+                            const dayBusyRange = findBusyRangeForDate(room.busyRanges, day.key);
                             const isSelectionStart = isSelectedRoom && selectionStart === day.key;
                             const isActiveRange = selectedBusyRangeId ? dayBusyRange?.id === selectedBusyRangeId : false;
 

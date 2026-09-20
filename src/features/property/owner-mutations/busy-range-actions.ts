@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { isValidInclusiveDateRange } from "@/entities/room";
+import { isValidStayDateRange } from "@/entities/room";
 import { createSupabaseServerClient } from "@/shared/api/supabase";
 import { getString } from "@/shared/lib/form-data";
 
@@ -85,8 +85,8 @@ async function hasBusyRangeOverlap(input: {
     .from("room_busy_ranges")
     .select("id")
     .eq("room_id", input.roomId)
-    .lte("starts_on", input.endsOn)
-    .gte("ends_on", input.startsOn)
+    .lt("starts_on", input.endsOn)
+    .gt("ends_on", input.startsOn)
     .limit(1);
 
   if (input.excludedBusyRangeId) {
@@ -119,7 +119,7 @@ export async function createRoomBusyRange(formData: FormData) {
   const startsOn = getString(formData, "startsOn");
   const endsOn = getString(formData, "endsOn");
 
-  if (!roomId || !isValidInclusiveDateRange(startsOn, endsOn)) {
+  if (!roomId || !isValidStayDateRange(startsOn, endsOn)) {
     redirectWithCalendarError(propertyId, roomId, "validation", returnPath);
   }
 
@@ -164,7 +164,7 @@ export async function updateRoomBusyRange(formData: FormData) {
   const startsOn = getString(formData, "startsOn");
   const endsOn = getString(formData, "endsOn");
 
-  if (!roomId || !busyRangeId || !isValidInclusiveDateRange(startsOn, endsOn)) {
+  if (!roomId || !busyRangeId || !isValidStayDateRange(startsOn, endsOn)) {
     redirectWithCalendarError(propertyId, roomId, "validation", returnPath);
   }
 

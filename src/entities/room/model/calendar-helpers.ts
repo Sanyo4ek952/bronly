@@ -3,9 +3,9 @@
 import { useSyncExternalStore } from "react";
 
 import {
-  doInclusiveDateRangesOverlap,
-  isDateWithinInclusiveRange,
-} from "@/entities/room/model/date-ranges";
+  doStayDateRangesOverlap,
+  isDateWithinStayRange,
+} from "./date-ranges.ts";
 
 type BusyRangeLike = {
   id: string;
@@ -65,6 +65,16 @@ export function parseDateKey(value: string) {
   return new Date(year, (month || 1) - 1, day || 1);
 }
 
+function addLocalDays(value: Date, amount: number) {
+  const next = new Date(value);
+  next.setDate(value.getDate() + amount);
+  return next;
+}
+
+export function addDaysToDateKey(value: string, amount: number) {
+  return formatDateKey(addLocalDays(parseDateKey(value), amount));
+}
+
 export function startOfMonth(value: Date) {
   return new Date(value.getFullYear(), value.getMonth(), 1);
 }
@@ -110,7 +120,7 @@ export function normalizeDateRange(start: string, end: string) {
 }
 
 export function isDateWithinRange(date: string, startsOn: string, endsOn: string) {
-  return isDateWithinInclusiveRange(date, startsOn, endsOn);
+  return isDateWithinStayRange(date, startsOn, endsOn);
 }
 
 export function doesDateRangeOverlap(
@@ -119,7 +129,7 @@ export function doesDateRangeOverlap(
   existingStartsOn: string,
   existingEndsOn: string,
 ) {
-  return doInclusiveDateRangesOverlap(startsOn, endsOn, existingStartsOn, existingEndsOn);
+  return doStayDateRangesOverlap(startsOn, endsOn, existingStartsOn, existingEndsOn);
 }
 
 export function findBusyRangeForDate<TBusyRange extends BusyRangeLike>(busyRanges: TBusyRange[], date: string) {
@@ -142,7 +152,7 @@ export function hasBusyOverlap<TBusyRange extends BusyRangeLike>(
 export function getNearestBusyRange<TBusyRange extends BusyRangeLike>(busyRanges: TBusyRange[]) {
   const today = formatDateKey(new Date());
   const sortedRanges = [...busyRanges].sort((a, b) => a.startsOn.localeCompare(b.startsOn));
-  return sortedRanges.find((range) => range.endsOn >= today) ?? sortedRanges[0] ?? null;
+  return sortedRanges.find((range) => range.endsOn > today) ?? sortedRanges[0] ?? null;
 }
 
 export function getMonthDays<TBusyRange extends BusyRangeLike>(month: Date, busyRanges: TBusyRange[]) {
@@ -274,14 +284,16 @@ export function getTimelineBusyRanges<TBusyRange extends BusyRangeLike>(
   }
 
   const startKey = days[0].key;
-  const endKey = days[days.length - 1].key;
+  const lastVisibleDay = days[days.length - 1].key;
+  const windowEnd = addDaysToDateKey(lastVisibleDay, 1);
 
   return busyRanges
-    .filter((range) => doesDateRangeOverlap(startKey, endKey, range.startsOn, range.endsOn))
+    .filter((range) => doesDateRangeOverlap(startKey, windowEnd, range.startsOn, range.endsOn))
     .sort((a, b) => a.startsOn.localeCompare(b.startsOn))
     .map((range) => {
       const visibleStart = range.startsOn < startKey ? startKey : range.startsOn;
-      const visibleEnd = range.endsOn > endKey ? endKey : range.endsOn;
+      const visibleEndExclusive = range.endsOn > windowEnd ? windowEnd : range.endsOn;
+      const visibleEnd = addDaysToDateKey(visibleEndExclusive, -1);
       const startIndex = days.findIndex((day) => day.key === visibleStart);
       const endIndex = days.findIndex((day) => day.key === visibleEnd);
 
@@ -291,7 +303,7 @@ export function getTimelineBusyRanges<TBusyRange extends BusyRangeLike>(
         endIndex,
         span: endIndex - startIndex + 1,
         clippedStart: range.startsOn < startKey,
-        clippedEnd: range.endsOn > endKey,
+        clippedEnd: range.endsOn > windowEnd,
       };
     })
     .filter((range) => range.startIndex >= 0 && range.endIndex >= range.startIndex);

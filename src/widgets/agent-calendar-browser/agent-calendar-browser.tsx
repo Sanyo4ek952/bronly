@@ -12,6 +12,7 @@ import {
   formatDateKey,
   formatMonthRangeLabel,
   formatShortDateLabel,
+  findBusyRangeForDate,
   getNearestBusyRange,
   getTimelineBusyRanges,
   getTimelineDays,
@@ -148,7 +149,7 @@ export function AgentCalendarBrowser({ properties }: { properties: AgentCalendar
                       <div className="grid gap-2 rounded-[20px] border border-[var(--border)] bg-[rgb(255_255_255_/_0.82)] p-3">
                         <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${visibleTimelineDays.length}, minmax(38px, 40px))` }}>
                           {visibleTimelineDays.map((day) => {
-                            const busyRange = room.busyRanges.find((range) => day.key >= range.startsOn && day.key <= range.endsOn);
+                            const busyRange = findBusyRangeForDate(room.busyRanges, day.key);
                             return <div key={`${room.id}-${day.key}`} className={cn("h-10 rounded-xl border border-transparent bg-[rgb(248_250_252_/_0.85)]", busyRange && "border-[rgb(217_154_43_/_0.18)] bg-[rgb(217_154_43_/_0.18)]", day.isToday && "border-[rgb(var(--color-primary-rgb)_/_0.22)]")} aria-label={`${room.title}: ${formatDateLabel(day.date)}. ${busyRange ? "Занято" : "Свободно"}.`} />;
                           })}
                         </div>

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { markOwnerReferralMilestone } from "@/entities/referral";
+import { isValidStayDateRange } from "@/entities/room";
 import { createSupabaseServerClient } from "@/shared/api/supabase";
 import { getCheckbox, getInteger, getNumber, getString } from "@/shared/lib/form-data";
 
@@ -65,15 +66,19 @@ function getStandaloneRoomPayload(formData: FormData) {
   };
 }
 
-function getNormalizedBusyRange(formData: FormData) {
+function getInitialBusyRange(formData: FormData) {
   const startsOn = getString(formData, "startsOn");
   const endsOn = getString(formData, "endsOn");
 
-  if (!startsOn || !endsOn) {
-    return null;
+  if (!startsOn && !endsOn) {
+    return { isValid: true, range: null };
   }
 
-  return startsOn <= endsOn ? { startsOn, endsOn } : { startsOn: endsOn, endsOn: startsOn };
+  if (!isValidStayDateRange(startsOn, endsOn)) {
+    return { isValid: false, range: null };
+  }
+
+  return { isValid: true, range: { startsOn, endsOn } };
 }
 
 function validateStandaloneRoom(formData: FormData) {
@@ -89,8 +94,9 @@ export async function createOwnerRoom(formData: FormData) {
   const isActive = getCheckbox(formData, "isActive");
   const roomPhotoFiles = getUploadedRoomPhotoFiles(formData);
   const roomPhotoError = validateRoomPhotoFiles(roomPhotoFiles);
+  const initialBusyRange = getInitialBusyRange(formData);
 
-  if (!title || (!propertyId && !validateStandaloneRoom(formData))) {
+  if (!title || !initialBusyRange.isValid || (!propertyId && !validateStandaloneRoom(formData))) {
     if (!propertyId) {
       redirect(`${buildStandaloneRoomCreatePath()}?error=validation`);
     }
@@ -146,13 +152,11 @@ export async function createOwnerRoom(formData: FormData) {
   await replaceRoomAmenities(data.id, getString(formData, "amenities"));
   const photoUploadError = await uploadRoomPhotoFiles(supabase, profile.id, data.id, roomPhotoFiles);
 
-  const initialBusyRange = getNormalizedBusyRange(formData);
-
-  if (initialBusyRange) {
+  if (initialBusyRange.range) {
     await supabase.from("room_busy_ranges").insert({
       room_id: data.id,
-      starts_on: initialBusyRange.startsOn,
-      ends_on: initialBusyRange.endsOn,
+      starts_on: initialBusyRange.range.startsOn,
+      ends_on: initialBusyRange.range.endsOn,
       source: "manual",
       label: null,
       note: null,

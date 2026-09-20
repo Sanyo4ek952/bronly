@@ -9,6 +9,7 @@ import type { OwnerCalendarInventoryGroup, OwnerCalendarInventoryRoom } from "@/
 import type { OwnerBusyRange } from "@/entities/room";
 import {
   addMonths,
+  addDaysToDateKey,
   findBusyRangeForDate,
   formatDateKey,
   formatMonthLabel,
@@ -141,7 +142,7 @@ export function OwnerDashboardCalendar({ groups, serverNotice = "", serverNotice
 
   function openCreateEditor(room: OwnerCalendarInventoryRoom, dayKey: string) {
     if (didDragRef.current) return;
-    setActiveEditor({ mode: "create", room, startsOn: dayKey, endsOn: dayKey });
+    setActiveEditor({ mode: "create", room, startsOn: dayKey, endsOn: addDaysToDateKey(dayKey, 1) });
   }
 
   function openBusyEditor(room: OwnerCalendarInventoryRoom, busyRange: OwnerBusyRange) {
@@ -293,7 +294,7 @@ export function OwnerDashboardCalendar({ groups, serverNotice = "", serverNotice
         <Link href={editorRoom?.calendarHref ?? visibleRooms[0]?.room.calendarHref ?? "/dashboard/properties"} className="font-bold text-[var(--accent-strong)] hover:underline">Детальный календарь</Link>
       </div>
 
-      <BottomSheet open={Boolean(activeEditor)} onOpenChange={(open) => { if (!open) setActiveEditor(null); }} title={getEditorTitle(activeEditor)} description={editorRoom ? `${editorRoom.title}. Изменения сохранятся в календаре занятости.` : undefined} closeLabel="Закрыть редактор" rootClassName="md:items-stretch md:justify-end md:pt-0" className="max-[640px]:max-h-[94vh] md:mt-0 md:h-full md:max-h-none md:max-w-[460px] md:rounded-none md:rounded-l-[24px]" bodyClassName="gap-4">
+      <BottomSheet open={Boolean(activeEditor)} onOpenChange={(open) => { if (!open) setActiveEditor(null); }} title={getEditorTitle(activeEditor)} description={editorRoom ? `${editorRoom.title}. Изменения сохранятся в календаре занятости.` : undefined} closeLabel="Закрыть редактор" desktopSidePanel rootClassName="md:items-stretch md:justify-end md:pt-0" className="max-[640px]:max-h-[94vh] md:mt-0 md:h-full md:max-h-none md:max-w-[460px] md:rounded-none md:rounded-l-[24px]" bodyClassName="gap-4">
         {activeEditor ? (
           <form action={activeEditor.mode === "edit" ? updateRoomBusyRange : createRoomBusyRange} className="grid gap-4">
             <input type="hidden" name="returnPath" value="/dashboard/calendar" />
@@ -301,12 +302,12 @@ export function OwnerDashboardCalendar({ groups, serverNotice = "", serverNotice
             <input type="hidden" name="roomId" value={activeEditor.room.id} />
             {activeEditor.mode === "edit" ? <input type="hidden" name="busyRangeId" value={activeEditor.busyRange.id} /> : null}
             <div className="grid grid-cols-2 gap-3">
-              <Input key={`${activeEditor.mode}-start-${activeEditor.mode === "edit" ? activeEditor.busyRange.id : activeEditor.startsOn}`} id="dashboard-busy-start" name="startsOn" type="date" label="С" defaultValue={activeEditor.mode === "edit" ? activeEditor.busyRange.startsOn : activeEditor.startsOn} required />
-              <Input key={`${activeEditor.mode}-end-${activeEditor.mode === "edit" ? activeEditor.busyRange.id : activeEditor.endsOn}`} id="dashboard-busy-end" name="endsOn" type="date" label="По" defaultValue={activeEditor.mode === "edit" ? activeEditor.busyRange.endsOn : activeEditor.endsOn} required />
+              <Input key={`${activeEditor.mode}-start-${activeEditor.mode === "edit" ? activeEditor.busyRange.id : activeEditor.startsOn}`} id="dashboard-busy-start" name="startsOn" type="date" label="Заезд" defaultValue={activeEditor.mode === "edit" ? activeEditor.busyRange.startsOn : activeEditor.startsOn} required />
+              <Input key={`${activeEditor.mode}-end-${activeEditor.mode === "edit" ? activeEditor.busyRange.id : activeEditor.endsOn}`} id="dashboard-busy-end" name="endsOn" type="date" label="Выезд" defaultValue={activeEditor.mode === "edit" ? activeEditor.busyRange.endsOn : activeEditor.endsOn} required />
             </div>
             <Input id="dashboard-busy-label" name="label" label="Пометка" placeholder="Например, заявка" defaultValue={activeEditor.mode === "edit" ? activeEditor.busyRange.label : ""} />
             <Textarea id="dashboard-busy-note" name="note" label="Комментарий" placeholder="Необязательный комментарий" rows={4} defaultValue={activeEditor.mode === "edit" ? activeEditor.busyRange.note : ""} />
-            <p className="rounded-[var(--radius-md)] bg-[var(--surface-subtle)] px-3 py-2.5 text-xs leading-[1.5] text-[var(--text-muted)]">Отметка занятости не подтверждает заявку на проживание автоматически.</p>
+            <p className="rounded-[var(--radius-md)] bg-[var(--surface-subtle)] px-3 py-2.5 text-xs leading-[1.5] text-[var(--text-muted)]">Дата выезда не занимает ночь и доступна для следующего заезда. Отметка занятости не подтверждает заявку на проживание автоматически.</p>
             <div className="grid gap-2 sm:grid-cols-2">
               {activeEditor.mode === "edit" ? <Button type="submit" variant="danger" formAction={deleteRoomBusyRange}>Удалить диапазон</Button> : <Button type="button" variant="secondary" onClick={() => setActiveEditor(null)}>Отменить</Button>}
               <Button type="submit">Сохранить</Button>

@@ -143,7 +143,7 @@ test("public quote explains unavailable dates and calculates the current seasona
           id: "busy-1",
           roomId: "room-1",
           startsOn: "2026-07-04",
-          endsOn: "2026-07-04",
+          endsOn: "2026-07-05",
           source: "manual",
           label: "",
           note: "",
@@ -163,6 +163,41 @@ test("public quote explains unavailable dates and calculates the current seasona
   );
   assert.equal(unavailableRoom.isAvailableForFilter, false);
   assert.equal(unavailableRoom.unavailableReason, "Занято на выбранные даты");
+});
+
+test("owner, agent and collection public flows allow a shared checkout/check-in date", () => {
+  const publicRoom = {
+    id: "room-boundary",
+    title: "Номер с границей",
+    subtitle: "",
+    capacity: 4,
+    bedrooms: 2,
+    area: 36,
+    pricePerNight: 4_000,
+    status: "active" as const,
+    photos: [],
+    amenities: [],
+    busyRanges: [{
+      id: "busy-boundary",
+      roomId: "room-boundary",
+      startsOn: "2026-09-21",
+      endsOn: "2026-09-27",
+      source: "manual",
+      label: "",
+      note: "",
+    }],
+  };
+
+  for (const source of ["owner", "agent", "collection"] as const) {
+    const room = source === "owner" ? publicRoom : { ...publicRoom, agentMarkupPercent: 10 };
+    const before = buildPublicRoomQuote(room, { checkIn: "2026-09-18", checkOut: "2026-09-21", adults: 2, rooms: 1, hasDates: true });
+    const after = buildPublicRoomQuote(room, { checkIn: "2026-09-27", checkOut: "2026-09-28", adults: 2, rooms: 1, hasDates: true });
+    const overlap = buildPublicRoomQuote(room, { checkIn: "2026-09-20", checkOut: "2026-09-22", adults: 2, rooms: 1, hasDates: true });
+
+    assert.equal(before.isAvailableForFilter, true, `${source}: checkout at the next check-in`);
+    assert.equal(after.isAvailableForFilter, true, `${source}: check-in at the previous checkout`);
+    assert.equal(overlap.isAvailableForFilter, false, `${source}: overlapping night`);
+  }
 });
 
 test("owner-facing request prices prefer the saved snapshot over current room values", () => {

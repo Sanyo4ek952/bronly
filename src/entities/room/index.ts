@@ -1,9 +1,11 @@
 export { mapBusyRange, mapSeasonalPrice } from "@/entities/room/model/mappers";
 export {
   doInclusiveDateRangesOverlap,
-  doesStayOverlapInclusiveDateRange,
+  doStayDateRangesOverlap,
   isDateWithinInclusiveRange,
+  isDateWithinStayRange,
   isValidInclusiveDateRange,
+  isValidStayDateRange,
 } from "@/entities/room/model/date-ranges";
 export {
   buildPublicRoomQuote,

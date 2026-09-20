@@ -26,6 +26,7 @@ export type BottomSheetProps = {
   className?: string;
   rootClassName?: string;
   bodyClassName?: string;
+  desktopSidePanel?: boolean;
   children: ReactNode | ((api: BottomSheetRenderApi) => ReactNode);
 };
 
@@ -54,6 +55,7 @@ export function BottomSheet({
   className,
   rootClassName,
   bodyClassName,
+  desktopSidePanel = false,
   children,
 }: BottomSheetProps) {
   const generatedDialogId = useId();
@@ -234,6 +236,10 @@ export function BottomSheet({
       return;
     }
 
+    if (desktopSidePanel && window.matchMedia("(min-width: 768px)").matches) {
+      return;
+    }
+
     if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }
@@ -361,6 +367,7 @@ export function BottomSheet({
           "group-data-[state=opening]:animate-[sheet-enter_220ms_ease_forwards] group-data-[state=open]:translate-y-0 group-data-[state=closing]:animate-[sheet-close_220ms_ease_forwards]",
           "max-[390px]:rounded-t-[20px] max-[390px]:p-3 max-[390px]:pb-[calc(12px+var(--safe-area-bottom))]",
           "max-[360px]:rounded-t-[18px] max-[360px]:p-2.5 max-[360px]:pb-[calc(10px+var(--safe-area-bottom))]",
+          desktopSidePanel && "md:grid-rows-[auto_minmax(0,1fr)] md:content-start md:touch-auto",
           isDragging && "transition-none",
           isSettling && "transition-transform duration-200 ease-out",
           className,
@@ -383,7 +390,7 @@ export function BottomSheet({
         }}
       >
         <div className="grid gap-3.5">
-          <div className="mx-auto h-[5px] w-[52px] rounded-full bg-[rgb(17_29_27_/_0.14)]" aria-hidden="true" />
+          <div className={cn("mx-auto h-[5px] w-[52px] rounded-full bg-[rgb(17_29_27_/_0.14)]", desktopSidePanel && "md:hidden")} aria-hidden="true" />
 
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -401,7 +408,7 @@ export function BottomSheet({
           </div>
         </div>
 
-        <div ref={bodyRef} className={cn("grid gap-2.5 overflow-auto pr-0.5", bodyClassName)}>
+        <div ref={bodyRef} className={cn("grid gap-2.5 overflow-auto pr-0.5", desktopSidePanel && "md:content-start", bodyClassName)}>
           {content}
         </div>
       </section>

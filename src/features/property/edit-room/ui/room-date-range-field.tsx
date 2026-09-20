@@ -7,10 +7,12 @@ import { cn } from "@/shared/lib/cn";
 import { formatDateLabel } from "@/shared/lib/date";
 import { AppIcon, Button, IconButton } from "@/shared/ui";
 import {
+  addDaysToDateKey,
   addMonths,
   formatMonthLabel,
   formatMonthRangeLabel,
   getMonthDays,
+  isDateWithinRange,
   normalizeDateRange,
   parseDateKey,
   weekDays,
@@ -43,12 +45,12 @@ function getRangeLabel(startsOn: string, endsOn: string) {
     return "Выбрать занятые даты";
   }
 
-  return startsOn === endsOn ? formatDateLabel(startsOn) : `${formatDateLabel(startsOn)} - ${formatDateLabel(endsOn)}`;
+  return `Заезд ${formatDateLabel(startsOn)} · выезд ${formatDateLabel(endsOn)}`;
 }
 
 export function RoomDateRangeField({
   label = "Занятые даты",
-  description = "Выберите даты в одном календаре. Если диапазон не нужен, оставьте поле пустым.",
+  description = "Выберите дату заезда и дату выезда. Выезд не занимает ночь; если диапазон не нужен, оставьте поле пустым.",
   startName = "startsOn",
   endName = "endsOn",
   defaultStartsOn = "",
@@ -70,7 +72,11 @@ export function RoomDateRangeField({
       return;
     }
 
-    setRange(normalizeDateRange(selectionStart, dayKey));
+    setRange(
+      selectionStart === dayKey
+        ? { startsOn: dayKey, endsOn: addDaysToDateKey(dayKey, 1) }
+        : normalizeDateRange(selectionStart, dayKey),
+    );
     setSelectionStart(null);
   }
 
@@ -101,8 +107,8 @@ export function RoomDateRangeField({
           </span>
           <span className="text-xs leading-[1.5] text-[var(--color-muted)]">
             {range
-              ? "Диапазон сохранится как занятые даты номера."
-              : "Откройте календарь и выберите дату начала и дату окончания."}
+              ? "Заняты ночи до даты выезда; сам день выезда свободен."
+              : "Откройте календарь и выберите заезд, затем выезд."}
           </span>
         </span>
         <span
@@ -149,7 +155,8 @@ export function RoomDateRangeField({
           <div className="grid grid-cols-7 gap-2">
             {monthDays.map((day) => {
               const isSelectedStart = selectionStart === day.key;
-              const isActiveRange = Boolean(range && day.key >= range.startsOn && day.key <= range.endsOn);
+              const isActiveRange = Boolean(range && isDateWithinRange(day.key, range.startsOn, range.endsOn));
+              const isCheckout = Boolean(range && day.key === range.endsOn);
 
               return (
                 <button
@@ -161,8 +168,10 @@ export function RoomDateRangeField({
                     !day.inCurrentMonth && "bg-[rgb(248_250_252_/_0.40)] text-[rgb(148_163_184)]",
                     day.isToday && "border-[rgb(var(--color-primary-rgb)_/_0.22)]",
                     (isSelectedStart || isActiveRange) && "border-[rgb(var(--color-primary-rgb)_/_0.32)] bg-[rgb(var(--color-primary-rgb)_/_0.14)] text-[rgb(var(--color-text-rgb))]",
+                    isCheckout && "border-dashed border-[var(--accent)] bg-[var(--color-bg)] text-[var(--accent-strong)]",
                   )}
                   onClick={() => handleDayClick(day.key)}
+                  aria-label={`${formatDateLabel(day.key)}${isCheckout ? ", дата выезда, ночь свободна" : isActiveRange ? ", занятая ночь" : ""}`}
                 >
                   {day.date.getDate()}
                 </button>
@@ -175,9 +184,9 @@ export function RoomDateRangeField({
               {range ? (
                 <span>{getRangeLabel(range.startsOn, range.endsOn)}</span>
               ) : selectionStart ? (
-                <span>Начало выбрано: {formatDateLabel(selectionStart)}</span>
+                <span>Заезд выбран: {formatDateLabel(selectionStart)}. Выберите дату выезда.</span>
               ) : (
-                <span>Сначала выберите дату начала, затем дату окончания.</span>
+                <span>Сначала выберите дату заезда, затем дату выезда. Выезд не занимает ночь.</span>
               )}
             </div>
             <div className="grid auto-cols-max grid-flow-col gap-2 max-[640px]:grid-flow-row">

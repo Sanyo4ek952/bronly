@@ -69,7 +69,9 @@ export type OwnerSeasonalPrice = {
 export type OwnerBusyRange = {
   id: string;
   roomId: string;
+  /** Check-in date, inclusive. */
   startsOn: string;
+  /** Checkout date, exclusive; this date is not an occupied night. */
   endsOn: string;
   source: string;
   label: string;

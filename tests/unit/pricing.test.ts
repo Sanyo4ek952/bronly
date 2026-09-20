@@ -77,7 +77,7 @@ test("zero markup preserves owner price; without dates there is no stay total", 
 
 for (const [start, end, expected] of [
   ["2026-06-01", "2026-06-03", false],
-  ["2026-06-05", "2026-06-07", true],
+  ["2026-06-05", "2026-06-07", false],
   ["2026-06-02", "2026-06-04", true],
   ["2026-06-04", "2026-06-06", true],
   ["2026-06-03", "2026-06-05", true],
@@ -86,17 +86,17 @@ for (const [start, end, expected] of [
   ["2026-06-05", "2026-06-03", false],
   ["invalid", "2026-06-04", false],
 ] as const) {
-  test(`stay overlap with inclusive busy June 3–5: ${start} -> ${end} = ${expected}`, () => {
+  test(`stay overlap with half-open busy June 3–5: ${start} -> ${end} = ${expected}`, () => {
     assert.equal(doesDateRangeOverlap(start, end, "2026-06-03", "2026-06-05"), expected);
   });
 }
 
-test("availability uses inclusive busy dates and permits checkout on the next busy start", () => {
+test("availability uses half-open busy dates and permits shared checkout/check-in boundaries", () => {
   const busyRoom = { busyRanges: [
     { id: "b1", roomId: room.id, startsOn: "2026-06-01", endsOn: "2026-06-03", source: "manual", label: "", note: "" },
     { id: "b2", roomId: room.id, startsOn: "2026-06-05", endsOn: "2026-06-07", source: "manual", label: "", note: "" },
   ] };
-  assert.equal(isRoomAvailableForDates(busyRoom, "2026-06-03", "2026-06-05"), false);
+  assert.equal(isRoomAvailableForDates(busyRoom, "2026-06-03", "2026-06-05"), true);
   assert.equal(isRoomAvailableForDates(busyRoom, "2026-06-04", "2026-06-05"), true);
   assert.equal(isRoomAvailableForDates(busyRoom, "2026-06-04", "2026-06-06"), false);
   assert.equal(isRoomAvailableForDates({}, "2026-06-04", "2026-06-06"), true);

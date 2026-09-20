@@ -154,9 +154,9 @@ export function getCalendarNotice(error: string, success: string) {
 
   switch (error) {
     case "validation":
-      return "Проверьте обязательные поля и порядок дат.";
+      return "Проверьте даты: выезд должен быть позже заезда минимум на одну ночь.";
     case "overlap":
-      return "Занятые даты не должны пересекаться по одному номеру.";
+      return "Занятые ночи не должны пересекаться. Общая дата выезда и следующего заезда допустима.";
     case "subscription":
       return "Подписка не продлена. Изменение календаря временно недоступно.";
     case "delete":
