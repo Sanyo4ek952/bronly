@@ -16,7 +16,7 @@ type PropertyInventoryBrowserProps = {
 };
 
 type StatusFilter = "all" | "published" | "draft" | "archived";
-type SortMode = "newest" | "alphabetical" | "requests" | "activity";
+type SortMode = "newest" | "alphabetical" | "requests" | "readiness";
 
 const statusOptions = [
   { label: "Все статусы", value: "all" },
@@ -29,7 +29,7 @@ const sortOptions = [
   { label: "Сначала новые", value: "newest" },
   { label: "По названию", value: "alphabetical" },
   { label: "По заявкам", value: "requests" },
-  { label: "По активности", value: "activity" },
+  { label: "По готовности", value: "readiness" },
 ];
 
 function matchesQuery(item: OwnerInventoryDashboardItem, query: string) {
@@ -42,7 +42,7 @@ function sortItems(items: OwnerInventoryDashboardItem[], sort: SortMode) {
   return [...items].sort((left, right) => {
     if (sort === "alphabetical") return left.title.localeCompare(right.title, "ru");
     if (sort === "requests") return right.newRequestsCount - left.newRequestsCount || right.createdAt.localeCompare(left.createdAt);
-    if (sort === "activity") return right.activityScore - left.activityScore || right.createdAt.localeCompare(left.createdAt);
+    if (sort === "readiness") return right.completenessPercent - left.completenessPercent || right.createdAt.localeCompare(left.createdAt);
     return right.createdAt.localeCompare(left.createdAt);
   });
 }

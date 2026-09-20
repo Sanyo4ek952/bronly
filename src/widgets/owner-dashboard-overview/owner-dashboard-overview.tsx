@@ -149,8 +149,10 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
         </div>
 
         <ButtonLink href={publicPageHref} className="min-h-12 self-start px-5 max-[720px]:w-full">
-          {hasPublicUrl ? "Открыть страницу" : "Настроить ссылку"}
-          <AppIcon icon={ExternalLink} className="size-4" aria-hidden="true" />
+          <span className="inline-flex items-center gap-2">
+            {hasPublicUrl ? "Открыть страницу" : "Настроить ссылку"}
+            <AppIcon icon={ExternalLink} className="size-4" aria-hidden="true" />
+          </span>
         </ButtonLink>
 
         <dl className="col-span-full grid grid-cols-3 border-t border-[rgb(var(--color-primary-rgb)_/_0.18)] pt-6 max-[420px]:pt-5">

@@ -205,10 +205,13 @@ export type OwnerInventoryDashboardItem = {
   activeCollaborationsCount: number;
   allowAgentInquiries: boolean;
   completenessPercent: number;
-  activityScore: number;
   completionBreakdown: {
+    hasDescription: boolean;
+    hasPhotos: boolean;
     hasDescriptionAndPhotos: boolean;
     hasAmenitiesAndServices: boolean;
+    hasRooms: boolean;
+    hasPrices: boolean;
     hasPricesAndRooms: boolean;
   };
   createdAt: string;

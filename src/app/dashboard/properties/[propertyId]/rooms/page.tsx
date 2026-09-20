@@ -221,7 +221,7 @@ export default async function PropertyRoomsPage({ params, searchParams }: Proper
               <div className="grid max-w-[520px] gap-2">
                 <h3 className="text-xl font-semibold leading-[1.15] text-[var(--text)]">Добавьте первый номер</h3>
                 <p className="text-sm leading-[1.55] text-[var(--text-muted)]">
-                  После создания здесь появятся цена, фото, активность и быстрые переходы к настройкам номера.
+                  После создания здесь появятся цена, фото, статус и быстрые переходы к настройкам номера.
                 </p>
               </div>
               <ButtonLink href={`/dashboard/properties/${property.id}/rooms/new`} className="max-[520px]:w-full">

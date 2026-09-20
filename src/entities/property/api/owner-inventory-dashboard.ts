@@ -5,7 +5,14 @@ import type {
   OwnerInventoryDashboardStatus,
   PropertyPhoto,
 } from "@/entities/property/model/types";
+import {
+  buildInventoryCompletion,
+  buildInventoryPublicLabel,
+  getMinimumActiveRoomPrice,
+} from "@/entities/property/model/inventory-dashboard";
+import { getCanonicalAppUrl } from "@/shared/api/supabase/env";
 import { createSupabaseServerClient, getCurrentAuthProfile } from "@/shared/api/supabase/server-auth";
+import { logServerDataError } from "@/shared/api/supabase/server-diagnostics";
 import type {
   SupabaseAgentPropertyLinkRow,
   SupabaseAgentRoomLinkRow,
@@ -32,10 +39,6 @@ function getPublicHref(slug: string | null) {
   return slug ? `/p/${slug}` : null;
 }
 
-function getPublicLabel(slug: string | null) {
-  return slug ? `brondly.app/p/${slug}` : null;
-}
-
 function getPropertyStatus(row: SupabasePropertyRow): { status: OwnerInventoryDashboardStatus; label: string } {
   if (row.is_frozen) {
     return { status: "archived", label: "Архив" };
@@ -54,28 +57,6 @@ function getStandaloneStatus(row: SupabaseRoomRow): { status: OwnerInventoryDash
   }
 
   return { status: "draft", label: "Черновик" };
-}
-
-function clampPercent(value: number) {
-  return Math.max(0, Math.min(100, Math.round(value)));
-}
-
-function buildCompleteness(parts: Array<boolean>) {
-  const completedCount = parts.filter(Boolean).length;
-  return clampPercent((completedCount / Math.max(parts.length, 1)) * 100);
-}
-
-function buildActivityScore(input: {
-  completenessPercent: number;
-  newRequestsCount: number;
-  activeCollaborationsCount: number;
-  allowAgentInquiries: boolean;
-}) {
-  const requestsScore = Math.min(input.newRequestsCount * 12, 24);
-  const collaborationsScore = Math.min(input.activeCollaborationsCount * 9, 18);
-  const collaborationVisibilityScore = input.allowAgentInquiries ? 8 : 0;
-
-  return clampPercent(input.completenessPercent * 0.5 + requestsScore + collaborationsScore + collaborationVisibilityScore);
 }
 
 function shouldCountRequestAsNew(request: Pick<SupabaseGuestRequestRow, "status" | "source" | "agent_id" | "owner_id">) {
@@ -97,19 +78,15 @@ function countById(rows: Array<{ id: string }>) {
   return counts;
 }
 
-function getMinPositivePrice(values: number[]) {
-  const positiveValues = values.filter((value) => Number.isFinite(value) && value > 0);
-
-  if (!positiveValues.length) {
-    return null;
-  }
-
-  return Math.min(...positiveValues);
+function failOwnerInventoryRead(event: string, error: unknown): never {
+  logServerDataError(event, error);
+  throw new Error("Owner inventory data is unavailable.");
 }
 
 function mapPropertyDashboardItem(input: {
   row: SupabasePropertyRow;
   ownerPublicSlug: string | null;
+  appUrl: string | undefined;
   photos: PropertyPhoto[];
   roomRows: PropertyRoomRow[];
   propertyFeatureCount: number;
@@ -121,21 +98,21 @@ function mapPropertyDashboardItem(input: {
   const status = getPropertyStatus(input.row);
   const roomCount = input.roomRows.length;
   const activeRoomCount = input.roomRows.filter((room) => room.is_active).length;
-  const minPrice = getMinPositivePrice(input.roomRows.map((room) => Number(room.price_per_night ?? 0)));
-  const hasDescriptionAndPhotos =
-    input.photos.length > 0 && Boolean(input.row.short_description?.trim() || input.row.full_description?.trim());
+  const minPrice = getMinimumActiveRoomPrice(input.roomRows.map((room) => ({
+    isActive: room.is_active,
+    pricePerNight: room.price_per_night,
+  })));
+  const hasDescription = Boolean(input.row.short_description?.trim() || input.row.full_description?.trim());
+  const hasPhotos = input.photos.length > 0;
   const hasAmenitiesAndServices = input.propertyFeatureCount + input.propertyRuleCount + input.roomAmenityCount > 0;
-  const hasPricesAndRooms = roomCount > 0 && minPrice != null;
-  const completenessPercent = buildCompleteness([
-    hasDescriptionAndPhotos,
+  const hasRooms = roomCount > 0;
+  const hasPrices = input.roomRows.some((room) => Number(room.price_per_night ?? 0) > 0);
+  const { completenessPercent, completionBreakdown } = buildInventoryCompletion({
+    hasDescription,
+    hasPhotos,
     hasAmenitiesAndServices,
-    hasPricesAndRooms,
-  ]);
-  const activityScore = buildActivityScore({
-    completenessPercent,
-    newRequestsCount: input.newRequestsCount,
-    activeCollaborationsCount: input.activeCollaborationsCount,
-    allowAgentInquiries: input.row.allow_agent_inquiries,
+    hasRooms,
+    hasPrices,
   });
 
   return {
@@ -149,7 +126,7 @@ function mapPropertyDashboardItem(input: {
     address: input.row.address,
     coverImageUrl: input.photos[0]?.url ?? input.row.cover_image_url ?? "",
     publicHref: getPublicHref(input.ownerPublicSlug),
-    publicLabel: getPublicLabel(input.ownerPublicSlug),
+    publicLabel: buildInventoryPublicLabel(input.ownerPublicSlug, input.appUrl),
     status: status.status,
     statusLabel: status.label,
     roomCount,
@@ -159,12 +136,7 @@ function mapPropertyDashboardItem(input: {
     activeCollaborationsCount: input.activeCollaborationsCount,
     allowAgentInquiries: input.row.allow_agent_inquiries,
     completenessPercent,
-    activityScore,
-    completionBreakdown: {
-      hasDescriptionAndPhotos,
-      hasAmenitiesAndServices,
-      hasPricesAndRooms,
-    },
+    completionBreakdown,
     createdAt: input.row.created_at,
     updatedAt: input.row.updated_at,
   };
@@ -173,27 +145,26 @@ function mapPropertyDashboardItem(input: {
 function mapStandaloneDashboardItem(input: {
   row: SupabaseRoomRow;
   ownerPublicSlug: string | null;
+  appUrl: string | undefined;
   photos: PropertyPhoto[];
   roomAmenityCount: number;
   newRequestsCount: number;
   activeCollaborationsCount: number;
 }): OwnerInventoryDashboardItem {
   const status = getStandaloneStatus(input.row);
-  const minPrice = Number(input.row.price_per_night) > 0 ? Number(input.row.price_per_night) : null;
-  const hasDescriptionAndPhotos =
-    input.photos.length > 0 && Boolean(input.row.short_description?.trim() || input.row.full_description?.trim());
+  const pricePerNight = Number(input.row.price_per_night);
+  const minPrice = getMinimumActiveRoomPrice([{ isActive: input.row.is_active, pricePerNight }]);
+  const hasDescription = Boolean(input.row.short_description?.trim() || input.row.full_description?.trim());
+  const hasPhotos = input.photos.length > 0;
   const hasAmenitiesAndServices = input.roomAmenityCount > 0;
-  const hasPricesAndRooms = minPrice != null;
-  const completenessPercent = buildCompleteness([
-    hasDescriptionAndPhotos,
+  const hasRooms = true;
+  const hasPrices = Number.isFinite(pricePerNight) && pricePerNight > 0;
+  const { completenessPercent, completionBreakdown } = buildInventoryCompletion({
+    hasDescription,
+    hasPhotos,
     hasAmenitiesAndServices,
-    hasPricesAndRooms,
-  ]);
-  const activityScore = buildActivityScore({
-    completenessPercent,
-    newRequestsCount: input.newRequestsCount,
-    activeCollaborationsCount: input.activeCollaborationsCount,
-    allowAgentInquiries: input.row.allow_agent_inquiries,
+    hasRooms,
+    hasPrices,
   });
 
   return {
@@ -207,7 +178,7 @@ function mapStandaloneDashboardItem(input: {
     address: input.row.address ?? "",
     coverImageUrl: input.photos[0]?.url ?? "",
     publicHref: getPublicHref(input.ownerPublicSlug),
-    publicLabel: getPublicLabel(input.ownerPublicSlug),
+    publicLabel: buildInventoryPublicLabel(input.ownerPublicSlug, input.appUrl),
     status: status.status,
     statusLabel: status.label,
     roomCount: 1,
@@ -217,12 +188,7 @@ function mapStandaloneDashboardItem(input: {
     activeCollaborationsCount: input.activeCollaborationsCount,
     allowAgentInquiries: input.row.allow_agent_inquiries,
     completenessPercent,
-    activityScore,
-    completionBreakdown: {
-      hasDescriptionAndPhotos,
-      hasAmenitiesAndServices,
-      hasPricesAndRooms,
-    },
+    completionBreakdown,
     createdAt: input.row.created_at,
     updatedAt: input.row.updated_at,
   };
@@ -253,7 +219,8 @@ export async function getOwnerInventoryDashboardData(): Promise<OwnerInventoryDa
   }
 
   const supabase = await createSupabaseServerClient();
-  const [{ data: propertyRows }, { data: standaloneRoomRows }] = await Promise.all([
+  const appUrl = getCanonicalAppUrl();
+  const [propertyResult, standaloneRoomResult] = await Promise.all([
     supabase.from("properties").select("*").eq("owner_id", profile.id).order("created_at", { ascending: false }),
     supabase
       .from("rooms")
@@ -263,27 +230,35 @@ export async function getOwnerInventoryDashboardData(): Promise<OwnerInventoryDa
       .order("created_at", { ascending: false }),
   ]);
 
-  const safePropertyRows = (propertyRows ?? []) as SupabasePropertyRow[];
-  const safeStandaloneRows = (standaloneRoomRows ?? []) as SupabaseRoomRow[];
+  if (propertyResult.error) {
+    failOwnerInventoryRead("owner_inventory_properties_lookup_failed", propertyResult.error);
+  }
+
+  if (standaloneRoomResult.error) {
+    failOwnerInventoryRead("owner_inventory_standalone_rooms_lookup_failed", standaloneRoomResult.error);
+  }
+
+  const safePropertyRows = (propertyResult.data ?? []) as SupabasePropertyRow[];
+  const safeStandaloneRows = (standaloneRoomResult.data ?? []) as SupabaseRoomRow[];
   const propertyIds = safePropertyRows.map((row) => row.id);
   const standaloneIds = safeStandaloneRows.map((row) => row.id);
 
   const [
-    { data: propertyRoomRows },
-    { data: propertyPhotoRows },
-    { data: standalonePhotoRows },
-    { data: requestRows },
-    { data: activePropertyLinkRows },
-    { data: activeRoomLinkRows },
-    { data: propertyFeatureRows },
-    { data: propertyRuleRows },
+    propertyRoomResult,
+    propertyPhotoResult,
+    standalonePhotoResult,
+    requestResult,
+    activePropertyLinkResult,
+    activeRoomLinkResult,
+    propertyFeatureResult,
+    propertyRuleResult,
   ] = await Promise.all([
     propertyIds.length
       ? supabase
           .from("rooms")
           .select("id, property_id, title, price_per_night, is_active, short_description, full_description, allow_agent_inquiries")
           .in("property_id", propertyIds)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
     propertyIds.length
       ? supabase
           .from("property_photos")
@@ -291,7 +266,7 @@ export async function getOwnerInventoryDashboardData(): Promise<OwnerInventoryDa
           .in("property_id", propertyIds)
           .order("sort_order", { ascending: true })
           .order("created_at", { ascending: true })
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
     standaloneIds.length
       ? supabase
           .from("room_photos")
@@ -299,7 +274,7 @@ export async function getOwnerInventoryDashboardData(): Promise<OwnerInventoryDa
           .in("room_id", standaloneIds)
           .order("sort_order", { ascending: true })
           .order("created_at", { ascending: true })
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
     supabase
       .from("guest_requests")
       .select("property_id, room_id, status, source, agent_id, owner_id")
@@ -314,28 +289,55 @@ export async function getOwnerInventoryDashboardData(): Promise<OwnerInventoryDa
       .select("id, room_id, owner_id, agent_id, status, proposal_message, collaboration_terms, owner_contact_visible, proposed_at, decided_at, created_at")
       .eq("owner_id", profile.id)
       .eq("status", "active"),
-    propertyIds.length ? supabase.from("property_features").select("property_id").in("property_id", propertyIds) : Promise.resolve({ data: [] }),
-    propertyIds.length ? supabase.from("property_rules").select("property_id").in("property_id", propertyIds) : Promise.resolve({ data: [] }),
+    propertyIds.length
+      ? supabase.from("property_features").select("property_id").in("property_id", propertyIds)
+      : Promise.resolve({ data: [], error: null }),
+    propertyIds.length
+      ? supabase.from("property_rules").select("property_id").in("property_id", propertyIds)
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
-  const safePropertyRoomRows = (propertyRoomRows ?? []) as PropertyRoomRow[];
-  const safePropertyPhotoRows = (propertyPhotoRows ?? []) as SupabasePropertyPhotoRow[];
-  const safeStandalonePhotoRows = (standalonePhotoRows ?? []) as SupabaseRoomPhotoRow[];
-  const safeRequestRows = (requestRows ?? []) as SupabaseGuestRequestRow[];
-  const safePropertyLinks = (activePropertyLinkRows ?? []) as SupabaseAgentPropertyLinkRow[];
-  const safeRoomLinks = (activeRoomLinkRows ?? []) as SupabaseAgentRoomLinkRow[];
+  const readErrors: Array<[string, unknown]> = [
+    ["owner_inventory_property_rooms_lookup_failed", propertyRoomResult.error],
+    ["owner_inventory_property_photos_lookup_failed", propertyPhotoResult.error],
+    ["owner_inventory_standalone_photos_lookup_failed", standalonePhotoResult.error],
+    ["owner_inventory_requests_lookup_failed", requestResult.error],
+    ["owner_inventory_property_links_lookup_failed", activePropertyLinkResult.error],
+    ["owner_inventory_room_links_lookup_failed", activeRoomLinkResult.error],
+    ["owner_inventory_property_features_lookup_failed", propertyFeatureResult.error],
+    ["owner_inventory_property_rules_lookup_failed", propertyRuleResult.error],
+  ];
+
+  for (const [event, error] of readErrors) {
+    if (error) {
+      failOwnerInventoryRead(event, error);
+    }
+  }
+
+  const safePropertyRoomRows = (propertyRoomResult.data ?? []) as PropertyRoomRow[];
+  const safePropertyPhotoRows = (propertyPhotoResult.data ?? []) as SupabasePropertyPhotoRow[];
+  const safeStandalonePhotoRows = (standalonePhotoResult.data ?? []) as SupabaseRoomPhotoRow[];
+  const safeRequestRows = (requestResult.data ?? []) as SupabaseGuestRequestRow[];
+  const safePropertyLinks = (activePropertyLinkResult.data ?? []) as SupabaseAgentPropertyLinkRow[];
+  const safeRoomLinks = (activeRoomLinkResult.data ?? []) as SupabaseAgentRoomLinkRow[];
   const amenityRoomIds = [...safePropertyRoomRows.map((row) => row.id), ...standaloneIds];
-  const { data: roomAmenityRows } = amenityRoomIds.length
+  const roomAmenityResult = amenityRoomIds.length
     ? await supabase.from("room_amenities").select("room_id").in("room_id", amenityRoomIds)
-    : { data: [] };
+    : { data: [], error: null };
+
+  if (roomAmenityResult.error) {
+    failOwnerInventoryRead("owner_inventory_room_amenities_lookup_failed", roomAmenityResult.error);
+  }
+
+  const roomAmenityRows = roomAmenityResult.data;
 
   const propertyPhotos = buildPropertyPhotoMap(safePropertyPhotoRows);
   const standalonePhotos = buildRoomPhotoMap(safeStandalonePhotoRows);
   const propertyFeatureCountByProperty = countById(
-    ((propertyFeatureRows ?? []) as Array<{ property_id: string }>).map((row) => ({ id: row.property_id })),
+    ((propertyFeatureResult.data ?? []) as Array<{ property_id: string }>).map((row) => ({ id: row.property_id })),
   );
   const propertyRuleCountByProperty = countById(
-    ((propertyRuleRows ?? []) as Array<{ property_id: string }>).map((row) => ({ id: row.property_id })),
+    ((propertyRuleResult.data ?? []) as Array<{ property_id: string }>).map((row) => ({ id: row.property_id })),
   );
   const roomAmenityCountByRoom = countById(((roomAmenityRows ?? []) as Array<{ room_id: string }>).map((row) => ({ id: row.room_id })));
   const roomRowsByProperty = new Map<string, PropertyRoomRow[]>();
@@ -377,6 +379,7 @@ export async function getOwnerInventoryDashboardData(): Promise<OwnerInventoryDa
     return mapPropertyDashboardItem({
       row,
       ownerPublicSlug: profile.slug || null,
+      appUrl,
       photos,
       roomRows,
       propertyFeatureCount: propertyFeatureCountByProperty.get(row.id) ?? 0,
@@ -391,6 +394,7 @@ export async function getOwnerInventoryDashboardData(): Promise<OwnerInventoryDa
     mapStandaloneDashboardItem({
       row,
       ownerPublicSlug: profile.slug || null,
+      appUrl,
       photos: standalonePhotos.get(row.id) ?? [],
       roomAmenityCount: roomAmenityCountByRoom.get(row.id) ?? 0,
       newRequestsCount: standaloneRequestCount.get(row.id) ?? 0,
@@ -405,7 +409,7 @@ export async function getOwnerInventoryDashboardData(): Promise<OwnerInventoryDa
   const archivedCount = items.filter((item) => item.status === "archived").length;
   const newRequestsCount = items.reduce((total, item) => total + item.newRequestsCount, 0);
   const averageCompletenessPercent = totalCount
-    ? clampPercent(items.reduce((total, item) => total + item.completenessPercent, 0) / totalCount)
+    ? Math.round(items.reduce((total, item) => total + item.completenessPercent, 0) / totalCount)
     : 0;
 
   return {

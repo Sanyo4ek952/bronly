@@ -1,12 +1,13 @@
 "use client";
 
-import { Copy, MoreHorizontal } from "lucide-react";
+import { CircleHelp, Copy, MoreHorizontal } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import type { OwnerInventoryDashboardItem } from "@/entities/property";
 import { cn } from "@/shared/lib/cn";
+import { formatDateLabel } from "@/shared/lib/date";
 import { formatRubles } from "@/shared/lib/money";
 
 import { AgentCollaborationToggle } from "./agent-collaboration-toggle";
@@ -33,12 +34,91 @@ function getMenuLinks(item: OwnerInventoryDashboardItem) {
   ];
 }
 
-function formatRoomRatio(item: OwnerInventoryDashboardItem) {
-  return `${item.roomCount} / ${item.activeRoomCount}`;
-}
-
 function formatPrice(value: number | null) {
   return value == null ? "—" : `от ${formatRubles(value)}`;
+}
+
+function getReadinessMissingItems(item: OwnerInventoryDashboardItem) {
+  const breakdown = item.completionBreakdown;
+  const missingItems: string[] = [];
+
+  if (!breakdown.hasDescription) missingItems.push("Добавьте описание");
+  if (!breakdown.hasPhotos) missingItems.push("Загрузите хотя бы одно фото");
+  if (!breakdown.hasAmenitiesAndServices) {
+    missingItems.push(item.kind === "property" ? "Добавьте удобства, услуги или правила" : "Добавьте удобства номера");
+  }
+  if (!breakdown.hasRooms) missingItems.push("Добавьте хотя бы один номер");
+  if (breakdown.hasRooms && !breakdown.hasPrices) {
+    missingItems.push(item.kind === "property" ? "Укажите цену хотя бы для одного номера" : "Укажите цену за сутки");
+  }
+
+  return missingItems;
+}
+
+function ReadinessMetric({ item, className }: { item: OwnerInventoryDashboardItem; className: string }) {
+  const tooltipId = useId();
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const missingItems = getReadinessMissingItems(item);
+  const hasMissingItems = item.completenessPercent < 100 && missingItems.length > 0;
+  const isOpen = hasMissingItems && (isHovered || isFocused);
+
+  return (
+    <div
+      className={cn(className, "relative")}
+      onMouseEnter={hasMissingItems ? () => setIsHovered(true) : undefined}
+      onMouseLeave={hasMissingItems ? () => setIsHovered(false) : undefined}
+    >
+      <dt className="text-[10px] text-[var(--text-muted)]">
+        {hasMissingItems ? (
+          <button
+            type="button"
+            className="inline-flex cursor-help items-center gap-1 rounded-sm text-left hover:text-[var(--accent-strong)] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgb(var(--color-primary-rgb)_/_0.14)]"
+            aria-expanded={isOpen}
+            aria-describedby={tooltipId}
+            onClick={() => setIsFocused(true)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                setIsHovered(false);
+                setIsFocused(false);
+                event.currentTarget.blur();
+              }
+            }}
+          >
+            готовность
+            <CircleHelp aria-hidden="true" className="size-3" strokeWidth={2} />
+          </button>
+        ) : "готовность"}
+      </dt>
+      <dd className="mt-1 whitespace-nowrap text-sm font-bold text-[var(--text)]">{item.completenessPercent}%</dd>
+      {hasMissingItems ? (
+        <div
+          id={tooltipId}
+          role="tooltip"
+          aria-hidden={!isOpen}
+          className={cn(
+            "invisible absolute right-0 top-[calc(100%-2px)] z-30 mt-2 w-[min(280px,calc(100vw-48px))] translate-y-1 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3.5 text-left opacity-0 shadow-[var(--shadow-md)] transition duration-150",
+            isOpen && "visible translate-y-0 opacity-100",
+          )}
+        >
+          <p className="text-xs font-bold text-[var(--text)]">До полной готовности</p>
+          <ul className="mt-2 grid gap-1.5 text-xs leading-5 text-[var(--text-muted)]">
+            {missingItems.map((missingItem) => (
+              <li key={missingItem} className="flex gap-2">
+                <span className="mt-2 size-1.5 flex-none rounded-full bg-[var(--accent)]" aria-hidden="true" />
+                <span>{missingItem}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2.5 border-t border-[var(--border)] pt-2 text-[10px] leading-4 text-[var(--text-subtle)]">
+            Процент складывается из описания и фото, удобств, а также номера с ценой.
+          </p>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export function PropertyCard({ item }: PropertyCardProps) {
@@ -56,10 +136,11 @@ export function PropertyCard({ item }: PropertyCardProps) {
   }
 
   const metrics = [
-    { label: item.kind === "property" ? "номера / активны" : "номер / активен", value: formatRoomRatio(item) },
-    { label: "за сутки", value: formatPrice(item.minPrice) },
-    { label: "новые заявки", value: String(item.newRequestsCount) },
-    { label: "активность", value: `${item.activityScore}%` },
+    { key: "rooms", label: "всего номеров", value: String(item.roomCount) },
+    { key: "activeRooms", label: "активные номера", value: String(item.activeRoomCount) },
+    { key: "price", label: "за сутки", value: formatPrice(item.minPrice) },
+    { key: "requests", label: "новые заявки", value: String(item.newRequestsCount) },
+    { key: "readiness", label: "готовность", value: `${item.completenessPercent}%` },
   ];
 
   return (
@@ -76,20 +157,40 @@ export function PropertyCard({ item }: PropertyCardProps) {
       <div className="grid min-w-0 content-start">
         <div className="flex items-start justify-between gap-4 px-1 pb-3 pt-1 max-[520px]:grid max-[520px]:gap-2">
           <div className="min-w-0">
-            <h3 className="text-[22px] font-bold leading-[1.15] tracking-[-0.025em] text-[var(--text)] max-[520px]:text-xl">{item.title}</h3>
+            <h3 className="text-[22px] font-bold leading-[1.15] tracking-[-0.025em] text-[var(--text)] max-[520px]:text-xl">
+              <Link
+                href={getItemHref(item)}
+                className="rounded-sm transition-colors hover:text-[var(--accent-strong)] focus-visible:outline-none focus-visible:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.14)]"
+              >
+                {item.title}
+              </Link>
+            </h3>
             <p className="mt-1.5 text-xs text-[var(--text-muted)]">{[metaLabel, item.city].filter(Boolean).join(" · ")}</p>
             {item.address ? <p className="mt-1 text-xs text-[var(--text-subtle)]">{item.address}</p> : null}
+            <p className="mt-1.5 text-[10px] text-[var(--text-muted)]">Параметры обновлены {formatDateLabel(item.updatedAt)}</p>
           </div>
           <PropertyStatusBadge status={item.status} label={item.statusLabel} />
         </div>
 
-        <dl className="grid grid-cols-4 border-y border-[var(--border)] max-[520px]:grid-cols-2">
-          {metrics.map((metric, index) => (
-            <div key={metric.label} className={cn("border-r border-[var(--border)] px-3 py-2.5 last:border-r-0 max-[520px]:border-b max-[520px]:px-1.5", index % 2 === 1 && "max-[520px]:border-r-0", index >= 2 && "max-[520px]:border-b-0")}>
-              <dt className="text-[10px] text-[var(--text-muted)]">{metric.label}</dt>
-              <dd className="mt-1 text-sm font-bold text-[var(--text)]">{metric.value}</dd>
-            </div>
-          ))}
+        <dl className="grid grid-cols-5 border-y border-[var(--border)] max-[520px]:grid-cols-2">
+          {metrics.map((metric, index) => {
+            const metricClassName = cn(
+              "border-r border-[var(--border)] px-3 py-2.5 last:border-r-0 max-[520px]:border-b max-[520px]:px-1.5",
+              index % 2 === 1 && "max-[520px]:border-r-0",
+              metric.key === "readiness" && "max-[520px]:col-span-2 max-[520px]:border-r-0 max-[520px]:border-b-0",
+            );
+
+            if (metric.key === "readiness") {
+              return <ReadinessMetric key={metric.key} item={item} className={metricClassName} />;
+            }
+
+            return (
+              <div key={metric.key} className={metricClassName}>
+                <dt className="text-[10px] text-[var(--text-muted)]">{metric.label}</dt>
+                <dd className="mt-1 whitespace-nowrap text-sm font-bold text-[var(--text)]">{metric.value}</dd>
+              </div>
+            );
+          })}
         </dl>
 
         <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] px-1 py-2.5 max-[720px]:grid max-[720px]:gap-2.5">
