@@ -274,6 +274,8 @@ export type OwnerCalendarInventoryRoom = {
   title: string;
   subtitle: string;
   pricePerNight: number;
+  coverImageUrl: string;
+  seasonalPrices: OwnerRoomDetail["seasonalPrices"];
   busyRanges: OwnerRoomDetail["busyRanges"];
   calendarHref: string;
 };

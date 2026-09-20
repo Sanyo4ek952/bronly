@@ -1,331 +1,328 @@
 "use client";
 
-import type { CSSProperties } from "react";
-import { useMemo, useState } from "react";
-import { Building2, ChevronLeft, ChevronRight, Home } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import { Building2, ChevronLeft, ChevronRight, CircleHelp, Home } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 
 import type { OwnerCalendarInventoryGroup, OwnerCalendarInventoryRoom } from "@/entities/property";
+import type { OwnerBusyRange } from "@/entities/room";
 import {
   addMonths,
+  findBusyRangeForDate,
   formatDateKey,
   formatMonthLabel,
-  formatMonthRangeLabel,
   formatShortDateLabel,
-  getNearestBusyRange,
   getTimelineBusyRanges,
-  getTimelineDays,
-  getTimelineStartIndex,
-  getVisibleTimelineDays,
   startOfMonth,
-  useTimelineVisibleDayCount,
+  type TimelineDayCell,
 } from "@/entities/room/model/calendar-helpers";
+import { createRoomBusyRange, deleteRoomBusyRange, updateRoomBusyRange } from "@/features/property/owner-mutations";
 import { cn } from "@/shared/lib/cn";
 import { formatDateLabel } from "@/shared/lib/date";
-import { AppIcon, Button, ButtonLink, IconButton } from "@/shared/ui";
+import { AppIcon, BottomSheet, Button, IconButton, InlineNotice, Input, Select, Textarea } from "@/shared/ui";
 
-type OwnerDashboardCalendarProps = { groups: OwnerCalendarInventoryGroup[] };
-type GroupFilterKind = "all" | "property" | "standalone";
+type OwnerDashboardCalendarProps = {
+  groups: OwnerCalendarInventoryGroup[];
+  serverNotice?: string;
+  serverNoticeTone?: "default" | "error";
+};
 
-const filterClass =
-  "inline-flex min-h-10 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-bold text-[var(--text-muted)] transition-[border-color,background-color,color] duration-[180ms] hover:border-[rgb(var(--color-primary-rgb)_/_0.24)] hover:bg-[var(--color-primary-pale)] focus-visible:outline-none focus-visible:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.12)]";
-const activeFilterClass = "border-[var(--accent)] bg-[var(--color-primary-pale)] text-[var(--accent-strong)]";
+type VisibleRoom = {
+  group: OwnerCalendarInventoryGroup;
+  room: OwnerCalendarInventoryRoom;
+};
 
-function getDefaultTimelineAnchorKey(month: Date) {
-  const today = new Date();
-  return today.getFullYear() === month.getFullYear() && today.getMonth() === month.getMonth()
-    ? formatDateKey(today)
-    : formatDateKey(startOfMonth(month));
-}
+type ActiveEditor =
+  | { mode: "create"; room: OwnerCalendarInventoryRoom; startsOn: string; endsOn: string }
+  | { mode: "edit"; room: OwnerCalendarInventoryRoom; busyRange: OwnerBusyRange };
 
-function getRoomSummary(room: OwnerCalendarInventoryRoom) {
-  if (!room.busyRanges.length) return room.subtitle || "Свободные даты";
-  const ranges = `${room.busyRanges.length} занятых диапазонов`;
-  return room.subtitle ? `${room.subtitle} · ${ranges}` : ranges;
-}
+type DragState = {
+  pointerId: number | null;
+  startX: number;
+  scrollLeft: number;
+};
 
-function capitalizeFirstLetter(value: string) {
+const DAY_WIDTH = 48;
+const STRIP_DAY_COUNT = 93;
+const shortWeekDays = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
+const shortMonthFormatter = new Intl.DateTimeFormat("ru-RU", { month: "short" });
+
+function capitalize(value: string) {
   return value ? `${value[0].toLocaleUpperCase("ru-RU")}${value.slice(1)}` : value;
 }
 
-export function OwnerDashboardCalendar({ groups }: OwnerDashboardCalendarProps) {
-  const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
-  const [groupFilter, setGroupFilter] = useState<GroupFilterKind>("all");
-  const [selectedGroupId, setSelectedGroupId] = useState("all");
-  const [timelineAnchorKey, setTimelineAnchorKey] = useState(() => getDefaultTimelineAnchorKey(new Date()));
-  const visibleDayCount = useTimelineVisibleDayCount();
-  const timelineDays = useMemo(() => getTimelineDays(currentMonth), [currentMonth]);
-  const timelineStartIndex = useMemo(
-    () => getTimelineStartIndex(timelineDays, visibleDayCount, timelineAnchorKey),
-    [timelineAnchorKey, timelineDays, visibleDayCount],
-  );
-  const visibleTimelineDays = useMemo(
-    () => getVisibleTimelineDays(timelineDays, timelineStartIndex, visibleDayCount),
-    [timelineDays, timelineStartIndex, visibleDayCount],
-  );
-  const groupsByKind = useMemo(
-    () => groups.filter((group) => groupFilter === "all" || group.kind === groupFilter),
-    [groupFilter, groups],
-  );
-  const visibleGroups = selectedGroupId === "all"
-    ? groupsByKind
-    : groupsByKind.filter((group) => group.id === selectedGroupId);
-  const visibleRooms = visibleGroups.flatMap((group) => group.rooms);
-  const nearestBusyRange = getNearestBusyRange(visibleRooms.flatMap((room) => room.busyRanges));
-  const busyRoomsInView = visibleRooms.filter((room) =>
-    room.busyRanges.some((range) => timelineDays.some((day) => day.key >= range.startsOn && day.key <= range.endsOn)),
-  ).length;
-  const canMoveBackward = timelineStartIndex > 0;
-  const canMoveForward = timelineStartIndex + visibleTimelineDays.length < timelineDays.length;
-  const windowLabel = visibleTimelineDays.length
-    ? `${formatShortDateLabel(visibleTimelineDays[0].key)} — ${formatShortDateLabel(visibleTimelineDays[visibleTimelineDays.length - 1].key)}`
-    : formatMonthRangeLabel(currentMonth);
-  const calendarColumnsStyle = {
-    "--calendar-columns": String(visibleTimelineDays.length),
-  } as CSSProperties;
+function getMonthKey(value: Date) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}`;
+}
 
-  function updateMonth(nextMonth: Date) {
-    setCurrentMonth(nextMonth);
-    setTimelineAnchorKey(getDefaultTimelineAnchorKey(nextMonth));
+function parseMonthKey(value: string) {
+  const [year, month] = value.split("-").map(Number);
+  return new Date(year, (month || 1) - 1, 1);
+}
+
+function getStripDays(month: Date): TimelineDayCell[] {
+  const start = startOfMonth(month);
+  const todayKey = formatDateKey(new Date());
+
+  return Array.from({ length: STRIP_DAY_COUNT }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    const key = formatDateKey(date);
+
+    return {
+      key,
+      date,
+      dayLabel: String(date.getDate()),
+      weekDayLabel: shortWeekDays[date.getDay()],
+      isToday: key === todayKey,
+    };
+  });
+}
+
+function getDayPrice(room: OwnerCalendarInventoryRoom, dayKey: string) {
+  const seasonalPrice = room.seasonalPrices.find(
+    (item) => item.isActive && dayKey >= item.startsOn && dayKey <= item.endsOn,
+  );
+
+  return {
+    value: seasonalPrice?.pricePerNight ?? room.pricePerNight,
+    isSeasonal: Boolean(seasonalPrice),
+  };
+}
+
+function formatCompactPrice(value: number) {
+  if (value >= 10_000) return `${Math.round(value / 1_000)}к`;
+  if (value >= 1_000) return `${(value / 1_000).toLocaleString("ru-RU", { maximumFractionDigits: 1 })}к`;
+  return value.toLocaleString("ru-RU");
+}
+
+function getGroupIcon(group: OwnerCalendarInventoryGroup) {
+  return group.kind === "property" ? Building2 : Home;
+}
+
+function getEditorTitle(editor: ActiveEditor | null) {
+  return editor?.mode === "edit" ? "Изменить занятые даты" : "Отметить занятые даты";
+}
+
+export function OwnerDashboardCalendar({ groups, serverNotice = "", serverNoticeTone = "default" }: OwnerDashboardCalendarProps) {
+  const today = useMemo(() => new Date(), []);
+  const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(today));
+  const [groupId, setGroupId] = useState("all");
+  const [activeEditor, setActiveEditor] = useState<ActiveEditor | null>(null);
+  const [legendOpen, setLegendOpen] = useState(false);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<DragState>({ pointerId: null, startX: 0, scrollLeft: 0 });
+  const didDragRef = useRef(false);
+
+  const days = useMemo(() => getStripDays(currentMonth), [currentMonth]);
+  const monthOptions = useMemo(
+    () => Array.from({ length: 15 }, (_, index) => addMonths(currentMonth, index - 6)),
+    [currentMonth],
+  );
+  const visibleRooms = useMemo<VisibleRoom[]>(
+    () => groups
+      .filter((group) => groupId === "all" || group.id === groupId)
+      .flatMap((group) => group.rooms.map((room) => ({ group, room }))),
+    [groupId, groups],
+  );
+
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    const todayIndex = days.findIndex((day) => day.isToday);
+    const frameId = window.requestAnimationFrame(() => {
+      scroller.scrollLeft = todayIndex >= 0 ? Math.max(0, todayIndex * DAY_WIDTH - DAY_WIDTH) : 0;
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [days]);
+
+  function openCreateEditor(room: OwnerCalendarInventoryRoom, dayKey: string) {
+    if (didDragRef.current) return;
+    setActiveEditor({ mode: "create", room, startsOn: dayKey, endsOn: dayKey });
   }
 
-  function shiftWindow(direction: -1 | 1) {
-    const nextIndex = direction < 0
-      ? Math.max(0, timelineStartIndex - visibleDayCount)
-      : Math.min(Math.max(0, timelineDays.length - visibleDayCount), timelineStartIndex + visibleDayCount);
-    const nextDay = timelineDays[nextIndex];
-    if (nextDay) setTimelineAnchorKey(nextDay.key);
+  function openBusyEditor(room: OwnerCalendarInventoryRoom, busyRange: OwnerBusyRange) {
+    if (didDragRef.current) return;
+    setActiveEditor({ mode: "edit", room, busyRange });
   }
 
-  function resetFilters() {
-    setGroupFilter("all");
-    setSelectedGroupId("all");
+  function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
+    if ((event.target as HTMLElement).closest("button, a, input, select, textarea")) {
+      didDragRef.current = false;
+      return;
+    }
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    didDragRef.current = false;
+    dragStateRef.current = { pointerId: event.pointerId, startX: event.clientX, scrollLeft: scroller.scrollLeft };
   }
+
+  function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const dragState = dragStateRef.current;
+    const scroller = scrollerRef.current;
+    if (!scroller || dragState.pointerId !== event.pointerId) return;
+
+    const delta = event.clientX - dragState.startX;
+    if (Math.abs(delta) > 4 && !didDragRef.current) {
+      didDragRef.current = true;
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    if (didDragRef.current) scroller.scrollLeft = dragState.scrollLeft - delta;
+  }
+
+  function finishPointerDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    if (dragStateRef.current.pointerId !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    dragStateRef.current.pointerId = null;
+  }
+
+  function showToday() {
+    setCurrentMonth(startOfMonth(today));
+    window.requestAnimationFrame(() => {
+      const todayIndex = getStripDays(startOfMonth(today)).findIndex((day) => day.isToday);
+      if (scrollerRef.current && todayIndex >= 0) {
+        scrollerRef.current.scrollTo({ left: Math.max(0, todayIndex * DAY_WIDTH - DAY_WIDTH), behavior: "smooth" });
+      }
+    });
+  }
+
+  const editorRoom = activeEditor?.room ?? null;
 
   return (
-    <section className="grid gap-6 max-[640px]:gap-5">
-      <section className="grid gap-5 border-y border-[var(--border)] px-1 py-5 max-[640px]:gap-4 max-[640px]:px-0 max-[640px]:py-4" aria-label="Управление календарём">
-        <div className="flex items-center justify-between gap-5 max-[640px]:items-start">
-          <div className="grid gap-1">
-            <strong className="text-[22px] leading-tight tracking-[-0.025em] text-[var(--text)] max-[640px]:text-xl">
-              {capitalizeFirstLetter(formatMonthLabel(currentMonth))}
-            </strong>
-            <span className="text-xs text-[var(--text-muted)]">{formatMonthRangeLabel(currentMonth)}</span>
+    <section className="grid min-w-0 gap-4">
+      {serverNotice ? <InlineNotice tone={serverNoticeTone} aria-live="polite">{serverNotice}</InlineNotice> : null}
+
+      <section className="overflow-hidden rounded-[22px] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)]" aria-label="Общий календарь кабинета">
+        <div className="grid gap-3 border-b border-[var(--border)] bg-[var(--surface)] p-3.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-4">
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(132px,0.72fr)] gap-2 sm:max-w-[520px]">
+            <Select id="calendar-placement-filter" aria-label="Показать размещения" value={groupId} onChange={(event) => setGroupId(event.target.value)} className="min-w-0 bg-[var(--surface-subtle)] py-2 font-semibold">
+              <option value="all">Все размещения · {groups.reduce((sum, group) => sum + group.rooms.length, 0)}</option>
+              {groups.map((group) => <option key={group.id} value={group.id}>{group.title} · {group.rooms.length}</option>)}
+            </Select>
+            <Select id="calendar-month-filter" aria-label="Выбрать месяц" value={getMonthKey(currentMonth)} onChange={(event) => setCurrentMonth(parseMonthKey(event.target.value))} className="min-w-0 bg-[var(--surface-subtle)] py-2 font-semibold">
+              {monthOptions.map((month) => <option key={getMonthKey(month)} value={getMonthKey(month)}>{capitalize(formatMonthLabel(month))}</option>)}
+            </Select>
           </div>
-          <div className="flex items-center gap-2 max-[640px]:w-[152px] max-[640px]:flex-wrap max-[640px]:justify-end">
-            <IconButton aria-label="Предыдущий месяц" className="size-11" onClick={() => updateMonth(addMonths(currentMonth, -1))}>
-              <AppIcon icon={ChevronLeft} />
-            </IconButton>
-            <Button
-              variant="secondary"
-              className="rounded-full max-[640px]:order-3 max-[640px]:w-full max-[640px]:px-3"
-              onClick={() => updateMonth(startOfMonth(new Date()))}
-            >
-              Текущий месяц
-            </Button>
-            <IconButton aria-label="Следующий месяц" className="size-11" onClick={() => updateMonth(addMonths(currentMonth, 1))}>
-              <AppIcon icon={ChevronRight} />
-            </IconButton>
+
+          <div className="flex items-center justify-between gap-2 sm:justify-end">
+            <Button size="sm" variant="secondary" className="rounded-full" onClick={showToday}>Сегодня</Button>
+            <div className="flex items-center gap-1.5">
+              <IconButton aria-label="Предыдущий месяц" className="size-[34px] shadow-none" onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}><AppIcon icon={ChevronLeft} className="size-4" /></IconButton>
+              <IconButton aria-label="Следующий месяц" className="size-[34px] shadow-none" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}><AppIcon icon={ChevronRight} className="size-4" /></IconButton>
+              <Button size="sm" variant="ghost" className="rounded-full px-2.5" onClick={() => setLegendOpen(true)}><AppIcon icon={CircleHelp} className="size-4" /><span className="max-[430px]:sr-only">Обозначения</span></Button>
+            </div>
           </div>
         </div>
 
-        <dl className="grid grid-cols-3">
-          <div className="min-w-0 pr-5 max-[640px]:pr-2">
-            <dd className="text-2xl font-semibold tracking-[-0.035em] text-[var(--text)] max-[640px]:text-xl">{visibleRooms.length}</dd>
-            <dt className="mt-1.5 text-xs leading-[1.35] text-[var(--text-muted)] max-[640px]:text-[10px]">Номера в обзоре</dt>
-            <small className="mt-1 block text-[11px] text-[var(--text-muted)] max-[640px]:hidden">После фильтров</small>
-          </div>
-          <div className="min-w-0 border-l border-[var(--border)] px-5 max-[640px]:px-2">
-            <dd className="text-2xl font-semibold tracking-[-0.035em] text-[var(--text)] max-[640px]:text-xl">{busyRoomsInView}</dd>
-            <dt className="mt-1.5 text-xs leading-[1.35] text-[var(--text-muted)] max-[640px]:text-[10px]">Заняты в месяце</dt>
-            <small className="mt-1 block text-[11px] text-[var(--text-muted)] max-[640px]:hidden">Есть занятые даты</small>
-          </div>
-          <div className="min-w-0 border-l border-[var(--border)] pl-5 max-[640px]:pl-2">
-            <dd className="text-[17px] font-semibold leading-tight tracking-[-0.025em] text-[var(--text)] max-[640px]:text-[13px]">
-              {nearestBusyRange ? `${formatShortDateLabel(nearestBusyRange.startsOn)} — ${formatShortDateLabel(nearestBusyRange.endsOn)}` : "Нет занятых дат"}
-            </dd>
-            <dt className="mt-1.5 text-xs leading-[1.35] text-[var(--text-muted)] max-[640px]:text-[10px]">Ближайший период</dt>
-            <small className="mt-1 block truncate text-[11px] text-[var(--text-muted)] max-[640px]:hidden">{nearestBusyRange?.label || "Свободные даты"}</small>
-          </div>
-        </dl>
+        <p id="calendar-scroll-help" className="border-b border-[var(--border)] px-3.5 py-2 text-[11px] leading-[1.4] text-[var(--text-muted)] sm:sr-only">Проведите по календарю влево или вправо, чтобы увидеть другие даты.</p>
 
-        <div className="grid gap-2.5">
-          <strong className="text-xs text-[var(--text)]">Показать размещения</strong>
-          <div className="flex max-w-full gap-2 overflow-x-auto px-0.5 pb-1" aria-label="Тип размещения">
-            {([["all", "Все"], ["property", "Объекты"], ["standalone", "Отдельные номера"]] as const).map(([kind, label]) => (
-              <button
-                key={kind}
-                type="button"
-                className={cn(filterClass, groupFilter === kind && activeFilterClass)}
-                aria-pressed={groupFilter === kind}
-                onClick={() => {
-                  setGroupFilter(kind);
-                  setSelectedGroupId("all");
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="flex max-w-full gap-2 overflow-x-auto px-0.5 pb-1" aria-label="Группа календаря">
-            <button
-              type="button"
-              className={cn(filterClass, selectedGroupId === "all" && activeFilterClass)}
-              aria-pressed={selectedGroupId === "all"}
-              onClick={() => setSelectedGroupId("all")}
-            >
-              Все группы
-            </button>
-            {groupsByKind.map((group) => (
-              <button
-                key={group.id}
-                type="button"
-                className={cn(filterClass, selectedGroupId === group.id && activeFilterClass)}
-                aria-pressed={selectedGroupId === group.id}
-                onClick={() => setSelectedGroupId(group.id)}
-              >
-                {group.title} · {group.rooms.length}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {visibleGroups.length ? (
-        <section className="min-w-0 overflow-hidden rounded-[24px] border border-[var(--border)] bg-[rgb(255_250_243_/_0.94)] max-[640px]:rounded-[20px]" aria-label="Общий календарь кабинета">
-          <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] px-5 py-[18px] max-[640px]:items-start max-[640px]:px-4 max-[640px]:py-4">
-            <div className="grid gap-1">
-              <strong className="text-[15px] text-[var(--text)]">{windowLabel}</strong>
-              <span className="text-[11px] text-[var(--text-muted)]">{visibleTimelineDays.length} дней в видимом окне</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <IconButton aria-label="Показать предыдущие дни" className="size-10" disabled={!canMoveBackward} onClick={() => shiftWindow(-1)}>
-                <AppIcon icon={ChevronLeft} />
-              </IconButton>
-              <IconButton aria-label="Показать следующие дни" className="size-10" disabled={!canMoveForward} onClick={() => shiftWindow(1)}>
-                <AppIcon icon={ChevronRight} />
-              </IconButton>
-            </div>
-          </div>
-
-          <p id="owner-calendar-scroll-help" className="hidden px-4 pt-3 text-[11px] leading-[1.45] text-[var(--text-muted)] max-[640px]:block">
-            Прокрутите сетку по горизонтали, чтобы увидеть другие даты.
-          </p>
-          <div
-            className="max-w-full overflow-x-auto overscroll-x-contain focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_3px_rgb(var(--color-primary-rgb)_/_0.22)]"
-            tabIndex={0}
-            aria-label="Сетка занятости по номерам. Прокручивается по горизонтали."
-            aria-describedby="owner-calendar-scroll-help"
-            data-calendar-scroller
-          >
-            <div
-              className="min-w-[calc(190px+(var(--calendar-columns)*44px))]"
-              style={calendarColumnsStyle}
-              data-calendar-canvas
-            >
-              <div className="grid grid-cols-[190px_minmax(0,1fr)] border-b border-[var(--border)] bg-[var(--surface)] max-[640px]:grid-cols-[178px_minmax(0,1fr)]">
-                <div className="sticky left-0 z-20 border-r border-[var(--border)] bg-[var(--surface)]" />
-                <div className="grid" style={{ gridTemplateColumns: `repeat(${visibleTimelineDays.length}, minmax(44px, 1fr))` }}>
-                  {visibleTimelineDays.map((day) => (
-                    <div
-                      key={day.key}
-                      className={cn(
-                        "grid min-h-[58px] place-items-center border-r border-[rgb(229_217_202_/_0.72)] text-[10px] text-[var(--text-muted)] last:border-r-0",
-                        day.isToday && "bg-[var(--color-primary-pale)] text-[var(--accent-strong)]",
-                      )}
-                    >
-                      <span className="grid place-items-center gap-0.5"><strong className="text-[13px] text-[var(--text)]">{day.dayLabel}</strong>{day.weekDayLabel}</span>
-                    </div>
-                  ))}
+        {visibleRooms.length ? (
+          <div ref={scrollerRef} className="max-w-full cursor-grab overflow-x-auto overscroll-x-contain [scrollbar-color:var(--border-strong)_transparent] [scrollbar-width:thin] active:cursor-grabbing" aria-label="Сетка занятости по размещениям. Прокручивается по горизонтали." aria-describedby="calendar-scroll-help" tabIndex={0} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={finishPointerDrag} onPointerCancel={finishPointerDrag}>
+            <div className="w-max min-w-full [--object-column:64px] md:[--object-column:168px]">
+              <div className="sticky top-0 z-20 grid border-b border-[var(--border)]" style={{ gridTemplateColumns: "var(--object-column) auto" }}>
+                <div className="sticky left-0 z-30 grid min-h-[58px] place-items-center border-r border-[var(--border)] bg-[var(--surface-subtle)] px-2 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--text-muted)]"><span className="md:hidden">№</span><span className="hidden md:inline">Размещение</span></div>
+                <div className="grid bg-[var(--surface-subtle)]" style={{ gridTemplateColumns: `repeat(${days.length}, ${DAY_WIDTH}px)` }}>
+                  {days.map((day, index) => {
+                    const startsMonth = index === 0 || day.date.getDate() === 1;
+                    return (
+                      <div key={day.key} className={cn("relative grid min-h-[58px] place-items-center border-r border-[var(--border)] px-0.5 pb-1 pt-3 text-[10px] text-[var(--text-muted)]", startsMonth && index > 0 && "border-l-2 border-l-[var(--border-strong)]", day.isToday && "bg-[var(--color-primary-pale)] text-[var(--accent-strong)]")}>
+                        {startsMonth ? <span className="absolute left-1 top-0.5 text-[8px] font-bold uppercase tracking-[0.06em]">{shortMonthFormatter.format(day.date)}</span> : null}
+                        <strong className={cn("text-[13px] leading-none text-[var(--text)]", day.isToday && "text-[var(--accent-strong)]")}>{day.dayLabel}</strong>
+                        <span>{day.weekDayLabel}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              {visibleGroups.map((group) => (
-                <section key={group.id} className="border-b border-[var(--border)] last:border-b-0">
-                  <div className="flex items-start justify-between gap-4 px-5 py-5 max-[640px]:px-4 max-[640px]:py-4">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="grid size-10 shrink-0 place-items-center rounded-[13px] bg-[var(--color-primary-pale)] text-[var(--accent-strong)]">
-                        <AppIcon icon={group.kind === "property" ? Building2 : Home} />
+              {visibleRooms.map(({ group, room }, rowIndex) => {
+                const visibleRanges = getTimelineBusyRanges(room.busyRanges, days);
+                const GroupIcon = getGroupIcon(group);
+
+                return (
+                  <div key={room.id} className="grid border-b border-[var(--border)] last:border-b-0" style={{ gridTemplateColumns: "var(--object-column) auto" }}>
+                    <Link href={room.calendarHref} className="sticky left-0 z-10 grid min-h-[58px] min-w-0 place-items-center border-r border-[var(--border)] bg-[var(--surface)] p-1.5 text-inherit transition-colors hover:bg-[var(--color-primary-pale)] focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_3px_rgb(var(--color-primary-rgb)_/_0.18)] md:grid-cols-[38px_minmax(0,1fr)] md:justify-items-stretch md:gap-2 md:px-2" aria-label={`${group.title}, ${room.title}. Открыть детальный календарь.`}>
+                      <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-[10px] bg-[var(--surface-muted)] text-[var(--accent-strong)] md:size-[38px]">
+                        {room.coverImageUrl ? <Image src={room.coverImageUrl} alt="" fill sizes="40px" className="object-cover" unoptimized /> : <AppIcon icon={GroupIcon} className="size-4" />}
+                        <span className="absolute bottom-0 right-0 grid size-4 place-items-center rounded-tl-md bg-[rgb(17_29_27_/_0.72)] text-[8px] font-bold text-white md:hidden">{rowIndex + 1}</span>
                       </span>
-                      <div className="min-w-0">
-                        <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--text)]">{group.title}</h2>
-                        <p className="mt-1 text-xs leading-[1.45] text-[var(--text-muted)]">{group.subtitle}</p>
+                      <span className="hidden min-w-0 md:grid"><small className="truncate text-[9px] leading-tight text-[var(--text-muted)]">{group.title}</small><strong className="truncate text-[11px] leading-tight text-[var(--text)]">{room.title}</strong></span>
+                    </Link>
+
+                    <div className="relative min-h-[58px]" style={{ width: days.length * DAY_WIDTH }}>
+                      <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${days.length}, ${DAY_WIDTH}px)` }}>
+                        {days.map((day, dayIndex) => {
+                          const busyRange = findBusyRangeForDate(room.busyRanges, day.key);
+                          const price = getDayPrice(room, day.key);
+                          const startsMonth = dayIndex > 0 && day.date.getDate() === 1;
+
+                          return (
+                            <button key={`${room.id}-${day.key}`} type="button" tabIndex={busyRange ? -1 : 0} className={cn("grid min-h-[58px] place-items-center border-r border-[var(--border)] bg-[var(--surface)] px-0.5 text-[9px] text-[var(--text-muted)] transition-colors hover:bg-[var(--color-primary-pale)] focus-visible:z-10 focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--accent)]", startsMonth && "border-l-2 border-l-[var(--border-strong)]", day.isToday && "bg-[rgb(var(--color-primary-rgb)_/_0.055)] shadow-[inset_0_2px_0_var(--accent)]", price.isSeasonal && !busyRange && "bg-[var(--surface-subtle)]")} onClick={() => busyRange ? openBusyEditor(room, busyRange) : openCreateEditor(room, day.key)} aria-label={`${room.title}: ${formatDateLabel(day.key)}. ${busyRange ? "Занято" : "Свободно"}. Цена ${price.value.toLocaleString("ru-RU")} рублей за ночь.`}>
+                              {!busyRange ? <span className={cn("font-semibold", price.isSeasonal && "text-[var(--accent-strong)]")}>{formatCompactPrice(price.value)}</span> : null}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="pointer-events-none absolute inset-x-0 top-[6px] grid h-[46px]" style={{ gridTemplateColumns: `repeat(${days.length}, ${DAY_WIDTH}px)` }}>
+                        {visibleRanges.map((range) => (
+                          <button key={range.busyRange.id} type="button" className="pointer-events-auto relative z-[2] grid min-w-0 content-center overflow-hidden rounded-[8px] border border-[rgb(var(--color-primary-rgb)_/_0.18)] bg-[var(--accent)] px-2 text-left text-[9px] leading-[1.2] text-white shadow-[0_2px_6px_rgb(17_29_27_/_0.14)] transition-colors hover:bg-[var(--accent-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2" style={{ gridColumn: `${range.startIndex + 1} / span ${range.span}` }} onClick={() => openBusyEditor(room, range.busyRange)} aria-label={`${room.title}: ${range.busyRange.label || "Занятые даты"}, ${formatDateLabel(range.busyRange.startsOn)} — ${formatDateLabel(range.busyRange.endsOn)}. Изменить.`}>
+                            <strong className="truncate text-[10px]">{range.clippedStart ? "… " : ""}{range.busyRange.label || "Занято"}{range.clippedEnd ? " …" : ""}</strong>
+                            {range.span >= 3 ? <span className="truncate opacity-80">{formatShortDateLabel(range.busyRange.startsOn)} — {formatShortDateLabel(range.busyRange.endsOn)}</span> : null}
+                          </button>
+                        ))}
                       </div>
                     </div>
-                    {group.kind === "property" ? (
-                      <div className="flex shrink-0 flex-wrap justify-end gap-2 max-[520px]:flex-col">
-                        <ButtonLink href={group.detailHref} variant="secondary" size="sm">Открыть объект</ButtonLink>
-                        <ButtonLink href={group.calendarHref} size="sm">Редактировать даты</ButtonLink>
-                      </div>
-                    ) : null}
                   </div>
-
-                  {group.rooms.length ? group.rooms.map((room) => {
-                    const ranges = getTimelineBusyRanges(room.busyRanges, visibleTimelineDays);
-                    return (
-                      <div key={room.id} className="grid min-h-[78px] grid-cols-[190px_minmax(0,1fr)] border-t border-[rgb(229_217_202_/_0.76)] max-[640px]:grid-cols-[178px_minmax(0,1fr)]">
-                        <Link
-                          href={room.calendarHref}
-                          className="sticky left-0 z-10 grid min-w-0 content-center border-r border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-inherit hover:text-[var(--accent-strong)] focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_3px_rgb(var(--color-primary-rgb)_/_0.18)]"
-                        >
-                          <strong className="truncate text-[13px]">{room.title}</strong>
-                          <small className="mt-1 truncate text-[10px] text-[var(--text-muted)]">{getRoomSummary(room)}</small>
-                        </Link>
-                        <div className="relative min-h-[78px]">
-                          <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${visibleTimelineDays.length}, minmax(44px, 1fr))` }}>
-                            {visibleTimelineDays.map((day) => {
-                              const busy = room.busyRanges.find((range) => day.key >= range.startsOn && day.key <= range.endsOn);
-                              return (
-                                <div
-                                  key={`${room.id}-${day.key}`}
-                                  className={cn(
-                                    "border-r border-[rgb(229_217_202_/_0.7)] bg-[rgb(255_255_255_/_0.68)] last:border-r-0",
-                                    busy && "bg-[rgb(217_154_43_/_0.18)]",
-                                    day.isToday && "shadow-[inset_0_0_0_2px_var(--accent)]",
-                                  )}
-                                  aria-label={`${room.title}: ${formatDateLabel(day.date)}. ${busy ? "Занято" : "Свободно"}.`}
-                                />
-                              );
-                            })}
-                          </div>
-                          <div className="pointer-events-none absolute inset-x-0 top-1/2 grid -translate-y-1/2" style={{ gridTemplateColumns: `repeat(${visibleTimelineDays.length}, minmax(44px, 1fr))` }}>
-                            {ranges.map((range) => (
-                              <Link
-                                key={range.busyRange.id}
-                                href={room.calendarHref}
-                                className="pointer-events-auto grid min-h-[58px] content-center overflow-hidden rounded-[9px] bg-[#d99a2b] px-2 py-1.5 text-[10px] leading-tight text-[var(--text)] focus-visible:outline-none focus-visible:shadow-[0_0_0_4px_rgb(217_154_43_/_0.22)]"
-                                style={{ gridColumn: `${range.startIndex + 1} / span ${range.span}` }}
-                                aria-label={`${room.title}: ${range.busyRange.label || "Занято"}, ${formatDateLabel(range.busyRange.startsOn)} — ${formatDateLabel(range.busyRange.endsOn)}. Открыть календарь.`}
-                              >
-                                <strong className="truncate">{range.busyRange.label || "Занято"}</strong>
-                                <span className="mt-1 truncate opacity-90">{formatShortDateLabel(range.busyRange.startsOn)} — {formatShortDateLabel(range.busyRange.endsOn)}</span>
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }) : (
-                    <p className="border-t border-[var(--border)] px-5 py-4 text-sm text-[var(--text-muted)]">В этой группе пока нет номеров для календаря занятости.</p>
-                  )}
-                </section>
-              ))}
+                );
+              })}
             </div>
           </div>
+        ) : (
+          <div className="grid justify-items-start gap-2 p-5"><strong className="text-base text-[var(--text)]">В этой группе пока нет номеров</strong><p className="text-sm text-[var(--text-muted)]">Выберите другое размещение или покажите весь календарь.</p><Button size="sm" variant="secondary" onClick={() => setGroupId("all")}>Показать все</Button></div>
+        )}
+      </section>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[var(--border)] px-5 py-3.5 text-[11px] text-[var(--text-muted)] max-[640px]:px-4" aria-label="Обозначения календаря">
-            <span className="inline-flex items-center gap-1.5"><i className="size-2.5 rounded-full border border-[var(--border)] bg-white" aria-hidden="true" />Свободно</span>
-            <span className="inline-flex items-center gap-1.5"><i className="size-2.5 rounded-full bg-[#d99a2b]" aria-hidden="true" />Занятые даты</span>
-            <span className="inline-flex items-center gap-1.5"><i className="size-2.5 rounded-full bg-[var(--accent)]" aria-hidden="true" />Сегодня</span>
-          </div>
-        </section>
-      ) : (
-        <section className="grid justify-items-start gap-3 border-y border-[var(--border)] px-1 py-6">
-          <strong className="text-lg text-[var(--text)]">Ничего не найдено</strong>
-          <p className="text-sm text-[var(--text-muted)]">Сбросьте фильтры, чтобы увидеть объекты и отдельные номера.</p>
-          <Button variant="secondary" onClick={resetFilters}>Сбросить фильтры</Button>
-        </section>
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-[var(--text-muted)]">
+        <span>Цена указана за ночь. Нажмите на дату или занятый диапазон для редактирования.</span>
+        <Link href={editorRoom?.calendarHref ?? visibleRooms[0]?.room.calendarHref ?? "/dashboard/properties"} className="font-bold text-[var(--accent-strong)] hover:underline">Детальный календарь</Link>
+      </div>
+
+      <BottomSheet open={Boolean(activeEditor)} onOpenChange={(open) => { if (!open) setActiveEditor(null); }} title={getEditorTitle(activeEditor)} description={editorRoom ? `${editorRoom.title}. Изменения сохранятся в календаре занятости.` : undefined} closeLabel="Закрыть редактор" rootClassName="md:items-stretch md:justify-end md:pt-0" className="max-[640px]:max-h-[94vh] md:mt-0 md:h-full md:max-h-none md:max-w-[460px] md:rounded-none md:rounded-l-[24px]" bodyClassName="gap-4">
+        {activeEditor ? (
+          <form action={activeEditor.mode === "edit" ? updateRoomBusyRange : createRoomBusyRange} className="grid gap-4">
+            <input type="hidden" name="returnPath" value="/dashboard/calendar" />
+            <input type="hidden" name="propertyId" value={activeEditor.room.propertyId ?? ""} />
+            <input type="hidden" name="roomId" value={activeEditor.room.id} />
+            {activeEditor.mode === "edit" ? <input type="hidden" name="busyRangeId" value={activeEditor.busyRange.id} /> : null}
+            <div className="grid grid-cols-2 gap-3">
+              <Input key={`${activeEditor.mode}-start-${activeEditor.mode === "edit" ? activeEditor.busyRange.id : activeEditor.startsOn}`} id="dashboard-busy-start" name="startsOn" type="date" label="С" defaultValue={activeEditor.mode === "edit" ? activeEditor.busyRange.startsOn : activeEditor.startsOn} required />
+              <Input key={`${activeEditor.mode}-end-${activeEditor.mode === "edit" ? activeEditor.busyRange.id : activeEditor.endsOn}`} id="dashboard-busy-end" name="endsOn" type="date" label="По" defaultValue={activeEditor.mode === "edit" ? activeEditor.busyRange.endsOn : activeEditor.endsOn} required />
+            </div>
+            <Input id="dashboard-busy-label" name="label" label="Пометка" placeholder="Например, заявка" defaultValue={activeEditor.mode === "edit" ? activeEditor.busyRange.label : ""} />
+            <Textarea id="dashboard-busy-note" name="note" label="Комментарий" placeholder="Необязательный комментарий" rows={4} defaultValue={activeEditor.mode === "edit" ? activeEditor.busyRange.note : ""} />
+            <p className="rounded-[var(--radius-md)] bg-[var(--surface-subtle)] px-3 py-2.5 text-xs leading-[1.5] text-[var(--text-muted)]">Отметка занятости не подтверждает заявку на проживание автоматически.</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {activeEditor.mode === "edit" ? <Button type="submit" variant="danger" formAction={deleteRoomBusyRange}>Удалить диапазон</Button> : <Button type="button" variant="secondary" onClick={() => setActiveEditor(null)}>Отменить</Button>}
+              <Button type="submit">Сохранить</Button>
+            </div>
+          </form>
+        ) : null}
+      </BottomSheet>
+
+      <BottomSheet open={legendOpen} onOpenChange={setLegendOpen} title="Обозначения календаря" description="Сетка показывает занятость и фактическую цену каждого дня." closeLabel="Закрыть обозначения" className="md:max-w-[460px]">
+        <div className="grid gap-2.5">
+          <div className="grid grid-cols-[20px_minmax(0,1fr)] items-center gap-3 rounded-[var(--radius-md)] border border-[var(--border)] p-3"><span className="size-4 rounded bg-[var(--surface)] ring-1 ring-[var(--border)]" aria-hidden="true" /><span className="text-sm"><strong className="block text-[var(--text)]">Свободный день</strong><small className="text-[var(--text-muted)]">В ячейке показана цена за ночь.</small></span></div>
+          <div className="grid grid-cols-[20px_minmax(0,1fr)] items-center gap-3 rounded-[var(--radius-md)] border border-[var(--border)] p-3"><span className="h-4 w-5 rounded bg-[var(--accent)]" aria-hidden="true" /><span className="text-sm"><strong className="block text-[var(--text)]">Занятые даты</strong><small className="text-[var(--text-muted)]">Непрерывная полоса объединяет весь период.</small></span></div>
+          <div className="grid grid-cols-[20px_minmax(0,1fr)] items-center gap-3 rounded-[var(--radius-md)] border border-[var(--border)] p-3"><span className="size-4 border-t-2 border-[var(--accent)] bg-[var(--color-primary-pale)]" aria-hidden="true" /><span className="text-sm"><strong className="block text-[var(--text)]">Сегодня</strong><small className="text-[var(--text-muted)]">Текущая дата выделена зелёной линией.</small></span></div>
+          <div className="grid grid-cols-[20px_minmax(0,1fr)] items-center gap-3 rounded-[var(--radius-md)] border border-[var(--border)] p-3"><span className="size-4 rounded bg-[var(--surface-subtle)]" aria-hidden="true" /><span className="text-sm"><strong className="block text-[var(--text)]">Сезонная цена</strong><small className="text-[var(--text-muted)]">Цена выделена цветом, когда для дня действует сезон.</small></span></div>
+        </div>
+      </BottomSheet>
     </section>
   );
 }

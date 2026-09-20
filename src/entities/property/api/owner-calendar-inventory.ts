@@ -1,7 +1,6 @@
-import { mapBusyRange, normalizeRoomKind } from "@/entities/room/model/mappers";
+import { mapBusyRange, mapSeasonalPrice, normalizeRoomKind } from "@/entities/room/model/mappers";
 import type { OwnerCalendarInventoryGroup, OwnerCalendarInventoryRoom } from "@/entities/property/model/types";
 import { createSupabaseServerClient, getCurrentAuthProfile } from "@/shared/api/supabase/server-auth";
-import type { SupabasePropertyRow, SupabaseRoomBusyRangeRow, SupabaseRoomRow } from "@/shared/api/supabase/types";
 
 function buildPropertyRoomCalendarHref(propertyId: string) {
   return `/dashboard/properties/${propertyId}/calendar`;
@@ -28,22 +27,50 @@ export async function getOwnerCalendarInventory(): Promise<OwnerCalendarInventor
   const safeRoomRows = roomRows ?? [];
   const roomIds = safeRoomRows.map((room) => room.id);
 
-  const busyRows = roomIds.length
-    ? (
-        await supabase
+  const [busyRows, seasonalRows, photoRows] = roomIds.length
+    ? await Promise.all([
+        supabase
           .from("room_busy_ranges")
           .select("*")
           .in("room_id", roomIds)
           .order("starts_on", { ascending: true })
-      ).data ?? []
-    : [];
+          .then(({ data }) => data ?? []),
+        supabase
+          .from("room_seasonal_prices")
+          .select("*")
+          .in("room_id", roomIds)
+          .order("starts_on", { ascending: true })
+          .then(({ data }) => data ?? []),
+        supabase
+          .from("room_photos")
+          .select("*")
+          .in("room_id", roomIds)
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true })
+          .then(({ data }) => data ?? []),
+      ])
+    : [[], [], []];
 
   const busyMap = new Map<string, OwnerCalendarInventoryRoom["busyRanges"]>();
+  const seasonalMap = new Map<string, OwnerCalendarInventoryRoom["seasonalPrices"]>();
+  const coverMap = new Map<string, string>();
 
   for (const row of busyRows) {
     const current = busyMap.get(row.room_id) ?? [];
     current.push(mapBusyRange(row));
     busyMap.set(row.room_id, current);
+  }
+
+  for (const row of seasonalRows) {
+    const current = seasonalMap.get(row.room_id) ?? [];
+    current.push(mapSeasonalPrice(row));
+    seasonalMap.set(row.room_id, current);
+  }
+
+  for (const row of photoRows) {
+    if (!coverMap.has(row.room_id)) {
+      coverMap.set(row.room_id, row.public_url);
+    }
   }
 
   const propertyGroups: OwnerCalendarInventoryGroup[] = safePropertyRows.map((property) => {
@@ -56,6 +83,8 @@ export async function getOwnerCalendarInventory(): Promise<OwnerCalendarInventor
         title: room.title,
         subtitle: room.subtitle ?? "",
         pricePerNight: Number(room.price_per_night),
+        coverImageUrl: coverMap.get(room.id) ?? "",
+        seasonalPrices: seasonalMap.get(room.id) ?? [],
         busyRanges: busyMap.get(room.id) ?? [],
         calendarHref: buildPropertyRoomCalendarHref(property.id),
       }));
@@ -80,6 +109,8 @@ export async function getOwnerCalendarInventory(): Promise<OwnerCalendarInventor
       title: room.title,
       subtitle: room.subtitle ?? "",
       pricePerNight: Number(room.price_per_night),
+      coverImageUrl: coverMap.get(room.id) ?? "",
+      seasonalPrices: seasonalMap.get(room.id) ?? [],
       busyRanges: busyMap.get(room.id) ?? [],
       calendarHref: buildStandaloneRoomCalendarHref(room.id),
     }));

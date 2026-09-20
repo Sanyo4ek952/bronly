@@ -1,29 +1,33 @@
+import { getCalendarNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerCalendarInventory } from "@/entities/property";
 import { ButtonLink, Panel } from "@/shared/ui";
 import { OwnerDashboardCalendar } from "@/widgets/owner-dashboard-calendar/owner-dashboard-calendar";
 
-export default async function OwnerCalendarPage() {
+type OwnerCalendarPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function OwnerCalendarPage({ searchParams }: OwnerCalendarPageProps) {
   const groups = await getOwnerCalendarInventory();
   const totalRooms = groups.reduce((sum, group) => sum + group.rooms.length, 0);
+  const fallbackSearchParams: Record<string, string | string[] | undefined> = {};
+  const resolvedSearchParams = await (searchParams ?? Promise.resolve(fallbackSearchParams));
+  const error = typeof resolvedSearchParams.error === "string" ? resolvedSearchParams.error : "";
+  const success = typeof resolvedSearchParams.success === "string" ? resolvedSearchParams.success : "";
+  const notice = getCalendarNotice(error, success);
 
   return (
-    <section className="grid gap-7 max-[640px]:gap-5">
-      <header className="grid grid-cols-[minmax(0,1fr)_minmax(220px,310px)] items-end gap-8 px-1 pt-2 max-[760px]:grid-cols-1 max-[760px]:gap-5 max-[640px]:px-0 max-[640px]:pt-0">
-        <div>
-          <p className="mb-3 text-[11px] font-extrabold tracking-[0.13em] text-[var(--accent-strong)]">КАЛЕНДАРЬ ЗАНЯТОСТИ</p>
-          <h1 className="text-[clamp(2.25rem,4.4vw,3.4rem)] font-semibold leading-none tracking-[-0.055em] text-[var(--text)]">Все даты — в одном обзоре</h1>
-          <p className="mt-4 max-w-[43rem] text-[15px] leading-[1.65] text-[var(--text-subtle)] max-[640px]:mt-3 max-[640px]:text-sm">
-            Проверяйте занятость объектов и отдельных номеров, переключайте месяц и переходите к нужному календарю для точечного редактирования.
-          </p>
-        </div>
-        <p className="border-l-2 border-[var(--accent)] py-1 pl-4 text-[13px] leading-[1.55] text-[var(--text-muted)]">
-          <strong className="mb-1 block text-[var(--text)]">Обзор без случайных изменений</strong>
-          На этой странице даты доступны для просмотра. Редактирование открывается в календаре объекта или номера.
+    <section className="grid min-w-0 gap-5 max-[640px]:gap-4">
+      <header className="grid gap-1.5 px-1 pt-1 max-[640px]:px-0">
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[var(--accent-strong)]">Управление занятостью</p>
+        <h1 className="text-[clamp(1.9rem,4vw,2.6rem)] font-semibold leading-[1.05] tracking-[-0.045em] text-[var(--text)]">Календарь занятости</h1>
+        <p className="max-w-[48rem] text-sm leading-[1.55] text-[var(--text-muted)]">
+          Смотрите цены и занятые даты по всем размещениям. Нажмите свободный день, чтобы отметить период.
         </p>
       </header>
 
       {totalRooms ? (
-        <OwnerDashboardCalendar groups={groups} />
+        <OwnerDashboardCalendar groups={groups} serverNotice={notice} serverNoticeTone={error ? "error" : "default"} />
       ) : (
         <Panel className="grid justify-items-start gap-3 p-5 max-[640px]:p-4" surface="raised">
           <strong className="text-lg text-[var(--text)]">Пока нет номеров для календаря</strong>
