@@ -299,12 +299,15 @@ export const getPublicAgentPageData = cache(
       const subscriptionStates = await Promise.all(
         ownerIds.map(async (ownerId) => [ownerId, await getSubscriptionRuntimeState(ownerId, "owner")] as const),
       );
+      const visibilityResult = ownerIds.length ? await supabase.from("profiles").select("id, is_public_hidden_by_admin").in("id", ownerIds) : { data: [], error: null };
+      if (visibilityResult.error) throw visibilityResult.error;
+      const visibleOwnerIds = new Set((visibilityResult.data ?? []).filter((owner) => !owner.is_public_hidden_by_admin).map((owner) => owner.id));
       const ownerSubscriptionMap = new Map(subscriptionStates);
       const safeProperties = Array.from(rawPropertyMap.values()).filter(
-        (property) => ownerSubscriptionMap.get(property.owner_id)?.isPublicAllowed,
+        (property) => visibleOwnerIds.has(property.owner_id) && ownerSubscriptionMap.get(property.owner_id)?.isPublicAllowed,
       );
       const safeStandaloneRooms = Array.from(rawStandaloneRoomMap.values()).filter(
-        (room) => ownerSubscriptionMap.get(room.owner_id)?.isPublicAllowed,
+        (room) => visibleOwnerIds.has(room.owner_id) && ownerSubscriptionMap.get(room.owner_id)?.isPublicAllowed,
       );
 
       if (!safeProperties.length && !safeStandaloneRooms.length) {

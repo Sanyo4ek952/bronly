@@ -72,15 +72,7 @@ export type PublicCollectionContact = {
 };
 
 export type PublicCollectionSection = {
-  property: {
-    id: string;
-    slug: string;
-    title: string;
-    shortTitle: string;
-    city: string;
-    address: string;
-    photos: import("@/entities/property").PropertyPhoto[];
-  };
+  property: import("@/entities/property").PublicPropertySummary;
   rooms: import("@/entities/room").PublicRoom[];
   sourceKinds: Array<"property" | "room">;
 };

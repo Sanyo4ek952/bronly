@@ -11,8 +11,9 @@ import {
   toTelegramHref,
   toWhatsAppHref,
 } from "@/shared/lib";
-import { ButtonLink, InlineNotice, Panel, StatusPill } from "@/shared/ui";
+import { InlineNotice, Panel, StatusPill } from "@/shared/ui";
 import { PublicBrandSlot, PublicHero, PublicPageHeader, PublicUnavailableState } from "@/widgets/public-page";
+import { PublicPropertyBrowser } from "@/widgets/public-property-section";
 import { PublicRoomBrowser, PublicStayFilter } from "@/widgets/public-room-browser";
 
 import { CollectionOpenTracker } from "./collection-open-tracker";
@@ -72,27 +73,6 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
   const heroPhoto = sections[0]?.property.photos[0] ?? standaloneRooms[0]?.room.photos[0];
   const staySummary = formatCollectionStaySummary(filters);
   const publicTitle = collection.guestLabel || collection.title;
-  const defaultSection = sections.find((section) => section.rooms.some((room) => room.isAvailableForFilter)) ?? sections[0];
-  const defaultRoom = defaultSection?.rooms.find((room) => room.isAvailableForFilter)
-    ?? defaultSection?.rooms[0]
-    ?? standaloneRooms.find((item) => item.room.isAvailableForFilter)?.room
-    ?? standaloneRooms[0]?.room
-    ?? null;
-  const requestParams = defaultRoom ? new URLSearchParams({ roomId: defaultRoom.id }) : null;
-
-  if (requestParams && defaultSection?.rooms.some((room) => room.id === defaultRoom?.id)) {
-    requestParams.set("propertySlug", defaultSection.property.slug);
-  }
-  if (requestParams && filters.hasDates) {
-    requestParams.set("checkIn", filters.checkIn);
-    requestParams.set("checkOut", filters.checkOut);
-  }
-  if (requestParams) {
-    requestParams.set("adults", String(filters.adults));
-    requestParams.set("rooms", String(filters.rooms));
-  }
-  const firstRequestHref = requestParams ? `/c/${collection.slug}/request?${requestParams.toString()}` : null;
-
   return (
     <main className="min-h-screen bg-[var(--color-page)] pb-[var(--safe-area-bottom)]">
       <CollectionOpenTracker slug={collection.slug} />
@@ -135,7 +115,6 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
                 {contact.whatsapp ? <ContactLink href={toWhatsAppHref(contact.whatsapp)} external>WhatsApp</ContactLink> : null}
                 {contact.telegram ? <ContactLink href={toTelegramHref(contact.telegram)} external>Telegram</ContactLink> : null}
               </div>
-              {firstRequestHref ? <ButtonLink href={firstRequestHref}>Оставить заявку на номер</ButtonLink> : null}
             </>
           }
         />
@@ -152,30 +131,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
 
           {sections.length || standaloneRooms.length ? (
             <div className="grid gap-6">
-              {sections.map((section) => (
-                <Panel key={section.property.id} as="article" className="grid gap-[18px] border-[rgb(var(--color-primary-rgb)_/_0.10)] shadow-[var(--shadow-md)]" padding="lg" surface="raised">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="grid gap-1">
-                      <h3 className="text-[clamp(1.3rem,2vw,1.75rem)] font-extrabold">{section.property.shortTitle}</h3>
-                      <p className="text-sm text-[var(--color-muted)]">{section.property.city}, {section.property.address}</p>
-                    </div>
-                    <StatusPill variant="neutral">{section.sourceKinds.includes("property") ? "Объект в подборке" : "Номер в подборке"}</StatusPill>
-                  </div>
-                  <p className="text-sm leading-relaxed text-[var(--color-muted)]">
-                    {section.sourceKinds.includes("property")
-                      ? "Объект добавлен целиком: выберите один из его активных номеров перед заявкой."
-                      : "В этом блоке заявка отправляется только по конкретному номеру."}
-                  </p>
-                  <PublicRoomBrowser
-                    publicBaseHref={`/c/${collection.slug}`}
-                    propertySlug={section.property.slug}
-                    rooms={section.rooms}
-                    filters={filters}
-                    showFilter={false}
-                    cardActionLabel="Перейти к заявке по номеру"
-                  />
-                </Panel>
-              ))}
+              <PublicPropertyBrowser sections={sections} publicBaseHref={`/c/${encodeURIComponent(collection.slug)}`} filters={filters} />
 
               {standaloneRooms.length ? (
                 <Panel as="article" className="grid gap-[18px] border-[rgb(var(--color-primary-rgb)_/_0.10)] shadow-[var(--shadow-md)]" padding="lg" surface="raised">
@@ -191,7 +147,6 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
                     rooms={standaloneRooms.map((item) => item.room)}
                     filters={filters}
                     showFilter={false}
-                    cardActionLabel="Перейти к заявке по номеру"
                   />
                 </Panel>
               ) : null}

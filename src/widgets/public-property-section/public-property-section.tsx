@@ -1,138 +1,82 @@
 import Image from "next/image";
+import Link from "next/link";
+import { Building2, ImageIcon } from "lucide-react";
 
 import type { PublicPropertySummary } from "@/entities/property";
-import { Panel, SectionSubtitle, SectionTitle } from "@/shared/ui";
-import { PublicRoomBrowser } from "@/widgets/public-room-browser";
+import { sortPublicProperties, summarizePublicProperty, type PublicBrowseSection } from "@/entities/property/model/public-browse";
+import type { PublicStayFilters } from "@/entities/room";
+import { formatRubles, getRussianPluralForm } from "@/shared/lib";
+import { buildPublicDetailHref } from "@/shared/lib/public-links";
+import { AppIcon } from "@/shared/ui";
+import { RoomPhotoCarousel } from "@/widgets/room-detail-page/room-photo-carousel";
 
-type PublicPropertySectionProps = {
+type PublicPropertySectionProps = PublicBrowseSection & {
   publicBaseHref: string;
-  property: PublicPropertySummary;
-  rooms: Parameters<typeof PublicRoomBrowser>[0]["rooms"];
-  filters: Parameters<typeof PublicRoomBrowser>[0]["filters"];
-  showFilter?: boolean;
-  emptyRoomsText?: string;
-  titleAs?: "h2" | "h3";
-  layout?: "grid" | "list";
+  filters: PublicStayFilters;
 };
 
-function PropertyTitle({ as, children, compact }: { as: "h2" | "h3"; children: string; compact?: boolean }) {
-  return <SectionTitle as={as} className={compact ? "text-xl font-extrabold" : undefined}>{children}</SectionTitle>;
-}
-
-function PublicPropertyGallery({ property }: { property: PublicPropertySummary }) {
-  if (!property.photos.length) {
-    return <div className="min-h-[220px] rounded-[20px] bg-[linear-gradient(135deg,#b8dbe2_0%,#88bdd0_45%,#d6e3d5_78%,#cab69d_100%)]" aria-hidden="true" />;
-  }
+export function PublicPropertySection({ publicBaseHref, property, rooms, filters, sourceKinds }: PublicPropertySectionProps) {
+  const summary = summarizePublicProperty(rooms, filters);
+  const partialCollection = sourceKinds && !sourceKinds.includes("property");
+  const roomCount = `${summary.roomCount} ${getRussianPluralForm(summary.roomCount, ["номер", "номера", "номеров"])}${partialCollection ? " в подборке" : ""}`;
 
   return (
-    <div className="grid auto-cols-[minmax(260px,76vw)] grid-flow-col gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]" aria-label={`Галерея объекта ${property.shortTitle}`}>
-      {property.photos.map((photo, index) => (
-        <div key={photo.id} className="min-h-[220px] overflow-hidden rounded-[20px] bg-[var(--surface-subtle)]">
-          <Image
-            src={photo.url}
-            alt={index === 0 ? property.title : `${property.title} — фото ${index + 1}`}
-            width={1200}
-            height={900}
-            unoptimized
-            className="h-full w-full object-cover"
-          />
+    <Link
+      href={buildPublicDetailHref(publicBaseHref, "properties", property.id, filters)}
+      className="group grid min-w-0 gap-4 rounded-[var(--radius-sm)] py-5 transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)] sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center sm:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8"
+      aria-label={`Об объекте и номерах: ${property.shortTitle}`}
+    >
+      <div className="flex aspect-[16/9] items-center justify-center overflow-hidden rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] sm:aspect-[3/2]">
+        {property.photos[0] ? <Image src={property.photos[0].url} alt={property.title} width={720} height={480} unoptimized className="h-full w-full object-cover" /> : <AppIcon icon={ImageIcon} className="size-10 text-[var(--text-muted)]" aria-label="Нет фото" />}
+      </div>
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6">
+        <div className="grid min-w-0 gap-2.5">
+          <h3 className="text-lg font-bold leading-tight [overflow-wrap:anywhere]">{property.shortTitle}</h3>
+          <p className="text-[13px] leading-relaxed text-[var(--text-muted)] [overflow-wrap:anywhere]">{[property.city, property.address].filter(Boolean).join(", ")}</p>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--text-muted)]">
+            <AppIcon icon={Building2} className="size-4" aria-hidden="true" />
+            <span>{property.propertyType || "Объект"}</span><span>·</span><span>{roomCount}</span>
+          </div>
+          {property.features.length ? <p className="text-sm text-[var(--text-muted)] [overflow-wrap:anywhere]">{property.features.slice(0, 4).join(" · ")}{property.features.length > 4 ? ` · ещё ${property.features.length - 4}` : ""}</p> : null}
+          <p className={`text-sm ${summary.suitableCount ? "text-[var(--text-muted)]" : "text-[var(--color-warning-ink)]"}`}>
+            {!summary.roomCount ? "Пока нет опубликованных номеров" : summary.suitableCount ? `Подходит ${summary.suitableCount} из ${summary.roomCount}` : "Нет номеров по выбранным параметрам — можно посмотреть объект и изменить поиск"}
+          </p>
         </div>
-      ))}
+        <div className="flex flex-wrap items-center justify-between gap-3 pr-3 lg:grid lg:min-w-44 lg:justify-items-end">
+          {summary.minPrice != null ? <strong className="text-lg font-extrabold">от {formatRubles(Math.round(summary.minPrice))}{filters.hasDates ? " за весь период" : " / ночь"}</strong> : null}
+          <span className="inline-flex min-h-11 items-center font-semibold text-[var(--accent)] group-hover:underline">Об объекте и номерах →</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+export function PublicPropertyBrowser({ sections, ...props }: { sections: PublicBrowseSection[]; publicBaseHref: string; filters: PublicStayFilters }) {
+  return <div className="grid divide-y divide-[var(--border)] border-y border-[var(--border)]">{sortPublicProperties(sections).map((section) => <PublicPropertySection key={section.property.id} {...section} {...props} />)}</div>;
+}
+
+export function PublicPropertyDetails({ property, showGallery = true }: { property: PublicPropertySummary; showGallery?: boolean }) {
+  return (
+    <div className="grid min-w-0 gap-6">
+      {showGallery ? <RoomPhotoCarousel variant="public" photos={property.photos} roomTitle={property.title} /> : null}
+      <div className="grid gap-2">
+        <p className="text-sm text-[var(--text-muted)]">{[property.propertyType, property.city, property.address].filter(Boolean).join(" · ")}</p>
+        {property.shortDescription ? <p className="whitespace-pre-line leading-relaxed">{property.shortDescription}</p> : null}
+        {property.fullDescription && property.fullDescription !== property.shortDescription ? <p className="whitespace-pre-line leading-relaxed">{property.fullDescription}</p> : null}
+      </div>
+      <PublicDetailList title="Удобства объекта" items={property.features} />
+      <PublicDetailList title="Правила проживания" items={property.houseRules} />
+      <PublicCheckInTimes checkIn={property.checkInTime} checkOut={property.checkOutTime} />
     </div>
   );
 }
 
-function PropertyChipList({ title, items, compact }: { title: string; items: string[]; compact?: boolean }) {
-  if (!items.length) {
-    return null;
-  }
-
-  if (compact) {
-    return <p className="text-sm leading-relaxed text-[var(--text-muted)]"><span className="font-semibold">{title}: </span>{items.join(" · ")}</p>;
-  }
-
-  return (
-    <section className="grid gap-4">
-      <h4 className="text-lg font-extrabold leading-tight">{title}</h4>
-      <div className="flex flex-wrap gap-2.5">
-        {items.map((item) => (
-          <span key={item} className="inline-flex min-h-9 items-center rounded-full border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.88)] px-3 py-2 text-sm leading-snug">
-            {item}
-          </span>
-        ))}
-      </div>
-    </section>
-  );
+export function PublicDetailList({ title, items }: { title: string; items: string[] }) {
+  if (!items.length) return null;
+  return <section className="grid gap-3"><h2 className="text-xl font-bold">{title}</h2><ul className="flex flex-wrap gap-2">{items.map((item, index) => <li key={`${item}-${index}`} className="rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] px-3 py-2 text-sm">{item}</li>)}</ul></section>;
 }
 
-export function PublicPropertySection({
-  publicBaseHref,
-  property,
-  rooms,
-  filters,
-  showFilter = false,
-  emptyRoomsText = "По этому объекту пока нет активных номеров для заявки.",
-  titleAs = "h3",
-  layout = "grid",
-}: PublicPropertySectionProps) {
-  const addressLine = [property.city, property.address].filter(Boolean).join(", ");
-  const hasDetailedMode = property.detailMode === "hospitality_detailed";
-  const hasShortDescription = Boolean(property.shortDescription.trim());
-  const hasFullDescription = Boolean(property.fullDescription.trim());
-  const isList = layout === "list";
-  const Container = isList ? "article" : Panel;
-
-  return (
-    <Container
-      {...(!isList ? { as: "article" as const, surface: "raised" as const, padding: "lg" as const } : {})}
-      className={isList ? "grid min-w-0 gap-3" : "grid gap-[18px] border-[rgb(var(--color-primary-rgb)_/_0.10)] shadow-[var(--shadow-md)]"}
-    >
-      <div>
-        <div className={isList ? "flex flex-wrap items-baseline gap-x-4 gap-y-1" : "grid gap-1.5"}>
-          <PropertyTitle as={titleAs} compact={isList}>{property.shortTitle}</PropertyTitle>
-          <SectionSubtitle>{addressLine}</SectionSubtitle>
-        </div>
-      </div>
-
-      {hasDetailedMode ? (
-        <div className="grid gap-4">
-          {!isList || property.photos.length > 0 ? <PublicPropertyGallery property={property} /> : null}
-
-          <div className="grid gap-4 pt-1">
-            <div className="grid gap-4">
-              <div className={isList ? "text-sm text-[var(--text-muted)]" : "inline-flex min-h-8 w-fit items-center rounded-full bg-[rgb(var(--color-primary-rgb)_/_0.10)] px-3 text-xs font-bold text-[var(--color-primary-hover)]"}>{property.propertyType}</div>
-              {hasShortDescription ? <p className="text-sm leading-relaxed text-[var(--color-muted)]">{property.shortDescription}</p> : null}
-              {!hasShortDescription && hasFullDescription ? <p className="text-sm leading-relaxed text-[var(--color-muted)]">{property.fullDescription}</p> : null}
-            </div>
-
-            {hasShortDescription && hasFullDescription ? (
-              <section className="grid gap-4">
-                <h4 className="text-lg font-extrabold leading-tight">Описание объекта</h4>
-                <p className="text-sm leading-relaxed text-[var(--color-muted)]">{property.fullDescription}</p>
-              </section>
-            ) : null}
-
-            <PropertyChipList title="Что входит" items={property.features} compact={isList} />
-            <PropertyChipList title="Удобства" items={property.aggregatedAmenities} compact={isList} />
-            <PropertyChipList title="Правила" items={property.houseRules} compact={isList} />
-          </div>
-        </div>
-      ) : null}
-
-      {rooms.length ? (
-        <PublicRoomBrowser
-          publicBaseHref={publicBaseHref}
-          propertySlug={property.slug}
-          rooms={rooms}
-          filters={filters}
-          showFilter={showFilter}
-          layout={layout}
-        />
-      ) : (
-        isList ? <p className="border-t border-[var(--border)] py-5 text-sm text-[var(--text-muted)]">{emptyRoomsText}</p> : <Panel className="mt-4" surface="subtle" padding="md">
-          {emptyRoomsText}
-        </Panel>
-      )}
-    </Container>
-  );
+export function PublicCheckInTimes({ checkIn, checkOut }: { checkIn?: string; checkOut?: string }) {
+  if (!checkIn && !checkOut) return null;
+  return <div className="flex flex-wrap gap-5 text-sm text-[var(--text-muted)]">{checkIn ? <p>Заезд: {checkIn}</p> : null}{checkOut ? <p>Выезд: {checkOut}</p> : null}</div>;
 }

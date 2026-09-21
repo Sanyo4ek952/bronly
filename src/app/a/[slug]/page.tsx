@@ -16,7 +16,7 @@ import {
 } from "@/shared/lib";
 import { AppIcon, InlineNotice } from "@/shared/ui";
 import { PublicPageHeader, PublicBrandSlot, PublicHero, PublicUnavailableState } from "@/widgets/public-page";
-import { PublicPropertySection } from "@/widgets/public-property-section";
+import { PublicPropertyBrowser } from "@/widgets/public-property-section";
 import { PublicRoomBrowser, PublicStayFilter } from "@/widgets/public-room-browser";
 
 type PublicAgentPageProps = {
@@ -131,7 +131,7 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
             imageAlt="Фото жилья в витрине агента"
             eyebrow="Агентская витрина"
             title={agent.displayName}
-            description="Выберите номер и оставьте заявку на проживание."
+            description="Посмотрите объекты и номера, выберите подходящий вариант проживания."
             actions={
                 <div id="agent-contact" className="flex scroll-mt-6 flex-wrap gap-x-6 gap-y-1 text-sm font-semibold text-[var(--accent)] [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_a]:gap-2 [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-[var(--accent-strong)] [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-4 [&_a]:focus-visible:outline-[var(--accent)]">
                   {agent.phone ? (
@@ -161,18 +161,7 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
               {properties.length ? (
                 <section className="grid gap-5" aria-labelledby="agent-properties-title">
                   <h2 id="agent-properties-title" className="text-[clamp(1.5rem,2.6vw,2rem)] font-extrabold leading-tight">Объекты в витрине</h2>
-                {properties.map((section) => (
-                  <PublicPropertySection
-                    key={section.property.id}
-                    publicBaseHref={`/a/${agent.publicId}`}
-                    property={section.property}
-                    rooms={section.rooms}
-                    filters={filters}
-                    showFilter={false}
-                    titleAs="h3"
-                    layout="list"
-                  />
-                ))}
+                <PublicPropertyBrowser sections={properties} publicBaseHref={`/a/${encodeURIComponent(agent.publicId)}`} filters={filters} />
                 </section>
               ) : null}
 

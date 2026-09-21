@@ -1,1 +1,1 @@
-export { PublicPropertySection } from "@/widgets/public-property-section/public-property-section";
+export { PublicPropertySection, PublicPropertyBrowser, PublicPropertyDetails } from "./public-property-section";

@@ -16,7 +16,7 @@ import {
   toWhatsAppHref,
 } from "@/shared/lib";
 import { AppIcon, InlineNotice } from "@/shared/ui";
-import { PublicPropertySection } from "@/widgets/public-property-section";
+import { PublicPropertyBrowser } from "@/widgets/public-property-section";
 import { PublicRoomBrowser, PublicStayFilter } from "@/widgets/public-room-browser";
 import { PublicBrandSlot, PublicHero, PublicPageHeader, PublicUnavailableState } from "@/widgets/public-page";
 
@@ -170,7 +170,7 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
             imageAlt="Фото жилья владельца"
             eyebrow="Страница владельца"
             title={owner.displayName}
-            description="Выберите номер и оставьте заявку на проживание."
+            description="Посмотрите объекты и номера, выберите подходящий вариант проживания."
             actions={
                 <div id="owner-contact" className="flex scroll-mt-6 flex-wrap gap-x-6 gap-y-1 text-sm font-semibold text-[var(--accent)] [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_a]:gap-2 [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-[var(--accent-strong)] [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-4 [&_a]:focus-visible:outline-[var(--accent)]">
                   {owner.phone ? (
@@ -208,17 +208,7 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
                     <div className="grid gap-2">
                       <h2 id="owner-properties-title" className="text-[clamp(1.5rem,2.6vw,2rem)] font-extrabold leading-tight">Объекты владельца</h2>
                     </div>
-                    {pageData.properties.map((section) => (
-                      <PublicPropertySection
-                        key={section.property.id}
-                        publicBaseHref={`/p/${owner.slug}`}
-                        property={section.property}
-                        rooms={section.rooms}
-                        filters={filters}
-                        titleAs="h3"
-                        layout="list"
-                      />
-                    ))}
+                    <PublicPropertyBrowser sections={pageData.properties} publicBaseHref={`/p/${encodeURIComponent(owner.slug)}`} filters={filters} />
                   </section>
                 ) : null}
 

@@ -21,14 +21,14 @@ test.describe("guest", () => {
     await page.goto(`/p/${e2eEnv.owner.publicSlug}`);
 
     await expect(page.getByRole("heading", { name: "Подберите номер" })).toBeVisible();
-    await expect(page.getByText("Заявка всегда создаётся на конкретный номер.")).toBeVisible();
+    await expect(page.locator('a[href*="/request?"]')).toHaveCount(0);
 
     await page.getByLabel("Заезд", { exact: true }).fill(e2eEnv.guest.checkIn);
     await page.getByLabel("Выезд", { exact: true }).fill(e2eEnv.guest.checkOut);
     await page.getByLabel("Гости", { exact: true }).click();
-    await page.getByRole("option", { name: "2", exact: true }).click();
+    await page.getByRole("option", { name: "2 гостя", exact: true }).click();
     await page.getByLabel("Комнаты", { exact: true }).click();
-    await page.getByRole("option", { name: "1", exact: true }).click();
+    await page.getByRole("option", { name: "1 комната", exact: true }).click();
     await page.getByRole("button", { name: "Подобрать номера" }).click();
 
     await expect(page).toHaveURL(new RegExp(`checkIn=${e2eEnv.guest.checkIn}`));
@@ -36,8 +36,7 @@ test.describe("guest", () => {
 
     await page.goto(requestPath());
     await expect(page.getByRole("heading", { name: "Оставить заявку" })).toBeVisible();
-    await expect(page.locator('input[name="roomId"]')).toHaveValue(e2eEnv.owner.roomId);
-    await expect(page.getByLabel("Номер", { exact: true })).toHaveValue(e2eEnv.owner.roomId);
+    await expect(page.locator('select[name="roomId"]')).toHaveValue(e2eEnv.owner.roomId);
   });
 
   test("guest submits a request with a persisted pricing snapshot", async ({ page }, testInfo) => {

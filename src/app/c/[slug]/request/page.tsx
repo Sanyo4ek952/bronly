@@ -1,3 +1,4 @@
+import { buildPublicDetailHref, buildPublicStayHref } from "@/shared/lib/public-links";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -50,8 +51,10 @@ export default async function PublicCollectionRequestPage({ params, searchParams
   const propertySlug = getSearchString(query, "propertySlug");
   const requestedError = getSearchString(query, "error");
   const requestedRoomId = getSearchString(query, "roomId");
-  const selectedSection = propertySlug ? pageData.sections.find((section) => section.property.slug === propertySlug) ?? null : null;
-  const scopedRooms = propertySlug ? selectedSection?.rooms ?? [] : pageData.standaloneRooms.map((item) => item.room);
+  const selectedSection = propertySlug
+    ? pageData.sections.find((section) => section.property.slug === propertySlug) ?? null
+    : pageData.sections.find((section) => section.rooms.some((room) => room.id === requestedRoomId)) ?? null;
+  const scopedRooms = selectedSection?.rooms ?? (propertySlug ? [] : pageData.standaloneRooms.map((item) => item.room));
   const selection = resolveRequestRoomSelection(scopedRooms, requestedRoomId, requestedError);
   const contextKind = pageData.collection.creatorRole === "agent" ? "collection-agent" : "collection-owner";
 
@@ -71,7 +74,7 @@ export default async function PublicCollectionRequestPage({ params, searchParams
     <PublicRequestPageFrame
       title="Оставить заявку по номеру из подборки"
       description="Заполните короткую форму, чтобы отправить заявку по выбранному конкретному номеру из этой подборки."
-      closeHref={`/c/${pageData.collection.slug}`}
+      closeHref={selection.selectedRoom ? buildPublicDetailHref(`/c/${encodeURIComponent(pageData.collection.slug)}`, "rooms", selection.selectedRoom.id, pageData.filters) : buildPublicStayHref(`/c/${encodeURIComponent(pageData.collection.slug)}`, pageData.filters)}
       warningText={pageData.publicWarningText}
       notice={<InlineNotice tone="soft">Подборка помогает выбрать вариант, но заявка всегда отправляется только по конкретному номеру.</InlineNotice>}
     >

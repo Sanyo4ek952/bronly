@@ -1,3 +1,4 @@
+import { buildPublicDetailHref, buildPublicStayHref } from "@/shared/lib/public-links";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
@@ -82,10 +83,12 @@ export default async function PublicRequestPage({ params, searchParams }: Public
   const propertySlug = getSearchString(query, "propertySlug");
   const requestedError = getSearchString(query, "error");
   const requestedRoomId = getSearchString(query, "roomId");
-  const selectedSection = propertySlug ? getOwnerPropertySectionBySlug(pageData, propertySlug) : null;
+  const selectedSection = propertySlug
+    ? getOwnerPropertySectionBySlug(pageData, propertySlug)
+    : pageData.properties.find((section) => section.rooms.some((room) => room.id === requestedRoomId)) ?? null;
   const scopedRooms = selectedSection
     ? selectedSection.rooms
-    : pageData.standaloneRooms.length
+    : propertySlug ? [] : pageData.standaloneRooms.length
       ? pageData.standaloneRooms
       : pageData.properties[0]?.rooms ?? [];
   const selection = resolveRequestRoomSelection(scopedRooms, requestedRoomId, requestedError);
@@ -106,7 +109,7 @@ export default async function PublicRequestPage({ params, searchParams }: Public
     <PublicRequestPageFrame
       title="Оставить заявку"
       description="Заполните короткую форму, чтобы отправить заявку на конкретный номер."
-      closeHref={`/p/${pageData.owner.slug}`}
+      closeHref={selection.selectedRoom ? buildPublicDetailHref(`/p/${encodeURIComponent(pageData.owner.slug)}`, "rooms", selection.selectedRoom.id, pageData.filters) : buildPublicStayHref(`/p/${encodeURIComponent(pageData.owner.slug)}`, pageData.filters)}
       warningText={pageData.publicWarningText}
     >
       <GuestRequestForm

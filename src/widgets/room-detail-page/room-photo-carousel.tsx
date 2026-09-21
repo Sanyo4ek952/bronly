@@ -11,12 +11,13 @@ import { AppIcon, IconButton } from "@/shared/ui";
 type RoomPhotoCarouselProps = {
   photos: RoomPhoto[];
   roomTitle: string;
+  variant?: "default" | "public";
 };
 
 const controlClass =
   "absolute top-1/2 z-[2] -translate-y-1/2 border border-[rgb(255_255_255_/_0.58)] bg-[rgb(255_255_255_/_0.88)] text-[var(--color-text)] shadow-[var(--shadow-sm)] backdrop-blur";
 
-export function RoomPhotoCarousel({ photos, roomTitle }: RoomPhotoCarouselProps) {
+export function RoomPhotoCarousel({ photos, roomTitle, variant = "default" }: RoomPhotoCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const activePhoto = photos[activeIndex] ?? null;
   const hasControls = photos.length > 1;
@@ -30,16 +31,18 @@ export function RoomPhotoCarousel({ photos, roomTitle }: RoomPhotoCarouselProps)
   };
 
   if (!activePhoto) {
+    if (variant === "default") {
+      return <div className="min-h-[280px] w-full rounded-[22px] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.10),rgb(17_29_27_/_0.08)),linear-gradient(135deg,#b8dbe2_0%,#88bdd0_45%,#d6e3d5_78%,#cab69d_100%)]" aria-hidden="true" />;
+    }
     return (
       <div
-        className="min-h-[280px] w-full rounded-[22px] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.10),rgb(17_29_27_/_0.08)),linear-gradient(135deg,#b8dbe2_0%,#88bdd0_45%,#d6e3d5_78%,#cab69d_100%)]"
-        aria-hidden="true"
-      />
+        className="flex aspect-[4/3] w-full items-center justify-center rounded-[22px] bg-[var(--surface-subtle)] text-sm text-[var(--text-muted)] sm:aspect-[16/7]"
+      >Фото пока нет</div>
     );
   }
 
   return (
-    <div className="relative min-h-[280px] overflow-hidden rounded-[22px] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.10),rgb(17_29_27_/_0.08)),linear-gradient(135deg,#b8dbe2_0%,#88bdd0_45%,#d6e3d5_78%,#cab69d_100%)]">
+    <div className={cn("relative overflow-hidden rounded-[22px]", variant === "public" ? "aspect-[4/3] bg-[var(--surface-subtle)] sm:aspect-[16/7]" : "min-h-[280px] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.10),rgb(17_29_27_/_0.08)),linear-gradient(135deg,#b8dbe2_0%,#88bdd0_45%,#d6e3d5_78%,#cab69d_100%)]")}>
       <Image
         src={activePhoto.url}
         alt={`${roomTitle} - фото ${activeIndex + 1}`}

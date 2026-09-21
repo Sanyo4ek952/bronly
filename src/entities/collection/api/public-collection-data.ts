@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { resolvePublicPropertyDetailMode } from "@/entities/property/model/public-property";
 
 import { buildPropertyPhotoMap, buildRoomPhotoMap, withLegacyPropertyCover } from "@/entities/property/api/photo-utils";
 import { buildPublicRoomQuote, normalizePublicStayFilters, type PublicRoom, type PublicStayFilters } from "@/entities/room";
@@ -96,6 +97,7 @@ function mapRoomRow(
   seasonalPrices: OwnerSeasonalPrice[],
   busyRanges: OwnerBusyRange[],
   agentMarkupPercent: number,
+  amenities: string[],
 ): PublicRoom {
   return {
     id: room.id,
@@ -110,7 +112,7 @@ function mapRoomRow(
     pricePerNight: Number(room.price_per_night),
     status: room.is_active ? "active" : "inactive",
     photos,
-    amenities: [],
+    amenities,
     seasonalPrices,
     busyRanges,
     agentMarkupPercent,
@@ -122,9 +124,9 @@ function mapRoomRow(
       timezone: room.timezone ?? "",
       shortDescription: room.short_description ?? "",
       fullDescription: room.full_description ?? "",
-      phone: room.phone ?? "",
-      whatsapp: room.whatsapp ?? "",
-      telegram: room.telegram ?? "",
+      phone: "",
+      whatsapp: "",
+      telegram: "",
       checkInTime: room.check_in_time ?? "",
       checkOutTime: room.check_out_time ?? "",
       allowAgentInquiries: room.allow_agent_inquiries,
@@ -239,7 +241,7 @@ async function loadPublicCollectionContext(
   const propertyRowsResult = propertyIds.length
     ? await supabase
         .from("properties")
-        .select("id, owner_id, slug, title, short_title, city, address, cover_image_url, published, is_frozen")
+        .select("*")
         .in("id", propertyIds)
         .eq("published", true)
         .eq("is_frozen", false)
@@ -272,7 +274,7 @@ async function loadPublicCollectionContext(
   const extraPropertyRowsResult = extraPropertyIds.length
     ? await supabase
         .from("properties")
-        .select("id, owner_id, slug, title, short_title, city, address, cover_image_url, published, is_frozen")
+        .select("*")
         .in("id", extraPropertyIds)
         .eq("published", true)
         .eq("is_frozen", false)
@@ -282,12 +284,7 @@ async function loadPublicCollectionContext(
     throw extraPropertyRowsResult.error;
   }
 
-  const candidatePropertyRows = [...(propertyRowsResult.data ?? []), ...(extraPropertyRowsResult.data ?? [])] as Array<
-    Pick<
-      SupabasePropertyRow,
-      "id" | "owner_id" | "slug" | "title" | "short_title" | "city" | "address" | "cover_image_url" | "published" | "is_frozen"
-    >
-  >;
+  const candidatePropertyRows = [...(propertyRowsResult.data ?? []), ...(extraPropertyRowsResult.data ?? [])] as SupabasePropertyRow[];
   const directRoomRows = (directRoomRowsResult.data ?? []) as CollectionRoomRow[];
   const candidatePropertyIds = [...new Set(candidatePropertyRows.map((property) => property.id))];
   const candidateStandaloneRoomIds = directRoomRows
@@ -354,10 +351,14 @@ async function loadPublicCollectionContext(
       ]),
     ].map(async (ownerId) => [ownerId, await getSubscriptionRuntimeState(ownerId, "owner")] as const),
   );
+  const ownerIds = ownerStates.map(([id]) => id);
+  const visibilityResult = ownerIds.length ? await supabase.from("profiles").select("id, is_public_hidden_by_admin").in("id", ownerIds) : { data: [], error: null };
+  if (visibilityResult.error) throw visibilityResult.error;
+  const visibleOwnerIds = new Set((visibilityResult.data ?? []).filter((owner) => !owner.is_public_hidden_by_admin).map((owner) => owner.id));
   const ownerStateMap = new Map(ownerStates);
   const safePropertyMap = new Map(
     propertyRows
-      .filter((property) => ownerStateMap.get(property.owner_id)?.isPublicAllowed)
+      .filter((property) => visibleOwnerIds.has(property.owner_id) && ownerStateMap.get(property.owner_id)?.isPublicAllowed)
       .map((property) => [property.id, property]),
   );
 
@@ -384,7 +385,7 @@ async function loadPublicCollectionContext(
     const property = getSingleRow(row.properties);
 
     if (row.room_kind === "standalone_room") {
-      if (ownerStateMap.get(row.owner_id)?.isPublicAllowed) {
+      if (visibleOwnerIds.has(row.owner_id) && ownerStateMap.get(row.owner_id)?.isPublicAllowed) {
         standaloneRoomMap.set(row.id, row);
       }
       continue;
@@ -399,28 +400,28 @@ async function loadPublicCollectionContext(
 
   const roomIds = [...propertyRoomMap.keys(), ...standaloneRoomMap.keys()];
   const propertyPhotoIds = [...safePropertyMap.keys()];
-  const [seasonalResult, busyResult, markupResult, roomPhotosResult, propertyPhotosResult] = roomIds.length
+  const [seasonalResult, busyResult, markupResult, roomPhotosResult, propertyPhotosResult] = (roomIds.length || propertyPhotoIds.length)
     ? await Promise.all([
-        supabase
+        roomIds.length ? supabase
           .from("room_seasonal_prices")
           .select("*")
           .in("room_id", roomIds)
           .eq("is_active", true)
-          .order("starts_on", { ascending: true }),
-        supabase.from("room_busy_ranges").select("*").in("room_id", roomIds).order("starts_on", { ascending: true }),
-        collectionRow.creator_role === "agent"
+          .order("starts_on", { ascending: true }) : Promise.resolve({ data: [], error: null }),
+        roomIds.length ? supabase.from("room_busy_ranges").select("*").in("room_id", roomIds).order("starts_on", { ascending: true }) : Promise.resolve({ data: [], error: null }),
+        roomIds.length && collectionRow.creator_role === "agent"
           ? supabase
               .from("room_agent_markups")
               .select("room_id, markup_percent")
               .eq("agent_id", collectionRow.creator_id)
               .in("room_id", roomIds)
           : Promise.resolve({ data: [], error: null }),
-        supabase
+        roomIds.length ? supabase
           .from("room_photos")
           .select("*")
           .in("room_id", roomIds)
           .order("sort_order", { ascending: true })
-          .order("created_at", { ascending: true }),
+          .order("created_at", { ascending: true }) : Promise.resolve({ data: [], error: null }),
         propertyPhotoIds.length
           ? supabase
               .from("property_photos")
@@ -464,6 +465,19 @@ async function loadPublicCollectionContext(
     markupMap.set(item.room_id as string, Number(item.markup_percent ?? 0));
   }
 
+  const [featuresResult, rulesResult, amenitiesResult] = await Promise.all([
+    propertyPhotoIds.length ? supabase.from("property_features").select("property_id, label").in("property_id", propertyPhotoIds).order("sort_order") : Promise.resolve({ data: [], error: null }),
+    propertyPhotoIds.length ? supabase.from("property_rules").select("property_id, label").in("property_id", propertyPhotoIds).order("sort_order") : Promise.resolve({ data: [], error: null }),
+    roomIds.length ? supabase.from("room_amenities").select("room_id, label").in("room_id", roomIds).order("sort_order") : Promise.resolve({ data: [], error: null }),
+  ]);
+  for (const result of [featuresResult, rulesResult, amenitiesResult]) if (result.error) throw result.error;
+  const featureMap = new Map<string, string[]>();
+  const ruleMap = new Map<string, string[]>();
+  const amenityMap = new Map<string, string[]>();
+  for (const row of featuresResult.data ?? []) featureMap.set(row.property_id, [...(featureMap.get(row.property_id) ?? []), row.label]);
+  for (const row of rulesResult.data ?? []) ruleMap.set(row.property_id, [...(ruleMap.get(row.property_id) ?? []), row.label]);
+  for (const row of amenitiesResult.data ?? []) amenityMap.set(row.room_id, [...(amenityMap.get(row.room_id) ?? []), row.label]);
+
   const propertyPhotoMap = buildPropertyPhotoMap((propertyPhotosResult.data ?? []) as SupabasePropertyPhotoRow[]);
   const roomPhotoMap = buildRoomPhotoMap((roomPhotosResult.data ?? []) as SupabaseRoomPhotoRow[]);
   const roomsByProperty = new Map<string, Map<string, PublicRoom>>();
@@ -479,6 +493,7 @@ async function loadPublicCollectionContext(
       }
 
       sourceKindsByProperty.set(property.id, new Set([...(sourceKindsByProperty.get(property.id) ?? []), "property"]));
+      if (!roomsByProperty.has(property.id)) roomsByProperty.set(property.id, new Map());
 
       for (const room of propertyRoomMap.values()) {
         if (room.property_id !== property.id) {
@@ -495,6 +510,7 @@ async function loadPublicCollectionContext(
               seasonalMap.get(room.id) ?? [],
               busyMap.get(room.id) ?? [],
               markupMap.get(room.id) ?? 0,
+              amenityMap.get(room.id) ?? [],
             ),
             filters,
           ),
@@ -519,6 +535,7 @@ async function loadPublicCollectionContext(
             seasonalMap.get(standaloneRoom.id) ?? [],
             busyMap.get(standaloneRoom.id) ?? [],
             markupMap.get(standaloneRoom.id) ?? 0,
+              amenityMap.get(standaloneRoom.id) ?? [],
           ),
           filters,
         ),
@@ -546,6 +563,7 @@ async function loadPublicCollectionContext(
           seasonalMap.get(room.id) ?? [],
           busyMap.get(room.id) ?? [],
           markupMap.get(room.id) ?? 0,
+              amenityMap.get(room.id) ?? [],
         ),
         filters,
       ),
@@ -554,7 +572,7 @@ async function loadPublicCollectionContext(
   }
 
   const sections: PublicCollectionSection[] = [...roomsByProperty.entries()]
-    .map(([propertyId, scopedRooms]) => {
+    .map(([propertyId, scopedRooms]): PublicCollectionSection | null => {
       const property = safePropertyMap.get(propertyId);
 
       if (!property) {
@@ -569,6 +587,19 @@ async function loadPublicCollectionContext(
           shortTitle: property.short_title,
           city: property.city,
           address: property.address,
+          propertyType: property.property_type,
+          detailMode: resolvePublicPropertyDetailMode(property.property_type),
+          timezone: property.timezone,
+          shortDescription: property.short_description ?? "",
+          fullDescription: property.full_description ?? "",
+          phone: "",
+          whatsapp: "",
+          telegram: "",
+          checkInTime: property.check_in_time ?? "",
+          checkOutTime: property.check_out_time ?? "",
+          features: featureMap.get(property.id) ?? [],
+          houseRules: ruleMap.get(property.id) ?? [],
+          aggregatedAmenities: [],
           photos: withLegacyPropertyCover(propertyPhotoMap.get(property.id) ?? [], property.cover_image_url),
         },
         rooms: [...scopedRooms.values()].sort(
