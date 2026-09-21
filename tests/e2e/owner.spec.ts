@@ -36,9 +36,12 @@ test.describe("owner", () => {
     await expect(page.getByRole("link", { name: /Отдельный номер/ }).first()).toBeVisible();
 
     await page.goto("/dashboard/properties/new");
-    await expect(page.getByRole("heading", { name: "Новый объект" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Добавьте объект" })).toBeVisible();
+    await expect(page.getByRole("radio", { name: /Гостевой дом/ })).toBeVisible();
     await expect(page.getByLabel("Название объекта")).toBeVisible();
-    await expect(page.getByLabel("Фотографии объекта")).toBeVisible();
+    await expect(page.getByLabel("Город")).toBeVisible();
+    await expect(page.getByLabel("Адрес")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Продолжить/ })).toBeVisible();
 
     await page.goto("/dashboard/rooms/new");
     await expect(page.getByRole("heading", { name: "Новый отдельный номер" })).toBeVisible();
