@@ -171,7 +171,7 @@ export function mapAgentAvailablePropertyItems(input: {
     property_type: string | null;
     city: string | null;
     address: string | null;
-    short_description: string | null;
+    full_description: string | null;
   }>;
   blockedPropertyIds: Set<string>;
   blockedRoomIds: Set<string>;
@@ -202,7 +202,7 @@ export function mapAgentAvailablePropertyItems(input: {
       city: room.city ?? "",
       address: room.address ?? "",
       ownerName: input.ownerNameMap.get(room.owner_id) ?? "Владелец",
-      shortDescription: room.short_description ?? room.subtitle ?? room.property_type ?? "",
+      shortDescription: room.full_description ?? "",
     }));
 
   return [...propertyItems, ...roomItems];

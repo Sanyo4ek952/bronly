@@ -8,7 +8,7 @@ import type { PublicPropertySummary } from "../../src/entities/property/model/ty
 
 const filters = normalizePublicStayFilters({});
 const room = (id: string, overrides: Partial<PublicRoom> = {}): PublicRoom => ({ id, title: id, subtitle: "", capacity: 3, bedrooms: 1, area: 20, pricePerNight: 2000, status: "active", photos: [], amenities: [], isAvailableForFilter: true, ...overrides });
-const property = (id: string): PublicPropertySummary => ({ id, title: id, shortTitle: id, slug: id, propertyType: "Дом", detailMode: "compact", city: "", address: "", timezone: "Europe/Moscow", shortDescription: "", fullDescription: "", phone: "", whatsapp: "", telegram: "", checkInTime: "", checkOutTime: "", photos: [], features: [], aggregatedAmenities: [], houseRules: [] });
+const property = (id: string): PublicPropertySummary => ({ id, title: id, shortTitle: id, slug: id, propertyType: "Дом", detailMode: "compact", city: "", address: "", timezone: "Europe/Moscow", shortDescription: "", fullDescription: "", phone: "", telegram: "", checkInTime: "", checkOutTime: "", photos: [], features: [], aggregatedAmenities: [], houseRules: [] });
 
 test("property counts published scoped rooms, excludes archive and uses quoted agent prices", () => {
   const rooms = [buildPublicRoomQuote(room("one", { agentMarkupPercent: 20 }), filters), room("archived", { status: "inactive", pricePerNight: 1 }), room("two", { pricePerNight: 3000, isAvailableForFilter: false })];

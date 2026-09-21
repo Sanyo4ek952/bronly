@@ -1,5 +1,5 @@
 export { cn } from "@/shared/lib/cn";
-export { toPhoneHref, toTelegramHref, toWhatsAppHref } from "@/shared/lib/contact-links";
+export { toPhoneHref, toTelegramHref, toMaxHref } from "@/shared/lib/contact-links";
 export {
   buildAgentCollectionsBreadcrumbs,
   buildOwnerCollectionsBreadcrumbs,

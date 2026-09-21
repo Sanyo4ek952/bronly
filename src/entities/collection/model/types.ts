@@ -67,7 +67,7 @@ export type PublicCollectionContact = {
   slug: string;
   displayName: string;
   phone: string;
-  whatsapp: string;
+  maxUrl: string;
   telegram: string;
 };
 

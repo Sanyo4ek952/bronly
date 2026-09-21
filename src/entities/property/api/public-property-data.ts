@@ -32,7 +32,7 @@ type PublicOwnerRow = {
   slug: string;
   display_name: string;
   phone: string | null;
-  whatsapp: string | null;
+  max_url: string | null;
   telegram: string | null;
   is_public_hidden_by_admin: boolean;
 };
@@ -63,7 +63,7 @@ function mapPublicOwner(row: PublicOwnerRow): OwnerPublicProfile {
     slug: row.slug,
     displayName: row.display_name,
     phone: row.phone ?? "",
-    whatsapp: row.whatsapp ?? "",
+    maxUrl: row.max_url ?? "",
     telegram: row.telegram ?? "",
   };
 }
@@ -82,7 +82,6 @@ function mapPublicProperty(row: SupabasePropertyRow, photos: PublicPropertySumma
     shortDescription: row.short_description ?? "",
     fullDescription: row.full_description ?? "",
     phone: row.phone ?? "",
-    whatsapp: row.whatsapp ?? "",
     telegram: row.telegram ?? "",
     checkInTime: row.check_in_time ?? "",
     checkOutTime: row.check_out_time ?? "",
@@ -122,10 +121,8 @@ function mapRoomRow(
       city: room.city ?? "",
       address: room.address ?? "",
       timezone: room.timezone ?? "",
-      shortDescription: room.short_description ?? "",
-      fullDescription: room.full_description ?? "",
+      description: room.full_description ?? "",
       phone: room.phone ?? "",
-      whatsapp: room.whatsapp ?? "",
       telegram: room.telegram ?? "",
       checkInTime: room.check_in_time ?? "",
       checkOutTime: room.check_out_time ?? "",
@@ -142,7 +139,7 @@ function toPublicFallbackData(filters: PublicStayFilters): PublicPropertyPageDat
       slug: mockProperty.slug,
       displayName: mockProperty.title,
       phone: mockProperty.phone,
-      whatsapp: mockProperty.whatsapp,
+      maxUrl: "",
       telegram: mockProperty.telegram,
     },
     properties: [
@@ -160,7 +157,6 @@ function toPublicFallbackData(filters: PublicStayFilters): PublicPropertyPageDat
           shortDescription: mockProperty.shortDescription,
           fullDescription: mockProperty.fullDescription,
           phone: mockProperty.phone,
-          whatsapp: mockProperty.whatsapp,
           telegram: mockProperty.telegram,
           checkInTime: mockProperty.checkInTime,
           checkOutTime: mockProperty.checkOutTime,
@@ -324,7 +320,7 @@ export const getPublicPropertyPageData = cache(
       const supabase = createSupabaseAdminClient();
       const { data: ownerData, error: ownerError } = await supabase
         .from("profiles")
-        .select("id, slug, display_name, phone, whatsapp, telegram, is_public_hidden_by_admin")
+        .select("id, slug, display_name, phone, max_url, telegram, is_public_hidden_by_admin")
         .eq("slug", normalizedSlug)
         .maybeSingle();
 

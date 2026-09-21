@@ -24,7 +24,7 @@ export type RoomLookupRow = {
   property_type: string | null;
   city: string | null;
   address: string | null;
-  short_description: string | null;
+  full_description: string | null;
   allow_agent_inquiries: boolean;
   price_per_night: number;
   properties:
@@ -66,7 +66,7 @@ export type UnifiedProposalTarget = {
 export type ProfileContactRow = {
   display_name?: string | null;
   phone?: string | null;
-  whatsapp?: string | null;
+  max_url?: string | null;
   telegram?: string | null;
 };
 

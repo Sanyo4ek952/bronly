@@ -117,17 +117,16 @@ export function RoomDetailPage({
         </div>
       </Panel>
 
-      {room.location.shortDescription || room.location.fullDescription ? (
+      {room.location.description ? (
         <Panel padding="md" className="grid gap-4 max-[720px]:p-4">
           <div className="grid gap-1.5">
             <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Описание</h2>
             <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
-              Краткая и полная информация по номеру для проверки контента перед публикацией.
+              Информация по номеру для проверки перед публикацией.
             </p>
           </div>
           <div className="grid gap-3 text-sm leading-[1.65] text-[var(--color-text)]">
-            {room.location.shortDescription ? <p>{room.location.shortDescription}</p> : null}
-            {room.location.fullDescription ? <p>{room.location.fullDescription}</p> : null}
+            <p className="whitespace-pre-line">{room.location.description}</p>
           </div>
         </Panel>
       ) : null}
@@ -145,7 +144,6 @@ export function RoomDetailPage({
             <strong className="text-base font-semibold text-[var(--color-text)]">Контакты и заезд</strong>
             <div className="grid gap-2 text-sm leading-[1.55] text-[var(--color-muted)]">
               <p>Телефон: {room.location.phone || "не указан"}</p>
-              <p>WhatsApp: {room.location.whatsapp || "не указан"}</p>
               <p>Telegram: {room.location.telegram || "не указан"}</p>
               <p>Заезд: {room.location.checkInTime || "не указано"}</p>
               <p>Выезд: {room.location.checkOutTime || "не указано"}</p>

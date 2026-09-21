@@ -13,7 +13,6 @@ export type SupabasePropertyRow = {
   short_description: string | null;
   full_description: string | null;
   phone: string | null;
-  whatsapp: string | null;
   telegram: string | null;
   check_in_time: string | null;
   check_out_time: string | null;
@@ -42,7 +41,6 @@ export type SupabaseProfileRow = {
   agent_public_id: string | null;
   display_name: string;
   phone: string | null;
-  whatsapp: string | null;
   telegram: string | null;
   is_public_hidden_by_admin: boolean;
   created_at: string;
@@ -70,7 +68,6 @@ export type SupabaseRoomRow = {
   short_description: string | null;
   full_description: string | null;
   phone: string | null;
-  whatsapp: string | null;
   telegram: string | null;
   check_in_time: string | null;
   check_out_time: string | null;

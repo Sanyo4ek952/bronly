@@ -9,7 +9,7 @@ import {
   readSearchParams,
   toPhoneHref,
   toTelegramHref,
-  toWhatsAppHref,
+  toMaxHref,
 } from "@/shared/lib";
 import { InlineNotice, Panel, StatusPill } from "@/shared/ui";
 import { PublicBrandSlot, PublicHero, PublicPageHeader, PublicUnavailableState } from "@/widgets/public-page";
@@ -112,7 +112,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pub
             <>
               <div id="collection-contact" className="flex flex-wrap gap-2.5">
                 {contact.phone ? <ContactLink href={toPhoneHref(contact.phone)}>{contact.phone}</ContactLink> : null}
-                {contact.whatsapp ? <ContactLink href={toWhatsAppHref(contact.whatsapp)} external>WhatsApp</ContactLink> : null}
+                {toMaxHref(contact.maxUrl) ? <ContactLink href={toMaxHref(contact.maxUrl)} external>MAX</ContactLink> : null}
                 {contact.telegram ? <ContactLink href={toTelegramHref(contact.telegram)} external>Telegram</ContactLink> : null}
               </div>
             </>

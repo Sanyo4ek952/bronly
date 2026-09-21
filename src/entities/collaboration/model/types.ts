@@ -22,7 +22,7 @@ export type CollaborationTargetSummary = {
 
 export type CollaborationContact = {
   phone: string;
-  whatsapp: string;
+  maxUrl: string;
   telegram: string;
 };
 
@@ -126,6 +126,7 @@ export type PublicAgentPageData = {
     legacySlug: string;
     displayName: string;
     phone: string;
+    maxUrl: string;
     telegram: string;
   } | null;
   properties: PublicAgentPropertySection[];

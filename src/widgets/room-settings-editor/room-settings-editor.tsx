@@ -181,12 +181,11 @@ export function RoomSettingsEditor({ propertyId, redirectTo, room, propertyAllow
             summary={location.phone || location.telegram ? "Описание и контакты заполнены" : "Нужно заполнить контакты"}
           >
             <div className="grid gap-4">
-              <Textarea id={`room-short-description-${room.id}`} name="shortDescription" label="Краткое описание" defaultValue={location.shortDescription} />
               <Textarea
-                id={`room-full-description-${room.id}`}
-                name="fullDescription"
-                label="Подробное описание"
-                defaultValue={location.fullDescription}
+                id={`room-description-${room.id}`}
+                name="description"
+                label="Описание"
+                defaultValue={location.description}
                 className="min-h-[170px]"
               />
               <div className={inlineFieldsClass}>

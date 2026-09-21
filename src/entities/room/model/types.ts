@@ -6,10 +6,8 @@ export type RoomLocation = {
   city: string;
   address: string;
   timezone: string;
-  shortDescription: string;
-  fullDescription: string;
+  description: string;
   phone: string;
-  whatsapp: string;
   telegram: string;
   checkInTime: string;
   checkOutTime: string;

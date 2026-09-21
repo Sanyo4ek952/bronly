@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { OwnerRequestItem } from "@/entities/request";
-import { cn, formatRubles, toPhoneHref, toWhatsAppHref } from "@/shared/lib";
+import { cn, formatRubles, toPhoneHref } from "@/shared/lib";
 import { BottomSheet, Button, ButtonLink, InlineNotice, Select, StatusPill, Tabs } from "@/shared/ui";
 
 type RequestsBrowserProps = {
@@ -155,7 +155,6 @@ function RequestDetail({
   showIdentity = true,
 }: RequestActionProps & { showIdentity?: boolean }) {
   const telHref = toPhoneHref(request.phone);
-  const whatsappHref = toWhatsAppHref(request.phone);
 
   return (
     <div className="grid gap-0">
@@ -178,18 +177,11 @@ function RequestDetail({
         </StatusPill>
       )}
 
-      {telHref || whatsappHref ? (
-        <div className="grid grid-cols-2 gap-2 border-b border-[var(--border)] py-3.5">
-          {telHref ? (
-            <ButtonLink href={telHref} variant="secondary" fullWidth>
-              Позвонить
-            </ButtonLink>
-          ) : null}
-          {whatsappHref ? (
-            <ButtonLink href={whatsappHref} variant="secondary" fullWidth target="_blank" rel="noreferrer">
-              WhatsApp
-            </ButtonLink>
-          ) : null}
+      {telHref ? (
+        <div className="grid gap-2 border-b border-[var(--border)] py-3.5">
+          <ButtonLink href={telHref} variant="secondary" fullWidth>
+            Позвонить
+          </ButtonLink>
         </div>
       ) : null}
 

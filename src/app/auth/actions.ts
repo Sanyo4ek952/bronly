@@ -20,6 +20,8 @@ import { createTelegramLinkSession, setTelegramNotificationsEnabled } from "@/en
 import { getReferralRegistrationIntent } from "@/entities/referral";
 import { consumeAuthReferralInvite } from "@/features/auth/consume-auth-referral-invite";
 
+import { toMaxHref } from "@/shared/lib/contact-links";
+
 type RegisterRole = "owner" | "agent";
 
 function getString(formData: FormData, key: string) {
@@ -321,6 +323,8 @@ export async function updateProfileAction(formData: FormData) {
   const displayName = getString(formData, "displayName");
   const phone = getString(formData, "phone");
   const telegram = getString(formData, "telegram");
+  const maxInput = getString(formData, "maxUrl");
+  const maxUrl = toMaxHref(maxInput);
   const slug = getString(formData, "slug");
   const role = getString(formData, "role");
 
@@ -330,16 +334,20 @@ export async function updateProfileAction(formData: FormData) {
     redirect(`${getSettingsTargetPath(role)}?error=validation`);
   }
 
+  if (maxInput && !maxUrl) {
+    redirect(`${getSettingsTargetPath(role)}?error=max-url`);
+  }
+
   const payload: {
     display_name: string;
     phone: string;
-    whatsapp: string;
+    max_url: string | null;
     telegram: string;
     slug?: string;
   } = {
     display_name: displayName,
     phone,
-    whatsapp: phone,
+    max_url: maxUrl ?? null,
     telegram,
   };
 

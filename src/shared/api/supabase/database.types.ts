@@ -620,6 +620,7 @@ export type Database = {
         slug: string | null
         display_name: string
         phone: string | null
+        max_url: string | null
         whatsapp: string | null
         telegram: string | null
         created_at: string
@@ -633,6 +634,7 @@ export type Database = {
         slug?: string | null
         display_name: string
         phone?: string | null
+        max_url?: string | null
         whatsapp?: string | null
         telegram?: string | null
         created_at?: string
@@ -646,6 +648,7 @@ export type Database = {
         slug?: string | null
         display_name?: string
         phone?: string | null
+        max_url?: string | null
         whatsapp?: string | null
         telegram?: string | null
         created_at?: string

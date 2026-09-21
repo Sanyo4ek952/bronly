@@ -27,8 +27,8 @@ export function PublicStayFilter({ publicBaseHref, filters, resetHref, variant =
           ? "grid grid-cols-2 items-end gap-3 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] [&_input]:min-h-11 [&_input]:min-w-0"
           : "grid items-end gap-[14px] rounded-[var(--radius-lg)] border border-[rgb(var(--color-primary-rgb)_/_0.10)] bg-[var(--surface)] p-4 shadow-[var(--shadow-sm)] md:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(220px,280px)]"}
       >
-        <Input id={`${filterId}-check-in`} name="checkIn" type="date" label="Заезд" defaultValue={filters.checkIn} />
-        <Input id={`${filterId}-check-out`} name="checkOut" type="date" label="Выезд" defaultValue={filters.checkOut} />
+        <Input id={`${filterId}-check-in`} name="checkIn" type="date" label="Заезд" className="cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer" defaultValue={filters.checkIn} />
+        <Input id={`${filterId}-check-out`} name="checkOut" type="date" label="Выезд" className="cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer" defaultValue={filters.checkOut} />
         <Select
           id={`${filterId}-adults`}
           name="adults"

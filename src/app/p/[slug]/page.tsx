@@ -13,7 +13,7 @@ import {
   toJsonLd,
   toPhoneHref,
   toTelegramHref,
-  toWhatsAppHref,
+  toMaxHref,
 } from "@/shared/lib";
 import { AppIcon, InlineNotice } from "@/shared/ui";
 import { PublicPropertyBrowser } from "@/widgets/public-property-section";
@@ -178,9 +178,9 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
                       <AppIcon icon={Phone} className="size-4" aria-hidden="true" />Телефон
                     </a>
                   ) : null}
-                  {owner.whatsapp ? (
-                    <a href={toWhatsAppHref(owner.whatsapp)} target="_blank" rel="noreferrer">
-                      <AppIcon icon={MessageCircle} className="size-4" aria-hidden="true" />WhatsApp
+                  {toMaxHref(owner.maxUrl) ? (
+                    <a href={toMaxHref(owner.maxUrl)} target="_blank" rel="noreferrer">
+                      <AppIcon icon={MessageCircle} className="size-4" aria-hidden="true" />MAX
                     </a>
                   ) : null}
                   {owner.telegram ? (

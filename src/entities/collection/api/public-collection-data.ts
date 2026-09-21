@@ -122,10 +122,8 @@ function mapRoomRow(
       city: room.city ?? "",
       address: room.address ?? "",
       timezone: room.timezone ?? "",
-      shortDescription: room.short_description ?? "",
-      fullDescription: room.full_description ?? "",
+      description: room.full_description ?? "",
       phone: "",
-      whatsapp: "",
       telegram: "",
       checkInTime: room.check_in_time ?? "",
       checkOutTime: room.check_out_time ?? "",
@@ -199,7 +197,7 @@ async function loadPublicCollectionContext(
   const [creatorResult, itemsResult] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, slug, display_name, phone, whatsapp, telegram")
+      .select("id, slug, display_name, phone, max_url, telegram")
       .eq("id", collectionRow.creator_id)
       .maybeSingle(),
     supabase
@@ -226,7 +224,7 @@ async function loadPublicCollectionContext(
     slug: string | null;
     display_name: string;
     phone: string | null;
-    whatsapp: string | null;
+    max_url: string | null;
     telegram: string | null;
   } | null;
 
@@ -593,7 +591,6 @@ async function loadPublicCollectionContext(
           shortDescription: property.short_description ?? "",
           fullDescription: property.full_description ?? "",
           phone: "",
-          whatsapp: "",
           telegram: "",
           checkInTime: property.check_in_time ?? "",
           checkOutTime: property.check_out_time ?? "",
@@ -625,7 +622,7 @@ async function loadPublicCollectionContext(
       slug: creator.slug ?? "",
       displayName: creator.display_name,
       phone: creator.phone ?? "",
-      whatsapp: creator.whatsapp ?? "",
+      maxUrl: creator.max_url ?? "",
       telegram: creator.telegram ?? "",
     },
     sections,

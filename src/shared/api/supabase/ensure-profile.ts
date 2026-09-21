@@ -119,7 +119,6 @@ export async function ensureAuthUserProfile(user: User): Promise<string | null> 
       agent_public_id: agentPublicId,
       display_name: displayName,
       phone,
-      whatsapp: phone,
       telegram: typeof metadata.telegram === "string" ? metadata.telegram : null,
     })
     .select("id")

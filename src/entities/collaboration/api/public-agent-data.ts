@@ -25,6 +25,7 @@ type ResolvedAgentProfile = {
   agent_public_id: string | null;
   display_name: string;
   phone: string | null;
+  max_url: string | null;
   telegram: string | null;
   is_public_hidden_by_admin: boolean;
 };
@@ -95,10 +96,8 @@ function mapRoomRow(
       city: room.city ?? "",
       address: room.address ?? "",
       timezone: room.timezone ?? "",
-      shortDescription: room.short_description ?? "",
-      fullDescription: room.full_description ?? "",
+      description: room.full_description ?? "",
       phone: "",
-      whatsapp: "",
       telegram: "",
       checkInTime: room.check_in_time ?? "",
       checkOutTime: room.check_out_time ?? "",
@@ -131,7 +130,7 @@ async function resolvePublicAgentProfile(identifier: string): Promise<{
   const supabase = createSupabaseAdminClient();
   const { data: publicIdData, error: publicIdError } = await supabase
     .from("profiles")
-    .select("id, slug, agent_public_id, display_name, phone, telegram, is_public_hidden_by_admin")
+    .select("id, slug, agent_public_id, display_name, phone, max_url, telegram, is_public_hidden_by_admin")
     .eq("agent_public_id", identifier)
     .maybeSingle();
 
@@ -154,7 +153,7 @@ async function resolvePublicAgentProfile(identifier: string): Promise<{
 
   const { data: legacySlugData, error: legacySlugError } = await supabase
     .from("profiles")
-    .select("id, slug, agent_public_id, display_name, phone, telegram, is_public_hidden_by_admin")
+    .select("id, slug, agent_public_id, display_name, phone, max_url, telegram, is_public_hidden_by_admin")
     .eq("slug", identifier)
     .maybeSingle();
 
@@ -219,6 +218,7 @@ export const getPublicAgentPageData = cache(
             legacySlug: agent.slug,
             displayName: agent.display_name,
             phone: "",
+            maxUrl: "",
             telegram: "",
           },
           properties: [],
@@ -318,6 +318,7 @@ export const getPublicAgentPageData = cache(
             legacySlug: agent.slug,
             displayName: agent.display_name,
             phone: agent.phone ?? "",
+            maxUrl: agent.max_url ?? "",
             telegram: agent.telegram ?? "",
           },
           properties: [],
@@ -491,7 +492,6 @@ export const getPublicAgentPageData = cache(
               shortDescription: property.short_description ?? "",
               fullDescription: property.full_description ?? "",
               phone: "",
-              whatsapp: "",
               telegram: "",
               checkInTime: property.check_in_time ?? "",
               checkOutTime: property.check_out_time ?? "",
@@ -528,6 +528,7 @@ export const getPublicAgentPageData = cache(
           legacySlug: agent.slug,
           displayName: agent.display_name,
           phone: agent.phone ?? "",
+          maxUrl: agent.max_url ?? "",
           telegram: agent.telegram ?? "",
         },
         properties,

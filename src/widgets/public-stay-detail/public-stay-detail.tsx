@@ -10,10 +10,11 @@ import { getPublicAgentPageData } from "@/entities/collaboration";
 import { getPublicCollectionPageData } from "@/entities/collection";
 import type { PublicRoom, PublicStayFilters } from "@/entities/room";
 import { buildPublicRoomQuote, normalizePublicStayFilters } from "@/entities/room";
-import { createSeoMetadata, formatRubles, getRussianPluralForm, getSearchString, readSearchParams, toPhoneHref, toTelegramHref, toWhatsAppHref } from "@/shared/lib";
+import { createSeoMetadata, formatRubles, getRussianPluralForm, getSearchString, readSearchParams, toPhoneHref, toTelegramHref, toMaxHref } from "@/shared/lib";
 import { buildPublicDetailHref, buildPublicRequestHref, buildPublicStayHref } from "@/shared/lib/public-links";
 import { getPublicUnavailableContent, type PublicUnavailableReason } from "@/shared/lib/public-page-visibility";
 import { ButtonLink, InlineNotice } from "@/shared/ui";
+import { ExpandableText } from "@/shared/ui/expandable-text";
 import { PublicBrandSlot, PublicPageHeader, PublicUnavailableState } from "@/widgets/public-page";
 import { PublicPropertyDetails, PublicDetailList, PublicCheckInTimes } from "@/widgets/public-property-section/public-property-section";
 import { PublicRoomBrowser, PublicStayFilter } from "@/widgets/public-room-browser";
@@ -26,7 +27,7 @@ type RouteProps = { params: Promise<{ slug: string; propertyId?: string; roomId?
 type PublicDetailContext = {
   base: string;
   title: string;
-  contact: { displayName: string; phone: string; whatsapp?: string; telegram: string } | null;
+  contact: { displayName: string; phone: string; maxUrl?: string; telegram: string } | null;
   sections: PublicBrowseSection[];
   standaloneRooms: PublicRoom[];
   filters: PublicStayFilters;
@@ -62,7 +63,7 @@ function ContactLinks({ contact }: { contact: NonNullable<PublicDetailContext["c
     <h2 className="text-xl font-bold">Контакты</h2><p>{contact.displayName}</p>
     <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold text-[var(--accent)] [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_a]:underline [&_a]:underline-offset-4 [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-4 [&_a]:focus-visible:outline-[var(--accent)]">
       {contact.phone ? <a href={toPhoneHref(contact.phone)}>Телефон: {contact.phone}</a> : null}
-      {contact.whatsapp ? <a href={toWhatsAppHref(contact.whatsapp)} target="_blank" rel="noreferrer">WhatsApp</a> : null}
+      {toMaxHref(contact.maxUrl) ? <a href={toMaxHref(contact.maxUrl)} target="_blank" rel="noreferrer">MAX</a> : null}
       {contact.telegram ? <a href={toTelegramHref(contact.telegram)} target="_blank" rel="noreferrer">Telegram</a> : null}
     </div>
   </section>;
@@ -75,7 +76,7 @@ export function createPublicDetailRoute(contextKind: ContextKind, detailKind: De
     const context = await loadContext(contextKind, route.slug);
     const detail = context && !context.unavailable && context.contact ? findPublicDetail(context.sections, context.standaloneRooms, detailKind, id) : null;
     const title = detail?.room ? roomTitle(detail.room) : detail?.section?.property.title;
-    const description = detail?.room?.location?.shortDescription || detail?.section?.property.shortDescription || "Фотографии, описание и условия проживания. Выберите номер и оставьте заявку.";
+    const description = detail?.room?.location?.description || detail?.section?.property.shortDescription || "Фотографии, описание и условия проживания. Выберите номер и оставьте заявку.";
     return createSeoMetadata({ title: title ?? "Вариант проживания недоступен", description: detail ? description : "Этот вариант проживания сейчас недоступен.", path: `${context?.base ?? `/${contextKind}/${encodeURIComponent(route.slug)}`}/${detailKind}/${encodeURIComponent(id)}`, imagePath: detail?.room?.photos[0]?.url ?? detail?.section?.property.photos[0]?.url, index: Boolean(detail) && contextKind !== "c" });
   }
 
@@ -104,16 +105,12 @@ export function createPublicDetailRoute(contextKind: ContextKind, detailKind: De
     return <main className="min-h-screen bg-[var(--color-page)] pb-[var(--safe-area-bottom)]">
       <div className="mx-auto grid w-[calc(100%-32px)] max-w-[1200px] gap-6 py-4 sm:w-[calc(100%-64px)] sm:py-5">
         <PublicPageHeader variant="minimal"><PublicBrandSlot /></PublicPageHeader>
-        <nav aria-label="Навигация по жилью" className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--accent)] [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_a]:underline [&_a]:underline-offset-4 [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-4 [&_a]:focus-visible:outline-[var(--accent)]">
-          <Link href={backHref}>← {room && property ? "К объекту" : "К вариантам"}</Link>
-          {room && property ? <Link href={rootHref}>{context.title}</Link> : null}
-          <a href="#detail-contact">Контакты</a>
+        <nav aria-label="Навигация по жилью" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-[var(--accent)] [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-4 [&_a]:focus-visible:outline-[var(--accent)]">
+          <Link href={backHref} className="underline underline-offset-4">← {room && property ? "К объекту" : "К вариантам"}</Link>
+          {room && property ? <Link href={rootHref} className="underline underline-offset-4">{context.title}</Link> : null}
+          <ButtonLink href="#detail-contact" className="ml-auto">Контакты</ButtonLink>
         </nav>
         <header className="grid gap-2"><p className="text-sm text-[var(--text-muted)]">{room ? property ? property.shortTitle : "Отдельный номер" : property?.propertyType || "Объект"}</p><h1 className="text-3xl font-extrabold leading-tight [overflow-wrap:anywhere] sm:text-4xl">{title}</h1></header>
-        {!room && section ? <div className="flex flex-wrap items-center gap-4">
-          <p className="text-sm text-[var(--text-muted)]">{section.rooms.length} {getRussianPluralForm(section.rooms.length, ["номер", "номера", "номеров"])}{section.sourceKinds && !section.sourceKinds.includes("property") ? " в подборке" : ""}</p>
-          {section.rooms.length ? <ButtonLink href="#property-rooms" variant="secondary">Посмотреть номера</ButtonLink> : null}
-        </div> : null}
         {context.warning ? <InlineNotice tone="warning">{context.warning}</InlineNotice> : null}
         {room ? <>
           <RoomPhotoCarousel variant="public" photos={room.photos} roomTitle={title} />
@@ -124,8 +121,7 @@ export function createPublicDetailRoute(contextKind: ContextKind, detailKind: De
           </div>
           <p className="text-sm text-[var(--text-muted)]">{[room.location?.city || property?.city, room.location?.address || property?.address].filter(Boolean).join(", ")}</p>
           {room.subtitle ? <p className="whitespace-pre-line leading-relaxed">{room.subtitle}</p> : null}
-          {room.location?.shortDescription ? <p className="whitespace-pre-line leading-relaxed">{room.location.shortDescription}</p> : null}
-          {room.location?.fullDescription && room.location.fullDescription !== room.location.shortDescription ? <p className="whitespace-pre-line leading-relaxed">{room.location.fullDescription}</p> : null}
+          {room.location?.description ? <ExpandableText text={room.location.description} /> : null}
           <PublicDetailList title="Удобства номера" items={room.amenities} />
           <PublicCheckInTimes checkIn={room.location?.checkInTime || property?.checkInTime} checkOut={room.location?.checkOutTime || property?.checkOutTime} />
           <section id="stay-filter" className="grid scroll-mt-5 gap-4 border-y border-[var(--border)] py-6">

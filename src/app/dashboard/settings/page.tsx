@@ -16,6 +16,7 @@ type SettingsPageProps = {
 };
 
 function getErrorMessage(error: string) {
+  if (error === "max-url") return "Укажите ссылку на профиль MAX вида https://max.ru/u/…";
   if (error === "telegram-not-configured") {
     return "Telegram-бот еще не настроен.";
   }
@@ -111,6 +112,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 description="Используется в персональной ссылке после /p/."
                 defaultValue={profile?.slug}
               />
+              <Input id="max-url" name="maxUrl" type="url" label="MAX" description="Ссылка на ваш профиль из приложения MAX. Появится в публичных контактах." placeholder="https://max.ru/u/…" maxLength={2048} defaultValue={profile?.maxUrl} />
               <Input
                 id="telegram"
                 name="telegram"

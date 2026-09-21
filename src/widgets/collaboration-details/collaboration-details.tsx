@@ -1,5 +1,5 @@
 import type { CollaborationContact, CollaborationTargetSummary } from "@/entities/collaboration";
-import { toPhoneHref, toTelegramHref, toWhatsAppHref } from "@/shared/lib";
+import { toPhoneHref, toTelegramHref, toMaxHref } from "@/shared/lib";
 import { ButtonLink, Panel } from "@/shared/ui";
 
 function getTargetFormatLabel(targetType: CollaborationTargetSummary["targetType"]) {
@@ -14,18 +14,14 @@ export function CollaborationContactLinks({
   emptyText?: string;
 }) {
   const phoneHref = contact.phone ? toPhoneHref(contact.phone) : undefined;
-  const whatsAppHref = contact.whatsapp
-    ? contact.whatsapp.startsWith("http")
-      ? contact.whatsapp
-      : toWhatsAppHref(contact.whatsapp)
-    : undefined;
+  const maxHref = toMaxHref(contact.maxUrl);
   const telegramHref = contact.telegram
     ? contact.telegram.startsWith("http")
       ? contact.telegram
       : toTelegramHref(contact.telegram)
     : undefined;
 
-  if (!phoneHref && !whatsAppHref && !telegramHref) {
+  if (!phoneHref && !maxHref && !telegramHref) {
     return <span className="text-sm leading-relaxed text-[var(--text-muted)]">{emptyText}</span>;
   }
 
@@ -36,9 +32,9 @@ export function CollaborationContactLinks({
           {contact.phone}
         </ButtonLink>
       ) : null}
-      {whatsAppHref ? (
-        <ButtonLink href={whatsAppHref} variant="secondary" size="sm" target="_blank" rel="noreferrer">
-          WhatsApp
+      {maxHref ? (
+        <ButtonLink href={maxHref} variant="secondary" size="sm" target="_blank" rel="noreferrer">
+          MAX
         </ButtonLink>
       ) : null}
       {telegramHref ? (

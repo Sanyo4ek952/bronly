@@ -92,7 +92,7 @@ export function ObjectSummaryCard({
               Добавьте больше фото, чтобы карточка выглядела убедительнее.
             </p>
           ) : null}
-          {!property.phone && !property.whatsapp && !property.telegram ? (
+          {!property.phone && !property.telegram ? (
             <p className="rounded-2xl border border-[var(--color-border)] bg-[rgb(var(--color-primary-rgb)_/_0.06)] px-[14px] py-3 text-sm leading-[1.5] text-[var(--color-muted)]">
               Заполните контакты для быстрой связи.
             </p>

@@ -12,7 +12,6 @@ export const property = {
   fullDescription:
     "Просторная вилла с собственным бассейном, террасой и прямым видом на море. К услугам гостей полностью оборудованная кухня, зона отдыха и быстрый Wi-Fi.",
   phone: "+7 900 123-45-67",
-  whatsapp: "+7 900 123-45-67",
   telegram: "@bronly_villa",
   checkInTime: "15:00",
   checkOutTime: "12:00",

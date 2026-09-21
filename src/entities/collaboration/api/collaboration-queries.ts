@@ -110,14 +110,14 @@ async function buildAgentCollaborationItems(
     const propertyQuery = supabase
       .from("agent_property_links")
       .select(
-        "id, property_id, status, proposal_message, collaboration_terms, owner_contact_visible, properties(title), profiles!agent_property_links_owner_id_fkey(display_name, phone, whatsapp, telegram)",
+        "id, property_id, status, proposal_message, collaboration_terms, owner_contact_visible, properties(title), profiles!agent_property_links_owner_id_fkey(display_name, phone, max_url, telegram)",
       )
       .eq("agent_id", profile.id)
       .order("created_at", { ascending: false });
     const roomQuery = supabase
       .from("agent_room_links")
       .select(
-        "id, room_id, status, proposal_message, collaboration_terms, owner_contact_visible, rooms(title, subtitle, price_per_night), profiles!agent_room_links_owner_id_fkey(display_name, phone, whatsapp, telegram)",
+        "id, room_id, status, proposal_message, collaboration_terms, owner_contact_visible, rooms(title, subtitle, price_per_night), profiles!agent_room_links_owner_id_fkey(display_name, phone, max_url, telegram)",
       )
       .eq("agent_id", profile.id)
       .order("created_at", { ascending: false });
@@ -326,7 +326,7 @@ export async function getAgentAvailableProperties(profile: AuthProfile): Promise
         .order("created_at", { ascending: false }),
       supabase
         .from("rooms")
-        .select("id, owner_id, property_id, room_kind, title, subtitle, property_type, city, address, short_description, allow_agent_inquiries")
+        .select("id, owner_id, property_id, room_kind, title, subtitle, property_type, city, address, full_description, allow_agent_inquiries")
         .eq("room_kind", "standalone_room")
         .eq("allow_agent_inquiries", true)
         .neq("owner_id", profile.id)
@@ -347,7 +347,7 @@ export async function getAgentAvailableProperties(profile: AuthProfile): Promise
       property_type: string | null;
       city: string | null;
       address: string | null;
-      short_description: string | null;
+      full_description: string | null;
     }>;
 
     const propertyIds = safeCandidates.map((property) => property.id);
@@ -500,7 +500,7 @@ export async function getOwnerActiveCollaborations(): Promise<OwnerActiveCollabo
       supabase
         .from("agent_property_links")
         .select(
-          "agent_id, proposal_message, collaboration_terms, properties(id, title), profiles!agent_property_links_agent_id_fkey(display_name, phone, whatsapp, telegram)",
+          "agent_id, proposal_message, collaboration_terms, properties(id, title), profiles!agent_property_links_agent_id_fkey(display_name, phone, max_url, telegram)",
         )
         .eq("owner_id", profile.id)
         .eq("status", "active")
@@ -508,7 +508,7 @@ export async function getOwnerActiveCollaborations(): Promise<OwnerActiveCollabo
       supabase
         .from("agent_room_links")
         .select(
-          "agent_id, proposal_message, collaboration_terms, rooms(id, title), profiles!agent_room_links_agent_id_fkey(display_name, phone, whatsapp, telegram)",
+          "agent_id, proposal_message, collaboration_terms, rooms(id, title), profiles!agent_room_links_agent_id_fkey(display_name, phone, max_url, telegram)",
         )
         .eq("owner_id", profile.id)
         .eq("status", "active")

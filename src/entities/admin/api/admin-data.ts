@@ -199,7 +199,7 @@ const getAdminSnapshot = cache(async (): Promise<AdminSnapshot> => {
       displayName: profile.display_name,
       slug: profile.slug ?? "",
       createdAt: profile.created_at,
-      phone: profile.phone ?? profile.telegram ?? profile.whatsapp ?? "",
+      phone: profile.phone ?? profile.telegram ?? "",
       roles,
       isPublicHiddenByAdmin: profile.is_public_hidden_by_admin,
       publicPageUrls,

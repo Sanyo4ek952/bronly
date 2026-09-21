@@ -25,3 +25,4 @@ export type { StatusPillProps, StatusPillVariant } from "@/shared/ui/status-pill
 export { SubmitButton } from "@/shared/ui/submit-button";
 export { Tabs } from "@/shared/ui/tabs";
 export type { TabItem, TabsProps } from "@/shared/ui/tabs";
+export { ExpandableText } from "@/shared/ui/expandable-text";

@@ -181,7 +181,7 @@ function mapStandaloneDashboardItem(input: {
   const status = getStandaloneStatus(input.row);
   const minPrice = Number(input.row.price_per_night) > 0 ? Number(input.row.price_per_night) : null;
   const hasDescriptionAndPhotos =
-    input.photos.length > 0 && Boolean(input.row.short_description?.trim() || input.row.full_description?.trim());
+    input.photos.length > 0 && Boolean(input.row.full_description?.trim());
   const hasAmenitiesAndServices = input.roomAmenityCount > 0;
   const hasPricesAndRooms = minPrice != null;
   const completenessPercent = buildCompleteness([

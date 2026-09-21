@@ -15,7 +15,7 @@ export type PublicPropertyPageData = {
     slug: string;
     displayName: string;
     phone: string;
-    whatsapp: string;
+    maxUrl: string;
     telegram: string;
   } | null;
   properties: Array<{
@@ -32,7 +32,6 @@ export type PublicPropertyPageData = {
       shortDescription: string;
       fullDescription: string;
       phone: string;
-      whatsapp: string;
       telegram: string;
       checkInTime: string;
       checkOutTime: string;
@@ -64,7 +63,6 @@ export type PublicPropertySummary = {
   shortDescription: string;
   fullDescription: string;
   phone: string;
-  whatsapp: string;
   telegram: string;
   checkInTime: string;
   checkOutTime: string;
@@ -79,7 +77,7 @@ export type OwnerPublicProfile = {
   slug: string;
   displayName: string;
   phone: string;
-  whatsapp: string;
+  maxUrl: string;
   telegram: string;
 };
 
@@ -95,7 +93,6 @@ export type LegacyPublicProperty = {
   shortDescription: string;
   fullDescription: string;
   phone: string;
-  whatsapp: string;
   telegram: string;
   checkInTime: string;
   checkOutTime: string;
@@ -252,7 +249,6 @@ export type OwnerPropertyDetail = {
   shortDescription: string;
   fullDescription: string;
   phone: string;
-  whatsapp: string;
   telegram: string;
   checkInTime: string;
   checkOutTime: string;

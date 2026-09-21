@@ -7,9 +7,19 @@ export function toPhoneHref(value: string) {
   return digits ? `tel:${digits}` : undefined;
 }
 
-export function toWhatsAppHref(value: string) {
-  const digits = value.replace(/\D/g, "");
-  return digits ? `https://wa.me/${digits}` : undefined;
+export function toMaxHref(value: string | null | undefined) {
+  const normalized = value?.trim();
+  if (!normalized || normalized.length > 2048 || /[\s\\]/.test(normalized)) return undefined;
+
+  try {
+    const url = new URL(normalized.startsWith("max.ru/") ? `https://${normalized}` : normalized);
+    if (url.protocol !== "https:" || url.hostname !== "max.ru" || url.port || url.username || url.password || !/^\/[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*\/?$/.test(url.pathname)) {
+      return undefined;
+    }
+    return url.href;
+  } catch {
+    return undefined;
+  }
 }
 
 export function toTelegramHref(value: string) {

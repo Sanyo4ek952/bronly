@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { Phone, Send } from "lucide-react";
+import { MessageCircle, Phone, Send } from "lucide-react";
 
 import { getPublicAgentPageData } from "@/entities/collaboration";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
@@ -11,6 +11,7 @@ import {
   getSearchString,
   readSearchParams,
   toJsonLd,
+  toMaxHref,
   toPhoneHref,
   toTelegramHref,
 } from "@/shared/lib";
@@ -137,6 +138,11 @@ export default async function PublicAgentPage({ params, searchParams }: PublicAg
                   {agent.phone ? (
                     <a href={toPhoneHref(agent.phone)} title={agent.phone}>
                       <AppIcon icon={Phone} className="size-4" aria-hidden="true" />Телефон
+                    </a>
+                  ) : null}
+                  {toMaxHref(agent.maxUrl) ? (
+                    <a href={toMaxHref(agent.maxUrl)} target="_blank" rel="noreferrer">
+                      <AppIcon icon={MessageCircle} className="size-4" aria-hidden="true" />MAX
                     </a>
                   ) : null}
                   {agent.telegram ? (

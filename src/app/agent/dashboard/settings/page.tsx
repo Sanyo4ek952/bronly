@@ -18,6 +18,7 @@ type AgentSettingsPageProps = {
 };
 
 function getErrorMessage(error: string) {
+  if (error === "max-url") return "Укажите ссылку на профиль MAX вида https://max.ru/u/…";
   if (error === "telegram-not-configured") return "Telegram-бот еще не настроен.";
   if (error === "telegram-link") return "Не удалось создать ссылку для привязки Telegram.";
   if (error === "telegram-setting") return "Не удалось изменить настройки Telegram-уведомлений.";
@@ -78,6 +79,7 @@ export default async function AgentSettingsPage({ searchParams }: AgentSettingsP
             <Input id="display-name" name="displayName" label="Имя" defaultValue={profile.displayName} required />
             <Input id="phone" name="phone" type="tel" label="Телефон" defaultValue={profile.phone} />
             <Input id="email" type="email" label="Email" defaultValue={profile.email} disabled />
+            <Input id="max-url" name="maxUrl" type="url" label="MAX" description="Ссылка на ваш профиль из приложения MAX. Появится в публичных контактах." placeholder="https://max.ru/u/…" maxLength={2048} defaultValue={profile?.maxUrl} />
             <Input id="telegram" name="telegram" label="Telegram" placeholder="@username" defaultValue={profile.telegram} />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">

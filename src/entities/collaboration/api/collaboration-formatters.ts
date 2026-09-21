@@ -39,7 +39,7 @@ export function getStatusLabel(status: AgentLinkStatus) {
 export function getContact(input?: ProfileContactRow | null): CollaborationContact {
   return {
     phone: input?.phone ?? "",
-    whatsapp: input?.whatsapp ?? "",
+    maxUrl: input?.max_url ?? "",
     telegram: input?.telegram ?? "",
   };
 }

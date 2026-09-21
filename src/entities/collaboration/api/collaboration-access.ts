@@ -152,7 +152,7 @@ export async function resolveProposalTarget(input: {
   const { data: roomData } = await supabase
     .from("rooms")
     .select(
-      "id, owner_id, property_id, room_kind, title, subtitle, property_type, city, address, short_description, price_per_night, allow_agent_inquiries, properties(id, owner_id, title, city, address)",
+      "id, owner_id, property_id, room_kind, title, subtitle, property_type, city, address, full_description, price_per_night, allow_agent_inquiries, properties(id, owner_id, title, city, address)",
     )
     .eq("id", input.roomId)
     .eq("room_kind", "standalone_room")
@@ -175,6 +175,6 @@ export async function resolveProposalTarget(input: {
     ownerId: room.owner_id,
     title: room.title,
     subtitle: mapStandaloneRoomLocation(room),
-    description: room.short_description ?? room.subtitle ?? "",
+    description: room.full_description ?? "",
   };
 }

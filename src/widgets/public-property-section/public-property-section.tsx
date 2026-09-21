@@ -8,6 +8,7 @@ import type { PublicStayFilters } from "@/entities/room";
 import { formatRubles, getRussianPluralForm } from "@/shared/lib";
 import { buildPublicDetailHref } from "@/shared/lib/public-links";
 import { AppIcon } from "@/shared/ui";
+import { ExpandableText } from "@/shared/ui/expandable-text";
 import { RoomPhotoCarousel } from "@/widgets/room-detail-page/room-photo-carousel";
 
 type PublicPropertySectionProps = PublicBrowseSection & {
@@ -61,8 +62,7 @@ export function PublicPropertyDetails({ property, showGallery = true }: { proper
       {showGallery ? <RoomPhotoCarousel variant="public" photos={property.photos} roomTitle={property.title} /> : null}
       <div className="grid gap-2">
         <p className="text-sm text-[var(--text-muted)]">{[property.propertyType, property.city, property.address].filter(Boolean).join(" · ")}</p>
-        {property.shortDescription ? <p className="whitespace-pre-line leading-relaxed">{property.shortDescription}</p> : null}
-        {property.fullDescription && property.fullDescription !== property.shortDescription ? <p className="whitespace-pre-line leading-relaxed">{property.fullDescription}</p> : null}
+        <ExpandableText text={[...new Set([property.shortDescription.trim(), property.fullDescription.trim()].filter(Boolean))].join("\n\n")} />
       </div>
       <PublicDetailList title="Удобства объекта" items={property.features} />
       <PublicDetailList title="Правила проживания" items={property.houseRules} />
