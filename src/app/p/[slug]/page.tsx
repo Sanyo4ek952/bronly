@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { MessageCircle, Phone, Send } from "lucide-react";
 
 import { getPublicPropertyPageData, resolveOwnerPublicSlug } from "@/entities/property";
-import type { PublicRoom } from "@/entities/room";
 import { getPublicUnavailableContent } from "@/shared/lib/public-page-visibility";
 import {
   buildCanonicalUrl,
@@ -15,7 +15,7 @@ import {
   toTelegramHref,
   toWhatsAppHref,
 } from "@/shared/lib";
-import { ButtonLink, InlineNotice, Panel } from "@/shared/ui";
+import { AppIcon, InlineNotice } from "@/shared/ui";
 import { PublicPropertySection } from "@/widgets/public-property-section";
 import { PublicRoomBrowser, PublicStayFilter } from "@/widgets/public-room-browser";
 import { PublicBrandSlot, PublicHero, PublicPageHeader, PublicUnavailableState } from "@/widgets/public-page";
@@ -45,40 +45,6 @@ function buildOwnerDescription(pageData: NonNullable<Awaited<ReturnType<typeof g
   const locationPart = city ? ` в ${city}` : "";
 
   return `Персональная страница владельца${locationPart}: номера, цены, календарь занятости и возможность оставить заявку на проживание.`;
-}
-
-function buildOwnerHeroDescription(allRooms: PublicRoom[], ownerName: string) {
-  const firstRoom = allRooms[0];
-  const city = firstRoom?.location?.city?.trim();
-  const propertyTitle = firstRoom?.propertyTitle?.trim();
-  const locationPart = city ? `в ${city}` : "по этой ссылке";
-  const roomPart = propertyTitle ? `${propertyTitle} и другие номера` : "подходящие номера";
-
-  return `${ownerName} показывает ${roomPart} ${locationPart}. Выберите конкретный номер и оставьте запрос на проживание.`;
-}
-
-function buildRequestHref(
-  ownerSlug: string,
-  room: PublicRoom,
-  filters?: { checkIn: string; checkOut: string; adults: number; rooms: number; hasDates: boolean },
-) {
-  const params = new URLSearchParams({ roomId: room.id });
-
-  if (room.propertySlug) {
-    params.set("propertySlug", room.propertySlug);
-  }
-
-  if (filters?.hasDates) {
-    params.set("checkIn", filters.checkIn);
-    params.set("checkOut", filters.checkOut);
-  }
-
-  if (filters) {
-    params.set("adults", String(filters.adults));
-    params.set("rooms", String(filters.rooms));
-  }
-
-  return `/p/${ownerSlug}/request?${params.toString()}`;
 }
 
 function flattenOwnerRooms(pageData: NonNullable<Awaited<ReturnType<typeof getPublicPropertyPageData>>>) {
@@ -169,8 +135,6 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
   const { owner, filters, publicWarningText } = pageData;
   const allRooms = flattenOwnerRooms(pageData);
   const heroPhoto = pageData.properties[0]?.property.photos[0] ?? pageData.standaloneRooms[0]?.photos[0];
-  const defaultRoom = allRooms.find((room) => room.isAvailableForFilter) ?? allRooms[0] ?? null;
-  const firstRequestHref = defaultRoom ? buildRequestHref(owner.slug, defaultRoom, filters) : null;
   const ownerJsonLd = {
     "@context": "https://schema.org",
     "@type": "ProfilePage",
@@ -187,10 +151,11 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: toJsonLd(ownerJsonLd) }} />
       <main className="min-h-screen bg-[var(--color-page)] pb-[var(--safe-area-bottom)]">
-        <div className="mx-auto w-[calc(100%-40px)] max-w-[1440px] py-5 sm:py-7">
+        <div className="mx-auto w-[calc(100%-32px)] max-w-[1200px] py-4 sm:w-[calc(100%-64px)] sm:py-5">
           <PublicPageHeader
+            variant="minimal"
             navigation={
-              <nav className="flex w-full flex-wrap items-center justify-start gap-2.5 text-sm font-semibold [&_a]:inline-flex [&_a]:min-h-[38px] [&_a]:items-center [&_a]:rounded-full [&_a]:border [&_a]:border-[var(--color-border)] [&_a]:bg-[rgb(255_255_255_/_0.86)] [&_a]:px-[14px] [&_a]:font-bold [&_a]:transition [&_a]:hover:-translate-y-px [&_a]:hover:border-[rgb(var(--color-primary-rgb)_/_0.28)] [&_a]:hover:bg-[var(--color-primary-pale)] [&_a]:focus-visible:outline-none [&_a]:focus-visible:ring-4 [&_a]:focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)] max-[640px]:[&_a]:w-full max-[640px]:[&_a]:justify-center" aria-label="Навигация публичной страницы владельца">
+              <nav className="flex flex-wrap items-center gap-4 text-xs font-semibold sm:gap-7 sm:text-sm [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_a]:hover:text-[var(--accent)] [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-4 [&_a]:focus-visible:outline-[var(--accent)]" aria-label="Навигация публичной страницы владельца">
                 <a href="#owner-filter">Подобрать номер</a>
                 <a href="#owner-contact">Контакты</a>
               </nav>
@@ -200,53 +165,48 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
           </PublicPageHeader>
 
           <PublicHero
+            variant="compact"
             imageUrl={heroPhoto?.url}
-            imageAlt={owner.displayName}
-            eyebrow="Гостевая витрина"
+            imageAlt="Фото жилья владельца"
+            eyebrow="Страница владельца"
             title={owner.displayName}
-            description={buildOwnerHeroDescription(allRooms, owner.displayName)}
-            notice={<InlineNotice tone="soft">Показаны только варианты этого владельца. Заявка не подтверждает проживание — владелец отдельно уточнит доступность.</InlineNotice>}
+            description="Выберите номер и оставьте заявку на проживание."
             actions={
-              <>
-                <div id="owner-contact" className="flex flex-wrap gap-2.5">
+                <div id="owner-contact" className="flex scroll-mt-6 flex-wrap gap-x-6 gap-y-1 text-sm font-semibold text-[var(--accent)] [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_a]:gap-2 [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-[var(--accent-strong)] [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-4 [&_a]:focus-visible:outline-[var(--accent)]">
                   {owner.phone ? (
-                    <a className="inline-flex min-h-[38px] items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.90)] px-[14px] text-sm font-bold transition hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.28)] hover:bg-[var(--color-primary-pale)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]" href={toPhoneHref(owner.phone)}>
-                      {owner.phone}
+                    <a href={toPhoneHref(owner.phone)} title={owner.phone}>
+                      <AppIcon icon={Phone} className="size-4" aria-hidden="true" />Телефон
                     </a>
                   ) : null}
                   {owner.whatsapp ? (
-                    <a className="inline-flex min-h-[38px] items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.90)] px-[14px] text-sm font-bold transition hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.28)] hover:bg-[var(--color-primary-pale)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]" href={toWhatsAppHref(owner.whatsapp)} target="_blank" rel="noreferrer">
-                      WhatsApp
+                    <a href={toWhatsAppHref(owner.whatsapp)} target="_blank" rel="noreferrer">
+                      <AppIcon icon={MessageCircle} className="size-4" aria-hidden="true" />WhatsApp
                     </a>
                   ) : null}
                   {owner.telegram ? (
-                    <a className="inline-flex min-h-[38px] items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgb(255_255_255_/_0.90)] px-[14px] text-sm font-bold transition hover:-translate-y-px hover:border-[rgb(var(--color-primary-rgb)_/_0.28)] hover:bg-[var(--color-primary-pale)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgb(var(--color-primary-rgb)_/_0.12)]" href={toTelegramHref(owner.telegram)} target="_blank" rel="noreferrer">
-                      {owner.telegram}
+                    <a href={toTelegramHref(owner.telegram)} target="_blank" rel="noreferrer">
+                      <AppIcon icon={Send} className="size-4" aria-hidden="true" />Telegram
                     </a>
                   ) : null}
                 </div>
-                {firstRequestHref ? <ButtonLink href={firstRequestHref}>Оставить заявку на номер</ButtonLink> : null}
-              </>
             }
           />
 
           {publicWarningText ? <InlineNotice className="mt-[18px]" tone="warning">{publicWarningText}</InlineNotice> : null}
 
-          <section id="owner-filter" className="grid gap-6 py-9 sm:py-12">
-            <div className="grid gap-3">
-              <h2 className="text-[clamp(1.7rem,2.6vw,2.5rem)] font-extrabold leading-tight">Подберите номер</h2>
-              <p className="max-w-3xl text-sm leading-relaxed text-[var(--color-muted)]">Фильтр работает только по вариантам этого владельца. Заявка всегда создаётся на конкретный номер.</p>
-            </div>
+          <section id="owner-filter" className="grid scroll-mt-6 gap-5 pb-9 pt-2 sm:pb-12">
+              <h2 className="text-[clamp(1.5rem,2.6vw,2rem)] font-extrabold leading-tight">Подберите номер</h2>
 
-            <PublicStayFilter publicBaseHref={`/p/${owner.slug}`} filters={filters} resetHref={`/p/${owner.slug}`} />
+            <PublicStayFilter publicBaseHref={`/p/${owner.slug}`} filters={filters} resetHref={`/p/${owner.slug}`} variant="inline" />
+            <p className="text-xs leading-relaxed text-[var(--text-muted)]">Заявка не подтверждает проживание — владелец уточнит доступность.</p>
+          </section>
 
             {allRooms.length ? (
               <div className="grid gap-8">
                 {pageData.properties.length ? (
-                  <section className="grid gap-[18px]" aria-labelledby="owner-properties-title">
+                  <section className="grid gap-5" aria-labelledby="owner-properties-title">
                     <div className="grid gap-2">
-                      <h2 id="owner-properties-title" className="text-[clamp(1.4rem,2vw,1.9rem)] font-extrabold leading-tight">Объекты владельца</h2>
-                      <p className="text-sm leading-relaxed text-[var(--color-muted)]">В каждом объекте показаны только его активные номера.</p>
+                      <h2 id="owner-properties-title" className="text-[clamp(1.5rem,2.6vw,2rem)] font-extrabold leading-tight">Объекты владельца</h2>
                     </div>
                     {pageData.properties.map((section) => (
                       <PublicPropertySection
@@ -256,38 +216,41 @@ export default async function PublicPropertyPage({ params, searchParams }: Publi
                         rooms={section.rooms}
                         filters={filters}
                         titleAs="h3"
+                        layout="list"
                       />
                     ))}
                   </section>
                 ) : null}
 
                 {pageData.standaloneRooms.length ? (
-                  <Panel as="section" className="grid gap-[18px] border-[rgb(var(--color-primary-rgb)_/_0.10)] shadow-[var(--shadow-md)]" surface="raised" padding="lg">
+                  <section className="grid gap-5" aria-labelledby="owner-standalone-title">
                     <div className="grid gap-2">
-                      <h2 className="text-[clamp(1.4rem,2vw,1.9rem)] font-extrabold leading-tight">Отдельные номера</h2>
-                      <p className="text-sm leading-relaxed text-[var(--color-muted)]">Эти варианты не привязаны к объекту и имеют собственный адрес.</p>
+                      <h2 id="owner-standalone-title" className="text-[clamp(1.5rem,2.6vw,2rem)] font-extrabold leading-tight">Отдельные номера</h2>
                     </div>
                     <PublicRoomBrowser
                       publicBaseHref={`/p/${owner.slug}`}
                       rooms={pageData.standaloneRooms}
                       filters={filters}
                       showFilter={false}
+                      layout="list"
                     />
-                  </Panel>
+                  </section>
                 ) : null}
               </div>
             ) : (
-              <Panel as="section" surface="subtle" padding="lg">
+              <section className="border-y border-[var(--border)] py-8">
                 <div>
                   <div>
                     <h3 className="text-xl font-extrabold">Пока нет доступных вариантов</h3>
                     <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">Владелец ещё не опубликовал объекты или отдельные номера для этой ссылки.</p>
                   </div>
                 </div>
-              </Panel>
+              </section>
             )}
-          </section>
-
+          <footer className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--border)] py-5">
+            <PublicBrandSlot />
+            <a href="#owner-filter" className="inline-flex min-h-11 items-center text-sm text-[var(--text-muted)] underline-offset-4 hover:underline">Подобрать номер</a>
+          </footer>
         </div>
       </main>
     </>

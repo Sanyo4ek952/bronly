@@ -12,10 +12,11 @@ type PublicPropertySectionProps = {
   showFilter?: boolean;
   emptyRoomsText?: string;
   titleAs?: "h2" | "h3";
+  layout?: "grid" | "list";
 };
 
-function PropertyTitle({ as, children }: { as: "h2" | "h3"; children: string }) {
-  return <SectionTitle as={as}>{children}</SectionTitle>;
+function PropertyTitle({ as, children, compact }: { as: "h2" | "h3"; children: string; compact?: boolean }) {
+  return <SectionTitle as={as} className={compact ? "text-xl font-extrabold" : undefined}>{children}</SectionTitle>;
 }
 
 function PublicPropertyGallery({ property }: { property: PublicPropertySummary }) {
@@ -41,9 +42,13 @@ function PublicPropertyGallery({ property }: { property: PublicPropertySummary }
   );
 }
 
-function PropertyChipList({ title, items }: { title: string; items: string[] }) {
+function PropertyChipList({ title, items, compact }: { title: string; items: string[]; compact?: boolean }) {
   if (!items.length) {
     return null;
+  }
+
+  if (compact) {
+    return <p className="text-sm leading-relaxed text-[var(--text-muted)]"><span className="font-semibold">{title}: </span>{items.join(" · ")}</p>;
   }
 
   return (
@@ -68,28 +73,34 @@ export function PublicPropertySection({
   showFilter = false,
   emptyRoomsText = "По этому объекту пока нет активных номеров для заявки.",
   titleAs = "h3",
+  layout = "grid",
 }: PublicPropertySectionProps) {
   const addressLine = [property.city, property.address].filter(Boolean).join(", ");
   const hasDetailedMode = property.detailMode === "hospitality_detailed";
   const hasShortDescription = Boolean(property.shortDescription.trim());
   const hasFullDescription = Boolean(property.fullDescription.trim());
+  const isList = layout === "list";
+  const Container = isList ? "article" : Panel;
 
   return (
-    <Panel as="article" className="grid gap-[18px] border-[rgb(var(--color-primary-rgb)_/_0.10)] shadow-[var(--shadow-md)]" surface="raised" padding="lg">
+    <Container
+      {...(!isList ? { as: "article" as const, surface: "raised" as const, padding: "lg" as const } : {})}
+      className={isList ? "grid min-w-0 gap-3" : "grid gap-[18px] border-[rgb(var(--color-primary-rgb)_/_0.10)] shadow-[var(--shadow-md)]"}
+    >
       <div>
-        <div className="grid gap-1.5">
-          <PropertyTitle as={titleAs}>{property.shortTitle}</PropertyTitle>
+        <div className={isList ? "flex flex-wrap items-baseline gap-x-4 gap-y-1" : "grid gap-1.5"}>
+          <PropertyTitle as={titleAs} compact={isList}>{property.shortTitle}</PropertyTitle>
           <SectionSubtitle>{addressLine}</SectionSubtitle>
         </div>
       </div>
 
       {hasDetailedMode ? (
         <div className="grid gap-4">
-          <PublicPropertyGallery property={property} />
+          {!isList || property.photos.length > 0 ? <PublicPropertyGallery property={property} /> : null}
 
           <div className="grid gap-4 pt-1">
             <div className="grid gap-4">
-              <div className="inline-flex min-h-8 w-fit items-center rounded-full bg-[rgb(var(--color-primary-rgb)_/_0.10)] px-3 text-xs font-bold text-[var(--color-primary-hover)]">{property.propertyType}</div>
+              <div className={isList ? "text-sm text-[var(--text-muted)]" : "inline-flex min-h-8 w-fit items-center rounded-full bg-[rgb(var(--color-primary-rgb)_/_0.10)] px-3 text-xs font-bold text-[var(--color-primary-hover)]"}>{property.propertyType}</div>
               {hasShortDescription ? <p className="text-sm leading-relaxed text-[var(--color-muted)]">{property.shortDescription}</p> : null}
               {!hasShortDescription && hasFullDescription ? <p className="text-sm leading-relaxed text-[var(--color-muted)]">{property.fullDescription}</p> : null}
             </div>
@@ -101,9 +112,9 @@ export function PublicPropertySection({
               </section>
             ) : null}
 
-            <PropertyChipList title="Что входит" items={property.features} />
-            <PropertyChipList title="Удобства" items={property.aggregatedAmenities} />
-            <PropertyChipList title="Правила" items={property.houseRules} />
+            <PropertyChipList title="Что входит" items={property.features} compact={isList} />
+            <PropertyChipList title="Удобства" items={property.aggregatedAmenities} compact={isList} />
+            <PropertyChipList title="Правила" items={property.houseRules} compact={isList} />
           </div>
         </div>
       ) : null}
@@ -115,12 +126,13 @@ export function PublicPropertySection({
           rooms={rooms}
           filters={filters}
           showFilter={showFilter}
+          layout={layout}
         />
       ) : (
-        <Panel className="mt-4" surface="subtle" padding="md">
+        isList ? <p className="border-t border-[var(--border)] py-5 text-sm text-[var(--text-muted)]">{emptyRoomsText}</p> : <Panel className="mt-4" surface="subtle" padding="md">
           {emptyRoomsText}
         </Panel>
       )}
-    </Panel>
+    </Container>
   );
 }
