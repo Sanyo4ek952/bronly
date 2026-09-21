@@ -26,8 +26,8 @@ export function OwnerPropertyFormFields({ property, presentation = "default" }: 
   const isCreatePresentation = presentation === "create";
   const sectionProps = isCreatePresentation
     ? {
-        variant: "plain" as const,
-        className: "!rounded-none !border-0 !bg-transparent !px-0 !py-6 first:!pt-0 last:!pb-0",
+        variant: "bare" as const,
+        className: "py-6 first:pt-0 last:pb-0",
         bodyClassName: "gap-4",
       }
     : { variant: "accordion" as const };
@@ -41,13 +41,14 @@ export function OwnerPropertyFormFields({ property, presentation = "default" }: 
         {...sectionProps}
       >
         <div className={propertyFormGridClass}>
-          <Input id="property-title" name="title" label="Название объекта" defaultValue={property?.title ?? ""} />
-          <Input id="property-type" name="propertyType" label="Тип объекта" defaultValue={property?.propertyType ?? ""} />
-          <Input id="property-city" name="city" label="Город" defaultValue={property?.city ?? ""} />
+          <Input id="property-title" name="title" label="Название объекта" required defaultValue={property?.title ?? ""} />
+          <Input id="property-type" name="propertyType" label="Тип объекта" required defaultValue={property?.propertyType ?? ""} />
+          <Input id="property-city" name="city" label="Город" required defaultValue={property?.city ?? ""} />
           <Input
             id="property-address"
             name="address"
             label="Адрес"
+            required
             defaultValue={property?.address ?? ""}
             wrapperClassName="grid gap-1.5 md:col-span-2"
           />
@@ -116,19 +117,19 @@ export function OwnerPropertyFormFields({ property, presentation = "default" }: 
         {...sectionProps}
       >
         <div className={toggleListClass}>
-          <label className={toggleRowClass}>
+          <label className={isCreatePresentation ? "flex min-h-12 items-center justify-between gap-3 border-b border-[var(--border)] py-3 text-sm text-[var(--text)] last:border-0" : toggleRowClass}>
             <span className="max-w-[calc(100%-42px)]">Показывать объект в публичной ссылке</span>
             <input type="checkbox" name="published" {...renderChecked(property?.published ?? true)} />
           </label>
-          <label className={toggleRowClass}>
+          <label className={isCreatePresentation ? "flex min-h-12 items-center justify-between gap-3 border-b border-[var(--border)] py-3 text-sm text-[var(--text)] last:border-0" : toggleRowClass}>
             <span className="max-w-[calc(100%-42px)]">Заморозить объект</span>
             <input type="checkbox" name="isFrozen" {...renderChecked(property?.isFrozen)} />
           </label>
-          <label className={toggleRowClass}>
+          <label className={isCreatePresentation ? "flex min-h-12 items-center justify-between gap-3 border-b border-[var(--border)] py-3 text-sm text-[var(--text)] last:border-0" : toggleRowClass}>
             <span className="max-w-[calc(100%-42px)]">Готов сотрудничать с агентами</span>
             <input type="checkbox" name="allowAgentInquiries" {...renderChecked(property?.allowAgentInquiries)} />
           </label>
-          <label className={toggleRowClass}>
+          <label className={isCreatePresentation ? "flex min-h-12 items-center justify-between gap-3 border-b border-[var(--border)] py-3 text-sm text-[var(--text)] last:border-0" : toggleRowClass}>
             <span className="max-w-[calc(100%-42px)]">Показывать контакты владельца агенту</span>
             <input
               type="checkbox"

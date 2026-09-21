@@ -20,6 +20,7 @@ type AmenityCategoryView = AmenityCategory & {
 
 type RoomAmenitiesFieldProps = {
   name?: string;
+  bare?: boolean;
   initialAmenities?: string[];
 };
 
@@ -150,6 +151,7 @@ function buildInitialOpenCategories(selectedAmenities: string[]) {
 
 export function RoomAmenitiesField({
   name = "amenities",
+  bare = false,
   initialAmenities = [],
 }: RoomAmenitiesFieldProps) {
   const initialState = splitInitialAmenities(initialAmenities);
@@ -207,7 +209,7 @@ export function RoomAmenitiesField({
           return (
             <section
               key={category.title}
-              className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[rgb(248_250_252_/_0.9)] p-4 max-[640px]:p-[14px]"
+              className={bare ? "grid gap-3 border-t border-[var(--border)] py-4" : "grid gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[rgb(248_250_252_/_0.9)] p-4 max-[640px]:p-[14px]"}
               data-open={isOpen ? "true" : "false"}
             >
               <button

@@ -1,18 +1,9 @@
-import { createOwnerRoom } from "@/app/dashboard/properties/actions";
 import { getRoomCreateNotice } from "@/app/dashboard/properties/page-helpers";
-import {
-  RoomAgentSettings,
-  RoomAmenitiesSection,
-  RoomBaseFields,
-  RoomPhotosField,
-  RoomPricingFields,
-} from "@/features/property/edit-room/ui/room-form-blocks";
-import { RoomDateRangeField } from "@/features/property/edit-room/ui/room-date-range-field";
-import { RoomFormSection } from "@/features/property/edit-room/ui/room-form-section";
+import { RoomCreationForm } from "@/features/property/setup/ui/room-creation-form";
 import { getSubscriptionRuntimeState } from "@/entities/subscription";
 import { getCurrentAuthProfile } from "@/shared/api/supabase";
 import { buildOwnerInventoryBreadcrumbs, readSearchParams } from "@/shared/lib";
-import { Button, ButtonLink, DashboardPageNav, InlineNotice, Input, Panel, Textarea } from "@/shared/ui";
+import { DashboardPageNav, InlineNotice } from "@/shared/ui";
 import { AdminPageHeader } from "@/widgets/property-admin";
 
 type StandaloneRoomCreatePageProps = {
@@ -20,7 +11,6 @@ type StandaloneRoomCreatePageProps = {
 };
 
 const pageStackClass = "grid min-w-0 gap-6 max-[720px]:gap-5";
-const formStackClass = "grid min-w-0 gap-4";
 
 export default async function StandaloneRoomCreatePage({ searchParams }: StandaloneRoomCreatePageProps) {
   const params = await readSearchParams(searchParams);
@@ -59,65 +49,7 @@ export default async function StandaloneRoomCreatePage({ searchParams }: Standal
         </div>
       ) : null}
 
-      <Panel padding="md" className="grid min-w-0 gap-5 max-[720px]:p-4">
-        <div className="grid gap-1.5">
-          <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Данные номера</h2>
-          <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
-            Заполните адрес, параметры, цену и сведения для публичной карточки.
-          </p>
-        </div>
-
-        <form action={createOwnerRoom} className={formStackClass}>
-          <RoomBaseFields
-            title="Основное"
-            description="Как называется номер и где он находится."
-            standalone
-          />
-
-          <RoomPricingFields
-            title="Вместимость и цена"
-            description="Ключевые параметры номера для карточки и заявки."
-          />
-
-          <RoomFormSection title="Описание" description="Короткий анонс и подробности для гостя.">
-            <div className={formStackClass}>
-              <Textarea id="room-short-description-new" name="shortDescription" label="Краткое описание" />
-              <Textarea id="room-full-description-new" name="fullDescription" label="Подробное описание" className="min-h-[170px]" />
-            </div>
-          </RoomFormSection>
-
-          <RoomAmenitiesSection
-            title="Удобства номера"
-            description="Главное держим перед глазами, остальное раскрывается по тапу."
-            amenities={[]}
-          />
-
-          <RoomPhotosField
-            title="Фото номера"
-            description="Можно выбрать до 10 фото сразу. Первое фото станет главным."
-          />
-
-          <RoomFormSection title="Контакты и занятые даты" description="Оставьте контакты и, если нужно, сразу отметьте занятый диапазон.">
-            <div className={formStackClass}>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input id="room-phone-new" name="phone" label="Телефон" />
-                <Input id="room-telegram-new" name="telegram" label="Telegram" />
-              </div>
-              <RoomDateRangeField />
-            </div>
-          </RoomFormSection>
-
-          <RoomAgentSettings
-            title="Работа с агентами"
-            description="Разрешите агентам присылать предложения о сотрудничестве по этому номеру."
-          />
-
-          <div className="grid gap-3 md:grid-cols-2">
-            <ButtonLink href="/dashboard/properties" variant="secondary" fullWidth>К общему списку</ButtonLink>
-            <Button type="submit" fullWidth disabled={subscription?.isRoomLimitReached}>Создать номер</Button>
-          </div>
-        </form>
-      </Panel>
+      <RoomCreationForm disabled={subscription?.isRoomLimitReached} />
     </section>
   );
 }

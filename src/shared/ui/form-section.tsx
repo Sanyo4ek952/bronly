@@ -4,7 +4,7 @@ import { cn } from "@/shared/lib/cn";
 
 import { FormSectionAccordionClient } from "@/shared/ui/form-section-accordion-client";
 
-type FormSectionVariant = "card" | "accordion" | "plain";
+type FormSectionVariant = "card" | "accordion" | "plain" | "bare";
 
 type FormSectionProps = {
   id?: string;
@@ -36,9 +36,9 @@ export function FormSection({
     "max-[720px]:rounded-[20px] max-[720px]:p-4",
   );
 
-  if (variant === "plain") {
+  if (variant === "plain" || variant === "bare") {
     return (
-      <section id={id} className={cn(plainSectionClass, className)}>
+      <section id={id} className={cn(variant === "bare" ? "grid gap-4 scroll-mt-24" : plainSectionClass, className)}>
         <div className="grid gap-1">
           <h3 className="text-base font-semibold leading-[1.25] text-[var(--color-text)]">{title}</h3>
           {description ? <p className="text-[13px] leading-[1.5] text-[var(--color-muted)]">{description}</p> : null}

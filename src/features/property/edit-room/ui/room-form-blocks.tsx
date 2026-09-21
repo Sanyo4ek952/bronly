@@ -10,6 +10,7 @@ type RoomSectionProps = {
   title: string;
   description: string;
   children?: ReactNode;
+  bare?: boolean;
 };
 
 const propertyFormGridClass = "grid gap-4 md:grid-cols-2";
@@ -23,6 +24,7 @@ const toggleRowClass = cn(
 export function RoomBaseFields({
   title,
   description,
+  bare = false,
   standalone = false,
   values,
 }: RoomSectionProps & {
@@ -34,16 +36,17 @@ export function RoomBaseFields({
   };
 }) {
   return (
-    <FormSection variant="plain" title={title} description={description}>
+    <FormSection variant={bare ? "bare" : "plain"} title={title} description={description}>
       <div className={propertyFormGridClass}>
-        <Input id="room-title-new" name="title" label="Название номера" defaultValue={values?.title ?? ""} />
+        <Input id="room-title-new" name="title" label="Название номера" required defaultValue={values?.title ?? ""} />
         {standalone ? (
           <>
-            <Input id="room-city-new" name="city" label="Город" defaultValue={values?.city ?? ""} />
+            <Input id="room-city-new" name="city" label="Город" required defaultValue={values?.city ?? ""} />
             <Input
               id="room-address-new"
               name="address"
               label="Адрес"
+              required
               defaultValue={values?.address ?? ""}
               wrapperClassName="grid gap-1.5 md:col-span-2"
             />
@@ -57,6 +60,7 @@ export function RoomBaseFields({
 export function RoomPricingFields({
   title,
   description,
+  bare = false,
   values,
 }: RoomSectionProps & {
   values?: {
@@ -67,7 +71,7 @@ export function RoomPricingFields({
   };
 }) {
   return (
-    <FormSection variant="plain" title={title} description={description}>
+    <FormSection variant={bare ? "bare" : "plain"} title={title} description={description}>
       <div className={compactPricingGridClass}>
         <Input id="room-capacity-new" name="capacity" type="number" min="1" label="Гостей" defaultValue={values?.capacity ?? "2"} />
         <Input id="room-bedrooms-new" name="bedrooms" type="number" min="1" label="Спален" defaultValue={values?.bedrooms ?? "1"} />
@@ -89,13 +93,14 @@ export function RoomPricingFields({
 export function RoomAmenitiesSection({
   title,
   description,
+  bare = false,
   amenities,
 }: RoomSectionProps & {
   amenities: string[];
 }) {
   return (
-    <FormSection variant="plain" title={title} description={description}>
-      <RoomAmenitiesField initialAmenities={amenities} />
+    <FormSection variant={bare ? "bare" : "plain"} title={title} description={description}>
+      <RoomAmenitiesField initialAmenities={amenities} bare={bare} />
     </FormSection>
   );
 }
@@ -103,9 +108,10 @@ export function RoomAmenitiesSection({
 export function RoomPhotosField({
   title,
   description,
+  bare = false,
 }: RoomSectionProps) {
   return (
-    <FormSection variant="plain" title={title} description={description}>
+    <FormSection variant={bare ? "bare" : "plain"} title={title} description={description}>
       <Input
         id="room-photos-new"
         name="photos"
@@ -122,6 +128,7 @@ export function RoomPhotosField({
 export function RoomAgentSettings({
   title,
   description,
+  bare = false,
   values,
   children,
 }: RoomSectionProps & {
@@ -130,9 +137,9 @@ export function RoomAgentSettings({
   };
 }) {
   return (
-    <FormSection variant="plain" title={title} description={description}>
+    <FormSection variant={bare ? "bare" : "plain"} title={title} description={description}>
       <div className={toggleListClass}>
-        <label className={toggleRowClass}>
+        <label className={bare ? "flex min-h-12 items-center justify-between gap-3 border-b border-[var(--border)] py-3 text-sm text-[var(--text)]" : toggleRowClass}>
           <span className="max-w-[calc(100%-42px)]">Хочу работать с агентами</span>
           <input type="checkbox" name="allowAgentInquiries" defaultChecked={values?.allowAgentInquiries ?? false} />
         </label>

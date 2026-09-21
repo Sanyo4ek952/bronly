@@ -12,7 +12,7 @@ Update this file when a new reusable component or composite pattern is added.
 - `DashboardPageNav` — `src/shared/ui/dashboard-page-nav.tsx` — back navigation and page-level dashboard nav.
 - `Input`, `Textarea` — `src/shared/ui/field.tsx` — Tailwind form controls with labels, descriptions, disabled/focus styling and accessible error messaging.
 - `Select` — `src/shared/ui/select.tsx` — единый Radix Select с Bronly-токенами, адаптивным меню, keyboard/typeahead-навигацией, ошибками и передачей значения в формы.
-- `FormSection` — `src/shared/ui/form-section.tsx` — section wrapper for grouped form content; supports static card and opt-in accessible accordion variants.
+- `FormSection` — `src/shared/ui/form-section.tsx` — section wrapper for grouped form content; supports static card, opt-in accessible accordion and `bare` sections without a surface, border or padding for use inside an existing panel.
 - `AppIcon` — `src/shared/ui/icon.tsx` — icon mapping surface.
 - `IconButton` — `src/shared/ui/icon-button.tsx` — compact icon-only action button.
 - `InlineNotice` — `src/shared/ui/inline-notice.tsx` — inline feedback with `default`, `soft`, `warning` and alerting `error` tones.
@@ -26,6 +26,8 @@ Update this file when a new reusable component or composite pattern is added.
 - `Tabs` — `src/shared/ui/tabs.tsx` — Tailwind tablist with disabled items, ARIA selection and arrow/Home/End keyboard navigation.
 
 ## Reusable Composite Patterns
+
+- `PropertySetupFlow`, `CreationWizard`, `RoomCreationForm` — `src/features/property/setup/ui/*` — этапы настройки объекта и создания номера; боковая навигация на широком экране, горизонтальная на телефоне, сохранение полей между шагами и пошаговая валидация. Используют `Panel`, `Button`, `SubmitButton` и существующие блоки форм; бизнес-логика остаётся в серверных действиях.
 
 - `AuthShell` — `src/widgets/auth-shell/auth-shell.tsx` — общая адаптивная оболочка входа и регистрации с intro-зоной, формой и footer-навигацией.
 - `AdminPageLayout`, `AdminPageHeader` — `src/widgets/property-admin/admin-page-layout.tsx`, `src/widgets/property-admin/admin-page-header.tsx` — property admin page scaffolding.

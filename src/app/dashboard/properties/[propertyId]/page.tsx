@@ -9,21 +9,17 @@ import {
 } from "@/app/dashboard/properties/actions";
 import { getPropertyNotice } from "@/app/dashboard/properties/page-helpers";
 import { getOwnerPropertyDetail } from "@/entities/property";
+import { PropertySetupFlow } from "@/features/property/setup/ui/setup-flow";
 import { OwnerPropertyFormFields } from "@/features/property/edit-property";
 import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
-import { Button, ButtonLink, DashboardPageNav, InlineNotice, Input, Panel } from "@/shared/ui";
+import { Button, ButtonLink, DashboardPageNav, InlineNotice, Input, Panel, SubmitButton } from "@/shared/ui";
 import {
   AdminPageHeader,
-  AdminPageLayout,
   CopyLinkButton,
   DangerZone,
-  ObjectStats,
-  ObjectSummaryCard,
   PhotoManager,
   StatusBadge,
-  StickyActions,
 } from "@/widgets/property-admin";
-import { PropertySectionNav } from "@/widgets/property-section-nav";
 
 type PropertyDetailPageProps = {
   params: Promise<{ propertyId: string }>;
@@ -31,16 +27,6 @@ type PropertyDetailPageProps = {
 };
 
 const pageStackClass = "grid min-w-0 gap-6 max-[720px]:gap-5";
-const contentStackClass = "grid min-w-0 gap-4";
-const sectionCardClass =
-  "grid gap-4 rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.98),rgb(250_246_239_/_0.96))] p-5 max-[720px]:rounded-[20px] max-[720px]:p-4";
-const sectionHeaderClass = "flex flex-wrap items-start justify-between gap-3";
-const destroyFormClass = "grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end";
-
-function getPropertyBusyRangeCount(property: NonNullable<Awaited<ReturnType<typeof getOwnerPropertyDetail>>>) {
-  return property.rooms.reduce((total, room) => total + room.busyRanges.length, 0);
-}
-
 export default async function PropertyDetailPage({ params, searchParams }: PropertyDetailPageProps) {
   const { propertyId } = await params;
   const property = await getOwnerPropertyDetail(propertyId);
@@ -55,9 +41,8 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
   const success = typeof resolvedSearchParams.success === "string" ? resolvedSearchParams.success : "";
   const notice = getPropertyNotice(error, success);
   const publicHref = property.ownerPublicSlug ? `/p/${property.ownerPublicSlug}` : "/dashboard/settings";
-  const busyRangeCount = getPropertyBusyRangeCount(property);
   const formId = `property-edit-form-${property.id}`;
-  const publicActionLabel = property.ownerPublicSlug ? "Открыть публичную страницу" : "Настройки профиля";
+  const initialStep = success === "saved" || success.includes("photo") || error.includes("photo") ? 1 : 0;
 
   return (
     <section className={pageStackClass}>
@@ -93,57 +78,21 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
 
       {notice ? <InlineNotice tone={error ? "error" : "default"}>{notice}</InlineNotice> : null}
 
-      <Panel padding="sm" surface="subtle" className="rounded-[var(--radius-lg)]">
-        <PropertySectionNav propertyId={property.id} active="property" />
-      </Panel>
-
-      <Panel padding="md" className="grid gap-4 xl:hidden" aria-label="Состояние объекта">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-base font-bold leading-[1.2] text-[var(--text)]">Состояние объекта</h2>
-          <StatusBadge kind="property" published={property.published} isFrozen={property.isFrozen} />
-        </div>
-        <ObjectStats
-          compact
-          stackOnMobile={false}
-          items={[
-            { label: "Номера", value: String(property.rooms.length) },
-            { label: "Активные", value: String(property.rooms.filter((room) => room.isActive).length) },
-            { label: "Занятые даты", value: String(busyRangeCount), tone: "accent" },
-          ]}
-        />
-        <div className="grid gap-2.5 sm:grid-cols-3">
-          <ButtonLink href={`/dashboard/properties/${property.id}/rooms`} variant="secondary" fullWidth>
-            Номера
-          </ButtonLink>
-          <ButtonLink href={`/dashboard/properties/${property.id}/calendar`} variant="secondary" fullWidth>
-            Календарь
-          </ButtonLink>
-          <ButtonLink href={publicHref} variant="secondary" fullWidth>
-            {publicActionLabel}
-          </ButtonLink>
-        </div>
-      </Panel>
-
-      <AdminPageLayout
-        main={
-          <div className={contentStackClass}>
-            <section id="overview" className={`${sectionCardClass} scroll-mt-24`}>
-              <div className={sectionHeaderClass}>
-                <div className="grid gap-1.5">
-                  <h2 className="text-xl font-semibold leading-[1.1] text-[var(--color-text)]">Редактирование объекта</h2>
-                  <p className="text-sm leading-[1.55] text-[var(--color-muted)]">
-                    Данные, контакты, правила проживания и параметры публикации собраны в понятные секции.
-                  </p>
-                </div>
+      <PropertySetupFlow key={`${success}-${error}`} initialStep={initialStep} steps={[
+        { title: "Основная информация", description: "Заполните сведения об объекте, контакты и правила проживания.", content: (
+          <Panel padding="md">
+            <form id={formId} action={updateOwnerProperty} className="grid gap-5">
+              <input type="hidden" name="propertyId" value={property.id} />
+              <OwnerPropertyFormFields property={property} presentation="create" />
+              <div className="flex justify-end border-t border-[var(--border)] pt-5">
+                <SubmitButton pendingLabel="Сохраняем…">Сохранить и перейти к фото</SubmitButton>
               </div>
-
-              <form id={formId} action={updateOwnerProperty} className={pageStackClass}>
-                <input type="hidden" name="propertyId" value={property.id} />
-                <OwnerPropertyFormFields property={property} />
-              </form>
-            </section>
-
+            </form>
+          </Panel>
+        ) },
+        { title: "Фотографии", description: "Покажите гостям здание, территорию и общие пространства.", content: (
             <PhotoManager
+              flatUpload
               title="Фото объекта"
               description="Добавьте несколько фото. Первое фото используется как обложка в кабинете и на публичной странице."
               emptyText="Фото объекта пока нет. После загрузки первое фото станет обложкой в кабинете и на публичной странице."
@@ -157,12 +106,40 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
               uploadDescription="Можно выбрать до 10 фото за раз. JPG, PNG, WebP или GIF, до 5 МБ каждое."
               entityTitle={property.title}
             />
-
+        ) },
+        { title: "Номера", description: "Добавьте номера, которые гости смогут выбрать для заявки.", content: (
+          <Panel padding="md" className="grid gap-5">
+            {property.rooms.length ? (
+              <div className="grid gap-3">
+                {property.rooms.map((room) => (
+                  <div key={room.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-3">
+                    <div><h3 className="font-semibold text-[var(--text)]">{room.title}</h3><p className="mt-1 text-xs text-[var(--text-muted)]">{room.isActive ? "Опубликован" : "В архиве"}</p></div>
+                    <ButtonLink href={`/dashboard/properties/${property.id}/rooms/${room.id}`} variant="secondary">Открыть номер</ButtonLink>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid gap-2 py-6 text-center">
+                <h3 className="text-xl font-semibold text-[var(--text)]">Добавьте первый номер</h3>
+                <p className="mx-auto max-w-md text-sm leading-relaxed text-[var(--text-muted)]">Объект уже создан. Теперь укажите удобства, фотографии и цену номера, чтобы гости могли оставить заявку.</p>
+              </div>
+            )}
+            <ButtonLink href={`/dashboard/properties/${property.id}/rooms/new`} className="justify-self-center">Добавить номер</ButtonLink>
+            <div className="flex flex-wrap justify-center gap-3">
+              <ButtonLink href={`/dashboard/properties/${property.id}/rooms`} variant="secondary">Все номера</ButtonLink>
+              <ButtonLink href={`/dashboard/properties/${property.id}/calendar`} variant="secondary">Календарь занятости</ButtonLink>
+            </div>
+          </Panel>
+        ) },
+      ]} />
+      <details className="border-t border-[var(--border)] pt-4">
+        <summary className="cursor-pointer text-sm text-[var(--text-muted)]">Удаление объекта</summary>
+        <div className="mt-4">
             <DangerZone
               title="Удаление объекта"
               description="Удаление каскадно удалит номера, сезонные цены, занятые даты и связанные списки."
             >
-              <form action={deleteOwnerProperty} className={destroyFormClass}>
+              <form action={deleteOwnerProperty} className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                 <input type="hidden" name="propertyId" value={property.id} />
                 <Input
                   id="property-delete-confirmation"
@@ -175,31 +152,8 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
                 </Button>
               </form>
             </DangerZone>
-
-            <StickyActions desktopInline>
-              <Button type="submit" form={formId}>
-                Сохранить объект
-              </Button>
-              <ButtonLink href={publicHref} variant="secondary" fullWidth>
-                {property.ownerPublicSlug ? "Открыть публичную страницу" : "Настройки профиля"}
-              </ButtonLink>
-            </StickyActions>
-          </div>
-        }
-        aside={
-          <div className={pageStackClass}>
-            <ObjectSummaryCard
-              property={property}
-              busyRangeCount={busyRangeCount}
-              roomsHref={`/dashboard/properties/${property.id}/rooms`}
-              calendarHref={`/dashboard/properties/${property.id}/calendar`}
-              publicHref={publicHref}
-              publicActionLabel={publicActionLabel}
-              className="hidden xl:grid xl:sticky xl:top-5"
-            />
-          </div>
-        }
-      />
+        </div>
+      </details>
     </section>
   );
 }

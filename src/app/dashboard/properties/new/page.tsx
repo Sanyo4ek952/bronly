@@ -1,9 +1,10 @@
-import { ArrowRight, Building2, Hotel, House, KeyRound } from "lucide-react";
+import { Building2, Hotel, House, KeyRound } from "lucide-react";
 import Link from "next/link";
 
+import { CreationWizard } from "@/features/property/setup/ui/setup-flow";
 import { createOwnerProperty } from "@/app/dashboard/properties/actions";
 import { buildOwnerInventoryBreadcrumbs } from "@/shared/lib";
-import { AppIcon, Button, ButtonLink, DashboardPageNav, InlineNotice, Input } from "@/shared/ui";
+import { AppIcon, DashboardPageNav, InlineNotice, Input } from "@/shared/ui";
 
 type NewPropertyPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -65,7 +66,7 @@ export default async function NewPropertyPage({ searchParams }: NewPropertyPageP
         compact
       />
 
-      <div className="grid max-w-[920px] gap-8 max-[720px]:gap-6">
+      <div className="grid gap-8 max-[720px]:gap-6">
         <header className="grid max-w-[720px] gap-2">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[var(--accent-strong)]">
             Новый объект
@@ -74,15 +75,16 @@ export default async function NewPropertyPage({ searchParams }: NewPropertyPageP
             Добавьте объект
           </h1>
           <p className="max-w-[640px] text-sm leading-[1.6] text-[var(--text-muted)]">
-            Сначала укажите тип и адрес. Номера, цены, фотографии и правила добавите на следующем шаге.
+            Несколько простых шагов — и ваше жильё появится на персональной странице.
           </p>
         </header>
 
         {message ? <InlineNotice tone="error" aria-live="polite">{message}</InlineNotice> : null}
 
-        <form action={createOwnerProperty} className="grid gap-8 max-[720px]:gap-7">
-          <input type="hidden" name="published" value="on" />
-
+        <CreationWizard action={createOwnerProperty} cancelHref="/dashboard/properties" submitLabel="Создать объект"
+          hiddenFields={<input type="hidden" name="published" value="on" />}
+          steps={[
+            { title: "Тип жилья", description: "Выберите, какой объект вы хотите добавить.", content: (
           <fieldset className="m-0 grid min-w-0 gap-4 border-0 p-0">
             <legend className="mb-1 p-0 text-[22px] font-bold leading-[1.15] tracking-[-0.025em] text-[var(--text)]">
               Что вы добавляете?
@@ -130,6 +132,8 @@ export default async function NewPropertyPage({ searchParams }: NewPropertyPageP
             </p>
           </fieldset>
 
+            ) },
+            { title: "Название и адрес", description: "После создания вы сможете заполнить информацию об объекте, добавить фото и номера.", content: (
           <section className="grid gap-4 border-t border-[var(--border)] pt-8 max-[720px]:pt-7" aria-labelledby="new-property-details-title">
             <div className="grid gap-1.5">
               <h2 id="new-property-details-title" className="text-[22px] font-bold leading-[1.15] tracking-[-0.025em] text-[var(--text)]">
@@ -172,21 +176,9 @@ export default async function NewPropertyPage({ searchParams }: NewPropertyPageP
             </div>
           </section>
 
-          <footer className="flex items-center justify-between gap-4 border-t border-[var(--border)] pt-6 max-[620px]:grid">
-            <p className="max-w-[470px] text-xs leading-[1.55] text-[var(--text-muted)]">
-              После создания откроется страница объекта. Там можно добавить номера, фотографии, цены и занятые даты.
-            </p>
-            <div className="flex shrink-0 gap-3 max-[620px]:grid max-[620px]:w-full">
-              <ButtonLink href="/dashboard/properties" variant="secondary" className="max-[620px]:order-2 max-[620px]:w-full">
-                Отмена
-              </ButtonLink>
-              <Button type="submit" className="min-h-11 max-[620px]:order-1 max-[620px]:w-full">
-                Продолжить
-                <AppIcon icon={ArrowRight} className="size-4" strokeWidth={2.2} aria-hidden="true" />
-              </Button>
-            </div>
-          </footer>
-        </form>
+            ) },
+          ]}
+        />
       </div>
     </section>
   );

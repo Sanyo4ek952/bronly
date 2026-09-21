@@ -30,6 +30,7 @@ type PhotoManagerProps = {
   uploadDescription: string;
   entityTitle: string;
   compact?: boolean;
+  flatUpload?: boolean;
 };
 
 export function PhotoManager({
@@ -46,6 +47,7 @@ export function PhotoManager({
   uploadDescription,
   entityTitle,
   compact = false,
+  flatUpload = false,
 }: PhotoManagerProps) {
   return (
     <section
@@ -64,7 +66,7 @@ export function PhotoManager({
       </div>
 
       <div className="grid gap-4">
-        <form action={uploadAction} className="grid gap-4 rounded-[20px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.96),rgb(243_248_247_/_0.86))] p-[18px] max-[720px]:rounded-[18px] max-[720px]:p-4">
+        <form action={uploadAction} className={flatUpload ? "grid gap-4 border-b border-[var(--border)] pb-5" : "grid gap-4 rounded-[20px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.96),rgb(243_248_247_/_0.86))] p-[18px] max-[720px]:rounded-[18px] max-[720px]:p-4"}>
           {hiddenFields.map((field) => (
             <input key={field.name} type="hidden" name={field.name} value={field.value} />
           ))}
