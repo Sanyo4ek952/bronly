@@ -321,6 +321,93 @@ body {
     var(--bg);
 }
 
+/* Shared foundation for the refreshed owner workspace. */
+/* Legacy resets are unlayered. Opt this workspace into layered resets so
+   component utilities can control text margins, link colors and button styles. */
+@layer base {
+  .dashboard-refresh :where(p, h1, h2, h3, h4, h5, h6, ul, dl, dd) {
+    margin: 0;
+  }
+
+  .dashboard-refresh :where(a) {
+    color: inherit;
+  }
+
+  .dashboard-refresh :where(button, input, textarea, select) {
+    font: inherit;
+  }
+
+  .dashboard-refresh :where(button) {
+    border: 0;
+  }
+
+  .dashboard-refresh :where(img, svg, video) {
+    display: block;
+  }
+}
+
+.dashboard-refresh :where(p, h1, h2, h3, h4, h5, h6, ul) {
+  margin: revert-layer;
+}
+
+.dashboard-refresh :where(a) {
+  color: revert-layer;
+}
+
+.dashboard-refresh :where(button, input, textarea, select) {
+  font: revert-layer;
+}
+
+.dashboard-refresh :where(button) {
+  border: revert-layer;
+}
+
+.dashboard-refresh :where(img, svg, video) {
+  display: revert-layer;
+}
+
+.dashboard-theme.dashboard-refresh {
+  --bg: #f5f7f4;
+  --surface: #ffffff;
+  --surface-subtle: #edf3ee;
+  --surface-muted: #edf3ee;
+  --text: #202d26;
+  --text-muted: #626f66;
+  --text-subtle: #47564c;
+  --border: #e0e6df;
+  --border-strong: #ccd6cd;
+  --accent: #315e4f;
+  --accent-strong: #264b3f;
+  --success: #315e4f;
+  --danger: #9f3d30;
+  --color-primary-rgb: 49 94 79;
+  --color-text-rgb: 32 45 38;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --title-size: 28px;
+  --section-title-size: 18px;
+  --caption-size: 13px;
+  --label-size: 13px;
+  --control-height: 44px;
+  --control-weight: 600;
+  --shadow-sm: 0 2px 6px rgb(32 45 38 / 3%);
+  --shadow-md: 0 8px 24px rgb(32 45 38 / 5%);
+  --shadow-lg: 0 16px 48px rgb(32 45 38 / 10%);
+  font-family: var(--font-dashboard), "Segoe UI", system-ui, sans-serif;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+@media (max-width: 899px) {
+  .dashboard-theme.dashboard-refresh {
+    --title-size: 26px;
+    --control-height: 48px;
+  }
+}
+
 @keyframes propertyInventoryShimmer {
   from {
     transform: translateX(-100%);

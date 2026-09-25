@@ -10,7 +10,8 @@ type BrandLogoProps = {
 export function BrandLogo({ href = "/", className }: BrandLogoProps) {
   return (
     <Link
-      href={href}
+      href={href === "/" ? "/home" : href}
+      prefetch={href === "/" ? false : undefined}
       className={cn("inline-flex items-center gap-2.5 text-lg font-extrabold tracking-normal text-[var(--color-text)]", className)}
     >
       <span

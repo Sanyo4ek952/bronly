@@ -10,7 +10,7 @@ Update this file when a new reusable component or composite pattern is added.
 
 - `BrandLogo` — `src/shared/ui/brand-logo.tsx` — Bronly wordmark or logo surface.
 - `BottomSheet` — `src/shared/ui/bottom-sheet.tsx` — Tailwind mobile dialog with drag-to-close, focus trap/restore, Escape and safe-area handling; accepts body/surface classes and render-close API.
-- `Button`, `ButtonLink` — `src/shared/ui/button.tsx` — shared `primary` / `secondary` / `danger` / `ghost`, `sm` / `md`, full-width, disabled and loading action API.
+- `Button`, `ButtonLink` — `src/shared/ui/button.tsx` — shared `primary` / `secondary` / `danger` / `ghost`, `sm` / `md`, full-width, disabled and loading action API; inner content has an 8 px icon/text gap, theme tokens `--control-height` and `--control-weight` opt into workspace sizing.
 - `DashboardPageNav` — `src/shared/ui/dashboard-page-nav.tsx` — back navigation and page-level dashboard nav.
 - `Input`, `Textarea` — `src/shared/ui/field.tsx` — Tailwind form controls with labels, descriptions, disabled/focus styling and accessible error messaging.
 - `Select` — `src/shared/ui/select.tsx` — единый Radix Select с Bronly-токенами, адаптивным меню, keyboard/typeahead-навигацией, ошибками и передачей значения в формы.
@@ -42,6 +42,7 @@ Update this file when a new reusable component or composite pattern is added.
 - `PublicHero`, `PublicPageHeader` — `src/widgets/public-page/*` — общая шапка публичных страниц; варианты `compact` и `minimal` используются на страницах владельца и агента без большой обложки и обрамления.
 - `CollaborationContactLinks`, `CollaborationTargets` — `src/widgets/collaboration-details/collaboration-details.tsx` — общие Tailwind-блоки контактов участника и целей активного сотрудничества для owner/agent экранов.
 - `OwnerShell`, `AdminShell` — `src/widgets/owner-shell/owner-shell.tsx`, `src/widgets/admin-dashboard/admin-shell.tsx` — Tailwind cabinet shells with desktop sidebar, mobile bottom navigation, active/focus states and shared `BottomSheet` overflow menu.
+- `DashboardTopbar` — `src/widgets/dashboard-topbar/dashboard-topbar.tsx` — заголовок главной кабинета; `compact` включает приветствие и действие добавления номера для обновлённой оболочки владельца. Общие уведомления и профиль находятся в `OwnerShell`.
 - `RequestsBrowser`, `OwnerCalendarBrowser`, `AgentCalendarBrowser` — `src/widgets/*browser/*` — role-specific filter, tab, list and calendar browsing patterns.
 - `RoomFormSection`, `OwnerPropertyFormFields` — `src/features/property/edit-room/ui/room-form-section.tsx`, `src/features/property/edit-property/ui/owner-property-form-fields.tsx` — property editing form layouts.
 

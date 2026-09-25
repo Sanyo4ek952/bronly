@@ -1,10 +1,10 @@
 "use client";
 
-import { Bell, LogOut } from "lucide-react";
+import { Bell, LogOut, Plus } from "lucide-react";
 import Link from "next/link";
 
 import { signOutAction } from "@/features/auth/sign-out-action";
-import { AppIcon, IconButton } from "@/shared/ui";
+import { AppIcon, ButtonLink, IconButton } from "@/shared/ui";
 
 export type DashboardTopbarProps = {
   eyebrow?: string;
@@ -12,6 +12,7 @@ export type DashboardTopbarProps = {
   description: string;
   notificationsHref: string;
   unreadNotificationsCount?: number;
+  compact?: boolean;
 };
 
 export function DashboardTopbar({
@@ -20,8 +21,24 @@ export function DashboardTopbar({
   description,
   notificationsHref,
   unreadNotificationsCount = 0,
+  compact = false,
 }: DashboardTopbarProps) {
   const badgeLabel = unreadNotificationsCount > 99 ? "99+" : String(unreadNotificationsCount);
+
+  if (compact) {
+    return (
+      <header className="flex items-center justify-between gap-6 max-[899px]:flex-col max-[899px]:items-stretch max-[899px]:gap-5">
+        <div className="min-w-0">
+          <h1 className="break-words text-[length:var(--title-size)] font-semibold leading-[1.25] tracking-[-0.025em]">{title}</h1>
+          <p className="mt-2 text-sm leading-[1.5] text-[var(--text-muted)]">{description}</p>
+        </div>
+        <ButtonLink href="/dashboard/rooms/new" className="shrink-0">
+          <AppIcon icon={Plus} className="!size-[18px]" strokeWidth={1.7} aria-hidden="true" />
+          Добавить номер
+        </ButtonLink>
+      </header>
+    );
+  }
 
   return (
     <header className="flex items-start justify-between gap-5 px-1 py-2 max-[640px]:gap-3 max-[640px]:px-0">

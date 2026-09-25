@@ -5,6 +5,7 @@ import {
   Bell,
   Building2,
   CalendarDays,
+  ChevronRight,
   CreditCard,
   Handshake,
   Home,
@@ -92,7 +93,16 @@ function getNavigationConfig(roleKind: "owner" | "agent"): NavigationConfig {
   };
 }
 
-function getNavigationItemClass(isActive: boolean, surface: "sidebar" | "bottom" | "sheet") {
+function getNavigationItemClass(isActive: boolean, surface: "sidebar" | "bottom" | "sheet", refreshed = false) {
+  if (refreshed) {
+    return cn(
+      "inline-flex items-center text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-subtle)] hover:text-[var(--text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]",
+      surface === "sidebar" && "min-h-11 gap-3 rounded-lg px-3 text-[13px] leading-5 font-medium",
+      surface === "bottom" && "relative min-h-14 flex-col justify-center gap-1 rounded-lg px-1 py-2 text-[11px] leading-4 font-medium",
+      surface === "sheet" && "min-h-12 gap-3 rounded-[var(--radius-md)] px-3 text-sm font-medium",
+      isActive && "!bg-[var(--surface-subtle)] !font-semibold !text-[var(--accent)]",
+    );
+  }
   return cn(
     "inline-flex items-center font-bold text-[var(--text-muted)] transition-[background-color,color,box-shadow] duration-[180ms]",
     "hover:bg-[var(--surface-subtle)] hover:text-[var(--text)]",
@@ -170,10 +180,12 @@ export function OwnerShell({
   );
   const isOverflowActive = mobileOverflowItems.some((item) => isItemActive(pathname, item.href));
   const hasUnreadNotifications = unreadNotificationsCount > 0;
+  const refreshed = roleKind === "owner";
+  const currentSection = desktopItems.find((item) => isItemActive(pathname, item.href))?.label ?? "Кабинет";
 
   return (
-    <div className="grid w-full grid-cols-[224px_minmax(0,1fr)] items-start gap-[30px] pb-[var(--safe-area-bottom)] max-[1080px]:min-h-full max-[1080px]:flex-1 max-[1080px]:grid-cols-1 max-[1080px]:gap-4">
-      <aside className="sticky top-6 grid gap-5 rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,var(--surface),var(--surface-subtle))] px-4 py-[18px] shadow-[var(--shadow-md)] max-[1080px]:hidden">
+    <div className={refreshed ? "grid min-h-dvh w-full grid-cols-[208px_minmax(0,1fr)] items-start max-[899px]:grid-cols-1" : "grid w-full grid-cols-[224px_minmax(0,1fr)] items-start gap-[30px] pb-[var(--safe-area-bottom)] max-[1080px]:min-h-full max-[1080px]:flex-1 max-[1080px]:grid-cols-1 max-[1080px]:gap-4"}>
+      <aside className={refreshed ? "sticky top-0 flex h-dvh flex-col gap-6 overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] px-4 py-6 max-[899px]:hidden" : "sticky top-6 grid gap-5 rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,var(--surface),var(--surface-subtle))] px-4 py-[18px] shadow-[var(--shadow-md)] max-[1080px]:hidden"}>
         <div className="px-2.5 pb-1 pt-2">
           <BrandLogo />
         </div>
@@ -187,7 +199,7 @@ export function OwnerShell({
               <Link
                 key={item.label}
                 href={item.href}
-                className={getNavigationItemClass(isActive, "sidebar")}
+                className={getNavigationItemClass(isActive, "sidebar", refreshed)}
                 aria-current={isActive ? "page" : undefined}
                 aria-label={
                   isNotificationsItem && hasUnreadNotifications
@@ -195,7 +207,7 @@ export function OwnerShell({
                     : undefined
                 }
               >
-                <AppIcon icon={item.icon} className="size-[18px]" aria-hidden="true" />
+                <AppIcon icon={item.icon} className="!size-[18px]" strokeWidth={1.7} aria-hidden="true" />
                 <span>{item.label}</span>
                 {isNotificationsItem ? <NotificationCountBadge count={unreadNotificationsCount} /> : null}
               </Link>
@@ -203,11 +215,11 @@ export function OwnerShell({
           })}
         </nav>
 
-        <div className="grid grid-cols-[42px_1fr] items-center gap-2.5 border-t border-[var(--border)] pt-4">
-          <div className="grid size-[42px] place-items-center rounded-[14px] bg-[rgb(var(--color-primary-rgb)_/_0.10)] text-sm font-extrabold text-[var(--accent-strong)]">{userInitial}</div>
+        <div className={cn("grid grid-cols-[36px_minmax(0,1fr)] items-center gap-2.5 border-t border-[var(--border)] pt-4", refreshed && "mt-auto")}>
+          <div className="grid size-9 place-items-center rounded-full bg-[var(--surface-subtle)] text-sm font-semibold text-[var(--accent-strong)]">{userInitial}</div>
           <div className="min-w-0">
-            <strong className="block truncate">{userName}</strong>
-            <span className="mt-1 block text-[13px] text-[var(--text-muted)]">{roleLabel}</span>
+            <strong className="block truncate text-[13px] font-semibold" title={userName}>{userName}</strong>
+            <span className="mt-1 block text-xs text-[var(--text-muted)]">{roleLabel}</span>
           </div>
         </div>
 
@@ -218,100 +230,119 @@ export function OwnerShell({
         </form>
       </aside>
 
-      <div className="grid min-w-0 gap-6 max-[1080px]:flex max-[1080px]:min-h-full max-[1080px]:w-full max-[1080px]:flex-1 max-[1080px]:flex-col max-[1080px]:gap-5 max-[1080px]:pb-[calc(88px+var(--safe-area-bottom))]">
-        {pathname === dashboardRootPath && topbar ? <DashboardTopbar {...topbar} /> : null}
-
-        {notice ? (
-          <InlineNotice title={notice.title} aria-live="polite">
-            <span>{notice.text}</span>
-          </InlineNotice>
-        ) : null}
-
-        {children}
-
-        <nav className="fixed inset-x-3 bottom-0 z-20 hidden grid-cols-5 gap-1 rounded-t-[18px] border border-[var(--border)] bg-[var(--surface)] p-2 pb-[calc(8px+var(--safe-area-bottom))] shadow-[var(--shadow-md)] max-[1080px]:grid max-[640px]:inset-x-2.5 max-[640px]:p-1.5 max-[640px]:pb-[calc(6px+var(--safe-area-bottom))]" aria-label="Мобильная навигация">
-          {mobilePrimaryItems.map((item) => {
-            const isActive = isItemActive(pathname, item.href);
-
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={getNavigationItemClass(isActive, "bottom")}
-                aria-label={item.label}
-                aria-current={isActive ? "page" : undefined}
-              >
-                <AppIcon icon={item.icon} className="size-5" aria-hidden="true" />
-                <span className="sr-only">{item.label}</span>
+      <div className="min-w-0">
+        {refreshed ? (
+          <header className="flex min-h-[76px] items-center justify-between gap-4 border-b border-[var(--border)] bg-[var(--surface)] px-8 max-[899px]:min-h-[72px] max-[899px]:px-5 max-[360px]:px-4">
+            <div className="flex min-w-0 items-center gap-3 text-[13px] max-[899px]:hidden">
+              <Link href={dashboardRootPath} className="text-[var(--text-muted)] hover:text-[var(--text)]">Кабинет владельца</Link>
+              <AppIcon icon={ChevronRight} className="!size-4 text-[var(--text-muted)]" aria-hidden="true" />
+              <span className="truncate font-medium">{currentSection}</span>
+            </div>
+            <BrandLogo className="min-[900px]:hidden" />
+            <div className="flex shrink-0 items-center gap-2">
+              <Link href={`${dashboardRootPath}/notifications`} aria-label={`Уведомления${hasUnreadNotifications ? `. Непрочитанных: ${unreadNotificationsCount}` : ""}`} className="relative grid size-11 place-items-center rounded-[var(--radius-md)] text-[var(--text-muted)] hover:bg-[var(--surface-subtle)] focus-visible:outline-2 focus-visible:outline-[var(--accent)] max-[899px]:size-12">
+                <AppIcon icon={Bell} className="!size-5" strokeWidth={1.7} aria-hidden="true" />
+                <NotificationCountBadge count={unreadNotificationsCount} compact />
               </Link>
-            );
-          })}
+              <Link href={`${dashboardRootPath}/settings`} aria-label={`Настройки профиля: ${userName}`} className="grid size-11 place-items-center rounded-full bg-[var(--surface-subtle)] text-sm font-semibold text-[var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] max-[899px]:size-12">{userInitial}</Link>
+            </div>
+          </header>
+        ) : null}
+        <div className={refreshed ? "mx-auto grid w-full max-w-[1200px] gap-6 p-8 pb-24 max-[899px]:p-5 max-[899px]:pb-[calc(100px+var(--safe-area-bottom))] max-[360px]:px-4" : "grid min-w-0 gap-6 max-[1080px]:flex max-[1080px]:min-h-full max-[1080px]:w-full max-[1080px]:flex-1 max-[1080px]:flex-col max-[1080px]:gap-5 max-[1080px]:pb-[calc(88px+var(--safe-area-bottom))]"}>
+          {pathname === dashboardRootPath && topbar ? <DashboardTopbar {...topbar} compact={refreshed} /> : null}
 
-          <button
-            type="button"
-            className={getNavigationItemClass(isMobileMenuOpen || isOverflowActive, "bottom")}
-            aria-expanded={isMobileMenuOpen}
-            aria-controls="owner-mobile-menu"
-            aria-label={
-              hasUnreadNotifications
-                ? `Ещё. Непрочитанных уведомлений: ${unreadNotificationsCount}`
-                : "Ещё"
-            }
-            onClick={() => setIsMobileMenuOpen(true)}
-          >
-            <AppIcon icon={Menu} className="size-5" aria-hidden="true" />
-            <span className="sr-only">Ещё</span>
-            <NotificationCountBadge count={unreadNotificationsCount} compact />
-          </button>
-        </nav>
+          {notice ? (
+            <InlineNotice title={notice.title} aria-live="polite">
+              <span>{notice.text}</span>
+            </InlineNotice>
+          ) : null}
 
-        <BottomSheet
-          open={isMobileMenuOpen}
-          onOpenChange={setIsMobileMenuOpen}
-          dialogId="owner-mobile-menu"
-          titleId="owner-mobile-sheet-title"
-          title="Ещё"
-          description="Быстрый доступ к остальным разделам кабинета."
-          closeLabel="Закрыть"
-          bodyClassName="gap-2"
-        >
-          {({ close }) => (
-            <>
-              {mobileOverflowItems.map((item) => {
-                const isActive = isItemActive(pathname, item.href);
-                const isNotificationsItem = item.href.endsWith("/notifications");
+          {children}
 
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className={getNavigationItemClass(isActive, "sheet")}
-                    aria-current={isActive ? "page" : undefined}
-                    aria-label={
-                      isNotificationsItem && hasUnreadNotifications
-                        ? `${item.label}. Непрочитанных уведомлений: ${unreadNotificationsCount}`
-                        : undefined
-                    }
-                    onClick={close}
-                  >
-                    <AppIcon icon={item.icon} className="size-[18px]" aria-hidden="true" />
-                    <span>{item.label}</span>
-                    {isNotificationsItem ? <NotificationCountBadge count={unreadNotificationsCount} /> : null}
-                  </Link>
-                );
-              })}
-              <form action={signOutAction}>
-                <button
-                  type="submit"
-                  className={cn(getNavigationItemClass(false, "sheet"), "w-full border-0 bg-transparent text-left")}
+          <nav className={refreshed ? "fixed inset-x-0 bottom-0 z-20 hidden grid-cols-5 gap-1 border-t border-[var(--border)] bg-[var(--surface)] px-2 pt-2 pb-[calc(8px+var(--safe-area-bottom))] max-[899px]:grid" : "fixed inset-x-3 bottom-0 z-20 hidden grid-cols-5 gap-1 rounded-t-[18px] border border-[var(--border)] bg-[var(--surface)] p-2 pb-[calc(8px+var(--safe-area-bottom))] shadow-[var(--shadow-md)] max-[1080px]:grid max-[640px]:inset-x-2.5 max-[640px]:p-1.5 max-[640px]:pb-[calc(6px+var(--safe-area-bottom))]"} aria-label="Мобильная навигация">
+            {mobilePrimaryItems.map((item) => {
+              const isActive = isItemActive(pathname, item.href);
+
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={getNavigationItemClass(isActive, "bottom", refreshed)}
+                  aria-label={refreshed && item.href === "/dashboard/properties" ? "Номера" : item.label}
+                  aria-current={isActive ? "page" : undefined}
                 >
-                  <AppIcon icon={LogOut} className="size-[18px]" aria-hidden="true" />
-                  <span>Выйти</span>
-                </button>
-              </form>
-            </>
-          )}
-        </BottomSheet>
+                  <AppIcon icon={item.icon} className="!size-5" strokeWidth={1.7} aria-hidden="true" />
+                  <span className={refreshed ? undefined : "sr-only"}>{refreshed && item.href === "/dashboard/properties" ? "Номера" : item.label}</span>
+                </Link>
+              );
+            })}
+
+            <button
+              type="button"
+              className={getNavigationItemClass(isMobileMenuOpen || isOverflowActive, "bottom", refreshed)}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="owner-mobile-menu"
+              aria-label={
+                hasUnreadNotifications
+                  ? `Ещё. Непрочитанных уведомлений: ${unreadNotificationsCount}`
+                  : "Ещё"
+              }
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <AppIcon icon={Menu} className="!size-5" strokeWidth={1.7} aria-hidden="true" />
+              <span className={refreshed ? undefined : "sr-only"}>Ещё</span>
+              <NotificationCountBadge count={unreadNotificationsCount} compact />
+            </button>
+          </nav>
+
+          <BottomSheet
+            open={isMobileMenuOpen}
+            onOpenChange={setIsMobileMenuOpen}
+            dialogId="owner-mobile-menu"
+            titleId="owner-mobile-sheet-title"
+            title="Ещё"
+            description="Быстрый доступ к остальным разделам кабинета."
+            closeLabel="Закрыть"
+            bodyClassName="gap-2"
+          >
+            {({ close }) => (
+              <>
+                {mobileOverflowItems.map((item) => {
+                  const isActive = isItemActive(pathname, item.href);
+                  const isNotificationsItem = item.href.endsWith("/notifications");
+
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={getNavigationItemClass(isActive, "sheet", refreshed)}
+                      aria-current={isActive ? "page" : undefined}
+                      aria-label={
+                        isNotificationsItem && hasUnreadNotifications
+                          ? `${item.label}. Непрочитанных уведомлений: ${unreadNotificationsCount}`
+                          : undefined
+                      }
+                      onClick={close}
+                    >
+                      <AppIcon icon={item.icon} className="size-[18px]" aria-hidden="true" />
+                      <span>{item.label}</span>
+                      {isNotificationsItem ? <NotificationCountBadge count={unreadNotificationsCount} /> : null}
+                    </Link>
+                  );
+                })}
+                <form action={signOutAction}>
+                  <button
+                    type="submit"
+                    className={cn(getNavigationItemClass(false, "sheet", refreshed), "w-full border-0 bg-transparent text-left")}
+                  >
+                    <AppIcon icon={LogOut} className="size-[18px]" aria-hidden="true" />
+                    <span>Выйти</span>
+                  </button>
+                </form>
+              </>
+            )}
+          </BottomSheet>
+        </div>
       </div>
     </div>
   );

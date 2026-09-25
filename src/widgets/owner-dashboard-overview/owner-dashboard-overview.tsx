@@ -1,8 +1,7 @@
-import { ArrowRight, CalendarDays, ExternalLink, Inbox, Plus } from "lucide-react";
+import { ArrowRight, Building2, CalendarDays, ChevronRight, ExternalLink, Layers3, UserPlus } from "lucide-react";
 import Link from "next/link";
 
 import type { OwnerDashboardSummary } from "@/entities/property";
-import { cn } from "@/shared/lib/cn";
 import { AppIcon, ButtonLink, InlineNotice, Panel, type AppIconComponent } from "@/shared/ui";
 
 import { OwnerDashboardActionSection } from "./owner-dashboard-action-section";
@@ -10,28 +9,22 @@ import { OwnerDashboardOnboarding } from "./owner-dashboard-onboarding";
 
 const quickActions = [
   {
-    icon: Plus,
-    title: "Добавить номер",
-    text: "Создайте новый номер или перейдите к объекту, чтобы подготовить витрину к новым заявкам.",
-    href: "/dashboard/rooms/new",
-  },
-  {
     icon: CalendarDays,
     title: "Календарь занятости",
-    text: "Отмечайте занятые даты и периоды недоступности вручную по каждому номеру.",
+    text: "Свободные и занятые даты",
     href: "/dashboard/calendar",
   },
   {
-    icon: Inbox,
-    title: "Заявки",
-    text: "Просматривайте новые запросы на проживание и связывайтесь с гостями напрямую.",
-    href: "/dashboard/requests",
+    icon: Building2,
+    title: "Объекты и номера",
+    text: "Фотографии, цены и условия",
+    href: "/dashboard/properties",
   },
   {
-    icon: ExternalLink,
-    title: "Публичная страница",
-    text: "Проверьте, как гость видит вашу витрину по персональной ссылке владельца.",
-    href: "/dashboard/settings",
+    icon: Layers3,
+    title: "Коллекции",
+    text: "Подборки для ваших гостей",
+    href: "/dashboard/collections",
   },
 ] satisfies Array<{ icon: AppIconComponent; title: string; text: string; href: string }>;
 
@@ -100,12 +93,12 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
   const heroTitle = dashboardStats.isPublicRestricted
     ? "Витрина ждёт продления доступа"
     : hasPublicUrl
-      ? "Ваша публичная витрина готова к новым заявкам"
+      ? "Ваша публичная страница"
       : "Подготовьте публичную ссылку для гостей";
   const heroDescription = dashboardStats.isPublicRestricted
     ? "Данные кабинета сохранены. После ручного продления подписки публичная страница и новые заявки снова станут доступны."
     : hasPublicUrl
-      ? "Гости видят номера, цены и свободные даты по вашей персональной ссылке. После заявки вы связываетесь с ними напрямую."
+      ? "Номера, цены и свободные даты — по одной ссылке."
       : "Заполните адрес публичной страницы в настройках, чтобы отправлять гостям одну персональную ссылку на ваши варианты размещения.";
 
   return (
@@ -135,102 +128,103 @@ export function OwnerDashboardOverview({ dashboardStats }: OwnerDashboardOvervie
 
       {dashboardStats.subscriptionWarningText ? <InlineNotice tone="warning">{dashboardStats.subscriptionWarningText}</InlineNotice> : null}
 
-      <Panel
-        as="article"
-        className="grid grid-cols-[minmax(0,1fr)_auto] gap-7 border-0 bg-[var(--surface-muted)] p-7 shadow-[0_15px_40px_rgb(var(--color-primary-rgb)_/_0.06)] max-[720px]:grid-cols-1 max-[720px]:gap-5 max-[720px]:p-5 max-[360px]:p-4"
-      >
-        <div className="max-w-[45rem]">
-          <p className="mb-5 inline-flex items-center gap-2 text-xs font-extrabold text-[var(--accent-strong)]">
-            <span className="size-2 rounded-full bg-[var(--accent)] shadow-[0_0_0_5px_rgb(var(--color-primary-rgb)_/_0.10)]" aria-hidden="true" />
-            {publicStatusLabel}
-          </p>
-          <h2 className="text-[clamp(1.65rem,3vw,2.5rem)] font-medium leading-[1.12] tracking-[-0.035em] text-[var(--text)]">{heroTitle}</h2>
-          <p className="mt-3 max-w-[39rem] text-sm leading-[1.65] text-[var(--text-subtle)] sm:text-[15px]">{heroDescription}</p>
-        </div>
-
-        <ButtonLink href={publicPageHref} className="min-h-12 self-start px-5 max-[720px]:w-full">
-          {hasPublicUrl ? "Открыть страницу" : "Настроить ссылку"}
-          <AppIcon icon={ExternalLink} className="size-4" aria-hidden="true" />
-        </ButtonLink>
-
-        <dl className="col-span-full grid grid-cols-3 border-t border-[rgb(var(--color-primary-rgb)_/_0.18)] pt-6 max-[420px]:pt-5">
-          <div className="flex min-w-0 flex-col border-r border-[rgb(var(--color-primary-rgb)_/_0.18)] pr-5 max-[420px]:pr-2">
-            <dt className="order-2 mt-2 text-xs text-[var(--text-subtle)] max-[420px]:text-[10px]">Объекты</dt>
-            <dd className="order-1 text-3xl font-semibold leading-none tracking-[-0.04em] text-[var(--text)] max-[420px]:text-2xl">{dashboardStats.objects}</dd>
-          </div>
-          <div className="flex min-w-0 flex-col border-r border-[rgb(var(--color-primary-rgb)_/_0.18)] px-5 max-[420px]:px-2">
-            <dt className="order-2 mt-2 text-xs text-[var(--text-subtle)] max-[420px]:text-[10px]">Номера · {dashboardStats.activeRooms} активных</dt>
-            <dd className="order-1 text-3xl font-semibold leading-none tracking-[-0.04em] text-[var(--text)] max-[420px]:text-2xl">{dashboardStats.rooms}</dd>
-          </div>
-          <div className="flex min-w-0 flex-col pl-5 max-[420px]:pl-2">
-            <dt className="order-2 mt-2 text-xs text-[var(--text-subtle)] max-[420px]:text-[10px]">Новые заявки</dt>
-            <dd className="order-1 text-3xl font-semibold leading-none tracking-[-0.04em] text-[var(--text)] max-[420px]:text-2xl">{dashboardStats.newRequests}</dd>
-          </div>
-        </dl>
+      <Panel as="section" aria-label="Сводка кабинета" className="grid grid-cols-3 overflow-hidden divide-x divide-[var(--border)]">
+        {[
+          { label: "Объекты", value: dashboardStats.objects, hint: "Открыть", href: "/dashboard/properties" },
+          { label: "Номера", value: dashboardStats.rooms, hint: `${dashboardStats.activeRooms} активных`, href: "/dashboard/properties" },
+          { label: "Новые заявки", value: dashboardStats.newRequests, hint: "Посмотреть", href: "/dashboard/requests" },
+        ].map((metric, index) => (
+          <Link
+            key={metric.label}
+            href={metric.href}
+            aria-label={`${metric.label}: ${metric.value}. ${metric.hint}`}
+            className={`group flex min-w-0 flex-col gap-2 p-6 transition-colors hover:bg-[var(--surface-subtle)] focus-visible:z-10 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--accent)] max-[899px]:px-4 max-[899px]:py-5 max-[360px]:px-3 ${index === 2 ? "bg-[var(--surface-subtle)]" : ""}`}
+          >
+            <span className="text-[13px] leading-[18px] text-[var(--text-muted)] max-[360px]:min-h-9 max-[480px]:text-xs">{metric.label}</span>
+            <span className="text-[32px] font-semibold leading-9 tracking-[-0.025em] max-[899px]:text-[28px]">{metric.value}</span>
+            <span className="mt-1 flex items-center gap-2 text-[13px] leading-5 text-[var(--accent)] max-[480px]:text-xs">
+              {metric.hint}
+              <span className="max-[480px]:hidden" aria-hidden="true">
+                <AppIcon icon={ArrowRight} className="!size-4" strokeWidth={1.7} />
+              </span>
+            </span>
+          </Link>
+        ))}
       </Panel>
 
-      <OwnerDashboardOnboarding onboarding={dashboardStats.onboarding} emptyStates={emptyStatesToShow} />
+      {emptyStatesToShow.length > 0 ? <OwnerDashboardOnboarding onboarding={dashboardStats.onboarding} emptyStates={emptyStatesToShow} /> : null}
 
-      <div className="grid grid-cols-[minmax(0,1.7fr)_minmax(260px,0.8fr)] gap-[30px] max-[820px]:grid-cols-1 max-[820px]:gap-6">
-        <section aria-labelledby="owner-quick-actions-title">
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <h2 id="owner-quick-actions-title" className="text-xl font-semibold tracking-[-0.025em] text-[var(--text)]">Продолжить работу</h2>
-            <p className="text-xs text-[var(--text-muted)] max-[520px]:hidden">Частые сценарии владельца</p>
-          </div>
-          <div className="grid grid-cols-2 border-t border-[var(--border)] max-[680px]:grid-cols-1">
-            {quickActions.map((action, index) => (
+      <div className="grid grid-cols-1 gap-6 min-[900px]:grid-cols-[minmax(0,1.25fr)_minmax(260px,1fr)] min-[900px]:gap-x-7">
+        <section className="min-w-0 min-[900px]:col-start-1 min-[900px]:row-start-2" aria-labelledby="owner-quick-actions-title">
+          <h2 id="owner-quick-actions-title" className="mb-3 text-lg font-semibold leading-[26px] tracking-[-0.015em]">Продолжить работу</h2>
+          <div className="divide-y divide-[var(--border)]">
+            {quickActions.map((action) => (
               <Link
                 key={action.title}
                 href={action.href}
-                className={cn(
-                  "group grid min-w-0 grid-cols-[42px_minmax(0,1fr)_auto] items-start gap-3 border-b border-[var(--border)] py-[18px] text-inherit transition-colors hover:bg-[rgb(var(--color-primary-rgb)_/_0.035)] focus-visible:outline-none focus-visible:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.12)] max-[680px]:px-0",
-                  index % 2 === 0 ? "pr-5" : "border-l pl-5 max-[680px]:border-l-0",
-                )}
+                className="group grid min-w-0 grid-cols-[40px_minmax(0,1fr)_18px] items-center gap-3 py-4 transition-colors hover:bg-[var(--surface-subtle)] focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
               >
-                <span className="grid size-[42px] place-items-center rounded-[var(--radius-md)] bg-[var(--surface-subtle)] text-[var(--accent-strong)]" aria-hidden="true">
-                  <AppIcon icon={action.icon} />
+                <span className="grid size-10 place-items-center rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] text-[var(--accent)]" aria-hidden="true">
+                  <AppIcon icon={action.icon} className="!size-[18px]" strokeWidth={1.7} />
                 </span>
                 <span className="min-w-0">
-                  <strong className="block text-[15px] text-[var(--text)]">{action.title}</strong>
-                  <span className="mt-1 block text-xs leading-[1.5] text-[var(--text-muted)]">{action.text}</span>
+                  <strong className="block text-[15px] font-medium leading-[21px]">{action.title}</strong>
+                  <span className="mt-1 block text-[13px] leading-5 text-[var(--text-muted)]">{action.text}</span>
                 </span>
-                <AppIcon icon={ArrowRight} className="mt-1 size-4 text-[var(--accent-strong)] transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                <AppIcon icon={ChevronRight} className="!size-[18px] text-[var(--text-muted)]" strokeWidth={1.7} aria-hidden="true" />
               </Link>
             ))}
           </div>
         </section>
 
-        <aside className="grid content-start gap-4" aria-label="Подписка и приглашения">
-          <Panel className="p-5 sm:p-6" surface="raised">
+        <Panel as="article" padding="lg" className="flex items-center justify-between gap-6 min-[900px]:col-span-2 min-[900px]:row-start-1 max-[899px]:flex-col max-[899px]:items-stretch max-[899px]:!p-5 max-[360px]:!p-4">
+          <div className="min-w-0">
+            <p className="mb-3 flex items-center gap-2 text-[13px] font-medium leading-5 text-[var(--text-muted)]">
+              <span className={`size-1.5 shrink-0 rounded-full ${dashboardStats.isPublicRestricted || !hasPublicUrl ? "bg-[var(--warning)]" : "bg-[var(--accent)]"}`} aria-hidden="true" />
+              {publicStatusLabel}
+            </p>
+            <h2 className="text-lg font-semibold leading-[26px] tracking-[-0.015em]">{heroTitle}</h2>
+            <p className="mt-2 max-w-[40rem] text-sm leading-[21px] text-[var(--text-muted)]">{heroDescription}</p>
+          </div>
+          <ButtonLink href={publicPageHref} variant="secondary" className="shrink-0">
+            {hasPublicUrl ? "Открыть страницу" : "Настроить ссылку"}
+            <AppIcon icon={ExternalLink} className="!size-[18px]" strokeWidth={1.7} aria-hidden="true" />
+          </ButtonLink>
+        </Panel>
+
+        <aside className="grid min-w-0 content-start gap-4 min-[900px]:col-start-2 min-[900px]:row-start-2" aria-label="Подписка и приглашения">
+          <Panel padding="lg" className="max-[899px]:!p-5 max-[360px]:!p-4">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold tracking-[-0.025em] text-[var(--text)]">Подписка</h2>
-              <span className="inline-flex min-h-7 items-center rounded-full bg-[var(--color-primary-pale)] px-3 text-xs font-bold text-[var(--accent-strong)]">{dashboardStats.subscriptionPlan}</span>
+              <h2 className="text-lg font-semibold leading-[26px] tracking-[-0.015em]">Подписка</h2>
+              <span className="inline-flex min-h-7 items-center rounded-full bg-[var(--surface-subtle)] px-3 text-xs font-medium text-[var(--accent)]">{dashboardStats.subscriptionPlan}</span>
             </div>
-            <dl className="mt-4">
-              <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] py-3 text-xs">
+            <dl className="mt-4 text-[13px] leading-5">
+              <div className="flex items-center justify-between gap-4 py-2">
                 <dt className="text-[var(--text-muted)]">Статус</dt>
-                <dd className="font-bold text-[var(--text)]">{dashboardStats.subscriptionStatusLabel}</dd>
+                <dd className="text-right font-medium">{dashboardStats.subscriptionStatusLabel}</dd>
               </div>
-              <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] py-3 text-xs">
+              <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] pb-4 pt-2">
                 <dt className="text-[var(--text-muted)]">Действует до</dt>
-                <dd className="font-bold text-[var(--text)]">{dashboardStats.subscriptionValidUntil}</dd>
+                <dd className="text-right font-medium">{dashboardStats.subscriptionValidUntil}</dd>
               </div>
             </dl>
-            <Link href="/dashboard/subscription" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[var(--accent-strong)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.12)]">
+            <Link href="/dashboard/subscription" className="mt-2 inline-flex min-h-11 items-center gap-2 text-[13px] font-semibold text-[var(--accent)] underline-offset-4 hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]">
               Открыть подписку
-              <AppIcon icon={ArrowRight} className="size-4" aria-hidden="true" />
+              <AppIcon icon={ArrowRight} className="!size-[18px]" strokeWidth={1.7} aria-hidden="true" />
             </Link>
           </Panel>
 
-          <Link href="/dashboard/referrals" className="group grid gap-1.5 border-t border-[var(--border)] px-1 py-4 focus-visible:outline-none focus-visible:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.12)]">
-            <strong className="inline-flex items-center gap-2 text-[15px] text-[var(--text)]">
-              Пригласить владельца или агента
-              <AppIcon icon={ArrowRight} className="size-4 text-[var(--accent-strong)] transition-transform group-hover:translate-x-1" aria-hidden="true" />
-            </strong>
-            <span className="text-xs leading-[1.55] text-[var(--text-muted)]">Подготовьте персональную ссылку. Роль выбирается на следующем экране.</span>
+          <Link href="/dashboard/referrals" className="grid grid-cols-[20px_minmax(0,1fr)_18px] items-start gap-3 rounded-lg py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]">
+            <AppIcon icon={UserPlus} className="mt-0.5 !size-5 text-[var(--accent)]" strokeWidth={1.7} aria-hidden="true" />
+            <span>
+              <strong className="block text-[13px] font-medium leading-5">Пригласить владельца или агента</strong>
+              <span className="mt-1 block text-[13px] leading-5 text-[var(--text-muted)]">Поделиться персональной ссылкой</span>
+            </span>
+            <AppIcon icon={ArrowRight} className="mt-0.5 !size-[18px] text-[var(--accent)]" strokeWidth={1.7} aria-hidden="true" />
           </Link>
         </aside>
       </div>
+      {emptyStatesToShow.length === 0 ? <OwnerDashboardOnboarding onboarding={dashboardStats.onboarding} emptyStates={emptyStatesToShow} /> : null}
     </>
   );
 }

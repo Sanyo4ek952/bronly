@@ -63,11 +63,11 @@ export function buildDashboardShellData({
       role === "agent" ? "Агент" : hasAdminRole ? "Администратор" : hasOwnerRole ? "Владелец" : "Владелец",
     topbar: {
       eyebrow: role === "agent" ? "КАБИНЕТ АГЕНТА" : "КАБИНЕТ ВЛАДЕЛЬЦА",
-      title: `Добро пожаловать, ${displayName}`,
+      title: role === "agent" ? `Добро пожаловать, ${displayName}` : `Здравствуйте, ${displayName}`,
       description:
         role === "agent"
           ? "Держите под рукой витрину, активные связи и заявки по вашим ссылкам."
-          : "Следите за объектами, календарём занятости и заявками в одном месте.",
+          : "Всё для работы с вашим жильём.",
       notificationsHref: role === "agent" ? "/agent/dashboard/notifications" : "/dashboard/notifications",
       unreadNotificationsCount,
     },

@@ -101,7 +101,7 @@ export function OwnerDashboardOnboarding({ onboarding, emptyStates }: OwnerDashb
       <button
         ref={launcherRef}
         type="button"
-        className="fixed bottom-[calc(82px+var(--safe-area-bottom))] right-4 z-30 grid size-12 place-items-center rounded-full border border-[rgb(var(--color-primary-rgb)_/_0.24)] bg-[var(--accent)] text-white shadow-[var(--shadow-lg)] transition-transform duration-[180ms] hover:-translate-y-1 focus-visible:outline-none focus-visible:shadow-[0_0_0_4px_rgb(var(--color-primary-rgb)_/_0.18)] min-[721px]:bottom-6 min-[721px]:right-6"
+        className="inline-flex min-h-[var(--control-height,44px)] items-center justify-self-start gap-2 rounded-[var(--radius-md)] bg-transparent px-3 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-subtle)] hover:text-[var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
         aria-label="Чеклист запуска"
         aria-expanded={isOpen}
         aria-controls={dialogId}
@@ -110,7 +110,8 @@ export function OwnerDashboardOnboarding({ onboarding, emptyStates }: OwnerDashb
           setIsOpen(true);
         }}
       >
-        <AppIcon icon={ListChecks} aria-hidden="true" />
+        <AppIcon icon={ListChecks} className="!size-[18px]" strokeWidth={1.7} aria-hidden="true" />
+        Чеклист запуска
       </button>
 
       {isOpen ? (
