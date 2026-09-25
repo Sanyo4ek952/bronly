@@ -47,7 +47,7 @@ export async function submitAgentGuestRequestAction(formData: FormData) {
   const propertySlug = getString(formData, "propertySlug");
   const agentPublicId = getString(formData, "agentPublicId");
   const adultsCount = Number.parseInt(getString(formData, "adultsCount"), 10) || 1;
-  const roomsCount = Number.parseInt(getString(formData, "roomsCount"), 10) || 1;
+  const roomsCount = 1;
   const baseState = {
     propertySlug,
     roomId,

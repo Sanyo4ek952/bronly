@@ -43,7 +43,7 @@ export async function submitCollectionGuestRequestAction(formData: FormData) {
   const propertySlug = getString(formData, "propertySlug");
   const collectionSlug = getString(formData, "collectionSlug");
   const adultsCount = Number.parseInt(getString(formData, "adultsCount"), 10) || 1;
-  const roomsCount = Number.parseInt(getString(formData, "roomsCount"), 10) || 1;
+  const roomsCount = 1;
   const baseState = {
     propertySlug,
     roomId,

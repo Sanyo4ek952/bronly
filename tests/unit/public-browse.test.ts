@@ -57,3 +57,17 @@ test("owner, agent and collection links preserve filters and request identity", 
   }
   assert.equal(new URL(buildPublicRequestHref("/p/a", "standalone", filters), "https://example.test").searchParams.has("propertySlug"), false);
 });
+
+test("request links target one room while browsing keeps the rooms filter", () => {
+  const selection = normalizePublicStayFilters({ checkIn: "2026-10-01", checkOut: "2026-10-03", adults: 2, rooms: 3 });
+  for (const base of ["/p/owner", "/a/agent", "/c/collection"]) {
+    const browse = new URL(buildPublicStayHref(base, selection), "https://example.test");
+    const request = new URL(buildPublicRequestHref(base, "selected-room", selection), browse);
+    assert.equal(browse.searchParams.get("rooms"), "3");
+    assert.equal(request.searchParams.get("rooms"), "1");
+    assert.equal(request.searchParams.get("adults"), "2");
+    assert.equal(request.searchParams.get("checkIn"), selection.checkIn);
+    assert.equal(request.searchParams.get("checkOut"), selection.checkOut);
+    assert.equal(request.searchParams.get("roomId"), "selected-room");
+  }
+});

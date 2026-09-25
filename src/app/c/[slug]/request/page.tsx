@@ -35,7 +35,7 @@ export default async function PublicCollectionRequestPage({ params, searchParams
     checkIn: getSearchString(query, "checkIn"),
     checkOut: getSearchString(query, "checkOut"),
     adults: getSearchString(query, "adults"),
-    rooms: getSearchString(query, "rooms"),
+    rooms: "1",
   });
 
   if (!pageData) {

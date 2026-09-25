@@ -85,7 +85,7 @@ export function createPublicDetailRoute(contextKind: ContextKind, detailKind: De
     const id = (detailKind === "properties" ? route.propertyId : route.roomId) ?? "";
     const loadedContext = await loadContext(contextKind, route.slug);
     if (!loadedContext) notFound();
-    const filters = normalizePublicStayFilters({ checkIn: getSearchString(query, "checkIn"), checkOut: getSearchString(query, "checkOut"), adults: getSearchString(query, "adults"), rooms: getSearchString(query, "rooms") });
+    const filters = normalizePublicStayFilters({ checkIn: getSearchString(query, "checkIn"), checkOut: getSearchString(query, "checkOut"), adults: getSearchString(query, "adults"), rooms: detailKind === "rooms" ? 1 : getSearchString(query, "rooms") });
     const context = { ...loadedContext, filters };
     if (context.shouldRedirect) redirect(buildPublicDetailHref(context.base, detailKind, id, context.filters));
     if (context.unavailable || !context.contact) {
@@ -126,11 +126,12 @@ export function createPublicDetailRoute(contextKind: ContextKind, detailKind: De
           <PublicCheckInTimes checkIn={room.location?.checkInTime || property?.checkInTime} checkOut={room.location?.checkOutTime || property?.checkOutTime} />
           <section id="stay-filter" className="grid scroll-mt-5 gap-4 border-y border-[var(--border)] py-6">
             <h2 className="text-xl font-bold">Даты и стоимость проживания</h2>
-            <PublicStayFilter publicBaseHref={currentPath} filters={context.filters} variant="inline" submitLabel="Рассчитать стоимость" />
+            <PublicStayFilter key={currentPath} publicBaseHref={currentPath} filters={context.filters} variant="inline" mode="room" maxGuests={room.capacity}>
             {room.isAvailableForFilter ? <>
               <strong className="text-2xl">{context.filters.hasDates && room.totalPrice != null ? `${formatRubles(Math.round(room.totalPrice))} за ${room.nights} ${getRussianPluralForm(room.nights ?? 0, ["ночь", "ночи", "ночей"])}` : `от ${formatRubles(Math.round(room.displayPricePerNight ?? room.pricePerNight))} / ночь`}</strong>
               <ButtonLink href={buildPublicRequestHref(context.base, room.id, context.filters, property?.slug)} className="min-h-11 w-full sm:w-fit">Оставить заявку</ButtonLink>
             </> : <><InlineNotice tone="warning">{room.unavailableReason || "Номер не подходит по выбранным параметрам"}</InlineNotice><ButtonLink href="#stay-filter" variant="secondary" className="min-h-11 w-full sm:w-fit">Изменить параметры</ButtonLink></>}
+            </PublicStayFilter>
             <p className="text-xs leading-relaxed text-[var(--text-muted)]">Заявка не подтверждает проживание — с вами свяжутся для уточнения доступности.</p>
           </section>
           {property ? <section className="grid gap-4"><h2 className="text-xl font-bold">Об объекте</h2><Link href={backHref} className="w-fit font-semibold text-[var(--accent)] underline underline-offset-4">{property.shortTitle}</Link><PublicPropertyDetails property={property} showGallery={false} /></section> : null}

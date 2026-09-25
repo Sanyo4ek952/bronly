@@ -35,7 +35,7 @@ export function buildPublicDetailHref(base: string, kind: "properties" | "rooms"
 }
 
 export function buildPublicRequestHref(base: string, roomId: string, filters: StayLinkFilters, propertySlug?: string | null) {
-  return buildPublicStayHref(`${base}/request`, filters, {
+  return buildPublicStayHref(`${base}/request`, { ...filters, rooms: 1 }, {
     roomId,
     ...(propertySlug ? { propertySlug } : {}),
   });

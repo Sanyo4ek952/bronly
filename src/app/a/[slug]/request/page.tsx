@@ -36,7 +36,7 @@ export default async function AgentRequestPage({ params, searchParams }: AgentRe
     checkIn: getSearchString(query, "checkIn"),
     checkOut: getSearchString(query, "checkOut"),
     adults: getSearchString(query, "adults"),
-    rooms: getSearchString(query, "rooms"),
+    rooms: "1",
   });
 
   if (!pageData) {

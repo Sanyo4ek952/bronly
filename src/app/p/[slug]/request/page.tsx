@@ -60,7 +60,7 @@ export default async function PublicRequestPage({ params, searchParams }: Public
     checkIn: getSearchString(query, "checkIn"),
     checkOut: getSearchString(query, "checkOut"),
     adults: getSearchString(query, "adults"),
-    rooms: getSearchString(query, "rooms"),
+    rooms: "1",
   });
 
   if (!pageData) {

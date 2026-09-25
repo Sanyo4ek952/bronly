@@ -43,20 +43,22 @@ export function GuestRequestForm({
   const [checkIn, setCheckIn] = useState(filters.checkIn);
   const [checkOut, setCheckOut] = useState(filters.checkOut);
   const [adultsCount, setAdultsCount] = useState(String(filters.adults));
-  const [roomsCount, setRoomsCount] = useState(String(filters.rooms));
 
   const selectedRoom = activeRooms.find((room) => room.id === selectedRoomId) ?? activeRooms[0];
+  const guestLimit = Math.max(1, Math.min(20, selectedRoom?.capacity ?? 1));
+  const tooManyGuests = Number(adultsCount) > guestLimit;
   const summaryFilters = normalizePublicStayFilters({
     checkIn,
     checkOut,
     adults: adultsCount,
-    rooms: roomsCount,
+    rooms: 1,
   });
   const quotedRoom = selectedRoom ? buildPublicRoomQuote(selectedRoom, summaryFilters) : null;
   const summary = quotedRoom ? buildPublicRequestSummary(quotedRoom, summaryFilters, propertyTitle) : null;
 
   return (
     <form className="grid gap-4" action={action}>
+      <input type="hidden" name="roomsCount" value="1" />
       {publicSlug ? <input type="hidden" name="publicSlug" value={publicSlug} /> : null}
       {propertySlug ? <input type="hidden" name="propertySlug" value={propertySlug} /> : null}
       {hiddenFields.map((field) => (
@@ -105,10 +107,6 @@ export function GuestRequestForm({
                 <div className="grid gap-1 rounded-2xl bg-[rgb(248_250_252_/_0.9)] px-[14px] py-3">
                   <span className="text-sm text-[var(--color-muted)]">Гости</span>
                   <strong>{summary.guestsLabel}</strong>
-                </div>
-                <div className="grid gap-1 rounded-2xl bg-[rgb(248_250_252_/_0.9)] px-[14px] py-3">
-                  <span className="text-sm text-[var(--color-muted)]">Комнаты</span>
-                  <strong>{summary.roomsLabel}</strong>
                 </div>
               </div>
               <p className="text-sm leading-relaxed text-[var(--color-muted)]">{summary.requestLabel}</p>
@@ -172,21 +170,12 @@ export function GuestRequestForm({
         id="guest-count"
         name="adultsCount"
         label="Количество гостей"
-        value={adultsCount}
+        value={tooManyGuests ? "" : adultsCount}
+        placeholder="Выберите гостей"
+        error={tooManyGuests ? `Вместимость выбранного номера — ${guestLimit} чел. Выберите количество гостей.` : undefined}
+        required
         onValueChange={setAdultsCount}
-        options={Array.from({ length: 8 }, (_, index) => {
-          const value = String(index + 1);
-          return { value, label: value };
-        })}
-      />
-
-      <Select
-        id="rooms-count"
-        name="roomsCount"
-        label="Комнаты"
-        value={roomsCount}
-        onValueChange={setRoomsCount}
-        options={Array.from({ length: 5 }, (_, index) => {
+        options={Array.from({ length: guestLimit }, (_, index) => {
           const value = String(index + 1);
           return { value, label: value };
         })}
@@ -204,7 +193,7 @@ export function GuestRequestForm({
         <span>Я согласен на обработку персональных данных и понимаю, что заявка передаётся для уточнения доступности.</span>
       </label>
 
-      <SubmitButton fullWidth pendingLabel="Отправляем заявку">Отправить заявку</SubmitButton>
+      <SubmitButton fullWidth disabled={tooManyGuests} pendingLabel="Отправляем заявку">Отправить заявку</SubmitButton>
     </form>
   );
 }

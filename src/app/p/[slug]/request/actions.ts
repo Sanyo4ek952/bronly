@@ -39,7 +39,7 @@ export async function submitGuestRequestAction(formData: FormData) {
   const publicSlug = getString(formData, "publicSlug");
   const propertySlug = getString(formData, "propertySlug");
   const adultsCount = getPositiveInteger(formData, "adultsCount");
-  const roomsCount = getPositiveInteger(formData, "roomsCount");
+  const roomsCount = 1;
   const hasPrivacyConsent = getString(formData, "privacyConsent") === "on";
   const baseState = {
     propertySlug,
@@ -58,7 +58,6 @@ export async function submitGuestRequestAction(formData: FormData) {
     !roomId ||
     !publicSlug ||
     !Number.isInteger(adultsCount) ||
-    !Number.isInteger(roomsCount) ||
     !hasPrivacyConsent
   ) {
     redirect(buildRequestPath(publicSlug || "owner", { ...baseState, error: "validation" }));
